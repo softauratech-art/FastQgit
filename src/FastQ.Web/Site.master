@@ -1,0 +1,51 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="FastQ.Web.SiteMaster" %>
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>FastQ Prototype (Live SignalR)</title>
+    <meta charset="utf-8" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .nav a { margin-right: 12px; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 12px 0; }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .col { flex: 1 1 320px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+        th { background: #fafafa; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #f0f0f0; font-size: 12px; }
+        .btn { display: inline-block; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; }
+        .btn:hover { background: #f7f7f7; }
+        .muted { color: #666; font-size: 12px; }
+        .toast { position: fixed; right: 16px; bottom: 16px; max-width: 420px; z-index: 9999; }
+        .toast-item { background: #111; color: #fff; padding: 10px 12px; border-radius: 10px; margin-top: 8px; opacity: 0.95; }
+        .error { color: #b00020; }
+        .ok { color: #0a7a0a; }
+        input[type=text] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; width: 260px; }
+        select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+        label { display: inline-block; margin-right: 10px; }
+        code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+    </style>
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="nav">
+            <a href="/Default.aspx">Home</a>
+            <a href="/Customer/Book.aspx">Customer: Book</a>
+            <a href="/Provider/Today.aspx">Provider: Today</a>
+        </div>
+
+        <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+
+        <div id="fastq_toast" class="toast"></div>
+
+        <!-- SignalR client -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.signalr/2.4.3/jquery.signalR.min.js"></script>
+        <script src="/signalr/hubs"></script>
+        <script src="/Scripts/fastq.live.js"></script>
+        <asp:ContentPlaceHolder ID="ScriptsContent" runat="server" />
+    </form>
+</body>
+</html>
