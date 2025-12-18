@@ -1,45 +1,27 @@
 <%@ Page Title="Customer Status" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="Status.aspx.cs" Inherits="FastQ.Web.Customer.Status" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <div class="card">
-        <div class="eyebrow">Customer</div>
-        <h2 class="page-title">Live appointment status</h2>
-        <p class="lead">Stay synced while the provider moves you through the queue.</p>
-    </div>
+    <h2>Customer: Live Status</h2>
 
     <div class="card">
-        <div class="card-header">
-            <div>
-                <div class="eyebrow">Appointment</div>
-                <div class="stat-value"><code id="apptId"></code></div>
-            </div>
-            <span class="badge accent" id="statusText">-</span>
-        </div>
-
-        <div class="grid-3">
-            <div class="stat">
-                <div class="stat-label">Scheduled (UTC)</div>
-                <div class="stat-value" id="scheduledUtc">-</div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Updated (UTC)</div>
-                <div class="stat-value" id="updatedUtc">-</div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Queue position</div>
-                <div class="stat-value"><span id="pos">-</span> / <span id="waitingCount">-</span></div>
-            </div>
-        </div>
-
-        <div class="row" style="margin-top:16px;">
-            <button type="button" class="btn primary" onclick="FastQStatus.refresh()">Refresh</button>
-            <button type="button" class="btn ghost" onclick="FastQStatus.cancel()">Cancel</button>
+        <div><span class="badge">Appointment</span> <code id="apptId"></code></div>
+        <p>
+            Status: <b id="statusText">-</b><br />
+            Scheduled (UTC): <span id="scheduledUtc">-</span><br />
+            Updated (UTC): <span id="updatedUtc">-</span>
+        </p>
+        <p>
+            Position in queue: <b id="pos">-</b> / Waiting: <b id="waitingCount">-</b>
+        </p>
+        <div style="margin-top:10px;">
+            <button type="button" class="btn" onclick="FastQStatus.refresh()">Refresh</button>
+            <button type="button" class="btn" onclick="FastQStatus.cancel()">Cancel</button>
             <span id="msg" class="muted"></span>
         </div>
     </div>
 
-    <div class="card note">
-        <h3 class="card-title">Live updates</h3>
-        <p class="muted">When the provider marks you arrived, begins service, ends service, or transfers you, this page updates instantly.</p>
+    <div class="card">
+        <h3>Live updates</h3>
+        <p class="muted">When the provider marks you arrived / begins service / ends service / transfers you, this page updates instantly.</p>
     </div>
 </asp:Content>
 

@@ -1,27 +1,20 @@
 <%@ Page Title="Provider Today" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="Today.aspx.cs" Inherits="FastQ.Web.Provider.Today" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <div class="card">
-        <div class="eyebrow">Provider</div>
-        <h2 class="page-title">Today's live queue</h2>
-        <p class="lead">Manage arrivals, service, and transfers while customers see changes instantly.</p>
-    </div>
+    <h2>Provider: Today (Live)</h2>
 
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Queue controls</h3>
-            <span class="pill">Location <code>11111111-1111-1111-1111-111111111111</code></span>
-        </div>
         <div class="row">
             <div class="col">
-                <label for="queueId">Queue</label>
+                <label>Queue</label><br />
                 <select id="queueId" onchange="FastQProvider.changeQueue()">
                     <option value="22222222-2222-2222-2222-222222222222">General Queue</option>
                     <option value="33333333-3333-3333-3333-333333333333">Secondary Queue</option>
                 </select>
+                <div class="muted">LocationId: <code>11111111-1111-1111-1111-111111111111</code></div>
             </div>
-            <div class="col" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-                <button type="button" class="btn primary" onclick="FastQProvider.refresh()">Refresh</button>
-                <button type="button" class="btn ghost" onclick="FastQProvider.systemClose()">System Close Stale</button>
+            <div class="col">
+                <button type="button" class="btn" onclick="FastQProvider.refresh()">Refresh</button>
+                <button type="button" class="btn" onclick="FastQProvider.systemClose()">System Close Stale</button>
                 <span id="msg" class="muted"></span>
             </div>
         </div>
@@ -29,27 +22,18 @@
 
     <div class="row">
         <div class="col card">
-            <div class="card-header">
-                <h3 class="card-title">Waiting</h3>
-                <span class="badge" id="waitingCount">0</span>
-            </div>
+            <h3>Waiting <span class="badge" id="waitingCount">0</span></h3>
             <div id="waitingTable"></div>
         </div>
 
         <div class="col card">
-            <div class="card-header">
-                <h3 class="card-title">In Service</h3>
-                <span class="badge" id="inServiceCount">0</span>
-            </div>
+            <h3>In Service <span class="badge" id="inServiceCount">0</span></h3>
             <div id="inServiceTable"></div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Recent Done</h3>
-            <span class="badge" id="doneCount">0</span>
-        </div>
+        <h3>Recent Done <span class="badge" id="doneCount">0</span></h3>
         <div id="doneTable"></div>
     </div>
 </asp:Content>
@@ -98,7 +82,7 @@ var FastQProvider = {
 
   renderTable: function(rows, mode) {
     if(!rows || rows.length === 0) return "<div class='muted'>No rows</div>";
-    var html = "<table class='table'><thead><tr>" +
+    var html = "<table><thead><tr>" +
       "<th>Customer</th><th>Status</th><th>Scheduled (UTC)</th><th>Updated</th><th>Actions</th>" +
       "</tr></thead><tbody>";
 
@@ -107,20 +91,20 @@ var FastQProvider = {
       var apptId = r.AppointmentId;
 
       if(mode === "waiting") {
-        actions += "<button class='btn small' onclick=\"FastQProvider.act('arrive','" + apptId + "')\">Arrive</button> ";
-        actions += "<button class='btn small' onclick=\"FastQProvider.act('begin','" + apptId + "')\">Begin</button> ";
-        actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
+        actions += "<button class='btn' onclick=\"FastQProvider.act('arrive','" + apptId + "')\">Arrive</button> ";
+        actions += "<button class='btn' onclick=\"FastQProvider.act('begin','" + apptId + "')\">Begin</button> ";
+        actions += "<button class='btn' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
       }
       if(mode === "inservice") {
-        actions += "<button class='btn small' onclick=\"FastQProvider.act('end','" + apptId + "')\">End</button> ";
-        actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
+        actions += "<button class='btn' onclick=\"FastQProvider.act('end','" + apptId + "')\">End</button> ";
+        actions += "<button class='btn' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
       }
       if(mode === "done") {
-        actions += "<a class='btn small' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Open Status</a>";
+        actions += "<a class='btn' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Open Status</a>";
       }
 
       // allow open status for any row
-      actions += " <a class='btn small ghost' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Status</a>";
+      actions += " <a class='btn' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Status</a>";
 
       html += "<tr>" +
         "<td>" + (r.CustomerPhone || "") + "</td>" +
