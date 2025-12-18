@@ -1,0 +1,13 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# User-specific
+*.user
+*.suo
+*.cache
+*.pdb
+*.dll
