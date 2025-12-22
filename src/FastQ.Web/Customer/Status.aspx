@@ -17,6 +17,10 @@
 
         <div class="grid-3">
             <div class="stat">
+                <div class="stat-label">Queue</div>
+                <div class="stat-value" id="queueName">-</div>
+            </div>
+            <div class="stat">
                 <div class="stat-label">Scheduled (UTC)</div>
                 <div class="stat-value" id="scheduledUtc">-</div>
             </div>
@@ -33,8 +37,17 @@
         <div class="row" style="margin-top:16px;">
             <button type="button" class="btn primary" onclick="FastQStatus.refresh()">Refresh</button>
             <button type="button" class="btn ghost" onclick="FastQStatus.cancel()">Cancel</button>
+            <a class="btn ghost" href="/Customer/Home.aspx">Back to Home</a>
             <span id="msg" class="muted"></span>
         </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Status timeline</h3>
+            <p class="card-subtitle">Scheduled → Check-in → Start → Transfer → Remove</p>
+        </div>
+        <div id="statusTimeline" class="stepper"></div>
     </div>
 
     <div class="card note">
@@ -61,11 +74,13 @@ var FastQStatus = {
         }
         var d = res.data;
         $("#apptId").text(d.AppointmentId);
-        $("#statusText").text(d.Status);
+        $("#statusText").text(FastQStatus.label(d.Status));
+        $("#queueName").text(d.QueueName || d.QueueId);
         $("#scheduledUtc").text(d.ScheduledForUtc);
         $("#updatedUtc").text(d.UpdatedUtc);
         $("#waitingCount").text(d.WaitingCount);
         $("#pos").text(d.PositionInQueue ? d.PositionInQueue : "-");
+        FastQStatus.renderTimeline(d.Status);
 
         // Update context so fastq.live.js joins location/queue too (for more events)
         window.FASTQ_CONTEXT.locationId = d.LocationId;
@@ -91,6 +106,32 @@ var FastQStatus = {
         FastQStatus.refresh();
       })
       .fail(function(){ $("#msg").addClass("error").text("Cancel failed."); });
+  },
+
+  label: function(status) {
+    return status || "-";
+  },
+
+  renderTimeline: function(status) {
+    var steps = [
+      { key: "Scheduled", name: "Scheduled" },
+      { key: "Arrived", name: "Check-in" },
+      { key: "InService", name: "Start" },
+      { key: "TransferredOut", name: "Transfer" },
+      { key: "Cancelled", name: "Remove" },
+      { key: "Completed", name: "Done" }
+    ];
+
+    var activeIndex = steps.findIndex(function(s){ return s.key.toLowerCase() === (status || "").toLowerCase(); });
+    if (activeIndex === -1) activeIndex = 0;
+
+    var html = steps.map(function(s, idx){
+      var cls = "step";
+      if (idx === activeIndex) cls += " active";
+      if (idx < activeIndex) cls += " done";
+      return '<div class="' + cls + '"><div class="label">' + s.key + '</div><div class="name">' + s.name + '</div></div>';
+    }).join("");
+    $("#statusTimeline").html(html);
   }
 };
 

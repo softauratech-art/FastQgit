@@ -1,54 +1,146 @@
 <%@ Page Title="Customer Booking" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="Book.aspx.cs" Inherits="FastQ.Web.Customer.Book" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <div class="card">
-        <div class="eyebrow">Customer</div>
-        <h2 class="page-title">Book a new appointment</h2>
-        <p class="lead">Keep the provider console open in another tab to see the queue update immediately.</p>
+        <div class="eyebrow">Create Appointment</div>
+        <h2 class="page-title">Follow the 5 steps to schedule.</h2>
+        <p class="lead">Select queue &amp; service, choose contact method, date/time, reference, and contact details.</p>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Booking details</h3>
-            <span class="badge accent">Live</span>
+            <div>
+                <div class="eyebrow">Stepper</div>
+                <h3 class="card-title">1. Select Queue &amp; Service</h3>
+                <p class="card-subtitle">2. Select Contact method • 3. Select Date and Time • 4. Provide reference • 5. Contact Details</p>
+            </div>
+            <span class="badge accent">Required</span>
         </div>
-        <div class="form-grid">
-            <div class="field">
-                <label for="queueId">Queue</label>
-                <select id="queueId">
-                    <option value="22222222-2222-2222-2222-222222222222">General Queue</option>
-                    <option value="33333333-3333-3333-3333-333333333333">Secondary Queue</option>
-                </select>
-            </div>
-            <div class="field">
-                <label for="phone">Phone *</label>
-                <input type="text" id="phone" placeholder="+8801..." />
-            </div>
-            <div class="field">
-                <label for="name">Name</label>
-                <input type="text" id="name" placeholder="Optional" />
-            </div>
-            <div class="field">
-                <label for="smsOptIn">SMS Opt-in</label>
-                <div class="pill">
-                    <input type="checkbox" id="smsOptIn" />
-                    <span>Send SMS updates</span>
+
+        <div id="bookStepper" class="stepper"></div>
+
+        <div class="stack" style="margin-top:16px;">
+            <div class="card" style="padding:16px;">
+                <div class="card-header">
+                    <h3 class="card-title">1. Select Queue &amp; Service</h3>
+                    <span class="pill">Start here</span>
                 </div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="queueId">Queue</label>
+                        <select id="queueId" onchange="FastQBook.syncQueue()">
+                            <option value="22222222-2222-2222-2222-222222222222" data-name="Building Permits">Building Permits</option>
+                            <option value="33333333-3333-3333-3333-333333333333" data-name="Plans Review">Plans Review</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="serviceId">Service</label>
+                        <select id="serviceId" onchange="FastQBook.syncService()">
+                            <option value="online">Online</option>
+                            <option value="onsite">On-site</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:16px;">
+                <div class="card-header">
+                    <h3 class="card-title">2. Select Contact method</h3>
+                    <span class="pill">Method</span>
+                </div>
+                <div class="row">
+                    <div class="chip active" data-method="online" onclick="FastQBook.setMethod('online', this)">Online</div>
+                    <div class="chip" data-method="onsite" onclick="FastQBook.setMethod('onsite', this)">On-site</div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:16px;">
+                <div class="card-header">
+                    <h3 class="card-title">3. Select Date and Time</h3>
+                    <span class="pill">Calendar + list</span>
+                </div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="dateInput">Select Date</label>
+                        <input type="date" id="dateInput" onchange="FastQBook.syncDate()" />
+                    </div>
+                    <div>
+                        <div class="stat-label">Blocked / unblocked days</div>
+                        <div class="calendar-grid" id="calendarGrid"></div>
+                    </div>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                    <label>Available time list</label>
+                    <div id="timeSlots" class="times-grid"></div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:16px;">
+                <div class="card-header">
+                    <h3 class="card-title">4. Provide reference</h3>
+                    <span class="pill">Optional</span>
+                </div>
+                <div class="field">
+                    <label for="reference">Reference</label>
+                    <input type="text" id="reference" placeholder="Reference for this appointment" />
+                </div>
+            </div>
+
+            <div class="card" style="padding:16px;">
+                <div class="card-header">
+                    <h3 class="card-title">5. Contact Details</h3>
+                    <span class="pill">Required</span>
+                </div>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="firstName">First Name *</label>
+                        <input type="text" id="firstName" />
+                    </div>
+                    <div class="field">
+                        <label for="lastName">Last Name *</label>
+                        <input type="text" id="lastName" />
+                    </div>
+                    <div class="field">
+                        <label for="phone">Mobile Number *</label>
+                        <input type="text" id="phone" placeholder="+8801..." />
+                    </div>
+                    <div class="field">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" placeholder="you@example.com" />
+                    </div>
+                    <div class="field">
+                        <label for="notes">Notes</label>
+                        <input type="text" id="notes" placeholder="Additional info" />
+                    </div>
+                </div>
+                <div class="row" style="margin-top:10px;">
+                    <input type="checkbox" id="terms" /> <label for="terms">I agree to <a href="#">Terms and Conditions</a></label>
+                </div>
+            </div>
+
+            <div class="card" style="padding:16px;">
+                <div class="card-header">
+                    <h3 class="card-title">Summary</h3>
+                    <span class="pill">Confirm</span>
+                </div>
+                <div class="grid-2">
+                    <div class="stat">
+                        <div class="stat-label">Queue</div>
+                        <div class="stat-value" id="summaryQueue">-</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Date &amp; Time</div>
+                        <div class="stat-value" id="summaryTime">-</div>
+                    </div>
+                </div>
+                <p class="muted">If email exists: prefill from local profile. If new: saved locally.</p>
             </div>
         </div>
 
         <div class="row" style="margin-top:16px;">
-            <button type="button" class="btn primary" onclick="FastQBook.submit()">Book First Available Slot</button>
+            <button type="button" class="btn secondary" onclick="FastQBook.submit()">Create Appointment</button>
+            <button type="button" class="btn ghost" onclick="FastQBook.clear()">Clear</button>
             <span id="msg" class="muted"></span>
         </div>
-    </div>
-
-    <div class="card note">
-        <h3 class="card-title">What happens live?</h3>
-        <ul class="muted">
-            <li>Booking triggers <code>QueueChanged</code> and <code>AppointmentChanged</code>.</li>
-            <li>Provider screen refreshes the queue snapshot automatically.</li>
-            <li>Customer is redirected to a live <b>Status</b> page for the appointment.</li>
-        </ul>
     </div>
 </asp:Content>
 
@@ -56,31 +148,209 @@
 <script>
 window.FASTQ_CONTEXT = { };
 var FastQBook = {
+  steps: [
+    { key: "queue", name: "Select Queue & Service" },
+    { key: "method", name: "Select Contact method" },
+    { key: "datetime", name: "Select Date and Time" },
+    { key: "reference", name: "Provide reference" },
+    { key: "details", name: "Contact Details" }
+  ],
+  state: {
+    queueId: "22222222-2222-2222-2222-222222222222",
+    queueName: "Building Permits",
+    service: "online",
+    method: "online",
+    date: null,
+    slot: null,
+    reference: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    notes: ""
+  },
+
+  setMethod: function(method, el) {
+    this.state.method = method;
+    $(".chip").removeClass("active");
+    $(el).addClass("active");
+    this.renderSummary();
+  },
+
+  syncQueue: function() {
+    var sel = document.getElementById("queueId");
+    this.state.queueId = sel.value;
+    this.state.queueName = sel.options[sel.selectedIndex].dataset.name || sel.options[sel.selectedIndex].text;
+    this.renderSummary();
+  },
+
+  syncService: function() {
+    this.state.service = document.getElementById("serviceId").value;
+  },
+
+  syncDate: function() {
+    this.state.date = document.getElementById("dateInput").value;
+    this.renderSummary();
+  },
+
+  chooseSlot: function(value, el) {
+    this.state.slot = value;
+    $("#timeSlots .time-chip").removeClass("active");
+    $(el).addClass("active");
+    this.renderSummary();
+  },
+
+  syncInfo: function() {
+    this.state.reference = $("#reference").val().trim();
+    this.state.firstName = $("#firstName").val().trim();
+    this.state.lastName = $("#lastName").val().trim();
+    this.state.phone = $("#phone").val().trim();
+    this.state.email = $("#email").val().trim();
+    this.state.notes = $("#notes").val().trim();
+  },
+
+  renderStepper: function() {
+    var html = this.steps.map(function(step, idx){
+      return '<div class="step active"><div class="label">Step ' + (idx + 1) + '</div><div class="name">' + step.name + '</div></div>';
+    }).join("");
+    $("#bookStepper").html(html);
+    this.renderSummary();
+  },
+
+  renderSummary: function() {
+    $("#summaryQueue").text(this.state.queueName || "Queue");
+    var timeText = (this.state.date || "Select date") + " • " + (this.state.slot || "Select time");
+    $("#summaryTime").text(timeText);
+  },
+
+  renderCalendar: function() {
+    var today = new Date();
+    var days = [];
+    for (var i = 0; i < 8; i++) {
+      var d = new Date(today);
+      d.setDate(today.getDate() + i);
+      days.push(d);
+    }
+    var html = days.map(function(d){
+      var label = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      var blocked = d.getDay() === 0; // block Sundays
+      var cls = "calendar-day" + (blocked ? " blocked" : "");
+      return '<div class="' + cls + '">' + label + '</div>';
+    }).join("");
+    $("#calendarGrid").html(html);
+    var iso = today.toISOString().split("T")[0];
+    $("#dateInput").val(iso);
+    this.state.date = iso;
+  },
+
+  renderSlots: function() {
+    var slots = ["09:00 AM", "09:30 AM", "10:00 AM", "11:00 AM", "12:30 PM", "02:00 PM", "03:30 PM"];
+    var html = slots.map(function(s){
+      return '<div class="time-chip" onclick="FastQBook.chooseSlot(\'' + s + '\', this)">' + s + '</div>';
+    }).join("");
+    $("#timeSlots").html(html);
+  },
+
+  hydrateProfile: function() {
+    var raw = localStorage.getItem("fastq_customer_profile");
+    if (!raw) return;
+    try {
+      var p = JSON.parse(raw);
+      if (p.email) $("#email").val(p.email);
+      if (p.phone) $("#phone").val(p.phone);
+      if (p.name) $("#firstName").val(p.name);
+    } catch(e) { /* ignore */ }
+  },
+
+  cacheAppointment: function(res) {
+    var key = "fastq_customer_appts";
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem(key)) || []; } catch(e) { list = []; }
+    list.unshift({
+      id: res.appointmentId,
+      queueId: res.queueId,
+      locationId: res.locationId,
+      status: res.status,
+      queueName: this.state.queueName,
+      scheduledUtc: this.state.date,
+      contactMethod: this.state.service
+    });
+    localStorage.setItem(key, JSON.stringify(list));
+  },
+
+  validate: function() {
+    this.syncInfo();
+    if (!this.state.queueId || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.email) {
+      $("#msg").addClass("error").text("First name, Last name, Mobile, Email, and Queue are required.");
+      return false;
+    }
+    if (!$("#terms").is(":checked")) {
+      $("#msg").addClass("error").text("Please agree to Terms and Conditions.");
+      return false;
+    }
+    return true;
+  },
+
   submit: function() {
-    var locationId = "11111111-1111-1111-1111-111111111111";
-    var queueId = document.getElementById("queueId").value;
-    var phone = document.getElementById("phone").value;
-    var name = document.getElementById("name").value;
-    var smsOptIn = document.getElementById("smsOptIn").checked;
-
     $("#msg").removeClass("error ok").text("Booking...");
-
+    if (!this.validate()) return;
+    var data = {
+      locationId: "11111111-1111-1111-1111-111111111111",
+      queueId: this.state.queueId,
+      phone: this.state.phone,
+      name: this.state.firstName + " " + this.state.lastName,
+      smsOptIn: true
+    };
+    var self = this;
     $.ajax({
       url: "/Api/Book.ashx",
       method: "POST",
-      data: { locationId: locationId, queueId: queueId, phone: phone, name: name, smsOptIn: smsOptIn },
+      data: data,
       dataType: "json"
     }).done(function(res){
       if (!res || !res.ok) {
         $("#msg").addClass("error").text(res && res.error ? res.error : "Booking failed.");
         return;
       }
-      $("#msg").addClass("ok").text("Booked! Redirecting to live status...");
-      window.location.href = "/Customer/Status.aspx?appointmentId=" + encodeURIComponent(res.appointmentId);
+      self.cacheAppointment(res);
+      $("#msg").addClass("ok").text("Booked! Redirecting to My Appointments...");
+      window.location.href = "/Customer/Home.aspx?appointmentId=" + encodeURIComponent(res.appointmentId);
     }).fail(function(xhr){
       $("#msg").addClass("error").text("Booking failed. " + (xhr.responseText || ""));
     });
+  },
+
+  clear: function() {
+    this.state = {
+      queueId: "22222222-2222-2222-2222-222222222222",
+      queueName: "Building Permits",
+      service: "online",
+      method: "online",
+      date: null,
+      slot: null,
+      reference: "",
+      firstName: "",
+      lastName: "",
+      phone: "",
+      email: "",
+      notes: ""
+    };
+    $("input[type=text], input[type=email]").val("");
+    $("#terms").prop("checked", false);
+    this.renderCalendar();
+    this.renderSlots();
+    this.renderSummary();
+  },
+
+  init: function() {
+    this.renderStepper();
+    this.renderCalendar();
+    this.renderSlots();
+    this.hydrateProfile();
+    this.syncQueue();
   }
 };
+
+$(function(){ FastQBook.init(); });
 </script>
 </asp:Content>

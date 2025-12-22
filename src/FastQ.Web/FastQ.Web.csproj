@@ -93,6 +93,10 @@
     <Compile Include="App_Start\CompositionRoot.cs" />
     <Compile Include="Customer\Book.aspx.cs" />
     <Compile Include="Customer\Book.aspx.designer.cs" />
+    <Compile Include="Customer\Home.aspx.cs" />
+    <Compile Include="Customer\Home.aspx.designer.cs" />
+    <Compile Include="Customer\Login.aspx.cs" />
+    <Compile Include="Customer\Login.aspx.designer.cs" />
     <Compile Include="Customer\Status.aspx.cs" />
     <Compile Include="Customer\Status.aspx.designer.cs" />
     <Compile Include="Default.aspx.cs" />

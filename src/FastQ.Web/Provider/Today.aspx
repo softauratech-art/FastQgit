@@ -27,30 +27,31 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col card">
-            <div class="card-header">
-                <h3 class="card-title">Waiting</h3>
-                <span class="badge" id="waitingCount">0</span>
-            </div>
-            <div id="waitingTable"></div>
+    <div class="report-grid">
+        <div class="stat">
+            <div class="stat-label">Waiting</div>
+            <div class="stat-value" id="waitingCount">0</div>
         </div>
-
-        <div class="col card">
-            <div class="card-header">
-                <h3 class="card-title">In Service</h3>
-                <span class="badge" id="inServiceCount">0</span>
-            </div>
-            <div id="inServiceTable"></div>
+        <div class="stat">
+            <div class="stat-label">In Service</div>
+            <div class="stat-value" id="inServiceCount">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Recent Done</div>
+            <div class="stat-value" id="doneCount">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Live Queue</div>
+            <div class="stat-value">Synced via SignalR</div>
         </div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Recent Done</h3>
-            <span class="badge" id="doneCount">0</span>
+            <h3 class="card-title">Today's schedule (UTC)</h3>
+            <span class="badge accent">Calendar View</span>
         </div>
-        <div id="doneTable"></div>
+        <div id="calendarView" class="calendar"></div>
     </div>
 </asp:Content>
 
@@ -91,48 +92,111 @@ var FastQProvider = {
     $("#inServiceCount").text(d.InServiceCount);
     $("#doneCount").text(d.CompletedCount);
 
-    $("#waitingTable").html(FastQProvider.renderTable(d.Waiting, "waiting"));
-    $("#inServiceTable").html(FastQProvider.renderTable(d.InService, "inservice"));
-    $("#doneTable").html(FastQProvider.renderTable(d.Done, "done"));
+    FastQProvider.renderCalendar(d);
   },
 
-  renderTable: function(rows, mode) {
-    if(!rows || rows.length === 0) return "<div class='muted'>No rows</div>";
-    var html = "<table class='table'><thead><tr>" +
-      "<th>Customer</th><th>Status</th><th>Scheduled (UTC)</th><th>Updated</th><th>Actions</th>" +
-      "</tr></thead><tbody>";
+  renderCalendar: function(d) {
+    var all = [];
+    function addRows(rows, mode) {
+      if (!rows) return;
+      rows.forEach(function(r) {
+        all.push({
+          Mode: mode,
+          AppointmentId: r.AppointmentId,
+          CustomerPhone: r.CustomerPhone,
+          Status: r.Status,
+          ScheduledForUtc: r.ScheduledForUtc,
+          UpdatedUtc: r.UpdatedUtc
+        });
+      });
+    }
 
-    rows.forEach(function(r){
-      var actions = "";
-      var apptId = r.AppointmentId;
+    addRows(d.Waiting, "waiting");
+    addRows(d.InService, "inservice");
+    addRows(d.Done, "done");
 
-      if(mode === "waiting") {
-        actions += "<button class='btn small' onclick=\"FastQProvider.act('arrive','" + apptId + "')\">Arrive</button> ";
-        actions += "<button class='btn small' onclick=\"FastQProvider.act('begin','" + apptId + "')\">Begin</button> ";
-        actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
-      }
-      if(mode === "inservice") {
-        actions += "<button class='btn small' onclick=\"FastQProvider.act('end','" + apptId + "')\">End</button> ";
-        actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
-      }
-      if(mode === "done") {
-        actions += "<a class='btn small' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Open Status</a>";
-      }
+    if (all.length === 0) {
+      $("#calendarView").html("<div class='muted'>No appointments scheduled yet.</div>");
+      return;
+    }
 
-      // allow open status for any row
-      actions += " <a class='btn small ghost' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Status</a>";
-
-      html += "<tr>" +
-        "<td>" + (r.CustomerPhone || "") + "</td>" +
-        "<td>" + r.Status + "</td>" +
-        "<td>" + r.ScheduledForUtc + "</td>" +
-        "<td>" + r.UpdatedUtc + "</td>" +
-        "<td>" + actions + "</td>" +
-        "</tr>";
+    all.sort(function(a, b) {
+      return new Date(a.ScheduledForUtc) - new Date(b.ScheduledForUtc);
     });
 
-    html += "</tbody></table>";
-    return html;
+    var hours = all.map(function(r) { return FastQProvider.getHour(r.ScheduledForUtc); }).filter(function(v) { return v !== null; });
+    var minHour = hours.length ? Math.min.apply(null, hours) : 8;
+    var maxHour = hours.length ? Math.max.apply(null, hours) : 18;
+    minHour = Math.max(0, minHour - 1);
+    maxHour = Math.min(23, maxHour + 1);
+
+    var html = "";
+    for (var h = minHour; h <= maxHour; h++) {
+      var label = FastQProvider.formatHour(h);
+      var slotRows = all.filter(function(r) { return FastQProvider.getHour(r.ScheduledForUtc) === h; });
+      html += "<div class='time-row'>" +
+        "<div class='time-label'>" + label + "</div>" +
+        "<div class='slot-stack'>" + (slotRows.length ? slotRows.map(FastQProvider.renderSlot).join("") : "<div class='muted'>No bookings</div>") + "</div>" +
+        "</div>";
+    }
+
+    $("#calendarView").html(html);
+  },
+
+  renderSlot: function(r) {
+    var statusClass = FastQProvider.statusClass(r.Status, r.Mode);
+    var actions = FastQProvider.renderActions(r);
+    var scheduled = r.ScheduledForUtc || "-";
+    var updated = r.UpdatedUtc || "-";
+
+    return "<div class='slot-card'>" +
+      "<div class='slot-header'>" +
+      "<div class='slot-title'>" + (r.CustomerPhone || "Walk-in") + "</div>" +
+      "<div class='slot-meta'>" +
+      "<span class='status-tag " + statusClass + "'>" + r.Status + "</span>" +
+      "<span class='muted'>Scheduled: " + scheduled + "</span>" +
+      "<span class='muted'>Updated: " + updated + "</span>" +
+      "</div>" +
+      "</div>" +
+      "<div class='slot-actions'>" + actions + "</div>" +
+      "</div>";
+  },
+
+  renderActions: function(r) {
+    var apptId = r.AppointmentId;
+    var actions = "";
+
+    if (r.Mode === "waiting") {
+      actions += "<button class='btn small' onclick=\"FastQProvider.act('arrive','" + apptId + "')\">Arrive</button> ";
+      actions += "<button class='btn small' onclick=\"FastQProvider.act('begin','" + apptId + "')\">Begin</button> ";
+      actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
+    }
+    if (r.Mode === "inservice") {
+      actions += "<button class='btn small' onclick=\"FastQProvider.act('end','" + apptId + "')\">End</button> ";
+      actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
+    }
+
+    actions += "<a class='btn small ghost' href='/Customer/Status.aspx?appointmentId=" + apptId + "' target='_blank'>Status</a>";
+    return actions;
+  },
+
+  statusClass: function(status, mode) {
+    var s = (status || "").toLowerCase();
+    if (s.indexOf("cancel") >= 0 || s.indexOf("closed") >= 0) return "cancelled";
+    if (mode === "inservice" || s.indexOf("service") >= 0) return "inservice";
+    if (mode === "done" || s.indexOf("completed") >= 0 || s.indexOf("transferred") >= 0) return "done";
+    return "waiting";
+  },
+
+  getHour: function(dt) {
+    var d = new Date(dt);
+    if (isNaN(d.getTime())) return null;
+    return d.getUTCHours();
+  },
+
+  formatHour: function(h) {
+    var label = (h < 10 ? "0" + h : h) + ":00 UTC";
+    return label;
   },
 
   act: function(action, appointmentId) {

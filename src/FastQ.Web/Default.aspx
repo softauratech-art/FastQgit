@@ -58,4 +58,23 @@
             <a class="btn secondary" href="/Provider/Today.aspx">Go to Provider Today</a>
         </div>
     </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Reporting</h3>
+                <span class="pill">Live metrics</span>
+            </div>
+            <p class="muted">Track provider activity, cancellations, and daily performance with live updates.</p>
+            <a class="btn secondary" href="/Reporting/Overview.aspx">Open Reporting</a>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Admin Controls</h3>
+                <span class="pill">Queue settings</span>
+            </div>
+            <p class="muted">Manage queue configuration, review provider roster, and run maintenance actions.</p>
+            <a class="btn secondary" href="/Admin/Dashboard.aspx">Open Admin</a>
+        </div>
+    </div>
 </asp:Content>
