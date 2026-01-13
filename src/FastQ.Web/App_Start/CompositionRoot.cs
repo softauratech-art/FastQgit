@@ -1,22 +1,24 @@
+using System;
+using System.Web.Configuration;
 using FastQ.Application.Abstractions;
 using FastQ.Application.Notifications;
 using FastQ.Application.Queries;
 using FastQ.Application.Services;
+using FastQ.Domain.Repositories;
 using FastQ.Infrastructure.InMemory;
+using FastQ.Infrastructure.Oracle;
 using FastQ.Web.Realtime;
 
 namespace FastQ.Web.App_Start
 {
     public static class CompositionRoot
     {
-        public static InMemoryStore Store { get; private set; }
-
         // Repos
-        public static InMemoryAppointmentRepository Appointments { get; private set; }
-        public static InMemoryCustomerRepository Customers { get; private set; }
-        public static InMemoryQueueRepository Queues { get; private set; }
-        public static InMemoryLocationRepository Locations { get; private set; }
-        public static InMemoryProviderRepository Providers { get; private set; }
+        public static IAppointmentRepository Appointments { get; private set; }
+        public static ICustomerRepository Customers { get; private set; }
+        public static IQueueRepository Queues { get; private set; }
+        public static ILocationRepository Locations { get; private set; }
+        public static IProviderRepository Providers { get; private set; }
 
         // Services
         public static BookingService Booking { get; private set; }
@@ -29,17 +31,34 @@ namespace FastQ.Web.App_Start
 
         public static void Initialize()
         {
-            Store = InMemoryStore.Instance;
-            Store.EnsureSeeded();
-
-            Appointments = new InMemoryAppointmentRepository(Store);
-            Customers = new InMemoryCustomerRepository(Store);
-            Queues = new InMemoryQueueRepository(Store);
-            Locations = new InMemoryLocationRepository(Store);
-            Providers = new InMemoryProviderRepository(Store);
+            var repoMode = (WebConfigurationManager.AppSettings["RepositoryMode"] ?? "InMemory").Trim();
 
             IClock clock = new SystemClock();
             IRealtimeNotifier notifier = new SignalRRealtimeNotifier();
+
+            if (repoMode.Equals("Oracle", StringComparison.OrdinalIgnoreCase))
+            {
+                var connString = WebConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
+                if (string.IsNullOrWhiteSpace(connString))
+                    throw new InvalidOperationException("FastQOracle connection string is missing.");
+
+                Appointments = new OracleAppointmentRepository(connString);
+                Customers = new OracleCustomerRepository(connString);
+                Queues = new OracleQueueRepository(connString);
+                Locations = new OracleLocationRepository(connString);
+                Providers = new OracleProviderRepository(connString);
+            }
+            else
+            {
+                var store = InMemoryStore.Instance;
+                store.EnsureSeeded();
+
+                Appointments = new InMemoryAppointmentRepository(store);
+                Customers = new InMemoryCustomerRepository(store);
+                Queues = new InMemoryQueueRepository(store);
+                Locations = new InMemoryLocationRepository(store);
+                Providers = new InMemoryProviderRepository(store);
+            }
 
             Booking = new BookingService(Appointments, Customers, Queues, Locations, clock, notifier);
             Provider = new ProviderService(Appointments, clock, notifier);

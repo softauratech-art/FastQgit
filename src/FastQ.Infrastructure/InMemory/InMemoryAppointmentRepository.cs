@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FastQ.Domain.Entities;
 using FastQ.Domain.Repositories;
+using FastQ.Infrastructure.Common;
 
 namespace FastQ.Infrastructure.InMemory
 {
@@ -25,7 +26,13 @@ namespace FastQ.Infrastructure.InMemory
         public void Add(Appointment appointment)
         {
             lock (_store.Sync)
+            {
+                if (!IdMapper.TryToLong(appointment.Id, out _))
+                {
+                    appointment.Id = IdMapper.FromLong(_store.NextAppointmentId());
+                }
                 _store.Appointments[appointment.Id] = appointment;
+            }
         }
 
         public void Update(Appointment appointment)

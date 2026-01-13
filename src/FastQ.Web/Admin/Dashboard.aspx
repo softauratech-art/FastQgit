@@ -63,7 +63,7 @@
 <asp:Content ID="Content2" ContentPlaceHolderID="ScriptsContent" runat="server">
 <script>
 window.FASTQ_CONTEXT = {
-  locationId: "11111111-1111-1111-1111-111111111111"
+  locationId: "00a98ac7-0000-0000-4641-535451494430"
 };
 
 var FastQAdmin = {
@@ -176,3 +176,4 @@ window.onFastQQueueUpdated = function() { FastQAdmin.load(); };
 window.onFastQAppointmentUpdated = function() { FastQAdmin.load(); };
 </script>
 </asp:Content>
+

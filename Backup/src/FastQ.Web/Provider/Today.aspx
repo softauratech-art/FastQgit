@@ -7,10 +7,10 @@
             <div class="col">
                 <label>Queue</label><br />
                 <select id="queueId" onchange="FastQProvider.changeQueue()">
-                    <option value="22222222-2222-2222-2222-222222222222">General Queue</option>
-                    <option value="33333333-3333-3333-3333-333333333333">Secondary Queue</option>
+                    <option value="0153158e-0000-0000-4641-535451494430">General Queue</option>
+                    <option value="01fca055-0000-0000-4641-535451494430">Secondary Queue</option>
                 </select>
-                <div class="muted">LocationId: <code>11111111-1111-1111-1111-111111111111</code></div>
+                <div class="muted">LocationId: <code>00a98ac7-0000-0000-4641-535451494430</code></div>
             </div>
             <div class="col">
                 <button type="button" class="btn" onclick="FastQProvider.refresh()">Refresh</button>
@@ -41,9 +41,9 @@
 <asp:Content ID="Content2" ContentPlaceHolderID="ScriptsContent" runat="server">
 <script>
 window.FASTQ_CONTEXT = {
-  locationId: "11111111-1111-1111-1111-111111111111",
-  queueId: document.getElementById("queueId") ? document.getElementById("queueId").value : "22222222-2222-2222-2222-222222222222",
-  providerId: "44444444-4444-4444-4444-444444444444"
+  locationId: "00a98ac7-0000-0000-4641-535451494430",
+  queueId: document.getElementById("queueId") ? document.getElementById("queueId").value : "0153158e-0000-0000-4641-535451494430",
+  providerId: "02a62b1c-0000-0000-4641-535451494430"
 };
 
 var FastQProvider = {
@@ -139,9 +139,9 @@ var FastQProvider = {
 
   transfer: function(appointmentId) {
     var ctx = window.FASTQ_CONTEXT;
-    var target = (ctx.queueId === "22222222-2222-2222-2222-222222222222")
-      ? "33333333-3333-3333-3333-333333333333"
-      : "22222222-2222-2222-2222-222222222222";
+    var target = (ctx.queueId === "0153158e-0000-0000-4641-535451494430")
+      ? "01fca055-0000-0000-4641-535451494430"
+      : "0153158e-0000-0000-4641-535451494430";
 
     FastQLive.toast("Transfer to other queue");
     $.ajax({
@@ -186,3 +186,4 @@ window.onFastQQueueUpdated = function(locationId, queueId) {
 };
 </script>
 </asp:Content>
+

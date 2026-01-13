@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FastQ.Domain.Entities;
 using FastQ.Domain.Repositories;
+using FastQ.Infrastructure.Common;
 
 namespace FastQ.Infrastructure.InMemory
 {
@@ -25,7 +26,13 @@ namespace FastQ.Infrastructure.InMemory
         public void Add(Queue queue)
         {
             lock (_store.Sync)
+            {
+                if (!IdMapper.TryToLong(queue.Id, out _))
+                {
+                    queue.Id = IdMapper.FromLong(_store.NextQueueId());
+                }
                 _store.Queues[queue.Id] = queue;
+            }
         }
 
         public void Update(Queue queue)

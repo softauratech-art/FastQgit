@@ -28,8 +28,8 @@
                     <div class="field">
                         <label for="queueId">Queue</label>
                         <select id="queueId" onchange="FastQBook.syncQueue()">
-                            <option value="22222222-2222-2222-2222-222222222222" data-name="Building Permits">Building Permits</option>
-                            <option value="33333333-3333-3333-3333-333333333333" data-name="Plans Review">Plans Review</option>
+                            <option value="0153158e-0000-0000-4641-535451494430" data-name="Building Permits">Building Permits</option>
+                            <option value="01fca055-0000-0000-4641-535451494430" data-name="Plans Review">Plans Review</option>
                         </select>
                     </div>
                     <div class="field">
@@ -156,7 +156,7 @@ var FastQBook = {
     { key: "details", name: "Contact Details" }
   ],
   state: {
-    queueId: "22222222-2222-2222-2222-222222222222",
+    queueId: "0153158e-0000-0000-4641-535451494430",
     queueName: "Building Permits",
     service: "online",
     method: "online",
@@ -295,7 +295,7 @@ var FastQBook = {
     $("#msg").removeClass("error ok").text("Booking...");
     if (!this.validate()) return;
     var data = {
-      locationId: "11111111-1111-1111-1111-111111111111",
+      locationId: "00a98ac7-0000-0000-4641-535451494430",
       queueId: this.state.queueId,
       phone: this.state.phone,
       name: this.state.firstName + " " + this.state.lastName,
@@ -322,7 +322,7 @@ var FastQBook = {
 
   clear: function() {
     this.state = {
-      queueId: "22222222-2222-2222-2222-222222222222",
+      queueId: "0153158e-0000-0000-4641-535451494430",
       queueName: "Building Permits",
       service: "online",
       method: "online",
@@ -354,3 +354,4 @@ var FastQBook = {
 $(function(){ FastQBook.init(); });
 </script>
 </asp:Content>
+

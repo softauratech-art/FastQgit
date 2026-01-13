@@ -20,7 +20,8 @@ This is a **prototype** showing a layered architecture with an **in-memory DB** 
 4. Provider actions (Arrive / Begin / End / Transfer) → Customer Status updates immediately
 
 ## Pre-seeded IDs (in-memory)
-- LocationId: `11111111-1111-1111-1111-111111111111`
-- General QueueId: `22222222-2222-2222-2222-222222222222`
-- Secondary QueueId: `33333333-3333-3333-3333-333333333333`
-- ProviderId: `44444444-4444-4444-4444-444444444444`
+- LocationId: `00a98ac7-0000-0000-4641-535451494430`
+- General QueueId: `0153158e-0000-0000-4641-535451494430`
+- Secondary QueueId: `01fca055-0000-0000-4641-535451494430`
+- ProviderId: `02a62b1c-0000-0000-4641-535451494430`
+

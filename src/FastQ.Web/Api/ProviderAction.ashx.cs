@@ -21,7 +21,7 @@ namespace FastQ.Web.Api
             var providerIdRaw = HandlerUtil.GetString(context.Request, "providerId");
             Guid providerId;
             if (!Guid.TryParse(providerIdRaw, out providerId))
-                providerId = Guid.Parse("44444444-4444-4444-4444-444444444444"); // demo provider
+                providerId = Guid.Parse("02a62b1c-0000-0000-4641-535451494430"); // demo provider
 
             var res = action switch
             {
@@ -43,3 +43,4 @@ namespace FastQ.Web.Api
         public bool IsReusable => true;
     }
 }
+

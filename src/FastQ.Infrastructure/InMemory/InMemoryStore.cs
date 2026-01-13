@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FastQ.Domain.Entities;
+using FastQ.Infrastructure.Common;
 
 namespace FastQ.Infrastructure.InMemory
 {
@@ -18,7 +19,28 @@ namespace FastQ.Infrastructure.InMemory
         public Dictionary<Guid, Provider> Providers { get; } = new Dictionary<Guid, Provider>();
         public Dictionary<Guid, Appointment> Appointments { get; } = new Dictionary<Guid, Appointment>();
 
+        private long _nextAppointmentId = 1005;
+        private long _nextCustomerId = 10105;
+        private long _nextQueueId = 10041;
+        private long _nextLocationId = 11111112;
+        private long _nextProviderId = 44444445;
+
         private InMemoryStore() { }
+
+        public long NextAppointmentId()
+            => _nextAppointmentId++;
+
+        public long NextCustomerId()
+            => _nextCustomerId++;
+
+        public long NextQueueId()
+            => _nextQueueId++;
+
+        public long NextLocationId()
+            => _nextLocationId++;
+
+        public long NextProviderId()
+            => _nextProviderId++;
 
         public void EnsureSeeded()
         {
@@ -28,7 +50,7 @@ namespace FastQ.Infrastructure.InMemory
 
                 var loc = new Location
                 {
-                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Id = IdMapper.FromLong(11111111),
                     Name = "Demo Location",
                     TimeZoneId = "UTC"
                 };
@@ -36,14 +58,14 @@ namespace FastQ.Infrastructure.InMemory
 
                 var q1 = new Queue
                 {
-                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    Id = IdMapper.FromLong(22222222),
                     LocationId = loc.Id,
                     Name = "General Queue",
                     Config = new QueueConfig { MaxUpcomingAppointments = 3, MaxDaysAhead = 30, MinHoursLead = 48 }
                 };
                 var q2 = new Queue
                 {
-                    Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                    Id = IdMapper.FromLong(33333333),
                     LocationId = loc.Id,
                     Name = "Secondary Queue",
                     Config = new QueueConfig { MaxUpcomingAppointments = 3, MaxDaysAhead = 30, MinHoursLead = 48 }
@@ -53,7 +75,7 @@ namespace FastQ.Infrastructure.InMemory
 
                 var provider = new Provider
                 {
-                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    Id = IdMapper.FromLong(44444444),
                     LocationId = loc.Id,
                     Name = "Provider A"
                 };
