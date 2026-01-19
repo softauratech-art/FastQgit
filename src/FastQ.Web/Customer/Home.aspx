@@ -150,10 +150,11 @@ var FastQHome = {
   refreshOne: function(id) {
     var self = this;
     $("#homeMsg").removeClass("error ok").text("Refreshing...");
-    return $.getJSON("/Api/AppointmentSnapshot.ashx", { appointmentId: id })
-      .done(function(res){
+    return new Promise(function(resolve){
+      PageMethods.GetAppointmentSnapshot(id, function(res){
         if (!res || !res.ok) {
           $("#homeMsg").addClass("error").text(res && res.error ? res.error : "Not found");
+          resolve(res);
           return;
         }
         self.list = self.list.map(function(x){
@@ -177,8 +178,12 @@ var FastQHome = {
         self.saveList();
         self.render();
         $("#homeMsg").addClass("ok").text("Updated.");
-      })
-      .fail(function(){ $("#homeMsg").addClass("error").text("Load failed."); });
+        resolve(res);
+      }, function(){
+        $("#homeMsg").addClass("error").text("Load failed.");
+        resolve(null);
+      });
+    });
   },
 
   refreshAll: function() {
@@ -207,17 +212,17 @@ var FastQHome = {
     var self = this;
     var reason = $("#cancelReason").val();
     $("#cancelMsg").removeClass("error ok").text("Cancelling...");
-    $.ajax({ url: "/Api/Cancel.ashx", method: "POST", data: { appointmentId: self.cancelId, reason: reason }, dataType: "json" })
-      .done(function(res){
-        if (!res || !res.ok) {
-          $("#cancelMsg").addClass("error").text(res && res.error ? res.error : "Cancel failed");
-          return;
-        }
-        $("#cancelMsg").addClass("ok").text("Cancelled.");
-        self.refreshOne(self.cancelId);
-        setTimeout(function(){ self.closeModal(); }, 300);
-      })
-      .fail(function(){ $("#cancelMsg").addClass("error").text("Cancel failed."); });
+    PageMethods.CancelAppointment(self.cancelId, function(res){
+      if (!res || !res.ok) {
+        $("#cancelMsg").addClass("error").text(res && res.error ? res.error : "Cancel failed");
+        return;
+      }
+      $("#cancelMsg").addClass("ok").text("Cancelled.");
+      self.refreshOne(self.cancelId);
+      setTimeout(function(){ self.closeModal(); }, 300);
+    }, function(){
+      $("#cancelMsg").addClass("error").text("Cancel failed.");
+    });
   },
 
   remove: function(id) {

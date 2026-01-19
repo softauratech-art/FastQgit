@@ -83,14 +83,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Api\AppointmentSnapshot.ashx.cs" />
-    <Compile Include="Api\Book.ashx.cs" />
-    <Compile Include="Api\Cancel.ashx.cs" />
-    <Compile Include="Api\HandlerUtil.cs" />
-    <Compile Include="Api\ProviderAction.ashx.cs" />
-    <Compile Include="Api\QueueSnapshot.ashx.cs" />
-    <Compile Include="Api\SystemClose.ashx.cs" />
-    <Compile Include="Api\Transfer.ashx.cs" />
+    <Compile Include="Admin\Dashboard.aspx.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="App\**\*.cs" />
     <Compile Include="App_Start\CompositionRoot.cs" />
     <Compile Include="Customer\Book.aspx.cs">
       <SubType>ASPXCodeBehind</SubType>
@@ -120,6 +116,9 @@
     </Compile>
     <Compile Include="Provider\Today.aspx.designer.cs" />
     <Compile Include="Realtime\SignalRRealtimeNotifier.cs" />
+    <Compile Include="Reporting\Overview.aspx.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="Site.master.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
@@ -133,17 +132,9 @@
     <Content Include="Global.asax" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FastQ.Domain\FastQ.Domain.csproj">
-      <Project>{24C03889-9AD0-45A6-86FA-E2D5AC2C8E9E}</Project>
-      <Name>FastQ.Domain</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\FastQ.Application\FastQ.Application.csproj">
-      <Project>{7DB7DBCA-583D-44D7-B40E-F8AFFBF3EF40}</Project>
-      <Name>FastQ.Application</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\FastQ.Infrastructure\FastQ.Infrastructure.csproj">
-      <Project>{0AC09396-2474-4AF7-8162-B52788430410}</Project>
-      <Name>FastQ.Infrastructure</Name>
+    <ProjectReference Include="..\FastQ.Data\FastQ.Data.csproj">
+      <Project>{4B7612E8-0294-465B-9B69-073BB967D3F1}</Project>
+      <Name>FastQ.Data</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

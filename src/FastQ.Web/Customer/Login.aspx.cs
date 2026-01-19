@@ -10,3 +10,4 @@ namespace FastQ.Web.Customer
         }
     }
 }
+

@@ -5,3 +5,4 @@ namespace FastQ.Web {
         protected global::System.Web.UI.WebControls.ContentPlaceHolder ScriptsContent;
     }
 }
+

@@ -137,9 +137,9 @@
         </div>
 
         <div class="row" style="margin-top:16px;">
-            <button type="button" class="btn secondary" onclick="FastQBook.submit()">Create Appointment</button>
+            <asp:Button ID="CreateAppointmentButton" runat="server" CssClass="btn secondary" Text="Create Appointment" OnClick="CreateAppointment_Click" OnClientClick="return FastQBook.validate();" />
             <button type="button" class="btn ghost" onclick="FastQBook.clear()">Clear</button>
-            <span id="msg" class="muted"></span>
+            <span id="msg" runat="server" class="muted"></span>
         </div>
     </div>
 </asp:Content>
@@ -294,30 +294,8 @@ var FastQBook = {
   submit: function() {
     $("#msg").removeClass("error ok").text("Booking...");
     if (!this.validate()) return;
-    var data = {
-      locationId: "00a98ac7-0000-0000-4641-535451494430",
-      queueId: this.state.queueId,
-      phone: this.state.phone,
-      name: this.state.firstName + " " + this.state.lastName,
-      smsOptIn: true
-    };
-    var self = this;
-    $.ajax({
-      url: "/Api/Book.ashx",
-      method: "POST",
-      data: data,
-      dataType: "json"
-    }).done(function(res){
-      if (!res || !res.ok) {
-        $("#msg").addClass("error").text(res && res.error ? res.error : "Booking failed.");
-        return;
-      }
-      self.cacheAppointment(res);
-      $("#msg").addClass("ok").text("Booked! Redirecting to My Appointments...");
-      window.location.href = "/Customer/Home.aspx?appointmentId=" + encodeURIComponent(res.appointmentId);
-    }).fail(function(xhr){
-      $("#msg").addClass("error").text("Booking failed. " + (xhr.responseText || ""));
-    });
+    var form = document.forms[0];
+    if (form) form.submit();
   },
 
   clear: function() {

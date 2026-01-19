@@ -25,6 +25,10 @@
         if (window.onFastQAppointmentUpdated) window.onFastQAppointmentUpdated(safe(appointmentId), safe(status));
       };
 
+      this.hub.client.notify = function (message) {
+        if (message) self.toast(safe(message));
+      };
+
       $.connection.hub.start()
         .done(function () {
           self.started = true;
@@ -78,7 +82,7 @@
 
         setTimeout(function () {
           try { host.removeChild(el); } catch (e) { }
-        }, 3200);
+        }, 3000);
       } catch (e) { }
     }
   };

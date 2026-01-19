@@ -1,9 +1,0 @@
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\bin\Debug\FastQ.Application.dll
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\bin\Debug\FastQ.Application.pdb
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\bin\Debug\FastQ.Domain.dll
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\bin\Debug\FastQ.Domain.pdb
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\obj\Debug\FastQ.Application.csproj.AssemblyReference.cache
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\obj\Debug\FastQ.Application.csproj.CoreCompileInputs.cache
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\obj\Debug\FastQ.Ap.C0CA79B2.Up2Date
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\obj\Debug\FastQ.Application.dll
-C:\Users\sahid\Downloads\FastQPrototype_LiveSignalR_WebForms48_Layered_SignalR\src\FastQ.Application\obj\Debug\FastQ.Application.pdb

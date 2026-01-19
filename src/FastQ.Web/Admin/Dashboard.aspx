@@ -1,4 +1,4 @@
-<%@ Page Title="Admin" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" %>
+<%@ Page Title="Admin" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="Dashboard.aspx.cs" Inherits="FastQ.Web.Admin.Dashboard" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <div class="card">
         <div class="eyebrow">Admin</div>
@@ -71,19 +71,17 @@ var FastQAdmin = {
 
   load: function() {
     $("#adminMsg").removeClass("error ok").text("Loading...");
-    $.getJSON("/Api/AdminSnapshot.ashx", { locationId: window.FASTQ_CONTEXT.locationId })
-      .done(function(res){
-        if (!res || !res.ok) {
-          $("#adminMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
-          return;
-        }
-        $("#adminMsg").addClass("ok").text("Ready.");
-        FastQAdmin.data = res.data;
-        FastQAdmin.render();
-      })
-      .fail(function(){
-        $("#adminMsg").addClass("error").text("Load failed.");
-      });
+    PageMethods.AdminSnapshot(window.FASTQ_CONTEXT.locationId, function(res){
+      if (!res || !res.ok) {
+        $("#adminMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
+        return;
+      }
+      $("#adminMsg").addClass("ok").text("Ready.");
+      FastQAdmin.data = res.data;
+      FastQAdmin.render();
+    }, function(){
+      $("#adminMsg").addClass("error").text("Load failed.");
+    });
   },
 
   render: function() {
@@ -134,36 +132,29 @@ var FastQAdmin = {
     };
 
     $("#adminMsg").removeClass("error ok").text("Saving...");
-    $.ajax({
-      url: "/Api/AdminUpdate.ashx",
-      method: "POST",
-      data: payload,
-      dataType: "json"
-    }).done(function(res){
+    PageMethods.AdminUpdate(payload.queueId, payload.maxUpcoming, payload.maxDaysAhead, payload.minHoursLead, function(res){
       if (!res || !res.ok) {
         $("#adminMsg").addClass("error").text(res && res.error ? res.error : "Save failed");
         return;
       }
       $("#adminMsg").addClass("ok").text("Saved.");
       FastQAdmin.load();
-    }).fail(function(){
+    }, function(){
       $("#adminMsg").addClass("error").text("Save failed.");
     });
   },
 
   systemClose: function() {
     $("#systemMsg").removeClass("error ok").text("Closing stale...");
-    $.getJSON("/Api/SystemClose.ashx", { staleHours: 12 })
-      .done(function(res){
-        if (res && res.ok) {
-          $("#systemMsg").addClass("ok").text("Closed stale: " + res.closed);
-        } else {
-          $("#systemMsg").addClass("error").text("System close failed.");
-        }
-      })
-      .fail(function(){
+    PageMethods.SystemClose(12, function(res){
+      if (res && res.ok) {
+        $("#systemMsg").addClass("ok").text("Closed stale: " + res.closed);
+      } else {
         $("#systemMsg").addClass("error").text("System close failed.");
-      });
+      }
+    }, function(){
+      $("#systemMsg").addClass("error").text("System close failed.");
+    });
   }
 };
 

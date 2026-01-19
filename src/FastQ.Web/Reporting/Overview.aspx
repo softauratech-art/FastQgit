@@ -1,4 +1,4 @@
-<%@ Page Title="Reporting" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" %>
+<%@ Page Title="Reporting" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeBehind="Overview.aspx.cs" Inherits="FastQ.Web.Reporting.Overview" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <div class="card">
         <div class="eyebrow">Reporting</div>
@@ -78,18 +78,16 @@ var FastQReport = {
   refresh: function() {
     var queueId = document.getElementById("reportQueue").value;
     $("#reportMsg").removeClass("error ok").text("Loading...");
-    $.getJSON("/Api/ReportingSnapshot.ashx", { locationId: window.FASTQ_CONTEXT.locationId, queueId: queueId })
-      .done(function(res){
-        if (!res || !res.ok) {
-          $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
-          return;
-        }
-        $("#reportMsg").addClass("ok").text("Up to date.");
-        FastQReport.render(res.data);
-      })
-      .fail(function(){
-        $("#reportMsg").addClass("error").text("Load failed.");
-      });
+    PageMethods.ReportingSnapshot(window.FASTQ_CONTEXT.locationId, queueId, function(res){
+      if (!res || !res.ok) {
+        $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
+        return;
+      }
+      $("#reportMsg").addClass("ok").text("Up to date.");
+      FastQReport.render(res.data);
+    }, function(){
+      $("#reportMsg").addClass("error").text("Load failed.");
+    });
   },
 
   render: function(d) {

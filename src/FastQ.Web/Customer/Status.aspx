@@ -66,46 +66,44 @@ var FastQStatus = {
   refresh: function() {
     var apptId = window.FASTQ_CONTEXT.appointmentId;
     $("#msg").removeClass("error ok").text("Loading...");
-    $.getJSON("/Api/AppointmentSnapshot.ashx", { appointmentId: apptId })
-      .done(function(res){
-        if(!res || !res.ok) {
-          $("#msg").addClass("error").text(res && res.error ? res.error : "Not found");
-          return;
-        }
-        var d = res.data;
-        $("#apptId").text(d.AppointmentId);
-        $("#statusText").text(FastQStatus.label(d.Status));
-        $("#queueName").text(d.QueueName || d.QueueId);
-        $("#scheduledUtc").text(d.ScheduledForUtc);
-        $("#updatedUtc").text(d.UpdatedUtc);
-        $("#waitingCount").text(d.WaitingCount);
-        $("#pos").text(d.PositionInQueue ? d.PositionInQueue : "-");
-        FastQStatus.renderTimeline(d.Status);
+    PageMethods.GetAppointmentSnapshot(apptId, function(res){
+      if(!res || !res.ok) {
+        $("#msg").addClass("error").text(res && res.error ? res.error : "Not found");
+        return;
+      }
+      var d = res.data;
+      $("#apptId").text(d.AppointmentId);
+      $("#statusText").text(FastQStatus.label(d.Status));
+      $("#queueName").text(d.QueueName || d.QueueId);
+      $("#scheduledUtc").text(d.ScheduledForUtc);
+      $("#updatedUtc").text(d.UpdatedUtc);
+      $("#waitingCount").text(d.WaitingCount);
+      $("#pos").text(d.PositionInQueue ? d.PositionInQueue : "-");
+      FastQStatus.renderTimeline(d.Status);
 
-        // Update context so fastq.live.js joins location/queue too (for more events)
-        window.FASTQ_CONTEXT.locationId = d.LocationId;
-        window.FASTQ_CONTEXT.queueId = d.QueueId;
+      // Update context so fastq.live.js joins location/queue too (for more events)
+      window.FASTQ_CONTEXT.locationId = d.LocationId;
+      window.FASTQ_CONTEXT.queueId = d.QueueId;
 
-        $("#msg").addClass("ok").text("Up to date.");
-      })
-      .fail(function(xhr){
-        $("#msg").addClass("error").text("Load failed.");
-      });
+      $("#msg").addClass("ok").text("Up to date.");
+    }, function(){
+      $("#msg").addClass("error").text("Load failed.");
+    });
   },
 
   cancel: function() {
     var apptId = window.FASTQ_CONTEXT.appointmentId;
     $("#msg").removeClass("error ok").text("Cancelling...");
-    $.ajax({ url: "/Api/Cancel.ashx", method: "POST", data: { appointmentId: apptId }, dataType: "json" })
-      .done(function(res){
-        if(!res || !res.ok) {
-          $("#msg").addClass("error").text(res && res.error ? res.error : "Cancel failed");
-          return;
-        }
-        $("#msg").addClass("ok").text("Cancelled.");
-        FastQStatus.refresh();
-      })
-      .fail(function(){ $("#msg").addClass("error").text("Cancel failed."); });
+    PageMethods.CancelAppointment(apptId, function(res){
+      if(!res || !res.ok) {
+        $("#msg").addClass("error").text(res && res.error ? res.error : "Cancel failed");
+        return;
+      }
+      $("#msg").addClass("ok").text("Cancelled.");
+      FastQStatus.refresh();
+    }, function(){
+      $("#msg").addClass("error").text("Cancel failed.");
+    });
   },
 
   label: function(status) {

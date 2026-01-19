@@ -1,6 +1,6 @@
 using System;
-using FastQ.Application.Notifications;
-using FastQ.Domain.Entities;
+using FastQ.Web.Notifications;
+using FastQ.Data.Entities;
 using FastQ.Web.Hubs;
 using Microsoft.AspNet.SignalR;
 
@@ -9,6 +9,7 @@ namespace FastQ.Web.Realtime
     public class SignalRRealtimeNotifier : IRealtimeNotifier
     {
         private static IHubContext Hub => GlobalHost.ConnectionManager.GetHubContext<QueueHub>();
+        private const int IdPreviewLength = 8;
 
         public void QueueChanged(Guid locationId, Guid queueId)
         {
@@ -29,6 +30,35 @@ namespace FastQ.Web.Realtime
             // location + queue listeners can also choose to react
             Hub.Clients.Group($"loc:{loc}").appointmentUpdated(apptId, appointment.Status.ToString());
             Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString());
+
+            var message = BuildNotificationMessage(appointment);
+            if (!string.IsNullOrWhiteSpace(message))
+                Hub.Clients.All.notify(message);
+        }
+
+        private static string BuildNotificationMessage(Appointment appointment)
+        {
+            var shortId = appointment.Id.ToString().Substring(0, IdPreviewLength);
+            switch (appointment.Status)
+            {
+                case AppointmentStatus.Scheduled:
+                    return $"New booking created ({shortId}).";
+                case AppointmentStatus.Arrived:
+                    return $"Customer arrived ({shortId}).";
+                case AppointmentStatus.InService:
+                    return $"Service started ({shortId}).";
+                case AppointmentStatus.Completed:
+                    return $"Service completed ({shortId}).";
+                case AppointmentStatus.Cancelled:
+                    return $"Appointment cancelled ({shortId}).";
+                case AppointmentStatus.ClosedBySystem:
+                    return $"Appointment closed by system ({shortId}).";
+                case AppointmentStatus.TransferredOut:
+                    return $"Appointment transferred ({shortId}).";
+                default:
+                    return null;
+            }
         }
     }
 }
+

@@ -1,12 +1,12 @@
 using System;
 using System.Web.Configuration;
-using FastQ.Application.Abstractions;
-using FastQ.Application.Notifications;
-using FastQ.Application.Queries;
-using FastQ.Application.Services;
-using FastQ.Domain.Repositories;
-using FastQ.Infrastructure.InMemory;
-using FastQ.Infrastructure.Oracle;
+using FastQ.Web.Abstractions;
+using FastQ.Web.Notifications;
+using FastQ.Web.Queries;
+using FastQ.Web.Services;
+using FastQ.Data.Repositories;
+using FastQ.Data.InMemory;
+using FastQ.Data.Oracle;
 using FastQ.Web.Realtime;
 
 namespace FastQ.Web.App_Start
@@ -69,3 +69,4 @@ namespace FastQ.Web.App_Start
         }
     }
 }
+

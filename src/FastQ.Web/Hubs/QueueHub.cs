@@ -15,3 +15,4 @@ namespace FastQ.Web.Hubs
             => Groups.Add(Context.ConnectionId, $"appt:{appointmentId}");
     }
 }
+

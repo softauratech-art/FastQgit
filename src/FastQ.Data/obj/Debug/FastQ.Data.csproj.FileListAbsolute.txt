@@ -1,0 +1,6 @@
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Data\bin\Debug\FastQ.Data.dll
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Data\bin\Debug\FastQ.Data.pdb
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Data\obj\Debug\FastQ.Data.csproj.AssemblyReference.cache
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Data\obj\Debug\FastQ.Data.csproj.CoreCompileInputs.cache
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Data\obj\Debug\FastQ.Data.dll
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Data\obj\Debug\FastQ.Data.pdb

@@ -75,16 +75,16 @@ var FastQProvider = {
   refresh: function() {
     var ctx = window.FASTQ_CONTEXT;
     $("#msg").removeClass("error ok").text("Loading...");
-    $.getJSON("/Api/QueueSnapshot.ashx", { locationId: ctx.locationId, queueId: ctx.queueId })
-      .done(function(res){
-        if(!res || !res.ok) {
-          $("#msg").addClass("error").text(res && res.error ? res.error : "Load failed");
-          return;
-        }
-        $("#msg").addClass("ok").text("Up to date.");
-        FastQProvider.render(res.data);
-      })
-      .fail(function(){ $("#msg").addClass("error").text("Load failed."); });
+    PageMethods.GetQueueSnapshot(ctx.locationId, ctx.queueId, function(res){
+      if(!res || !res.ok) {
+        $("#msg").addClass("error").text(res && res.error ? res.error : "Load failed");
+        return;
+      }
+      $("#msg").addClass("ok").text("Up to date.");
+      FastQProvider.render(res.data);
+    }, function(){
+      $("#msg").addClass("error").text("Load failed.");
+    });
   },
 
   render: function(d) {
@@ -202,18 +202,15 @@ var FastQProvider = {
   act: function(action, appointmentId) {
     var ctx = window.FASTQ_CONTEXT;
     FastQLive.toast("Action: " + action);
-    $.ajax({
-      url: "/Api/ProviderAction.ashx",
-      method: "POST",
-      data: { action: action, appointmentId: appointmentId, providerId: ctx.providerId },
-      dataType: "json"
-    }).done(function(res){
+    PageMethods.ProviderAction(action, appointmentId, ctx.providerId, function(res){
       if(!res || !res.ok) {
         FastQLive.toast("Failed: " + (res && res.error ? res.error : "unknown"));
         return;
       }
       // push will refresh; keep a local refresh as fallback
       setTimeout(FastQProvider.refresh, 200);
+    }, function(){
+      FastQLive.toast("Failed: unknown");
     });
   },
 
@@ -224,27 +221,28 @@ var FastQProvider = {
       : "0153158e-0000-0000-4641-535451494430";
 
     FastQLive.toast("Transfer to other queue");
-    $.ajax({
-      url: "/Api/Transfer.ashx",
-      method: "POST",
-      data: { appointmentId: appointmentId, targetQueueId: target },
-      dataType: "json"
-    }).done(function(res){
+    PageMethods.TransferAppointment(appointmentId, target, function(res){
       if(!res || !res.ok) {
         FastQLive.toast("Transfer failed: " + (res && res.error ? res.error : "unknown"));
         return;
       }
       setTimeout(FastQProvider.refresh, 200);
+    }, function(){
+      FastQLive.toast("Transfer failed: unknown");
     });
   },
 
   systemClose: function() {
     FastQLive.toast("System close stale...");
-    $.getJSON("/Api/SystemClose.ashx", { staleHours: 12 }).done(function(res){
+    PageMethods.SystemClose(12, function(res){
       if(res && res.ok) {
         FastQLive.toast("Closed stale: " + res.closed);
         setTimeout(FastQProvider.refresh, 200);
+      } else {
+        FastQLive.toast("System close failed");
       }
+    }, function(){
+      FastQLive.toast("System close failed");
     });
   }
 };

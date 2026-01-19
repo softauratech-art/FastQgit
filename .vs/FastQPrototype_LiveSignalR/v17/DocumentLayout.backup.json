@@ -1,12 +1,71 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\app_start\\compositionroot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\app_start\\compositionroot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\customer\\book.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\customer\\book.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\customer\\book.aspx||{57312C73-6202-49E9-B1E1-40EA1A6DC1F6}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\customer\\book.aspx||{57312C73-6202-49E9-B1E1-40EA1A6DC1F6}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "CompositionRoot.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
+              "ViewState": "AgIAACwAAAAAAAAAAADwv0gAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-19T12:48:38.429Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Book.aspx.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\Customer\\Book.aspx.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\Customer\\Book.aspx.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAADwvzAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-12T17:20:44.55Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Book.aspx",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\Customer\\Book.aspx",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx",
+              "RelativeToolTip": "src\\FastQ.Web\\Customer\\Book.aspx",
+              "LogicalView": "7651a703-06e5-11d1-8ebd-00a0c90f26ea",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000195|",
+              "WhenOpened": "2026-01-12T17:18:26.665Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

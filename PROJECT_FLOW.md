@@ -1,17 +1,21 @@
-# FastQ Project Structure and Booking Flow
+# FastQ Project Flow (Explained Like You Are Brand New)
 
-This document gives the team a quick map of the layers and a concrete booking flow with code snippets for context.
+This is the "slow, simple" version. It tells you what runs first, what talks to what, and where to look when something breaks. Read it top to bottom once, then use it as a map.
 
-## Layered structure (who owns what)
+## Big picture (what lives where)
 
-- FastQ.Web: WebForms UI, API handlers, SignalR hub, and composition root wiring.
-- FastQ.Application: use-case services and query services.
-- FastQ.Domain: core entities, enums, and repository interfaces.
-- FastQ.Infrastructure: in-memory repositories (swap later with DB-backed repos).
+Think of the app as two boxes. Know which box you are in before you edit code.
 
-## Composition root (where wiring happens)
+- FastQ.Web: WebForms pages, code-behind logic, wiring, and business rules.
+- FastQ.Data: entities, repository interfaces, and repository implementations (in-memory + Oracle).
 
-The Web layer builds up the app by creating repositories and use-case services. This is the single point that connects Web -> Application -> Infrastructure.
+Rule of thumb:
+- Web owns the rules and calls Data.
+- Data owns storage and never calls back into Web.
+
+## Composition root (the wiring place)
+
+All the objects are created in one place. That file decides which repository implementation to use (in-memory or Oracle) and connects everything together.
 
 ```csharp
 // src/FastQ.Web/App_Start/CompositionRoot.cs
@@ -52,142 +56,87 @@ public static void Initialize()
 }
 ```
 
+If something fails because "repo is null" or "service is null", this is the first file to check.
+SignalR still runs so provider and customer screens stay in sync.
+
+Example references (file + line):
+- `src/FastQ.Web/App_Start/CompositionRoot.cs:32` Initialize entry point.
+- `src/FastQ.Web/App_Start/CompositionRoot.cs:39` Oracle branch.
+- `src/FastQ.Web/App_Start/CompositionRoot.cs:53` In-memory branch.
+- `src/FastQ.Web/App_Start/CompositionRoot.cs:63` Services wired.
+
 ## Repository mode switch (Oracle vs in-memory)
 
-- `RepositoryMode` lives in `src/FastQ.Web/Web.config`.
-- `FastQOracle` connection string is the Oracle placeholder.
-- Switching to `Oracle` uses DDL-backed repositories in `src/FastQ.Infrastructure/Oracle`.
+- `RepositoryMode` is in `src/FastQ.Web/Web.config`.
+- `InMemory` is the default.
+- `Oracle` uses real DB repositories in `src/FastQ.Data/Oracle`.
 
-## ID mapping for DDL alignment
+If you switch to Oracle and it breaks, check connection string name `FastQOracle` first.
 
-The Oracle schema uses numeric IDs. The app still uses `Guid` IDs in Domain, so repositories map numeric IDs to deterministic GUIDs using `IdMapper`:
+Example references (file + line):
+- `src/FastQ.Web/Web.config:5` RepositoryMode flag.
+- `src/FastQ.Web/Web.config:9` FastQOracle connection string.
 
-```csharp
-// src/FastQ.Infrastructure/Common/IdMapper.cs
-Guid id = IdMapper.FromLong(11111111);  // numeric -> GUID
-IdMapper.TryToLong(id, out long value); // GUID -> numeric
-```
+## ID mapping for Oracle
 
-This keeps app-layer IDs stable while storing numeric IDs in Oracle.
-For demo mode, seeded IDs are generated from numeric keys (see `README.md`).
-
-Oracle repositories follow the provided DDL and fill columns that are not represented in Domain with safe defaults or placeholders (e.g., email).
-
-## Booking flow (layer by layer)
-
-### 1) Web UI sends booking request
-The customer page gathers input and posts to the booking handler.
-
-```javascript
-// src/FastQ.Web/Customer/Book.aspx (inline script)
-$.ajax({
-  url: "/Api/Book.ashx",
-  method: "POST",
-  data: {
-    locationId: "00a98ac7-0000-0000-4641-535451494430",
-    queueId: this.state.queueId,
-    phone: this.state.phone,
-    name: this.state.firstName + " " + this.state.lastName,
-    smsOptIn: true
-  },
-  dataType: "json"
-})
-```
-
-### 2) Web API handler validates request and calls the use-case
-The handler reads inputs and delegates to the Application layer.
+Oracle tables use numbers. The app uses `Guid`. So repositories convert numbers to GUIDs in a repeatable way.
 
 ```csharp
-// src/FastQ.Web/Api/Book.ashx.cs
-var locId = HandlerUtil.GetGuid(context.Request, "locationId");
-var queueId = HandlerUtil.GetGuid(context.Request, "queueId");
-var phone = HandlerUtil.GetString(context.Request, "phone");
-var name = HandlerUtil.GetString(context.Request, "name");
-var smsOptIn = HandlerUtil.GetString(context.Request, "smsOptIn") == "true";
-
-var res = CompositionRoot.Booking.BookFirstAvailable(
-    locId.Value, queueId.Value, phone, smsOptIn, name);
+// src/FastQ.Data/Common/IdMapper.cs
+Guid id = IdMapper.FromLong(11111111);  // number -> GUID
+IdMapper.TryToLong(id, out long value); // GUID -> number
 ```
 
-### 3) Application service enforces business rules
-BookingService owns the booking rules and writes appointments via repositories.
+This is how the app keeps IDs stable in code while Oracle stores numbers.
+
+Example references (file + line):
+- `src/FastQ.Data/Common/IdMapper.cs:9` FromLong (number -> GUID).
+- `src/FastQ.Data/Common/IdMapper.cs:17` TryToLong (GUID -> number).
+
+## Page flow (simple MVC-style WebForms)
+
+Think of each `.aspx` page as the "view" and its code-behind (`.aspx.cs`) as the "controller + business logic". The code-behind directly calls the Data layer to read/write data.
+
+### Step 1: User opens a page
+The browser requests a page like `Customer/Book.aspx`.
+
+What this means in plain English:
+- The page loads.
+- Code-behind can load data needed for dropdowns or defaults.
+
+Example references (file + line):
+- `src/FastQ.Web/Customer/Book.aspx` Page markup.
+- `src/FastQ.Web/Customer/Book.aspx.cs` Code-behind logic.
+
+### Step 2: User clicks a button (postback)
+The page posts back to its own code-behind event handler (no API handlers).
+
+What this means in plain English:
+- Code-behind reads form fields.
+- Code-behind runs the business rules.
+- Code-behind calls the Data layer to save.
+
+Example references (file + line):
+- `src/FastQ.Web/Customer/Book.aspx.cs` Event handlers and server-side logic.
+
+### Step 3: Data layer reads/writes storage
+The code-behind calls repositories (in-memory or Oracle).
+
+What this means in plain English:
+- If `RepositoryMode=InMemory`, data is stored in dictionaries.
+- If `RepositoryMode=Oracle`, data is stored in Oracle tables.
+
+Example references (file + line):
+- `src/FastQ.Data/InMemory/InMemoryStore.cs` In-memory storage.
+- `src/FastQ.Data/InMemory/InMemoryAppointmentRepository.cs` In-memory data access.
+- `src/FastQ.Data/Oracle/OracleAppointmentRepository.cs` Oracle data access.
+
+## In-memory store (prototype mode)
+
+Right now, data is kept in memory. It is reset when the app restarts.
 
 ```csharp
-// src/FastQ.Application/Services/BookingService.cs
-if (string.IsNullOrWhiteSpace(phone))
-    return Result<Appointment>.Fail("Phone is required.");
-
-var location = _locations.Get(locationId);
-if (location == null) return Result<Appointment>.Fail("Location not found.");
-
-var queue = _queues.Get(queueId);
-if (queue == null || queue.LocationId != locationId)
-    return Result<Appointment>.Fail("Queue not found for this location.");
-
-var upcoming = _appts.ListByCustomer(customer.Id)
-    .Count(a => a.Status == AppointmentStatus.Scheduled ||
-                a.Status == AppointmentStatus.Arrived ||
-                a.Status == AppointmentStatus.InService);
-
-if (upcoming >= queue.Config.MaxUpcomingAppointments)
-    return Result<Appointment>.Fail(
-        $"Customer already has {upcoming} upcoming appointments (max {queue.Config.MaxUpcomingAppointments}).");
-```
-
-### 4) Appointment is created and saved
-The appointment is stored through the repository abstraction.
-
-```csharp
-// src/FastQ.Application/Services/BookingService.cs
-var appt = new Appointment
-{
-    Id = Guid.NewGuid(),
-    LocationId = locationId,
-    QueueId = queueId,
-    CustomerId = customer.Id,
-    ScheduledForUtc = candidate,
-    Status = AppointmentStatus.Scheduled,
-    CreatedUtc = now,
-    UpdatedUtc = now
-};
-
-_appts.Add(appt);
-```
-
-### 5) Real-time updates are broadcast
-The app notifies SignalR groups so other screens can react.
-
-```csharp
-// src/FastQ.Web/Realtime/SignalRRealtimeNotifier.cs
-Hub.Clients.Group($"loc:{loc}").queueUpdated(loc, q);
-Hub.Clients.Group($"queue:{q}").queueUpdated(loc, q);
-
-Hub.Clients.Group($"appt:{apptId}").appointmentUpdated(apptId, appointment.Status.ToString());
-```
-
-### 6) Clients receive event and refresh snapshots
-The client listens for events and re-fetches snapshots as needed.
-
-```javascript
-// src/FastQ.Web/Scripts/fastq.live.js
-this.hub.client.queueUpdated = function (locationId, queueId) {
-  if (window.onFastQQueueUpdated) {
-    window.onFastQQueueUpdated(locationId, queueId);
-  }
-};
-
-this.hub.client.appointmentUpdated = function (appointmentId, status) {
-  if (window.onFastQAppointmentUpdated) {
-    window.onFastQAppointmentUpdated(appointmentId, status);
-  }
-};
-```
-
-## In-memory data store (prototype)
-The current implementation uses in-memory dictionaries and is designed to be replaced later with a database-backed repository implementation.
-
-```csharp
-// src/FastQ.Infrastructure/InMemory/InMemoryStore.cs
+// src/FastQ.Data/InMemory/InMemoryStore.cs
 public Dictionary<Guid, Appointment> Appointments { get; } = new Dictionary<Guid, Appointment>();
 
 public void EnsureSeeded()
@@ -196,12 +145,21 @@ public void EnsureSeeded()
 }
 ```
 
-## Where to look next
+If you expect data to persist, you need Oracle repos instead.
 
-- Web pages: src/FastQ.Web/Customer and src/FastQ.Web/Provider
-- API endpoints: src/FastQ.Web/Api
-- Use cases: src/FastQ.Application/Services
-- Entities + repositories: src/FastQ.Domain
-- In-memory repositories: src/FastQ.Infrastructure/InMemory
-- Oracle repositories: src/FastQ.Infrastructure/Oracle
+What this means in plain English:
+- All data sits in dictionaries in memory.
+- The seed method builds a demo location/queues/provider.
+
+Example references (file + line):
+- `src/FastQ.Data/InMemory/InMemoryStore.cs:16` In-memory dictionaries.
+- `src/FastQ.Data/InMemory/InMemoryStore.cs:45` Seed data method.
+
+## Where to look when debugging
+
+- Web pages + code-behind: `src/FastQ.Web/Customer`, `src/FastQ.Web/Provider`
+- Business logic: `src/FastQ.Web/Customer/*.aspx.cs`, `src/FastQ.Web/Provider/*.aspx.cs`
+- Entities + repos: `src/FastQ.Data`
+- In-memory repos: `src/FastQ.Data/InMemory`
+- Oracle repos: `src/FastQ.Data/Oracle`
 
