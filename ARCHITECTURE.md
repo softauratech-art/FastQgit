@@ -1,71 +1,46 @@
-# Architecture (Layered)
+# Architecture (Simplified)
 
-## 1) FastQ.Domain (Business Core)
+## 1) FastQ.Web (UI + business logic)
 **Responsibility**
-- Entities (Appointment, Customer, Queue, Location)
-- Enums (AppointmentStatus)
-- Repository interfaces (ports)
-- Result / Result<T>
+- WebForms pages (`.aspx`) and code-behind (`.aspx.cs`)
+- Page-level business rules and validation
+- Composition root that wires repositories + services
+- SignalR Hub + live notifications
+- PageMethods (AJAX) for async UI refresh without API handlers
 
-**No dependencies** on other layers.
+**Depends on:** FastQ.Data
 
-## 2) FastQ.Application (Use cases)
+## 2) FastQ.Data (Entities + storage)
 **Responsibility**
-- Use-case services (BookingService, ProviderService, TransferService, SystemCloseService)
-- Query services (QueueQueryService) for UI snapshots
-- Abstractions:
-  - `IClock` for testable time
-  - `IRealtimeNotifier` to publish changes (SignalR implementation lives in Web)
+- Entities and enums (Appointment, Customer, Queue, AppointmentStatus)
+- Repository interfaces + implementations
+- In-memory storage (default)
+- Oracle repositories (optional)
 
-**Depends on:** Domain (entities + repo interfaces)
-
-## 3) FastQ.Infrastructure (Adapters)
-**Responsibility**
-- In-memory data store + repository implementations
-- Designed to be replaced later:
-  - Swap `InMemory*Repository` → `Sql*Repository` or EF repositories
-  - No changes required in Domain/Application if interfaces stay the same
-
-**Depends on:** Domain
-
-## 4) FastQ.Web (Presentation + real-time)
-**Responsibility**
-- WebForms pages (Customer/Book, Customer/Status, Provider/Today)
-- API handlers (.ashx) returning JSON snapshots
-- SignalR Hub (`QueueHub`) + OWIN Startup
-- `SignalRRealtimeNotifier` implements `IRealtimeNotifier`:
-  - broadcasts to groups:
-    - `loc:{locationId}`
-    - `queue:{queueId}`
-    - `appt:{appointmentId}`
-
-**Depends on:** Application + Domain + Infrastructure
+**No dependencies** on Web.
 
 ---
 
-# Live Queue Handling with SignalR (customer ↔ provider)
+# Live Queue Handling with SignalR (customer ? provider)
 
 ## Server-side pattern
-1. A use case modifies data (Application service)
-2. It calls `IRealtimeNotifier`:
-   - `AppointmentChanged(appointment)`
-   - `QueueChanged(locationId, queueId)`
-3. SignalR broadcasts lightweight events:
+1. Code-behind or service updates data (e.g., booking, arrive, begin, end, transfer).
+2. `SignalRRealtimeNotifier` broadcasts:
    - `queueUpdated(locationId, queueId)`
    - `appointmentUpdated(appointmentId, status)`
+   - `notify(message)` (3-second toast to all clients)
 
 ## Client-side pattern (push + pull)
-- **Push**: SignalR event arrives immediately
-- **Pull**: client calls the relevant snapshot endpoint to refresh UI
-  - `/Api/QueueSnapshot.ashx?locationId=...&queueId=...`
-  - `/Api/AppointmentSnapshot.ashx?appointmentId=...`
+- **Push:** SignalR events arrive immediately.
+- **Pull:** Pages call PageMethods to fetch fresh snapshots (no `/Api` handlers).
 
-This avoids syncing complex UI state through SignalR and keeps the hub payloads small and reliable.
-
-## Where it’s implemented
+## Where it�s implemented
 - Hub: `src/FastQ.Web/Hubs/QueueHub.cs`
 - Notifier: `src/FastQ.Web/Realtime/SignalRRealtimeNotifier.cs`
 - Client: `src/FastQ.Web/Scripts/fastq.live.js`
-- Snapshots:
-  - `src/FastQ.Web/Api/QueueSnapshot.ashx(.cs)`
-  - `src/FastQ.Web/Api/AppointmentSnapshot.ashx(.cs)`
+- PageMethods:
+  - `src/FastQ.Web/Customer/Status.aspx.cs`
+  - `src/FastQ.Web/Customer/Home.aspx.cs`
+  - `src/FastQ.Web/Provider/Today.aspx.cs`
+  - `src/FastQ.Web/Admin/Dashboard.aspx.cs`
+  - `src/FastQ.Web/Reporting/Overview.aspx.cs`

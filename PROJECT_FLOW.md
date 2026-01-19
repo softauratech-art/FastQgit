@@ -119,6 +119,17 @@ What this means in plain English:
 Example references (file + line):
 - `src/FastQ.Web/Customer/Book.aspx.cs` Event handlers and server-side logic.
 
+### Step 2b: PageMethods for async refresh
+Pages can call `PageMethods` (static methods in code-behind) to fetch snapshots without full reloads.
+
+What this means in plain English:
+- JavaScript calls a code-behind method directly.
+- Code-behind reads data and returns JSON.
+
+Example references (file + line):
+- `src/FastQ.Web/Customer/Status.aspx.cs` PageMethods for appointment snapshot.
+- `src/FastQ.Web/Provider/Today.aspx.cs` PageMethods for queue snapshot and actions.
+
 ### Step 3: Data layer reads/writes storage
 The code-behind calls repositories (in-memory or Oracle).
 
@@ -130,6 +141,17 @@ Example references (file + line):
 - `src/FastQ.Data/InMemory/InMemoryStore.cs` In-memory storage.
 - `src/FastQ.Data/InMemory/InMemoryAppointmentRepository.cs` In-memory data access.
 - `src/FastQ.Data/Oracle/OracleAppointmentRepository.cs` Oracle data access.
+
+### Step 4: SignalR pushes live updates
+Whenever an appointment changes, SignalR broadcasts updates and a short toast message to all clients.
+
+What this means in plain English:
+- Providers and customers see changes instantly.
+- No refresh is needed to receive notifications.
+
+Example references (file + line):
+- `src/FastQ.Web/Realtime/SignalRRealtimeNotifier.cs` Sends updates + toast notifications.
+- `src/FastQ.Web/Scripts/fastq.live.js` Receives updates and shows 3‑second toasts.
 
 ## In-memory store (prototype mode)
 
