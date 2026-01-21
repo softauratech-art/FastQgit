@@ -1,260 +1,360 @@
 @{
     ViewBag.Title = "Provider Today";
 }
-<div class="card">
-    <div class="eyebrow">Provider</div>
-    <h2 class="page-title">Today's live queue</h2>
-    <p class="lead">Manage arrivals, service, and transfers while customers see changes instantly.</p>
-</div>
+@section Head {
+    <style>
+        .table-striped tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .accordion-toggle { cursor: pointer; }
+        .row-actions { display: none; }
+        .row-actions.is-open { display: table-row; }
+        .row-actions td { padding: 0 8px 12px; }
+        .action-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        .table-card { overflow-x: auto; }
+        .date-nav { display: flex; align-items: center; gap: 10px; font-family: var(--font-heading); }
+        .date-nav a { color: var(--accent); font-weight: 700; }
+        .text-center { text-align: center; }
+        .modal-backdrop.show { display: flex; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .modal-title { margin: 0; font-size: 18px; font-weight: 700; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-body { display: grid; gap: 10px; }
+        .field-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; }
+    </style>
+}
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">Queue controls</h3>
-        <span class="pill">Location <code>00a98ac7-0000-0000-4641-535451494430</code></span>
-    </div>
-    <div class="row">
-        <div class="col">
-            <label for="queueId">Queue</label>
-            <select id="queueId" onchange="FastQProvider.changeQueue()">
-                <option value="0153158e-0000-0000-4641-535451494430">General Queue</option>
-                <option value="01fca055-0000-0000-4641-535451494430">Secondary Queue</option>
-            </select>
+        <div>
+            <div class="eyebrow">Provider</div>
+            <h2 class="page-title">Today's Schedule</h2>
         </div>
-        <div class="col" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-            <button type="button" class="btn primary" onclick="FastQProvider.refresh()">Refresh</button>
-            <button type="button" class="btn ghost" onclick="FastQProvider.systemClose()">System Close Stale</button>
-            <span id="msg" class="muted"></span>
-        </div>
+        <span class="badge accent">Live Queue</span>
     </div>
+
+    <div class="table-card">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Start</th>
+                    <th>Queue</th>
+                    <th>Type of Service</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Contact</th>
+                    <th class="text-center">Expand</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="accordion-toggle" data-target="row1">
+                    <td>7:50 AM</td>
+                    <td>Building - Residential Plans Review</td>
+                    <td>Questions: General</td>
+                    <td>Marie Calendar</td>
+                    <td>x2690</td>
+                    <td>QUEUED</td>
+                    <td>In-Person</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row1">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="accordion-toggle" data-target="row2">
+                    <td>7:52 AM</td>
+                    <td>Building - Subpermits</td>
+                    <td>Questions: General</td>
+                    <td>Martha Stuart</td>
+                    <td>x2020</td>
+                    <td>QUEUED</td>
+                    <td>In-Person</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row2">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button class="btn primary" type="button">Add Customer to Queue</button>
 </div>
 
-<div class="report-grid">
-    <div class="stat">
-        <div class="stat-label">Waiting</div>
-        <div class="stat-value" id="waitingCount">0</div>
-    </div>
-    <div class="stat">
-        <div class="stat-label">In Service</div>
-        <div class="stat-value" id="inServiceCount">0</div>
-    </div>
-    <div class="stat">
-        <div class="stat-label">Recent Done</div>
-        <div class="stat-value" id="doneCount">0</div>
-    </div>
-    <div class="stat">
-        <div class="stat-label">Live Queue</div>
-        <div class="stat-value">Synced via SignalR</div>
+<div class="card note">
+    <div class="date-nav">
+        <a href="#" aria-label="Previous day">&lt;&lt;</a>
+        <div>xx, Xxx yyyy</div>
+        <a href="#" aria-label="Next day">&gt;&gt;</a>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Today's schedule (UTC)</h3>
-        <span class="badge accent">Calendar View</span>
+    <div class="table-card">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Start</th>
+                    <th>Queue</th>
+                    <th>Type of Service</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Contact</th>
+                    <th class="text-center">Expand</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="accordion-toggle" data-target="row3">
+                    <td>8:00 AM</td>
+                    <td>Building - Residential Plans Review</td>
+                    <td>Questions: General</td>
+                    <td>Marie Calendar</td>
+                    <td>x2690</td>
+                    <td>SCHEDULED</td>
+                    <td>In-Person</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row3">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="accordion-toggle" data-target="row4">
+                    <td>8:45 AM</td>
+                    <td>Building - Subpermits</td>
+                    <td>Questions: General</td>
+                    <td>Martha Stuart</td>
+                    <td>x2020</td>
+                    <td>SCHEDULED</td>
+                    <td>In-Person</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row4">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="accordion-toggle" data-target="row6">
+                    <td>10:30 AM</td>
+                    <td>Building - Subpermits</td>
+                    <td>Questions: General</td>
+                    <td>David Cheng</td>
+                    <td>x6723</td>
+                    <td>SCHEDULED</td>
+                    <td>Phone</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row6">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="accordion-toggle" data-target="row61">
+                    <td>11:00 AM</td>
+                    <td>Building - Residential Plans Review</td>
+                    <td>Questions: General</td>
+                    <td>Arlene Martinez</td>
+                    <td>x0221</td>
+                    <td>SCHEDULED</td>
+                    <td>Online</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row61">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="accordion-toggle" data-target="row7">
+                    <td>02:00 PM</td>
+                    <td>Building - Residential Plans Review</td>
+                    <td>Questions: Fasttrack application</td>
+                    <td>Carter Harper</td>
+                    <td>x7812</td>
+                    <td>SCHEDULED</td>
+                    <td>Online</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row7">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr class="accordion-toggle" data-target="row8">
+                    <td><a href="#" class="meeting-link" data-id="new">03:00 PM</a></td>
+                    <td>Building - Licensing and NOC</td>
+                    <td>Questions: Notice of Commencement (NOC)</td>
+                    <td>Pamella ONeil</td>
+                    <td>x2659</td>
+                    <td class="error">PENDING</td>
+                    <td>Online</td>
+                    <td class="text-center">&darr;</td>
+                </tr>
+                <tr class="row-actions" id="row8">
+                    <td colspan="8">
+                        <div class="action-bar">
+                            <button class="btn small primary" type="button">Check-In</button>
+                            <button class="btn small secondary" type="button">Start</button>
+                            <button class="btn small ghost" type="button">Transfer</button>
+                            <button class="btn small ghost" type="button">Info</button>
+                            <button class="btn small ghost" type="button">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
-    <div id="calendarView" class="calendar"></div>
+
+    <button class="btn primary" type="button">Add New Appointment</button>
+</div>
+
+<div id="meetingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="meetingModalTitle">Meeting Details</h5>
+            <button class="btn small ghost" type="button" data-modal-close="meetingModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <p>Meeting Id: <span id="mid"></span></p>
+            <p>
+                Meeting Date: Oct 13, 2025<br />
+                Meeting Time: 10:00 AM<br />
+                Title: Building - Commercial Plans Review (Pamela ONeil)<br />
+            </p>
+            <p>Customer Info:<br />Pamela ONeil | pamela@example.com | 407-123-2659</p>
+            <div class="field-row">
+                <div>Join URL:</div>
+                <input id="mURL" type="text" value="" />
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
+            <button class="btn primary" type="button" id="saveMeeting">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="webexModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="webexModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="webexModalTitle">WebEx</h5>
+            <button class="btn small ghost" type="button" data-modal-close="webexModal">Close</button>
+        </div>
+        <div class="modal-body">This will launch WebEx meeting link.</div>
+    </div>
 </div>
 
 @section Scripts {
 <script>
-window.FASTQ_CONTEXT = {
-  locationId: "00a98ac7-0000-0000-4641-535451494430",
-  queueId: document.getElementById("queueId") ? document.getElementById("queueId").value : "0153158e-0000-0000-4641-535451494430",
-  providerId: "02a62b1c-0000-0000-4641-535451494430"
-};
-
-var FastQProvider = {
-  changeQueue: function() {
-    window.FASTQ_CONTEXT.queueId = document.getElementById("queueId").value;
-    FastQLive.toast("Switched queue");
-    FastQProvider.refresh();
-    // join queue group too
-    FastQLive.tryJoinGroups();
-  },
-
-  refresh: function() {
-    var ctx = window.FASTQ_CONTEXT;
-    $("#msg").removeClass("error ok").text("Loading...");
-    $.getJSON("/Provider/GetQueueSnapshot", { locationId: ctx.locationId, queueId: ctx.queueId })
-      .done(function(res){
-        if(!res || !res.ok) {
-          $("#msg").addClass("error").text(res && res.error ? res.error : "Load failed");
-          return;
-        }
-        $("#msg").addClass("ok").text("Up to date.");
-        FastQProvider.render(res.data);
-      })
-      .fail(function(){ $("#msg").addClass("error").text("Load failed."); });
-  },
-
-  render: function(d) {
-    $("#waitingCount").text(d.WaitingCount);
-    $("#inServiceCount").text(d.InServiceCount);
-    $("#doneCount").text(d.CompletedCount);
-
-    FastQProvider.renderCalendar(d);
-  },
-
-  renderCalendar: function(d) {
-    var all = [];
-    function addRows(rows, mode) {
-      if (!rows) return;
-      rows.forEach(function(r) {
-        all.push({
-          Mode: mode,
-          AppointmentId: r.AppointmentId,
-          CustomerPhone: r.CustomerPhone,
-          Status: r.Status,
-          ScheduledForUtc: r.ScheduledForUtc,
-          UpdatedUtc: r.UpdatedUtc
-        });
-      });
-    }
-
-    addRows(d.Waiting, "waiting");
-    addRows(d.InService, "inservice");
-    addRows(d.Done, "done");
-
-    if (all.length === 0) {
-      $("#calendarView").html("<div class='muted'>No appointments scheduled yet.</div>");
-      return;
-    }
-
-    all.sort(function(a, b) {
-      return new Date(a.ScheduledForUtc) - new Date(b.ScheduledForUtc);
-    });
-
-    var hours = all.map(function(r) { return FastQProvider.getHour(r.ScheduledForUtc); }).filter(function(v) { return v !== null; });
-    var minHour = hours.length ? Math.min.apply(null, hours) : 8;
-    var maxHour = hours.length ? Math.max.apply(null, hours) : 18;
-    minHour = Math.max(0, minHour - 1);
-    maxHour = Math.min(23, maxHour + 1);
-
-    var html = "";
-    for (var h = minHour; h <= maxHour; h++) {
-      var label = FastQProvider.formatHour(h);
-      var slotRows = all.filter(function(r) { return FastQProvider.getHour(r.ScheduledForUtc) === h; });
-      html += "<div class='time-row'>" +
-        "<div class='time-label'>" + label + "</div>" +
-        "<div class='slot-stack'>" + (slotRows.length ? slotRows.map(FastQProvider.renderSlot).join("") : "<div class='muted'>No bookings</div>") + "</div>" +
-        "</div>";
-    }
-
-    $("#calendarView").html(html);
-  },
-
-  renderSlot: function(r) {
-    var statusClass = FastQProvider.statusClass(r.Status, r.Mode);
-    var actions = FastQProvider.renderActions(r);
-    var scheduled = r.ScheduledForUtc || "-";
-    var updated = r.UpdatedUtc || "-";
-
-    return "<div class='slot-card'>" +
-      "<div class='slot-header'>" +
-      "<div class='slot-title'>" + (r.CustomerPhone || "Walk-in") + "</div>" +
-      "<div class='slot-meta'>" +
-      "<span class='status-tag " + statusClass + "'>" + r.Status + "</span>" +
-      "<span class='muted'>Scheduled: " + scheduled + "</span>" +
-      "<span class='muted'>Updated: " + updated + "</span>" +
-      "</div>" +
-      "</div>" +
-      "<div class='slot-actions'>" + actions + "</div>" +
-      "</div>";
-  },
-
-  renderActions: function(r) {
-    var apptId = r.AppointmentId;
-    var actions = "";
-
-    if (r.Mode === "waiting") {
-      actions += "<button class='btn small' onclick=\"FastQProvider.act('arrive','" + apptId + "')\">Arrive</button> ";
-      actions += "<button class='btn small' onclick=\"FastQProvider.act('begin','" + apptId + "')\">Begin</button> ";
-      actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
-    }
-    if (r.Mode === "inservice") {
-      actions += "<button class='btn small' onclick=\"FastQProvider.act('end','" + apptId + "')\">End</button> ";
-      actions += "<button class='btn small ghost' onclick=\"FastQProvider.transfer('" + apptId + "')\">Transfer</button> ";
-    }
-
-    actions += "<a class='btn small ghost' href='/Customer/Status?appointmentId=" + apptId + "' target='_blank'>Status</a>";
-    return actions;
-  },
-
-  statusClass: function(status, mode) {
-    var s = (status || "").toLowerCase();
-    if (s.indexOf("cancel") >= 0 || s.indexOf("closed") >= 0) return "cancelled";
-    if (mode === "inservice" || s.indexOf("service") >= 0) return "inservice";
-    if (mode === "done" || s.indexOf("completed") >= 0 || s.indexOf("transferred") >= 0) return "done";
-    return "waiting";
-  },
-
-  getHour: function(dt) {
-    var d = new Date(dt);
-    if (isNaN(d.getTime())) return null;
-    return d.getUTCHours();
-  },
-
-  formatHour: function(h) {
-    var label = (h < 10 ? "0" + h : h) + ":00 UTC";
-    return label;
-  },
-
-  act: function(action, appointmentId) {
-    var ctx = window.FASTQ_CONTEXT;
-    FastQLive.toast("Action: " + action);
-    $.post("/Provider/ProviderAction", { action: action, appointmentId: appointmentId, providerId: ctx.providerId })
-      .done(function(res){
-        if(!res || !res.ok) {
-          FastQLive.toast("Failed: " + (res && res.error ? res.error : "unknown"));
-          return;
-        }
-        // push will refresh; keep a local refresh as fallback
-        setTimeout(FastQProvider.refresh, 200);
-      });
-  },
-
-  transfer: function(appointmentId) {
-    var ctx = window.FASTQ_CONTEXT;
-    var target = (ctx.queueId === "0153158e-0000-0000-4641-535451494430")
-      ? "01fca055-0000-0000-4641-535451494430"
-      : "0153158e-0000-0000-4641-535451494430";
-
-    FastQLive.toast("Transfer to other queue");
-    $.post("/Provider/TransferAppointment", { appointmentId: appointmentId, targetQueueId: target })
-      .done(function(res){
-        if(!res || !res.ok) {
-          FastQLive.toast("Transfer failed: " + (res && res.error ? res.error : "unknown"));
-          return;
-        }
-        setTimeout(FastQProvider.refresh, 200);
-      });
-  },
-
-  systemClose: function() {
-    FastQLive.toast("System close stale...");
-    $.post("/Provider/SystemClose", { staleHours: 12 }).done(function(res){
-      if(res && res.ok) {
-        FastQLive.toast("Closed stale: " + res.closed);
-        setTimeout(FastQProvider.refresh, 200);
+  (function () {
+    function closeModal(id) {
+      var modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove("show");
       }
-    });
-  }
-};
-
-// initial refresh
-$(function(){
-  window.FASTQ_CONTEXT.queueId = $("#queueId").val();
-  FastQProvider.refresh();
-});
-
-// hooks for live updates (called from fastq.live.js)
-window.onFastQQueueUpdated = function(locationId, queueId) {
-  if (locationId === window.FASTQ_CONTEXT.locationId) {
-    // if the update is for the active queue or same location, refresh
-    if (!queueId || queueId === window.FASTQ_CONTEXT.queueId) {
-      FastQProvider.refresh();
     }
-  }
-};
+
+    function openModal(id) {
+      var modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.add("show");
+      }
+    }
+
+    document.querySelectorAll(".accordion-toggle").forEach(function (row) {
+      row.addEventListener("click", function () {
+        var targetId = row.getAttribute("data-target");
+        if (!targetId) {
+          return;
+        }
+        document.querySelectorAll(".row-actions").forEach(function (detail) {
+          if (detail.id !== targetId) {
+            detail.classList.remove("is-open");
+          }
+        });
+        var target = document.getElementById(targetId);
+        if (target) {
+          target.classList.toggle("is-open");
+        }
+      });
+    });
+
+    document.querySelectorAll("[data-modal-close]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        closeModal(btn.getAttribute("data-modal-close"));
+      });
+    });
+
+    var meetingLink = document.querySelector(".meeting-link");
+    if (meetingLink) {
+      meetingLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        var mid = document.getElementById("mid");
+        if (mid) {
+          mid.textContent = meetingLink.getAttribute("data-id") || "";
+        }
+        openModal("meetingModal");
+      });
+    }
+
+    var saveMeeting = document.getElementById("saveMeeting");
+    if (saveMeeting) {
+      saveMeeting.addEventListener("click", function () {
+        closeModal("meetingModal");
+      });
+    }
+  })();
 </script>
 }
