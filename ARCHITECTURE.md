@@ -1,12 +1,12 @@
-# Architecture (Simplified)
+ï»¿# Architecture (Simplified)
 
 ## 1) FastQ.Web (UI + business logic)
 **Responsibility**
-- WebForms pages (`.aspx`) and code-behind (`.aspx.cs`)
-- Page-level business rules and validation
+- MVC controllers + Razor views (`.cshtml`)
+- Controller-level business rules and validation
 - Composition root that wires repositories + services
 - SignalR Hub + live notifications
-- PageMethods (AJAX) for async UI refresh without API handlers
+- JSON controller actions for async UI refresh (no API handlers)
 
 **Depends on:** FastQ.Data
 
@@ -21,10 +21,10 @@
 
 ---
 
-# Live Queue Handling with SignalR (customer ? provider)
+# Live Queue Handling with SignalR (customer -> provider)
 
 ## Server-side pattern
-1. Code-behind or service updates data (e.g., booking, arrive, begin, end, transfer).
+1. Controller or service updates data (e.g., booking, arrive, begin, end, transfer).
 2. `SignalRRealtimeNotifier` broadcasts:
    - `queueUpdated(locationId, queueId)`
    - `appointmentUpdated(appointmentId, status)`
@@ -32,15 +32,14 @@
 
 ## Client-side pattern (push + pull)
 - **Push:** SignalR events arrive immediately.
-- **Pull:** Pages call PageMethods to fetch fresh snapshots (no `/Api` handlers).
+- **Pull:** Pages call MVC JSON actions to fetch fresh snapshots (no `/Api` handlers).
 
-## Where it’s implemented
+## Where it's implemented
 - Hub: `src/FastQ.Web/Hubs/QueueHub.cs`
 - Notifier: `src/FastQ.Web/Realtime/SignalRRealtimeNotifier.cs`
 - Client: `src/FastQ.Web/Scripts/fastq.live.js`
-- PageMethods:
-  - `src/FastQ.Web/Customer/Status.aspx.cs`
-  - `src/FastQ.Web/Customer/Home.aspx.cs`
-  - `src/FastQ.Web/Provider/Today.aspx.cs`
-  - `src/FastQ.Web/Admin/Dashboard.aspx.cs`
-  - `src/FastQ.Web/Reporting/Overview.aspx.cs`
+- Controllers:
+  - `src/FastQ.Web/Controllers/CustomerController.cs`
+  - `src/FastQ.Web/Controllers/ProviderController.cs`
+  - `src/FastQ.Web/Controllers/AdminController.cs`
+  - `src/FastQ.Web/Controllers/ReportingController.cs`

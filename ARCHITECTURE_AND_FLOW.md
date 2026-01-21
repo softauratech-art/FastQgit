@@ -1,13 +1,13 @@
-# FastQ Architecture + Project Flow (Full)
+﻿# FastQ Architecture + Project Flow (Full)
 
-This document is the end-to-end explanation of how the simplified Web + Data project works, with code references.
+This document is the end-to-end explanation of how the MVC Web + Data project works, with code references.
 
 ## Architecture (Simplified)
 
 ### FastQ.Web (UI + business logic)
-- WebForms pages (`.aspx`) and code-behind (`.aspx.cs`).
-- Business rules live in code-behind or Web services.
-- PageMethods enable async refresh without API handlers.
+- MVC controllers and Razor views (`.cshtml`).
+- Business rules live in controller actions or app services.
+- JSON controller actions enable async refresh (no API handlers).
 - SignalR provides live updates + toast notifications.
 
 ### FastQ.Data (Entities + storage)
@@ -58,40 +58,35 @@ public static void Initialize()
 }
 ```
 
-## Page Flow (WebForms like MVC)
+## MVC Page Flow (End-to-End)
 
 ### Step 1: User opens a page
-- Example: `src/FastQ.Web/Customer/Book.aspx`.
+- Example view: `src/FastQ.Web/Views/Customer/Book.cshtml`.
+- Controller action: `src/FastQ.Web/Controllers/CustomerController.cs` (`Book()` GET).
 
-### Step 2: User submits a form (postback)
-- Code-behind runs business logic and calls Data layer.
-
-```csharp
-// src/FastQ.Web/Customer/Book.aspx.cs
-protected void CreateAppointment_Click(object sender, EventArgs e)
-{
-    // read inputs, validate
-    var res = CompositionRoot.Booking.BookFirstAvailable(DefaultLocationId, queueId, phone, true, name);
-    // handle result + redirect
-}
-```
-
-### Step 2b: Async refresh via PageMethods
-- JavaScript calls code-behind methods directly (no API handlers).
+### Step 2: User submits a form
+- Form posts to an MVC action that runs business rules and calls Data.
 
 ```csharp
-// src/FastQ.Web/Customer/Status.aspx.cs
-[WebMethod]
-[ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-public static object GetAppointmentSnapshot(string appointmentId)
+// src/FastQ.Web/Controllers/CustomerController.cs
+[HttpPost]
+public ActionResult Book(BookForm form)
 {
-    var dto = CompositionRoot.Queries.GetAppointmentSnapshot(apptId);
-    return new { ok = true, data = dto };
+    var res = CompositionRoot.Booking.BookFirstAvailable(
+        form.LocationId, form.QueueId, form.Phone, form.SmsOptIn, form.Name);
+
+    if (!res.Ok)
+    {
+        ModelState.AddModelError("", res.Error);
+        return View(form);
+    }
+
+    return RedirectToAction("Status", new { appointmentId = res.Value.Id });
 }
 ```
 
 ### Step 3: Data layer reads/writes storage
-- Uses InMemory repositories by default.
+- InMemory repositories are used by default.
 
 ```csharp
 // src/FastQ.Data/InMemory/InMemoryStore.cs
@@ -99,12 +94,25 @@ public Dictionary<Guid, Appointment> Appointments { get; } = new Dictionary<Guid
 ```
 
 ### Step 4: SignalR pushes live updates
-- Every appointment change triggers a broadcast and a 3-second toast.
+- Every appointment change triggers a broadcast + toast.
 
 ```csharp
 // src/FastQ.Web/Realtime/SignalRRealtimeNotifier.cs
 Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString());
 Hub.Clients.All.notify("Customer arrived (...)");
+```
+
+### Step 5: Views refresh via JSON actions
+- JavaScript calls JSON endpoints to refresh without full reloads.
+
+```csharp
+// src/FastQ.Web/Controllers/ProviderController.cs
+[HttpGet]
+public JsonResult GetQueueSnapshot(Guid locationId, Guid queueId)
+{
+    var dto = CompositionRoot.Queries.GetQueueSnapshot(locationId, queueId);
+    return Json(new { ok = true, data = dto }, JsonRequestBehavior.AllowGet);
+}
 ```
 
 ## Oracle ID Mapping
@@ -116,7 +124,9 @@ IdMapper.TryToLong(id, out long value); // GUID -> number
 ```
 
 ## Where to Debug
-- Pages + code-behind: `src/FastQ.Web/Customer`, `src/FastQ.Web/Provider`, `src/FastQ.Web/Admin`, `src/FastQ.Web/Reporting`
+- Controllers: `src/FastQ.Web/Controllers`
+- Views: `src/FastQ.Web/Views`
+- Business logic: `src/FastQ.Web/App`
 - Data layer: `src/FastQ.Data`
 - InMemory storage: `src/FastQ.Data/InMemory`
 - Oracle repositories: `src/FastQ.Data/Oracle`

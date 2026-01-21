@@ -3,16 +3,24 @@
   "WorkspaceRootPath": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\app_start\\compositionroot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\app\\services\\bookingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\app\\services\\bookingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\entities\\customer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\entities\\customer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\app_start\\compositionroot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\app_start\\compositionroot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\customer\\book.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\customer\\book.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\FastQ.Web\\Customer\\Book.aspx.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\customer\\book.aspx||{57312C73-6202-49E9-B1E1-40EA1A6DC1F6}",
-      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\customer\\book.aspx||{57312C73-6202-49E9-B1E1-40EA1A6DC1F6}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx||{57312C73-6202-49E9-B1E1-40EA1A6DC1F6}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\FastQ.Web\\Customer\\Book.aspx||{57312C73-6202-49E9-B1E1-40EA1A6DC1F6}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,11 +30,36 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Customer.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Entities\\Customer.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Data\\Entities\\Customer.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Entities\\Customer.cs",
+              "RelativeToolTip": "src\\FastQ.Data\\Entities\\Customer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-19T12:50:42.597Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "BookingService.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\App\\Services\\BookingService.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\App\\Services\\BookingService.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\App\\Services\\BookingService.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\App\\Services\\BookingService.cs",
+              "ViewState": "AgIAAB0AAAAAAAAAAAAAADIAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-19T12:50:13.024Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "CompositionRoot.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
@@ -34,34 +67,29 @@
               "RelativeToolTip": "src\\FastQ.Web\\App_Start\\CompositionRoot.cs",
               "ViewState": "AgIAACwAAAAAAAAAAADwv0gAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-19T12:48:38.429Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-19T12:48:38.429Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "Book.aspx.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Customer\\Book.aspx.cs",
               "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx.cs",
               "RelativeToolTip": "src\\FastQ.Web\\Customer\\Book.aspx.cs",
-              "ViewState": "AgIAABQAAAAAAAAAAADwvzAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-12T17:20:44.55Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-12T17:20:44.55Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Book.aspx",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Customer\\Book.aspx",
               "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx",
               "RelativeToolTip": "src\\FastQ.Web\\Customer\\Book.aspx",
-              "LogicalView": "7651a703-06e5-11d1-8ebd-00a0c90f26ea",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000195|",
-              "WhenOpened": "2026-01-12T17:18:26.665Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-12T17:18:26.665Z"
             }
           ]
         }

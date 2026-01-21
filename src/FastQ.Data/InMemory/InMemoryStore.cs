@@ -81,6 +81,90 @@ namespace FastQ.Data.InMemory
                 };
                 Providers[provider.Id] = provider;
 
+                var now = DateTime.UtcNow;
+
+                var cust1 = new Customer
+                {
+                    Id = IdMapper.FromLong(NextCustomerId()),
+                    Name = "Marie Calendar",
+                    Phone = "x2690",
+                    SmsOptIn = true,
+                    CreatedUtc = now,
+                    UpdatedUtc = now
+                };
+                var cust2 = new Customer
+                {
+                    Id = IdMapper.FromLong(NextCustomerId()),
+                    Name = "Martha Stuart",
+                    Phone = "x2020",
+                    SmsOptIn = false,
+                    CreatedUtc = now,
+                    UpdatedUtc = now
+                };
+                var cust3 = new Customer
+                {
+                    Id = IdMapper.FromLong(NextCustomerId()),
+                    Name = "David Cheng",
+                    Phone = "x6723",
+                    SmsOptIn = true,
+                    CreatedUtc = now,
+                    UpdatedUtc = now
+                };
+                var cust4 = new Customer
+                {
+                    Id = IdMapper.FromLong(NextCustomerId()),
+                    Name = "Arlene Martinez",
+                    Phone = "x0221",
+                    SmsOptIn = true,
+                    CreatedUtc = now,
+                    UpdatedUtc = now
+                };
+                var cust5 = new Customer
+                {
+                    Id = IdMapper.FromLong(NextCustomerId()),
+                    Name = "Carter Harper",
+                    Phone = "x7812",
+                    SmsOptIn = false,
+                    CreatedUtc = now,
+                    UpdatedUtc = now
+                };
+
+                Customers[cust1.Id] = cust1;
+                Customers[cust2.Id] = cust2;
+                Customers[cust3.Id] = cust3;
+                Customers[cust4.Id] = cust4;
+                Customers[cust5.Id] = cust5;
+
+                var today = now.Date;
+
+                Appointment CreateAppt(Queue queue, Customer customer, DateTime whenUtc, AppointmentStatus status)
+                {
+                    var id = IdMapper.FromLong(NextAppointmentId());
+                    return new Appointment
+                    {
+                        Id = id,
+                        LocationId = loc.Id,
+                        QueueId = queue.Id,
+                        CustomerId = customer.Id,
+                        ScheduledForUtc = whenUtc,
+                        Status = status,
+                        CreatedUtc = now,
+                        UpdatedUtc = now
+                    };
+                }
+
+                var appt1 = CreateAppt(q1, cust1, today.AddHours(7).AddMinutes(50), AppointmentStatus.Arrived);
+                var appt2 = CreateAppt(q2, cust2, today.AddHours(7).AddMinutes(52), AppointmentStatus.Scheduled);
+                var appt3 = CreateAppt(q2, cust3, today.AddHours(10).AddMinutes(30), AppointmentStatus.Scheduled);
+                var appt4 = CreateAppt(q1, cust4, today.AddHours(11), AppointmentStatus.Scheduled);
+                var appt5 = CreateAppt(q1, cust5, today.AddDays(1).AddHours(14), AppointmentStatus.Scheduled);
+
+                Appointments[appt1.Id] = appt1;
+                Appointments[appt2.Id] = appt2;
+                Appointments[appt3.Id] = appt3;
+                Appointments[appt4.Id] = appt4;
+                Appointments[appt5.Id] = appt5;
+
                 _seeded = true;
             }
         }

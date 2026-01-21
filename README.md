@@ -1,12 +1,12 @@
-# FastQ Prototype (ASP.NET WebForms 4.8) - Simplified + Live SignalR
+# FastQ Prototype (ASP.NET MVC 5 on .NET Framework 4.8) - Simplified + Live SignalR
 
 This is a **prototype** showing a simplified 2-layer architecture with an **in-memory data store** that can be swapped to Oracle later, plus **live queue updates** using **SignalR (customer ? provider updates instantly)**.
 
 ## Stack
-- ASP.NET WebForms (.NET Framework 4.8)
+- ASP.NET MVC 5 (.NET Framework 4.8)
 - SignalR 2.x (OWIN hosted)
 - FastQ.Data repositories (InMemory + Oracle)
-- PageMethods for async page refresh (no API handlers)
+- MVC controllers returning JSON for async refresh (no API handlers)
 
 ## Quick start (Visual Studio)
 1. Open `FastQPrototype_LiveSignalR.sln`
