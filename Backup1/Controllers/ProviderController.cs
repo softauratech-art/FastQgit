@@ -1,16 +1,96 @@
 using System;
+using System.Globalization;
+using System.Linq;
+using System.Web.Configuration;
 using System.Web.Mvc;
+using FastQ.Data.Entities;
 using FastQ.Data.Common;
-using FastQ.Web.App_Start;
+using FastQ.Data.Oracle;
+using FastQ.Web.Models;
+using FastQ.Web.Helpers;
+using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
     public class ProviderController : Controller
     {
+        private readonly ProviderScheduleService _schedule;
+        private readonly QueueQueryService _queries;
+        private readonly ProviderService _provider;
+        private readonly TransferService _transfer;
+        private readonly SystemCloseService _systemClose;
+
+        public ProviderController()
+        {
+            var connString = GetConnectionString();
+
+            var appts = new OracleAppointmentRepository(connString);
+            var customers = new OracleCustomerRepository(connString);
+            var queues = new OracleQueueRepository(connString);
+            var locations = new OracleLocationRepository(connString);
+
+            IClock clock = new SystemClock();
+            IRealtimeNotifier notifier = new SignalRRealtimeNotifier();
+
+            _schedule = new ProviderScheduleService(appts, customers, queues);
+            _queries = new QueueQueryService(appts, customers, queues, locations);
+            _provider = new ProviderService(appts, clock, notifier);
+            _transfer = new TransferService(appts, queues, clock, notifier);
+            _systemClose = new SystemCloseService(appts, clock, notifier);
+        }
+
+        private static string GetConnectionString()
+        {
+            var connString = WebConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connString))
+                throw new InvalidOperationException("FastQOracle connection string is missing.");
+
+            return connString;
+        }
+
         [HttpGet]
         public ActionResult Today()
         {
-            return View();
+            var today = DateTime.UtcNow.Date;
+
+            var queues = _schedule.ListQueues().ToList();
+            var customers = _schedule.ListCustomers().ToList();
+            var appointments = _schedule.ListAppointmentsForDate(today).ToList();
+
+            var queueMap = queues.ToDictionary(q => q.Id, q => q);
+            var customerMap = customers.ToDictionary(c => c.Id, c => c);
+
+            var rows = appointments.Select(a =>
+            {
+                queueMap.TryGetValue(a.QueueId, out var queue);
+                customerMap.TryGetValue(a.CustomerId, out var customer);
+
+                var contact = customer != null && customer.SmsOptIn ? "Online" : "In-Person";
+
+                return new ProviderAppointmentRow
+                {
+                    AppointmentId = a.Id,
+                    ScheduledForUtc = a.ScheduledForUtc,
+                    StartTimeText = a.ScheduledForUtc.ToString("h:mm tt", CultureInfo.InvariantCulture),
+                    StartDateText = a.ScheduledForUtc.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture),
+                    QueueName = queue?.Name ?? "Unknown Queue",
+                    ServiceType = queue?.Name != null ? $"Questions: {queue.Name}" : "Questions: General",
+                    CustomerName = customer?.Name ?? "Unknown",
+                    Phone = customer?.Phone ?? "-",
+                    Status = a.Status,
+                    StatusText = a.Status.ToString().ToUpperInvariant(),
+                    ContactMethod = contact
+                };
+            }).OrderBy(r => r.ScheduledForUtc).ToList();
+
+            var model = new ProviderTodayViewModel
+            {
+                DateText = DateTime.UtcNow.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture) + " (UTC)",
+                LiveQueue = rows.Where(r => r.Status == AppointmentStatus.Arrived || r.Status == AppointmentStatus.InService).ToList(),
+                Scheduled = rows.Where(r => r.Status != AppointmentStatus.Arrived && r.Status != AppointmentStatus.InService).ToList()
+            };
+
+            return View(model);
         }
 
         [HttpGet]
@@ -19,7 +99,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(locationId, out var locId) || !Guid.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "locationId and queueId are required" }, JsonRequestBehavior.AllowGet);
 
-            var dto = CompositionRoot.Queries.GetQueueSnapshot(locId, qId);
+            var dto = _queries.GetQueueSnapshot(locId, qId);
             return Json(new { ok = true, data = dto }, JsonRequestBehavior.AllowGet);
         }
 
@@ -35,9 +115,9 @@ namespace FastQ.Web.Controllers
 
             var res = action switch
             {
-                "arrive" => CompositionRoot.Provider.MarkArrived(apptId),
-                "begin" => CompositionRoot.Provider.BeginService(apptId, provId),
-                "end" => CompositionRoot.Provider.EndService(apptId),
+                "arrive" => _provider.MarkArrived(apptId),
+                "begin" => _provider.BeginService(apptId, provId),
+                "end" => _provider.EndService(apptId),
                 _ => Result.Fail("Unknown action")
             };
 
@@ -53,7 +133,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(appointmentId, out var apptId) || !Guid.TryParse(targetQueueId, out var queueId))
                 return Json(new { ok = false, error = "appointmentId and targetQueueId are required" });
 
-            var res = CompositionRoot.Transfer.Transfer(apptId, queueId);
+            var res = _transfer.Transfer(apptId, queueId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
@@ -64,8 +144,9 @@ namespace FastQ.Web.Controllers
         public JsonResult SystemClose(int staleHours)
         {
             var hours = staleHours <= 0 ? 12 : staleHours;
-            var closed = CompositionRoot.SystemClose.CloseStaleScheduledAppointments(hours);
+            var closed = _systemClose.CloseStaleScheduledAppointments(hours);
             return Json(new { ok = true, closed = closed });
         }
     }
 }
+

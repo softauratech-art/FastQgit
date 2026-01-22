@@ -23,7 +23,7 @@ namespace FastQ.Data.Oracle
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
-                @"SELECT USER_ID, FNAME, LNAME
+                @"SELECT USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, TITLE, STAMPDATE, STAMPUSER
                   FROM FQUSERS
                   WHERE USER_ID = :userId"))
             {
@@ -41,20 +41,31 @@ namespace FastQ.Data.Oracle
                 throw new InvalidOperationException("Provider Id is not mapped to a numeric ID.");
 
             SplitName(provider.Name, out var first, out var last);
-            var email = $"{providerId}@placeholder.local";
+            if (!string.IsNullOrWhiteSpace(provider.FirstName)) first = provider.FirstName;
+            if (!string.IsNullOrWhiteSpace(provider.LastName)) last = provider.LastName;
+            var email = string.IsNullOrWhiteSpace(provider.Email) ? $"{providerId}@placeholder.local" : provider.Email;
+            var stampUser = string.IsNullOrWhiteSpace(provider.StampUser) ? "fastq" : provider.StampUser;
+            var activeFlag = provider.ActiveFlag ? "Y" : "N";
+            var adminFlag = provider.AdminFlag ? "Y" : "N";
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
                 @"INSERT INTO FQUSERS
-                    (USER_ID, FNAME, LNAME, EMAIL, ACTIVEFLAG, ADMINFLAG, STAMPDATE, STAMPUSER)
+                    (USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, PASSWORD, TITLE, STAMPDATE, STAMPUSER)
                   VALUES
-                    (:userId, :fname, :lname, :email, 'Y', 'N', SYSDATE, :stampUser)"))
+                    (:userId, :fname, :lname, :email, :phone, :language, :activeFlag, :adminFlag, :password, :title, SYSDATE, :stampUser)"))
             {
                 OracleDb.AddParam(cmd, "userId", providerId.ToString(), DbType.String);
                 OracleDb.AddParam(cmd, "fname", first, DbType.String);
                 OracleDb.AddParam(cmd, "lname", last, DbType.String);
                 OracleDb.AddParam(cmd, "email", email, DbType.String);
-                OracleDb.AddParam(cmd, "stampUser", "fastq", DbType.String);
+                OracleDb.AddParam(cmd, "phone", provider.Phone ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "language", provider.Language ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
+                OracleDb.AddParam(cmd, "adminFlag", adminFlag, DbType.String);
+                OracleDb.AddParam(cmd, "password", provider.Password ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "title", provider.Title ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "stampUser", stampUser, DbType.String);
                 cmd.ExecuteNonQuery();
             }
         }
@@ -66,7 +77,7 @@ namespace FastQ.Data.Oracle
             var list = new List<Provider>();
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
-                @"SELECT DISTINCT u.USER_ID, u.FNAME, u.LNAME
+                @"SELECT DISTINCT u.USER_ID, u.FNAME, u.LNAME, u.EMAIL, u.PHONE, u.LANGUAGE, u.ACTIVEFLAG, u.ADMINFLAG, u.TITLE, u.STAMPDATE, u.STAMPUSER
                   FROM FQUSERS u
                   JOIN USER_PERMISSIONS p ON p.USER_ID = u.USER_ID
                   JOIN VALIDQUEUES q ON q.QUEUE_ID = p.QUEUE_ID
@@ -91,7 +102,7 @@ namespace FastQ.Data.Oracle
             var list = new List<Provider>();
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
-                @"SELECT USER_ID, FNAME, LNAME
+                @"SELECT USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, TITLE, STAMPDATE, STAMPUSER
                   FROM FQUSERS
                   WHERE NVL(ACTIVEFLAG, 'Y') = 'Y'"))
             using (var reader = cmd.ExecuteReader())
@@ -114,12 +125,25 @@ namespace FastQ.Data.Oracle
                 return null;
             }
 
-            var name = $"{record["FNAME"]} {record["LNAME"]}".Trim();
+            var first = record["FNAME"]?.ToString() ?? string.Empty;
+            var last = record["LNAME"]?.ToString() ?? string.Empty;
+            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.UtcNow : Convert.ToDateTime(record["STAMPDATE"]);
+            var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
+            var adminFlag = (record["ADMINFLAG"]?.ToString() ?? "N") == "Y";
             return new Provider
             {
                 Id = IdMapper.FromLong(userId),
                 LocationId = locationId == Guid.Empty ? Guid.Empty : locationId,
-                Name = name
+                FirstName = first,
+                LastName = last,
+                Email = record["EMAIL"]?.ToString() ?? string.Empty,
+                Phone = record["PHONE"]?.ToString() ?? string.Empty,
+                Language = record["LANGUAGE"]?.ToString() ?? string.Empty,
+                ActiveFlag = activeFlag,
+                AdminFlag = adminFlag,
+                Title = record["TITLE"]?.ToString() ?? string.Empty,
+                StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
+                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc)
             };
         }
 

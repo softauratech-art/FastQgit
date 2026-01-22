@@ -1,0 +1,56 @@
+@using FT.FastQ.Helpers
+@{
+    ViewBag.Title = ResourceHelper.GetResourceString("ManageProfile");
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-container">
+    <h2>@ResourceHelper.GetResourceString("ManageProfile")</h2>
+    <div class="content-box">
+        <p>Manage your profile information here.</p>
+        @if (!string.IsNullOrEmpty(ViewBag.Email))
+        {
+            <p><strong>Logged in as:</strong> @ViewBag.Email</p>
+        }
+    </div>
+</div>
+
+<style>
+    .page-container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    .page-container h2 {
+        color: #667eea;
+        margin-bottom: 15px;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    .content-box {
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    @@media (max-width: 768px) {
+        .page-container {
+            padding: 15px;
+            height: calc(100vh - 100px);
+        }
+        .page-container h2 {
+            font-size: 22px;
+        }
+        .content-box {
+            padding: 15px;
+        }
+    }
+</style>
+

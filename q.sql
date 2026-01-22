@@ -369,7 +369,29 @@ END FQ_EXTERNAL;
     --TODO:
     --Pass stampuser to ALL procs from internal calls
     --Pass customerid (and token?) to ALL procs from external calls
-    
+    --
+    -- TODO: Missing procedures referenced by FastQ.Data.Oracle repositories
+    -- PROCEDURE GET_LOCATION (p_locationid IN INT, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE LIST_LOCATIONS (p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE INSERT_LOCATION (p_locationid IN INT, p_locname IN VARCHAR2, p_address IN VARCHAR2, p_phone IN VARCHAR2, p_opens_at IN DATE, p_closes_at IN DATE, p_description IN VARCHAR2, p_activeflag IN CHAR, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE UPDATE_LOCATION (p_locationid IN INT, p_locname IN VARCHAR2, p_address IN VARCHAR2, p_phone IN VARCHAR2, p_opens_at IN DATE, p_closes_at IN DATE, p_description IN VARCHAR2, p_activeflag IN CHAR, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE INSERT_QUEUE (p_queueid IN INT, p_locationid IN INT, p_name IN VARCHAR2, p_name_es IN VARCHAR2, p_name_cp IN VARCHAR2, p_activeflag IN CHAR, p_emp_only IN CHAR, p_hide_in_kiosk IN CHAR, p_hide_in_monitor IN CHAR, p_lead_min IN VARCHAR2, p_lead_max IN VARCHAR2, p_has_guidelines IN CHAR, p_has_uploads IN CHAR, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE UPDATE_QUEUE (p_queueid IN INT, p_locationid IN INT, p_name IN VARCHAR2, p_name_es IN VARCHAR2, p_name_cp IN VARCHAR2, p_activeflag IN CHAR, p_emp_only IN CHAR, p_hide_in_kiosk IN CHAR, p_hide_in_monitor IN CHAR, p_lead_min IN VARCHAR2, p_lead_max IN VARCHAR2, p_has_guidelines IN CHAR, p_has_uploads IN CHAR, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE GET_CUSTOMER (p_customerid IN INT, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE GET_CUSTOMER_BY_PHONE (p_phone IN RAW, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE LIST_CUSTOMERS (p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE INSERT_CUSTOMER (p_customerid IN INT, p_fname IN RAW, p_lname IN RAW, p_email IN RAW, p_phone IN RAW, p_sms_optin IN CHAR, p_stampuser IN VARCHAR2, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE UPDATE_CUSTOMER (p_customerid IN INT, p_fname IN RAW, p_lname IN RAW, p_email IN RAW, p_phone IN RAW, p_sms_optin IN CHAR, p_stampuser IN VARCHAR2, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE GET_PROVIDER (p_userid IN VARCHAR2, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE LIST_PROVIDERS (p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE LIST_PROVIDERS_BY_LOCATION (p_locationid IN INT, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE INSERT_PROVIDER (p_userid IN VARCHAR2, p_fname IN VARCHAR2, p_lname IN VARCHAR2, p_email IN VARCHAR2, p_phone IN VARCHAR2, p_language IN VARCHAR2, p_activeflag IN CHAR, p_adminflag IN CHAR, p_password IN VARCHAR2, p_title IN VARCHAR2, p_stampuser IN VARCHAR2, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE GET_APPTS_BY_QUEUE (p_queueid IN INT, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE GET_APPTS_BY_CUSTOMER (p_customerid IN INT, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE GET_APPTS_BY_LOCATION (p_locationid IN INT, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE GET_APPTS_ALL (p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
+    -- PROCEDURE INSERT_APPT_INTERNAL (p_apptid IN INT, p_customerid IN INT, p_queueid IN INT, p_serviceid IN INT, p_ref_criteria IN VARCHAR2, p_ref_value IN VARCHAR2, p_contacttype IN VARCHAR2, p_moreinfo IN VARCHAR2, p_appt_date IN DATE, p_start_time IN INTERVAL DAY TO SECOND, p_end_time IN INTERVAL DAY TO SECOND, p_status IN VARCHAR2, p_confcode IN VARCHAR2, p_meetingurl IN VARCHAR2, p_language_pref IN VARCHAR2, p_createdby IN VARCHAR2, p_stampuser IN VARCHAR2, p_outmsg OUT VARCHAR2);
+    -- PROCEDURE UPDATE_APPT_INTERNAL (p_apptid IN INT, p_customerid IN INT, p_queueid IN INT, p_serviceid IN INT, p_ref_criteria IN VARCHAR2, p_ref_value IN VARCHAR2, p_contacttype IN VARCHAR2, p_moreinfo IN VARCHAR2, p_appt_date IN DATE, p_start_time IN INTERVAL DAY TO SECOND, p_end_time IN INTERVAL DAY TO SECOND, p_status IN VARCHAR2, p_confcode IN VARCHAR2, p_meetingurl IN VARCHAR2, p_language_pref IN VARCHAR2, p_stampuser IN VARCHAR2, p_outmsg OUT VARCHAR2);
 END FQ_PROCS;
 --------------------------------------------------------
 --  DDL for Package REF_CURSOR_TYPES

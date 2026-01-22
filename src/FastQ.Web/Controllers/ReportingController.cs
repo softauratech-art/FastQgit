@@ -2,12 +2,19 @@ using System;
 using System.Linq;
 using System.Web.Mvc;
 using FastQ.Data.Entities;
-using FastQ.Web.App_Start;
+using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
     public class ReportingController : Controller
     {
+        private readonly ReportingService _service;
+
+        public ReportingController()
+        {
+            _service = new ReportingService();
+        }
+
         [HttpGet]
         public ActionResult Overview()
         {
@@ -22,9 +29,7 @@ namespace FastQ.Web.Controllers
             var hasLocation = Guid.TryParse(locationId, out locId);
             var hasQueue = Guid.TryParse(queueId, out qId);
 
-            var appointments = hasLocation
-                ? CompositionRoot.Appointments.ListByLocation(locId).ToList()
-                : CompositionRoot.Appointments.ListAll().ToList();
+            var appointments = _service.ListAppointments(hasLocation ? locId : (Guid?)null).ToList();
 
             if (hasQueue)
                 appointments = appointments.Where(a => a.QueueId == qId).ToList();
@@ -39,9 +44,7 @@ namespace FastQ.Web.Controllers
             var cancelledToday = appointments.Count(a => a.UpdatedUtc >= dayStart && a.UpdatedUtc < dayEnd &&
                                                        (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem));
 
-            var providers = hasLocation
-                ? CompositionRoot.Providers.ListByLocation(locId)
-                : CompositionRoot.Providers.ListAll();
+            var providers = _service.ListProviders(hasLocation ? locId : (Guid?)null);
 
             var providerRows = providers.Select(p => new
             {
@@ -54,9 +57,7 @@ namespace FastQ.Web.Controllers
                                                    (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
             }).ToList();
 
-            var queues = hasLocation
-                ? CompositionRoot.Queues.ListByLocation(locId)
-                : CompositionRoot.Queues.ListAll();
+            var queues = _service.ListQueues(hasLocation ? locId : (Guid?)null);
 
             var queueRows = queues.Select(q => new
             {

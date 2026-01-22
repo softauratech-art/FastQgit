@@ -1,16 +1,46 @@
 using System;
+using System;
+using System.Globalization;
+using System.Linq;
 using System.Web.Mvc;
 using FastQ.Data.Common;
-using FastQ.Web.App_Start;
+using FastQ.Data.Entities;
+using FastQ.Web.Models;
+using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
     public class ProviderController : Controller
     {
+        private readonly ProviderService _service;
+
+        public ProviderController()
+        {
+            _service = new ProviderService();
+        }
+
         [HttpGet]
         public ActionResult Today()
         {
-            return View();
+            var today = DateTime.UtcNow.Date;
+
+            var queues = _service.ListQueues().ToList();
+            var customers = _service.ListCustomers().ToList();
+            var appointments = _service.ListAppointmentsForDate(today).ToList();
+
+            var queueMap = queues.ToDictionary(q => q.Id, q => q);
+            var customerMap = customers.ToDictionary(c => c.Id, c => c);
+
+            var rows = _service.BuildRows(appointments, queueMap, customerMap);
+
+            var model = new ProviderTodayViewModel
+            {
+                DateText = DateTime.UtcNow.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture) + " (UTC)",
+                LiveQueue = rows.Where(r => r.Status == AppointmentStatus.Arrived || r.Status == AppointmentStatus.InService).ToList(),
+                Scheduled = rows.Where(r => r.Status != AppointmentStatus.Arrived && r.Status != AppointmentStatus.InService).ToList()
+            };
+
+            return View(model);
         }
 
         [HttpGet]
@@ -19,7 +49,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(locationId, out var locId) || !Guid.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "locationId and queueId are required" }, JsonRequestBehavior.AllowGet);
 
-            var dto = CompositionRoot.Queries.GetQueueSnapshot(locId, qId);
+            var dto = _service.GetQueueSnapshot(locId, qId);
             return Json(new { ok = true, data = dto }, JsonRequestBehavior.AllowGet);
         }
 
@@ -33,13 +63,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(providerId, out var provId))
                 provId = Guid.Parse("02a62b1c-0000-0000-4641-535451494430");
 
-            var res = action switch
-            {
-                "arrive" => CompositionRoot.Provider.MarkArrived(apptId),
-                "begin" => CompositionRoot.Provider.BeginService(apptId, provId),
-                "end" => CompositionRoot.Provider.EndService(apptId),
-                _ => Result.Fail("Unknown action")
-            };
+            var res = _service.HandleProviderAction(action, apptId, provId);
 
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
@@ -53,7 +77,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(appointmentId, out var apptId) || !Guid.TryParse(targetQueueId, out var queueId))
                 return Json(new { ok = false, error = "appointmentId and targetQueueId are required" });
 
-            var res = CompositionRoot.Transfer.Transfer(apptId, queueId);
+            var res = _service.TransferAppointment(apptId, queueId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
@@ -64,8 +88,9 @@ namespace FastQ.Web.Controllers
         public JsonResult SystemClose(int staleHours)
         {
             var hours = staleHours <= 0 ? 12 : staleHours;
-            var closed = CompositionRoot.SystemClose.CloseStaleScheduledAppointments(hours);
+            var closed = _service.CloseStaleScheduledAppointments(hours);
             return Json(new { ok = true, closed = closed });
         }
     }
 }
+

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+
+    <variable name="logDirectory" value="C:\Logs\FastQ\"/>
+
+    <targets async="true">
+        <target name="file1" xsi:type="File" 
+              layout="${longdate}::${level}::${logger}::${message}::${exception:format=tostring}"
+              fileName="${logDirectory}/${shortdate}_FT.FastQ.txt"
+              keepFileOpen="false"
+               />
+    
+        <target name="SQLFile" xsi:type="File"
+              layout="${longdate}::${logger}::${message}"
+              fileName="${logDirectory}/${shortdate}_FT.FastQ_SQL.txt"
+              keepFileOpen="false"
+              />
+    </targets>
+
+    <rules>
+        <logger name="SQL.*" minlevel="Trace" writeTo="SQLFile" enabled="true" final="true"/>
+	      <logger name="*" minlevel="Trace" writeTo="file1" enabled="true" />
+    </rules>
+  
+</nlog>
+
+
+
+
+
+
+

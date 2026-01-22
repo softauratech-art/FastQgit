@@ -2,24 +2,31 @@ using System;
 using System.Linq;
 using System.Web.Mvc;
 using FastQ.Data.Entities;
-using FastQ.Web.App_Start;
 using FastQ.Web.Models;
+using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
     public class AdminController : Controller
     {
+        private readonly AdminService _service;
+
+        public AdminController()
+        {
+            _service = new AdminService();
+        }
+
         [HttpGet]
         public ActionResult Dashboard()
         {
-            var locations = CompositionRoot.Locations.ListAll();
+            var locations = _service.ListLocations();
             var location = locations.FirstOrDefault();
             if (location == null)
                 return View(new AdminDashboardViewModel());
 
-            var queues = CompositionRoot.Queues.ListByLocation(location.Id).ToList();
-            var customers = CompositionRoot.Customers.ListAll().ToList();
-            var appointments = CompositionRoot.Appointments.ListByLocation(location.Id).ToList();
+            var queues = _service.ListQueuesByLocation(location.Id).ToList();
+            var customers = _service.ListAllCustomers().ToList();
+            var appointments = _service.ListAppointmentsByLocation(location.Id).ToList();
 
             var queueMap = queues.ToDictionary(q => q.Id, q => q);
             var customerMap = customers.ToDictionary(c => c.Id, c => c);
@@ -65,15 +72,11 @@ namespace FastQ.Web.Controllers
             Guid locId;
             var hasLocation = Guid.TryParse(locationId, out locId);
 
-            var queues = hasLocation
-                ? CompositionRoot.Queues.ListByLocation(locId)
-                : CompositionRoot.Queues.ListAll();
+            var queues = _service.ListQueues(hasLocation ? locId : (Guid?)null);
 
-            var providers = hasLocation
-                ? CompositionRoot.Providers.ListByLocation(locId)
-                : CompositionRoot.Providers.ListAll();
+            var providers = _service.ListProviders(hasLocation ? locId : (Guid?)null);
 
-            var locations = CompositionRoot.Locations.ListAll();
+            var locations = _service.ListLocations();
 
             var queueRows = queues.Select(q => new
             {
@@ -117,7 +120,7 @@ namespace FastQ.Web.Controllers
                 !int.TryParse(minHoursLead, out var minHoursLeadInt))
                 return Json(new { ok = false, error = "Invalid configuration values" });
 
-            var queue = CompositionRoot.Queues.Get(qId);
+            var queue = _service.GetQueue(qId);
             if (queue == null)
                 return Json(new { ok = false, error = "Queue not found" });
 
@@ -128,7 +131,7 @@ namespace FastQ.Web.Controllers
             queue.Config.MaxDaysAhead = maxDaysAheadInt;
             queue.Config.MinHoursLead = minHoursLeadInt;
 
-            CompositionRoot.Queues.Update(queue);
+            _service.UpdateQueue(queue);
 
             return Json(new { ok = true });
         }
@@ -137,7 +140,7 @@ namespace FastQ.Web.Controllers
         public JsonResult SystemClose(int staleHours)
         {
             var hours = staleHours <= 0 ? 12 : staleHours;
-            var closed = CompositionRoot.SystemClose.CloseStaleScheduledAppointments(hours);
+            var closed = _service.CloseStaleScheduledAppointments(hours);
             return Json(new { ok = true, closed = closed });
         }
     }

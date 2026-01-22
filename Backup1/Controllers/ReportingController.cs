@@ -1,13 +1,37 @@
 using System;
 using System.Linq;
+using System.Web.Configuration;
 using System.Web.Mvc;
 using FastQ.Data.Entities;
-using FastQ.Web.App_Start;
+using FastQ.Data.Oracle;
+using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
     public class ReportingController : Controller
     {
+        private readonly ReportingService _reporting;
+
+        public ReportingController()
+        {
+            var connString = GetConnectionString();
+
+            var appts = new OracleAppointmentRepository(connString);
+            var providers = new OracleProviderRepository(connString);
+            var queues = new OracleQueueRepository(connString);
+
+            _reporting = new ReportingService(appts, providers, queues);
+        }
+
+        private static string GetConnectionString()
+        {
+            var connString = WebConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connString))
+                throw new InvalidOperationException("FastQOracle connection string is missing.");
+
+            return connString;
+        }
+
         [HttpGet]
         public ActionResult Overview()
         {
@@ -22,9 +46,7 @@ namespace FastQ.Web.Controllers
             var hasLocation = Guid.TryParse(locationId, out locId);
             var hasQueue = Guid.TryParse(queueId, out qId);
 
-            var appointments = hasLocation
-                ? CompositionRoot.Appointments.ListByLocation(locId).ToList()
-                : CompositionRoot.Appointments.ListAll().ToList();
+            var appointments = _reporting.ListAppointments(hasLocation ? locId : (Guid?)null).ToList();
 
             if (hasQueue)
                 appointments = appointments.Where(a => a.QueueId == qId).ToList();
@@ -39,9 +61,7 @@ namespace FastQ.Web.Controllers
             var cancelledToday = appointments.Count(a => a.UpdatedUtc >= dayStart && a.UpdatedUtc < dayEnd &&
                                                        (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem));
 
-            var providers = hasLocation
-                ? CompositionRoot.Providers.ListByLocation(locId)
-                : CompositionRoot.Providers.ListAll();
+            var providers = _reporting.ListProviders(hasLocation ? locId : (Guid?)null);
 
             var providerRows = providers.Select(p => new
             {
@@ -54,9 +74,7 @@ namespace FastQ.Web.Controllers
                                                    (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
             }).ToList();
 
-            var queues = hasLocation
-                ? CompositionRoot.Queues.ListByLocation(locId)
-                : CompositionRoot.Queues.ListAll();
+            var queues = _reporting.ListQueues(hasLocation ? locId : (Guid?)null);
 
             var queueRows = queues.Select(q => new
             {

@@ -22,7 +22,7 @@ namespace FastQ.Data.Oracle
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
-                @"SELECT LOCATION_ID, LOCNAME
+                @"SELECT LOCATION_ID, LOCNAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
                   FROM VALIDLOCATIONS
                   WHERE LOCATION_ID = :locationId"))
             {
@@ -50,12 +50,18 @@ namespace FastQ.Data.Oracle
 
                 using (var cmd = OracleDb.CreateCommand(conn,
                     @"INSERT INTO VALIDLOCATIONS
-                        (LOCATION_ID, LOCNAME, ACTIVEFLAG)
+                        (LOCATION_ID, LOCNAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG)
                       VALUES
-                        (:locationId, :name, 'Y')"))
+                        (:locationId, :name, :address, :phone, :opensAt, :closesAt, :description, :activeFlag)"))
                 {
                     OracleDb.AddParam(cmd, "locationId", locationId, DbType.Int64);
                     OracleDb.AddParam(cmd, "name", location.Name ?? string.Empty, DbType.String);
+                    OracleDb.AddParam(cmd, "address", location.Address ?? string.Empty, DbType.String);
+                    OracleDb.AddParam(cmd, "phone", location.Phone ?? string.Empty, DbType.String);
+                    OracleDb.AddParam(cmd, "opensAt", location.OpensAt, DbType.DateTime);
+                    OracleDb.AddParam(cmd, "closesAt", location.ClosesAt, DbType.DateTime);
+                    OracleDb.AddParam(cmd, "description", location.Description ?? string.Empty, DbType.String);
+                    OracleDb.AddParam(cmd, "activeFlag", location.ActiveFlag ? "Y" : "N", DbType.String);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -69,10 +75,22 @@ namespace FastQ.Data.Oracle
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
                 @"UPDATE VALIDLOCATIONS
-                  SET LOCNAME = :name
+                  SET LOCNAME = :name,
+                      ADDRESS = :address,
+                      PHONE = :phone,
+                      OPENS_AT = :opensAt,
+                      CLOSES_AT = :closesAt,
+                      DESCRIPTION = :description,
+                      ACTIVEFLAG = :activeFlag
                   WHERE LOCATION_ID = :locationId"))
             {
                 OracleDb.AddParam(cmd, "name", location.Name ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "address", location.Address ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "phone", location.Phone ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "opensAt", location.OpensAt, DbType.DateTime);
+                OracleDb.AddParam(cmd, "closesAt", location.ClosesAt, DbType.DateTime);
+                OracleDb.AddParam(cmd, "description", location.Description ?? string.Empty, DbType.String);
+                OracleDb.AddParam(cmd, "activeFlag", location.ActiveFlag ? "Y" : "N", DbType.String);
                 OracleDb.AddParam(cmd, "locationId", locationId, DbType.Int64);
                 cmd.ExecuteNonQuery();
             }
@@ -83,7 +101,7 @@ namespace FastQ.Data.Oracle
             var list = new List<Location>();
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
-                @"SELECT LOCATION_ID, LOCNAME
+                @"SELECT LOCATION_ID, LOCNAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
                   FROM VALIDLOCATIONS"))
             using (var reader = cmd.ExecuteReader())
             {
@@ -99,10 +117,19 @@ namespace FastQ.Data.Oracle
         private static Location MapLocation(IDataRecord record)
         {
             var locationId = Convert.ToInt64(record["LOCATION_ID"]);
+            var opensAt = record["OPENS_AT"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(record["OPENS_AT"]);
+            var closesAt = record["CLOSES_AT"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(record["CLOSES_AT"]);
+            var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
             return new Location
             {
                 Id = IdMapper.FromLong(locationId),
                 Name = record["LOCNAME"]?.ToString() ?? string.Empty,
+                Address = record["ADDRESS"]?.ToString() ?? string.Empty,
+                Phone = record["PHONE"]?.ToString() ?? string.Empty,
+                OpensAt = opensAt,
+                ClosesAt = closesAt,
+                Description = record["DESCRIPTION"]?.ToString() ?? string.Empty,
+                ActiveFlag = activeFlag,
                 TimeZoneId = "UTC"
             };
         }

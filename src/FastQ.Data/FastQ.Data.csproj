@@ -88,6 +88,9 @@
     <Compile Include="**\*.cs" Exclude="bin\**\*;obj\**\*" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Oracle\OracleRepositoryFactory.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>

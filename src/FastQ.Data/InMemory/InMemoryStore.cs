@@ -52,81 +52,140 @@ namespace FastQ.Data.InMemory
                 {
                     Id = IdMapper.FromLong(11111111),
                     Name = "Demo Location",
-                    TimeZoneId = "UTC"
+                    TimeZoneId = "UTC",
+                    Address = "123 Demo Street",
+                    Phone = "407-555-0100",
+                    Description = "Seeded demo location",
+                    ActiveFlag = true
                 };
                 Locations[loc.Id] = loc;
 
+                var minLead = 48;
+                var maxDays = 30;
                 var q1 = new Queue
                 {
                     Id = IdMapper.FromLong(22222222),
                     LocationId = loc.Id,
                     Name = "General Queue",
-                    Config = new QueueConfig { MaxUpcomingAppointments = 3, MaxDaysAhead = 30, MinHoursLead = 48 }
+                    NameEs = "General Queue",
+                    NameCp = "General Queue",
+                    ActiveFlag = true,
+                    LeadTimeMin = minLead.ToString(),
+                    LeadTimeMax = maxDays.ToString(),
+                    HasGuidelines = false,
+                    HasUploads = false,
+                    EmpOnly = false,
+                    HideInKiosk = false,
+                    HideInMonitor = false,
+                    Config = new QueueConfig { MaxUpcomingAppointments = 3, MaxDaysAhead = maxDays, MinHoursLead = minLead }
                 };
                 var q2 = new Queue
                 {
                     Id = IdMapper.FromLong(33333333),
                     LocationId = loc.Id,
                     Name = "Secondary Queue",
-                    Config = new QueueConfig { MaxUpcomingAppointments = 3, MaxDaysAhead = 30, MinHoursLead = 48 }
+                    NameEs = "Secondary Queue",
+                    NameCp = "Secondary Queue",
+                    ActiveFlag = true,
+                    LeadTimeMin = minLead.ToString(),
+                    LeadTimeMax = maxDays.ToString(),
+                    HasGuidelines = false,
+                    HasUploads = false,
+                    EmpOnly = false,
+                    HideInKiosk = false,
+                    HideInMonitor = false,
+                    Config = new QueueConfig { MaxUpcomingAppointments = 3, MaxDaysAhead = maxDays, MinHoursLead = minLead }
                 };
                 Queues[q1.Id] = q1;
                 Queues[q2.Id] = q2;
 
+                var now = DateTime.UtcNow;
                 var provider = new Provider
                 {
                     Id = IdMapper.FromLong(44444444),
                     LocationId = loc.Id,
-                    Name = "Provider A"
+                    FirstName = "Provider",
+                    LastName = "A",
+                    Email = "provider.a@placeholder.local",
+                    Phone = "407-555-0199",
+                    Language = "EN",
+                    ActiveFlag = true,
+                    AdminFlag = false,
+                    Title = "Analyst",
+                    StampUser = "seed",
+                    StampDateUtc = now
                 };
                 Providers[provider.Id] = provider;
-
-                var now = DateTime.UtcNow;
 
                 var cust1 = new Customer
                 {
                     Id = IdMapper.FromLong(NextCustomerId()),
-                    Name = "Marie Calendar",
+                    FirstName = "Marie",
+                    LastName = "Calendar",
+                    Email = "marie.calendar@placeholder.local",
                     Phone = "x2690",
                     SmsOptIn = true,
+                    ActiveFlag = true,
                     CreatedUtc = now,
-                    UpdatedUtc = now
+                    UpdatedUtc = now,
+                    StampDateUtc = now,
+                    StampUser = "seed"
                 };
                 var cust2 = new Customer
                 {
                     Id = IdMapper.FromLong(NextCustomerId()),
-                    Name = "Martha Stuart",
+                    FirstName = "Martha",
+                    LastName = "Stuart",
+                    Email = "martha.stuart@placeholder.local",
                     Phone = "x2020",
                     SmsOptIn = false,
+                    ActiveFlag = true,
                     CreatedUtc = now,
-                    UpdatedUtc = now
+                    UpdatedUtc = now,
+                    StampDateUtc = now,
+                    StampUser = "seed"
                 };
                 var cust3 = new Customer
                 {
                     Id = IdMapper.FromLong(NextCustomerId()),
-                    Name = "David Cheng",
+                    FirstName = "David",
+                    LastName = "Cheng",
+                    Email = "david.cheng@placeholder.local",
                     Phone = "x6723",
                     SmsOptIn = true,
+                    ActiveFlag = true,
                     CreatedUtc = now,
-                    UpdatedUtc = now
+                    UpdatedUtc = now,
+                    StampDateUtc = now,
+                    StampUser = "seed"
                 };
                 var cust4 = new Customer
                 {
                     Id = IdMapper.FromLong(NextCustomerId()),
-                    Name = "Arlene Martinez",
+                    FirstName = "Arlene",
+                    LastName = "Martinez",
+                    Email = "arlene.martinez@placeholder.local",
                     Phone = "x0221",
                     SmsOptIn = true,
+                    ActiveFlag = true,
                     CreatedUtc = now,
-                    UpdatedUtc = now
+                    UpdatedUtc = now,
+                    StampDateUtc = now,
+                    StampUser = "seed"
                 };
                 var cust5 = new Customer
                 {
                     Id = IdMapper.FromLong(NextCustomerId()),
-                    Name = "Carter Harper",
+                    FirstName = "Carter",
+                    LastName = "Harper",
+                    Email = "carter.harper@placeholder.local",
                     Phone = "x7812",
                     SmsOptIn = false,
+                    ActiveFlag = true,
                     CreatedUtc = now,
-                    UpdatedUtc = now
+                    UpdatedUtc = now,
+                    StampDateUtc = now,
+                    StampUser = "seed"
                 };
 
                 Customers[cust1.Id] = cust1;
@@ -146,8 +205,13 @@ namespace FastQ.Data.InMemory
                         LocationId = loc.Id,
                         QueueId = queue.Id,
                         CustomerId = customer.Id,
-                        ScheduledForUtc = whenUtc,
+                        ApptDateUtc = whenUtc.Date,
+                        StartTime = whenUtc.TimeOfDay,
                         Status = status,
+                        CreatedOnUtc = now,
+                        StampDateUtc = now,
+                        CreatedBy = "seed",
+                        StampUser = "seed",
                         CreatedUtc = now,
                         UpdatedUtc = now
                     };

@@ -9,7 +9,6 @@ namespace FastQ.Web
     {
         protected void Application_Start(object sender, EventArgs e)
         {
-            App_Start.CompositionRoot.Initialize();
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
         }

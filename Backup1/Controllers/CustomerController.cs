@@ -1,11 +1,42 @@
 using System;
+using System.Web.Configuration;
 using System.Web.Mvc;
-using FastQ.Web.App_Start;
+using FastQ.Data.Oracle;
+using FastQ.Web.Helpers;
+using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
     public class CustomerController : Controller
     {
+        private readonly BookingService _booking;
+        private readonly QueueQueryService _queries;
+
+        public CustomerController()
+        {
+            var connString = GetConnectionString();
+
+            var appts = new OracleAppointmentRepository(connString);
+            var customers = new OracleCustomerRepository(connString);
+            var queues = new OracleQueueRepository(connString);
+            var locations = new OracleLocationRepository(connString);
+
+            IClock clock = new SystemClock();
+            IRealtimeNotifier notifier = new SignalRRealtimeNotifier();
+
+            _booking = new BookingService(appts, customers, queues, locations, clock, notifier);
+            _queries = new QueueQueryService(appts, customers, queues, locations);
+        }
+
+        private static string GetConnectionString()
+        {
+            var connString = WebConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connString))
+                throw new InvalidOperationException("FastQOracle connection string is missing.");
+
+            return connString;
+        }
+
         private static readonly Guid DefaultLocationId = new Guid("00a98ac7-0000-0000-4641-535451494430");
 
         [HttpGet]
@@ -30,7 +61,7 @@ namespace FastQ.Web.Controllers
             }
 
             var name = ($"{firstName} {lastName}").Trim();
-            var res = CompositionRoot.Booking.BookFirstAvailable(DefaultLocationId, qId, phone, true, name);
+            var res = _booking.BookFirstAvailable(DefaultLocationId, qId, phone, true, name);
             if (!res.Ok)
             {
                 ViewBag.Error = res.Error;
@@ -65,7 +96,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId is required" }, JsonRequestBehavior.AllowGet);
 
-            var dto = CompositionRoot.Queries.GetAppointmentSnapshot(apptId);
+            var dto = _queries.GetAppointmentSnapshot(apptId);
             if (dto == null)
                 return Json(new { ok = false, error = "appointment not found" }, JsonRequestBehavior.AllowGet);
 
@@ -78,7 +109,7 @@ namespace FastQ.Web.Controllers
             if (!Guid.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId is required" });
 
-            var res = CompositionRoot.Booking.Cancel(apptId);
+            var res = _booking.Cancel(apptId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 

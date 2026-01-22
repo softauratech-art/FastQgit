@@ -1,5 +1,11 @@
+@using System.Collections.Generic
+@using FastQ.Data.Entities
+@using FastQ.Web.Models
+@model ProviderTodayViewModel
 @{
     ViewBag.Title = "Provider Today";
+    var liveRows = Model.LiveQueue ?? new List<ProviderAppointmentRow>();
+    var scheduledRows = Model.Scheduled ?? new List<ProviderAppointmentRow>();
 }
 @section Head {
     <style>
@@ -48,49 +54,42 @@
                 </tr>
             </thead>
             <tbody>
-                <tr class="accordion-toggle" data-target="row1">
-                    <td>7:50 AM</td>
-                    <td>Building - Residential Plans Review</td>
-                    <td>Questions: General</td>
-                    <td>Marie Calendar</td>
-                    <td>x2690</td>
-                    <td>QUEUED</td>
-                    <td>In-Person</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row1">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr class="accordion-toggle" data-target="row2">
-                    <td>7:52 AM</td>
-                    <td>Building - Subpermits</td>
-                    <td>Questions: General</td>
-                    <td>Martha Stuart</td>
-                    <td>x2020</td>
-                    <td>QUEUED</td>
-                    <td>In-Person</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row2">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
+                @if (liveRows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" class="text-center">No live appointments.</td>
+                    </tr>
+                }
+                else
+                {
+                    for (var i = 0; i < liveRows.Count; i++)
+                    {
+                        var row = liveRows[i];
+                        var rowId = "live-" + row.AppointmentId.ToString("N");
+                        var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
+                        <tr class="accordion-toggle" data-target="@rowId">
+                            <td>@row.StartTimeText</td>
+                            <td>@row.QueueName</td>
+                            <td>@row.ServiceType</td>
+                            <td>@row.CustomerName</td>
+                            <td>@row.Phone</td>
+                            <td class="@statusClass">@row.StatusText</td>
+                            <td>@row.ContactMethod</td>
+                            <td class="text-center">&darr;</td>
+                        </tr>
+                        <tr class="row-actions" id="@rowId">
+                            <td colspan="8">
+                                <div class="action-bar">
+                                    <button class="btn small primary" type="button" data-appointment-id="@row.AppointmentId">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-appointment-id="@row.AppointmentId">Start</button>
+                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Transfer</button>
+                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Info</button>
+                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Remove</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
     </div>
@@ -101,7 +100,7 @@
 <div class="card note">
     <div class="date-nav">
         <a href="#" aria-label="Previous day">&lt;&lt;</a>
-        <div>xx, Xxx yyyy</div>
+        <div>@Model?.DateText</div>
         <a href="#" aria-label="Next day">&gt;&gt;</a>
     </div>
 </div>
@@ -122,137 +121,42 @@
                 </tr>
             </thead>
             <tbody>
-                <tr class="accordion-toggle" data-target="row3">
-                    <td>8:00 AM</td>
-                    <td>Building - Residential Plans Review</td>
-                    <td>Questions: General</td>
-                    <td>Marie Calendar</td>
-                    <td>x2690</td>
-                    <td>SCHEDULED</td>
-                    <td>In-Person</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row3">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr class="accordion-toggle" data-target="row4">
-                    <td>8:45 AM</td>
-                    <td>Building - Subpermits</td>
-                    <td>Questions: General</td>
-                    <td>Martha Stuart</td>
-                    <td>x2020</td>
-                    <td>SCHEDULED</td>
-                    <td>In-Person</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row4">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr class="accordion-toggle" data-target="row6">
-                    <td>10:30 AM</td>
-                    <td>Building - Subpermits</td>
-                    <td>Questions: General</td>
-                    <td>David Cheng</td>
-                    <td>x6723</td>
-                    <td>SCHEDULED</td>
-                    <td>Phone</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row6">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr class="accordion-toggle" data-target="row61">
-                    <td>11:00 AM</td>
-                    <td>Building - Residential Plans Review</td>
-                    <td>Questions: General</td>
-                    <td>Arlene Martinez</td>
-                    <td>x0221</td>
-                    <td>SCHEDULED</td>
-                    <td>Online</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row61">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr class="accordion-toggle" data-target="row7">
-                    <td>02:00 PM</td>
-                    <td>Building - Residential Plans Review</td>
-                    <td>Questions: Fasttrack application</td>
-                    <td>Carter Harper</td>
-                    <td>x7812</td>
-                    <td>SCHEDULED</td>
-                    <td>Online</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row7">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr class="accordion-toggle" data-target="row8">
-                    <td><a href="#" class="meeting-link" data-id="new">03:00 PM</a></td>
-                    <td>Building - Licensing and NOC</td>
-                    <td>Questions: Notice of Commencement (NOC)</td>
-                    <td>Pamella ONeil</td>
-                    <td>x2659</td>
-                    <td class="error">PENDING</td>
-                    <td>Online</td>
-                    <td class="text-center">&darr;</td>
-                </tr>
-                <tr class="row-actions" id="row8">
-                    <td colspan="8">
-                        <div class="action-bar">
-                            <button class="btn small primary" type="button">Check-In</button>
-                            <button class="btn small secondary" type="button">Start</button>
-                            <button class="btn small ghost" type="button">Transfer</button>
-                            <button class="btn small ghost" type="button">Info</button>
-                            <button class="btn small ghost" type="button">Remove</button>
-                        </div>
-                    </td>
-                </tr>
+                @if (scheduledRows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" class="text-center">No appointments scheduled for today.</td>
+                    </tr>
+                }
+                else
+                {
+                    for (var i = 0; i < scheduledRows.Count; i++)
+                    {
+                        var row = scheduledRows[i];
+                        var rowId = "sched-" + row.AppointmentId.ToString("N");
+                        var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
+                        <tr class="accordion-toggle" data-target="@rowId">
+                            <td>@row.StartTimeText</td>
+                            <td>@row.QueueName</td>
+                            <td>@row.ServiceType</td>
+                            <td>@row.CustomerName</td>
+                            <td>@row.Phone</td>
+                            <td class="@statusClass">@row.StatusText</td>
+                            <td>@row.ContactMethod</td>
+                            <td class="text-center">&darr;</td>
+                        </tr>
+                        <tr class="row-actions" id="@rowId">
+                            <td colspan="8">
+                                <div class="action-bar">
+                                    <button class="btn small primary" type="button" data-appointment-id="@row.AppointmentId">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-appointment-id="@row.AppointmentId">Start</button>
+                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Transfer</button>
+                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Info</button>
+                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Remove</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
     </div>
@@ -358,3 +262,4 @@
   })();
 </script>
 }
+

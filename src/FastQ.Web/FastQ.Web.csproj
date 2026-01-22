@@ -100,7 +100,30 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="**\*.cs" Exclude="bin\**\*;obj\**\*;**\*.designer.cs" />
+    <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Controllers\AdminController.cs" />
+    <Compile Include="Controllers\CustomerController.cs" />
+    <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\ProviderController.cs" />
+    <Compile Include="Controllers\ReportingController.cs" />
+    <Compile Include="Global.asax.cs">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\IClock.cs" />
+    <Compile Include="Hubs\QueueHub.cs" />
+    <Compile Include="Models\AdminDashboardViewModel.cs" />
+    <Compile Include="Models\DTOs\AppointmentSnapshotDto.cs" />
+    <Compile Include="Models\DTOs\QueueSnapshotDto.cs" />
+    <Compile Include="Models\ProviderAppointmentRow.cs" />
+    <Compile Include="Models\ProviderTodayViewModel.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\AdminService.cs" />
+    <Compile Include="Services\CustomerService.cs" />
+    <Compile Include="Services\IRealtimeNotifier.cs" />
+    <Compile Include="Services\ProviderService.cs" />
+    <Compile Include="Services\ReportingService.cs" />
+    <Compile Include="Services\SignalRRealtimeNotifier.cs" />
+    <Compile Include="Startup.cs" />
     <Content Include="Views\**\*.cshtml" />
     <Content Include="Scripts\**\*.js" />
     <Content Include="Web.config" />
