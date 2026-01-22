@@ -14,6 +14,7 @@ namespace FastQ.Data.Repositories
         IList<Appointment> ListByCustomer(Guid customerId);
         IList<Appointment> ListByLocation(Guid locationId);
         IList<Appointment> ListAll();
+        IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);
     }
 }
 

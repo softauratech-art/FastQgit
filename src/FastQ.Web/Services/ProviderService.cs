@@ -93,6 +93,40 @@ namespace FastQ.Web.Services
             }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
 
+        public IList<ProviderAppointmentRow> BuildRowsForUser(string userId, DateTime utcDate)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return new List<ProviderAppointmentRow>();
+            }
+
+            var rangeStart = utcDate.Date;
+            var rangeEnd = utcDate.Date;
+            var rows = _appts.ListForUser(userId, rangeStart, rangeEnd);
+
+            return rows.Select(r =>
+            {
+                var serviceType = !string.IsNullOrWhiteSpace(r.ServiceName)
+                    ? r.ServiceName
+                    : (!string.IsNullOrWhiteSpace(r.QueueName) ? $"Questions: {r.QueueName}" : "Questions: General");
+
+                return new ProviderAppointmentRow
+                {
+                    AppointmentId = r.AppointmentId,
+                    ScheduledForUtc = r.ScheduledForUtc,
+                    StartTimeText = r.ScheduledForUtc.ToString("h:mm tt"),
+                    StartDateText = r.ScheduledForUtc.ToString("MMM dd, yyyy"),
+                    QueueName = r.QueueName ?? "Unknown Queue",
+                    ServiceType = serviceType,
+                    CustomerName = string.IsNullOrWhiteSpace(r.CustomerName) ? "Unknown" : r.CustomerName,
+                    Phone = string.IsNullOrWhiteSpace(r.CustomerPhone) ? "-" : r.CustomerPhone,
+                    Status = r.Status,
+                    StatusText = r.Status.ToString().ToUpperInvariant(),
+                    ContactMethod = r.SmsOptIn ? "Online" : "In-Person"
+                };
+            }).OrderBy(r => r.ScheduledForUtc).ToList();
+        }
+
         public QueueSnapshotDto GetQueueSnapshot(Guid locationId, Guid queueId)
         {
             var location = _locations.Get(locationId);

@@ -13,48 +13,23 @@ This document is the end-to-end explanation of how the MVC Web + Data project wo
 ### FastQ.Data (Entities + storage)
 - Entities and enums.
 - Repository interfaces + implementations.
-- InMemory store (default) and Oracle repositories (optional).
+- Oracle repositories.
 
 Dependency direction: `Web -> Data` only.
 
 ## Composition Root (Wiring)
 
 ```csharp
-// src/FastQ.Web/App_Start/CompositionRoot.cs
-public static void Initialize()
+// src/FastQ.Web/Services/CustomerService.cs
+public CustomerService()
+    : this(
+        OracleRepositoryFactory.CreateAppointmentRepository(),
+        OracleRepositoryFactory.CreateCustomerRepository(),
+        OracleRepositoryFactory.CreateQueueRepository(),
+        OracleRepositoryFactory.CreateLocationRepository(),
+        new SystemClock(),
+        new SignalRRealtimeNotifier())
 {
-    var repoMode = (WebConfigurationManager.AppSettings["RepositoryMode"] ?? "InMemory").Trim();
-
-    IClock clock = new SystemClock();
-    IRealtimeNotifier notifier = new SignalRRealtimeNotifier();
-
-    if (repoMode.Equals("Oracle", StringComparison.OrdinalIgnoreCase))
-    {
-        var connString = WebConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
-        Appointments = new OracleAppointmentRepository(connString);
-        Customers = new OracleCustomerRepository(connString);
-        Queues = new OracleQueueRepository(connString);
-        Locations = new OracleLocationRepository(connString);
-        Providers = new OracleProviderRepository(connString);
-    }
-    else
-    {
-        var store = InMemoryStore.Instance;
-        store.EnsureSeeded();
-
-        Appointments = new InMemoryAppointmentRepository(store);
-        Customers = new InMemoryCustomerRepository(store);
-        Queues = new InMemoryQueueRepository(store);
-        Locations = new InMemoryLocationRepository(store);
-        Providers = new InMemoryProviderRepository(store);
-    }
-
-    Booking = new BookingService(Appointments, Customers, Queues, Locations, clock, notifier);
-    Provider = new ProviderService(Appointments, clock, notifier);
-    Transfer = new TransferService(Appointments, Queues, clock, notifier);
-    SystemClose = new SystemCloseService(Appointments, clock, notifier);
-
-    Queries = new QueueQueryService(Appointments, Customers, Queues, Locations);
 }
 ```
 
@@ -86,11 +61,14 @@ public ActionResult Book(BookForm form)
 ```
 
 ### Step 3: Data layer reads/writes storage
-- InMemory repositories are used by default.
+- Oracle repositories handle persistence via repository interfaces.
 
 ```csharp
-// src/FastQ.Data/InMemory/InMemoryStore.cs
-public Dictionary<Guid, Appointment> Appointments { get; } = new Dictionary<Guid, Appointment>();
+// src/FastQ.Data/Oracle/OracleRepositoryFactory.cs
+public static IAppointmentRepository CreateAppointmentRepository()
+{
+    return new OracleAppointmentRepository(GetConnectionString());
+}
 ```
 
 ### Step 4: SignalR pushes live updates
@@ -128,6 +106,5 @@ IdMapper.TryToLong(id, out long value); // GUID -> number
 - Views: `src/FastQ.Web/Views`
 - Business logic: `src/FastQ.Web/App`
 - Data layer: `src/FastQ.Data`
-- InMemory storage: `src/FastQ.Data/InMemory`
 - Oracle repositories: `src/FastQ.Data/Oracle`
 - SignalR client: `src/FastQ.Web/Scripts/fastq.live.js`

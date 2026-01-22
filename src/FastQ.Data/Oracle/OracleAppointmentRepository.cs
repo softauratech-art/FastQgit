@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
+using System.Linq;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
 using FastQ.Data.Common;
@@ -165,6 +166,64 @@ namespace FastQ.Data.Oracle
             return ListByFilter(null, null);
         }
 
+        public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
+        {
+            var list = new List<ProviderAppointmentData>();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return list;
+            }
+
+            using (var conn = OracleDb.Open(_connectionString))
+            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_MYAPPOINTMENTS"))
+            {
+                OracleDb.AddParam(cmd, "p_userid", userId.Trim(), DbType.String);
+                OracleDb.AddParam(cmd, "p_range_startdate", rangeStartUtc.Date, DbType.DateTime);
+                OracleDb.AddParam(cmd, "p_range_enddate", rangeEndUtc.Date, DbType.DateTime);
+                OracleDb.AddOutRefCursor(cmd, "p_cur");
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var statusText = ReadField(reader, "STATUS");
+                        if (!Enum.TryParse(statusText, true, out AppointmentStatus status))
+                        {
+                            status = AppointmentStatus.Scheduled;
+                        }
+
+                        var apptId = Convert.ToInt64(reader["APPOINTMENT_ID"]);
+                        var apptDate = reader["APPT_DATE"] == DBNull.Value
+                            ? DateTime.UtcNow
+                            : Convert.ToDateTime(reader["APPT_DATE"]);
+                        var startTime = ReadInterval(reader, "START_TIME");
+                        var scheduled = DateTime.SpecifyKind(apptDate, DateTimeKind.Utc);
+                        if (startTime.HasValue)
+                        {
+                            scheduled = DateTime.SpecifyKind(apptDate.Date + startTime.Value, DateTimeKind.Utc);
+                        }
+
+                        var first = ReadField(reader, "CUST_FNAME");
+                        var last = ReadField(reader, "CUST_LNAME");
+                        var fullName = string.Join(" ", new[] { first, last }.Where(v => !string.IsNullOrWhiteSpace(v)));
+
+                        list.Add(new ProviderAppointmentData
+                        {
+                            AppointmentId = IdMapper.FromLong(apptId),
+                            ScheduledForUtc = scheduled,
+                            Status = status,
+                            QueueName = ReadField(reader, "NAME"),
+                            ServiceName = ReadField(reader, "SERVICE_NAME"),
+                            CustomerName = fullName,
+                            CustomerPhone = ReadField(reader, "CUST_PHONE"),
+                            SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
+
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
         {
             var list = new List<Appointment>();
@@ -190,6 +249,26 @@ namespace FastQ.Data.Oracle
             }
 
             return list;
+        }
+
+        private static string ReadField(IDataRecord record, string field)
+        {
+            for (var i = 0; i < record.FieldCount; i++)
+            {
+                if (!string.Equals(record.GetName(i), field, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (record.IsDBNull(i))
+                {
+                    return string.Empty;
+                }
+
+                return record.GetValue(i)?.ToString() ?? string.Empty;
+            }
+
+            return string.Empty;
         }
 
         private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> locationByQueue)

@@ -20,18 +20,12 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Today()
+        public ActionResult Today(string userId)
         {
             var today = DateTime.UtcNow.Date;
-
-            var queues = _service.ListQueues().ToList();
-            var customers = _service.ListCustomers().ToList();
-            var appointments = _service.ListAppointmentsForDate(today).ToList();
-
-            var queueMap = queues.ToDictionary(q => q.Id, q => q);
-            var customerMap = customers.ToDictionary(c => c.Id, c => c);
-
-            var rows = _service.BuildRows(appointments, queueMap, customerMap);
+            var rows = string.IsNullOrWhiteSpace(userId)
+                ? Enumerable.Empty<ProviderAppointmentRow>()
+                : _service.BuildRowsForUser(userId, today);
 
             var model = new ProviderTodayViewModel
             {
