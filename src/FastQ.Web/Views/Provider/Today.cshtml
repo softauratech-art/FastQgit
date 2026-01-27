@@ -281,7 +281,7 @@
           return;
         }
 
-        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, providerId: "" })
+        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, providerId: currentProviderId })
           .then(function (res) {
             if (!res || !res.ok) {
               window.alert(res && res.error ? res.error : "Action failed.");
@@ -299,6 +299,7 @@
     }
 
     window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
+      console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, currentProviderId);
       if (providerId && currentProviderId && providerId.toLowerCase() === currentProviderId.toLowerCase()) {
         return;
       }

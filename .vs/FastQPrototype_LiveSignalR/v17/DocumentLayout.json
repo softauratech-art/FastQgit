@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\services\\signalrrealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\services\\signalrrealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\services\\providerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\services\\providerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -11,24 +15,20 @@
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\controllers\\providercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\models\\providertodayviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\models\\providertodayviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\views\\provider\\today.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\views\\provider\\today.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\models\\providerappointmentrow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\models\\providerappointmentrow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\models\\providertodayviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\models\\providertodayviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracleappointmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracleappointmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|FastQ.Web||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
@@ -84,32 +84,32 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 6,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "ProviderTodayViewModel.cs",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
-              "RelativeDocumentMoniker": "src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
-              "RelativeToolTip": "src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 0,
+              "Title": "SignalRRealtimeNotifier.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAwwCsAAAAUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-23T15:29:21.177Z"
+              "WhenOpened": "2026-01-27T07:35:30.601Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Index.cshtml",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Views\\Home\\Index.cshtml",
-              "RelativeDocumentMoniker": "src\\FastQ.Web\\Views\\Home\\Index.cshtml",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Views\\Home\\Index.cshtml",
-              "RelativeToolTip": "src\\FastQ.Web\\Views\\Home\\Index.cshtml",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAAwB4AAAA5AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-01-23T15:23:42.652Z",
-              "EditorCaption": ""
+              "DocumentIndex": 6,
+              "Title": "OracleAppointmentRepository.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "ViewState": "AgIAAKcAAAAAAAAAAAAgwK4AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T07:14:09.096Z"
             },
             {
               "$type": "Document",
@@ -119,34 +119,57 @@
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Views\\Provider\\Today.cshtml",
               "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Views\\Provider\\Today.cshtml",
               "RelativeToolTip": "src\\FastQ.Web\\Views\\Provider\\Today.cshtml",
-              "ViewState": "AgIAAEIAAAAAAAAAAAAAwFgAAAAhAAAAAAAAAA==",
+              "ViewState": "AgIAAFEAAAAAAAAAAAAuwGoAAAATAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-01-22T07:54:03.51Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 5,
-              "Title": "ProviderAppointmentRow.cs",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderAppointmentRow.cs",
-              "RelativeDocumentMoniker": "src\\FastQ.Web\\Models\\ProviderAppointmentRow.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderAppointmentRow.cs",
-              "RelativeToolTip": "src\\FastQ.Web\\Models\\ProviderAppointmentRow.cs",
-              "ViewState": "AgIAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Title": "ProviderTodayViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T08:49:48.726Z"
+              "WhenOpened": "2026-01-23T15:29:21.177Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "OracleDb.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleDb.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleDb.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleDb.cs",
+              "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleDb.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAkwBAAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-22T09:40:53.326Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "ProviderService.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\ProviderService.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\Services\\ProviderService.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\ProviderService.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\Services\\ProviderService.cs",
+              "ViewState": "AgIAADUBAAAAAAAAAADwv0gBAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-22T08:52:10.556Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "ProviderController.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Controllers\\ProviderController.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Controllers\\ProviderController.cs",
               "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Controllers\\ProviderController.cs",
               "RelativeToolTip": "src\\FastQ.Web\\Controllers\\ProviderController.cs",
-              "ViewState": "AgIAABoAAAAAAAAAAAAAACgAAAArAAAAAAAAAA==",
+              "ViewState": "AgIAADwAAAAAAAAAAAAwwEkAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T08:48:29.278Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-22T08:48:29.278Z"
             },
             {
               "$type": "Document",
@@ -161,19 +184,6 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ProviderService.cs",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\ProviderService.cs",
-              "RelativeDocumentMoniker": "src\\FastQ.Web\\Services\\ProviderService.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\ProviderService.cs",
-              "RelativeToolTip": "src\\FastQ.Web\\Services\\ProviderService.cs",
-              "ViewState": "AgIAAFoAAAAAAAAAAAAUwGgAAAApAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T08:52:10.556Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 17,
               "Title": "SignalRRealtimeNotifier.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Realtime\\SignalRRealtimeNotifier.cs",
@@ -183,18 +193,6 @@
               "ViewState": "AgIAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-22T07:57:52.491Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "OracleDb.cs",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleDb.cs",
-              "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleDb.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleDb.cs",
-              "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleDb.cs",
-              "ViewState": "AgIAAAUAAAAAAAAAAAAIwBAAAAAMAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T09:40:53.326Z"
             },
             {
               "$type": "Document",

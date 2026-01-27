@@ -28,7 +28,10 @@
       };
 
       this.hub.client.notify = function (message) {
-        if (message) self.toast(safe(message));
+        if (!message) return;
+        var safeMsg = safe(message);
+        if (window.onFastQNotify) window.onFastQNotify(safeMsg);
+        self.toast(safeMsg);
       };
 
       $.connection.hub.start()

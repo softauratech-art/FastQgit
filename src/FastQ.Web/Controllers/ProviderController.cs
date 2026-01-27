@@ -68,8 +68,13 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = "action and appointmentId are required" });
 
             action = action.Trim().ToLowerInvariant();
-            if (!Guid.TryParse(providerId, out var provId))
-                provId = Guid.Parse("02a62b1c-0000-0000-4641-535451494430");
+            Guid provId;
+            if (!Guid.TryParse(providerId, out provId))
+            {
+                var resolvedUserId = _auth.GetLoggedInWindowsUser();
+                if (!Guid.TryParse(resolvedUserId, out provId))
+                    provId = Guid.Parse("02a62b1c-0000-0000-4641-535451494430");
+            }
 
             var res = _service.HandleProviderAction(action, apptId, provId);
 
