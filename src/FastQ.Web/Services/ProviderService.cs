@@ -206,9 +206,10 @@ namespace FastQ.Web.Services
             action = (action ?? string.Empty).Trim().ToLowerInvariant();
             return action switch
             {
-                "arrive" => MarkArrived(appointmentId),
+                "arrive" => QueueCustomer(appointmentId, providerId),
                 "begin" => BeginService(appointmentId, providerId),
                 "end" => EndService(appointmentId),
+                "remove" => RemoveAppointment(appointmentId, providerId),
                 _ => Result.Fail("Unknown action")
             };
         }
@@ -227,10 +228,12 @@ namespace FastQ.Web.Services
             if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
                 return Result<Appointment>.Fail("Cannot transfer a finished appointment.");
 
+            var now = _clock.UtcNow;
+            _appts.UpdateStatus(appt.Id, "Transfered", "web");
+
             appt.Status = AppointmentStatus.TransferredOut;
-            appt.UpdatedUtc = _clock.UtcNow;
-            appt.StampDateUtc = appt.UpdatedUtc;
-            _appts.Update(appt);
+            appt.UpdatedUtc = now;
+            appt.StampDateUtc = now;
 
             var newAppt = new Appointment
             {
@@ -281,18 +284,23 @@ namespace FastQ.Web.Services
             return stale.Count;
         }
 
-        private Result MarkArrived(Guid appointmentId)
+        private Result QueueCustomer(Guid appointmentId, Guid providerId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
 
-            if (appt.Status != AppointmentStatus.Scheduled)
-                return Result.Fail("Only scheduled appointments can be marked arrived.");
+            if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
+                return Result.Fail("Cannot queue a finished appointment.");
+
+            var now = _clock.UtcNow;
+            var stampUser = providerId == Guid.Empty ? "web" : providerId.ToString("N");
+
+            _appts.UpdateStatus(appt.Id, "QUEUED", stampUser);
 
             appt.Status = AppointmentStatus.Arrived;
-            appt.UpdatedUtc = _clock.UtcNow;
-            appt.StampDateUtc = appt.UpdatedUtc;
-            _appts.Update(appt);
+            appt.ProviderId = providerId;
+            appt.UpdatedUtc = now;
+            appt.StampDateUtc = now;
 
             _rt.AppointmentChanged(appt);
             _rt.QueueChanged(appt.LocationId, appt.QueueId);
@@ -306,13 +314,17 @@ namespace FastQ.Web.Services
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status != AppointmentStatus.Arrived && appt.Status != AppointmentStatus.Scheduled)
-                return Result.Fail("Appointment must be scheduled or arrived to begin service.");
+                return Result.Fail("Appointment must be queued or scheduled to begin service.");
+
+            var now = _clock.UtcNow;
+            var stampUser = providerId == Guid.Empty ? "web" : providerId.ToString("N");
+
+            _appts.UpdateStatus(appt.Id, "STARTED", stampUser);
 
             appt.Status = AppointmentStatus.InService;
             appt.ProviderId = providerId;
-            appt.UpdatedUtc = _clock.UtcNow;
-            appt.StampDateUtc = appt.UpdatedUtc;
-            _appts.Update(appt);
+            appt.UpdatedUtc = now;
+            appt.StampDateUtc = now;
 
             _rt.AppointmentChanged(appt);
             _rt.QueueChanged(appt.LocationId, appt.QueueId);
@@ -328,10 +340,36 @@ namespace FastQ.Web.Services
             if (appt.Status != AppointmentStatus.InService)
                 return Result.Fail("Appointment must be in service to end service.");
 
+            var now = _clock.UtcNow;
+            _appts.UpdateStatus(appt.Id, "COMPLETED", "web");
+
             appt.Status = AppointmentStatus.Completed;
-            appt.UpdatedUtc = _clock.UtcNow;
-            appt.StampDateUtc = appt.UpdatedUtc;
-            _appts.Update(appt);
+            appt.UpdatedUtc = now;
+            appt.StampDateUtc = now;
+
+            _rt.AppointmentChanged(appt);
+            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+
+            return Result.Success();
+        }
+
+        private Result RemoveAppointment(Guid appointmentId, Guid providerId)
+        {
+            var appt = _appts.Get(appointmentId);
+            if (appt == null) return Result.Fail("Appointment not found.");
+
+            if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
+                return Result.Fail("Appointment is already finished.");
+
+            var now = _clock.UtcNow;
+            var stampUser = providerId == Guid.Empty ? "web" : providerId.ToString("N");
+
+            _appts.UpdateStatus(appt.Id, "REMOVED", stampUser);
+
+            appt.Status = AppointmentStatus.Cancelled;
+            appt.ProviderId = providerId;
+            appt.UpdatedUtc = now;
+            appt.StampDateUtc = now;
 
             _rt.AppointmentChanged(appt);
             _rt.QueueChanged(appt.LocationId, appt.QueueId);

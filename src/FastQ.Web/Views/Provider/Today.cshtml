@@ -13,8 +13,11 @@
             background: rgba(255, 255, 255, 0.5);
         }
         .accordion-toggle { cursor: pointer; }
+        .accordion-toggle.locked { opacity: 0.45; }
         .row-actions { display: none; }
         .row-actions.is-open { display: table-row; }
+        .row-actions.locked { opacity: 0.45; }
+        .row-actions.locked .action-bar { pointer-events: none; }
         .row-actions td { padding: 0 8px 12px; }
         .action-bar { display: flex; gap: 8px; flex-wrap: wrap; }
         .table-card { overflow-x: auto; }
@@ -67,7 +70,7 @@
                         var row = liveRows[i];
                         var rowId = "live-" + row.AppointmentId.ToString("N");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -77,14 +80,15 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
                             <td colspan="8">
                                 <div class="action-bar">
-                                    <button class="btn small primary" type="button" data-appointment-id="@row.AppointmentId">Check-In</button>
-                                    <button class="btn small secondary" type="button" data-appointment-id="@row.AppointmentId">Start</button>
-                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Transfer</button>
+                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId">Start</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId">End</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId">Transfer</button>
                                     <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Info</button>
-                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Remove</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId">Remove</button>
                                 </div>
                             </td>
                         </tr>
@@ -100,7 +104,7 @@
 <div class="card note">
     <div class="date-nav">
         <a href="#" aria-label="Previous day">&lt;&lt;</a>
-        <div>@Model?.DateText</div>
+        <div>@Model.DateText</div>
         <a href="#" aria-label="Next day">&gt;&gt;</a>
     </div>
 </div>
@@ -134,7 +138,7 @@
                         var row = scheduledRows[i];
                         var rowId = "sched-" + row.AppointmentId.ToString("N");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -144,14 +148,15 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
                             <td colspan="8">
                                 <div class="action-bar">
-                                    <button class="btn small primary" type="button" data-appointment-id="@row.AppointmentId">Check-In</button>
-                                    <button class="btn small secondary" type="button" data-appointment-id="@row.AppointmentId">Start</button>
-                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Transfer</button>
+                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId">Start</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId">End</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId">Transfer</button>
                                     <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Info</button>
-                                    <button class="btn small ghost" type="button" data-appointment-id="@row.AppointmentId">Remove</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId">Remove</button>
                                 </div>
                             </td>
                         </tr>
@@ -203,6 +208,19 @@
 @section Scripts {
 <script>
   (function () {
+    var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
+    var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
+    var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
+
+    function postForm(url, data) {
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        credentials: "same-origin",
+        body: new URLSearchParams(data).toString()
+      }).then(function (r) { return r.json(); });
+    }
+
     function closeModal(id) {
       var modal = document.getElementById(id);
       if (modal) {
@@ -234,6 +252,61 @@
         }
       });
     });
+
+    document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        var appointmentId = btn.getAttribute("data-appointment-id");
+        var action = (btn.getAttribute("data-action") || "").toLowerCase();
+        if (!appointmentId || !action) {
+          return;
+        }
+
+        if (action === "transfer") {
+          var targetQueueId = window.prompt("Enter target QueueId (GUID):", "");
+          if (!targetQueueId) {
+            return;
+          }
+
+          postForm(transferUrl, { appointmentId: appointmentId, targetQueueId: targetQueueId })
+            .then(function (res) {
+              if (!res || !res.ok) {
+                window.alert(res && res.error ? res.error : "Transfer failed.");
+                return;
+              }
+              window.location.reload();
+            });
+          return;
+        }
+
+        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, providerId: "" })
+          .then(function (res) {
+            if (!res || !res.ok) {
+              window.alert(res && res.error ? res.error : "Action failed.");
+              return;
+            }
+            window.location.reload();
+          });
+      });
+    });
+
+    function lockAppointment(appointmentId) {
+      document.querySelectorAll('[data-appointment-id="' + appointmentId + '"]').forEach(function (el) {
+        el.classList.add("locked");
+      });
+    }
+
+    window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
+      if (providerId && currentProviderId && providerId.toLowerCase() === currentProviderId.toLowerCase()) {
+        return;
+      }
+      var normalized = (status || "").toString().toLowerCase();
+      if (normalized === "inservice" || normalized === "completed" || normalized === "cancelled") {
+        lockAppointment(appointmentId);
+      }
+    };
 
     document.querySelectorAll("[data-modal-close]").forEach(function (btn) {
       btn.addEventListener("click", function () {

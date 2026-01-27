@@ -186,10 +186,7 @@ namespace FastQ.Data.Oracle
                     while (reader.Read())
                     {
                         var statusText = ReadField(reader, "STATUS");
-                        if (!Enum.TryParse(statusText, true, out AppointmentStatus status))
-                        {
-                            status = AppointmentStatus.Scheduled;
-                        }
+                        var status = MapStatus(statusText);
 
                         var apptId = Convert.ToInt64(reader["APPOINTMENT_ID"]);
                         var apptDate = reader["APPT_DATE"] == DBNull.Value
@@ -222,6 +219,89 @@ namespace FastQ.Data.Oracle
             }
 
             return list;
+        }
+
+        public void UpdateStatus(Guid appointmentId, string status, string stampUser, string notes = null)
+        {
+            if (!IdMapper.TryToLong(appointmentId, out var apptId))
+                throw new InvalidOperationException("Appointment Id is not mapped to a numeric ID.");
+
+            if (string.IsNullOrWhiteSpace(status))
+                throw new InvalidOperationException("Status is required.");
+
+            var user = string.IsNullOrWhiteSpace(stampUser) ? "fastq" : stampUser.Trim();
+
+            using (var conn = OracleDb.Open(_connectionString))
+            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.UPDATE_APPT_STATUS"))
+            {
+                OracleDb.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
+                OracleDb.AddParam(cmd, "p_status", status.Trim(), DbType.String);
+                OracleDb.AddParam(cmd, "p_stampuser", user, DbType.String);
+                OracleDb.AddParam(cmd, "p_notes", notes, DbType.String);
+
+                var outMsg = cmd.CreateParameter();
+                outMsg.ParameterName = "p_outmsg";
+                outMsg.Direction = ParameterDirection.Output;
+                outMsg.DbType = DbType.String;
+                outMsg.Size = 4000;
+                cmd.Parameters.Add(outMsg);
+
+                cmd.ExecuteNonQuery();
+
+                var message = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(message))
+                    throw new InvalidOperationException(message);
+            }
+        }
+
+        private static IList<ProviderAppointmentData> BuildDemoAppointments(DateTime rangeStartUtc, DateTime rangeEndUtc)
+        {
+            var start = rangeStartUtc == default ? DateTime.UtcNow.Date : rangeStartUtc.Date;
+            var end = rangeEndUtc == default ? start.AddDays(7) : rangeEndUtc.Date;
+            if (end < start)
+            {
+                end = start.AddDays(7);
+            }
+
+            var baseDate = start.AddDays(1);
+            var appointments = new List<ProviderAppointmentData>
+            {
+                new ProviderAppointmentData
+                {
+                    AppointmentId = IdMapper.FromLong(900001),
+                    ScheduledForUtc = DateTime.SpecifyKind(baseDate.AddHours(9), DateTimeKind.Utc),
+                    Status = AppointmentStatus.Scheduled,
+                    QueueName = "Demo Queue A",
+                    ServiceName = "Initial Consultation",
+                    CustomerName = "Alex Rivera",
+                    CustomerPhone = "555-0101",
+                    SmsOptIn = true
+                },
+                new ProviderAppointmentData
+                {
+                    AppointmentId = IdMapper.FromLong(900002),
+                    ScheduledForUtc = DateTime.SpecifyKind(baseDate.AddHours(11), DateTimeKind.Utc),
+                    Status = AppointmentStatus.Arrived,
+                    QueueName = "Demo Queue B",
+                    ServiceName = "Follow-up Visit",
+                    CustomerName = "Jordan Lee",
+                    CustomerPhone = "555-0126",
+                    SmsOptIn = false
+                },
+                new ProviderAppointmentData
+                {
+                    AppointmentId = IdMapper.FromLong(900003),
+                    ScheduledForUtc = DateTime.SpecifyKind(baseDate.AddDays(1).AddHours(15), DateTimeKind.Utc),
+                    Status = AppointmentStatus.Completed,
+                    QueueName = "Demo Queue A",
+                    ServiceName = "Results Review",
+                    CustomerName = "Taylor Morgan",
+                    CustomerPhone = "555-0149",
+                    SmsOptIn = true
+                }
+            };
+
+            return appointments;
         }
 
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
@@ -285,7 +365,7 @@ namespace FastQ.Data.Oracle
             var statusText = record["STATUS"] == DBNull.Value ? AppointmentStatus.Scheduled.ToString() : record["STATUS"].ToString();
             var serviceId = TryReadLong(record, "SERVICE_ID");
 
-            Enum.TryParse(statusText, true, out AppointmentStatus status);
+            var status = MapStatus(statusText);
 
             return new Appointment
             {
@@ -423,6 +503,26 @@ namespace FastQ.Data.Oracle
             }
 
             return appointment.ScheduledForUtc;
+        }
+
+        private static AppointmentStatus MapStatus(string statusText)
+        {
+            if (string.IsNullOrWhiteSpace(statusText))
+                return AppointmentStatus.Scheduled;
+
+            var trimmed = statusText.Trim();
+            if (trimmed.Equals("QUEUED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Arrived;
+            if (trimmed.Equals("STARTED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.InService;
+            if (trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.TransferredOut;
+            if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Cancelled;
+
+            return Enum.TryParse(trimmed, true, out AppointmentStatus parsed)
+                ? parsed
+                : AppointmentStatus.Scheduled;
         }
 
         private static string OracleInterval(TimeSpan? value)

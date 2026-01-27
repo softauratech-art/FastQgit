@@ -15,6 +15,7 @@ namespace FastQ.Data.Repositories
         IList<Appointment> ListByLocation(Guid locationId);
         IList<Appointment> ListAll();
         IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);
+        void UpdateStatus(Guid appointmentId, string status, string stampUser, string notes = null);
     }
 }
 

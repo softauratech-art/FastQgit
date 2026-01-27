@@ -25,11 +25,14 @@ namespace FastQ.Web.Services
             var apptId = appointment.Id.ToString();
             var loc = appointment.LocationId.ToString();
             var q = appointment.QueueId.ToString();
+            var providerId = appointment.ProviderId?.ToString() ?? string.Empty;
 
-            Hub.Clients.Group($"appt:{apptId}").appointmentUpdated(apptId, appointment.Status.ToString());
+            Hub.Clients.Group($"appt:{apptId}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
             // location + queue listeners can also choose to react
-            Hub.Clients.Group($"loc:{loc}").appointmentUpdated(apptId, appointment.Status.ToString());
-            Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString());
+            Hub.Clients.Group($"loc:{loc}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            // Providers are not always joined to groups; broadcast status as well.
+            Hub.Clients.All.appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
 
             var message = BuildNotificationMessage(appointment);
             if (!string.IsNullOrWhiteSpace(message))

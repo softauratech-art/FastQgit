@@ -47,6 +47,7 @@ namespace FastQ.Web.Controllers
                 Scheduled = rows.Where(r => r.Status != AppointmentStatus.Arrived && r.Status != AppointmentStatus.InService).ToList()
             };
 
+            ViewBag.ProviderId = userId ?? string.Empty;
             return View(model);
         }
 

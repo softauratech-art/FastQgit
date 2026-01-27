@@ -21,8 +21,10 @@
         if (window.onFastQQueueUpdated) window.onFastQQueueUpdated(safe(locationId), safe(queueId));
       };
 
-      this.hub.client.appointmentUpdated = function (appointmentId, status) {
-        if (window.onFastQAppointmentUpdated) window.onFastQAppointmentUpdated(safe(appointmentId), safe(status));
+      this.hub.client.appointmentUpdated = function (appointmentId, status, providerId) {
+        if (window.onFastQAppointmentUpdated) {
+          window.onFastQAppointmentUpdated(safe(appointmentId), safe(status), safe(providerId));
+        }
       };
 
       this.hub.client.notify = function (message) {
