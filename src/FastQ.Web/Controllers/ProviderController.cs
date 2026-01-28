@@ -36,15 +36,18 @@ namespace FastQ.Web.Controllers
             }
 
             var today = DateTime.UtcNow.Date;
-            var rows = string.IsNullOrWhiteSpace(userId)
+            var walkins = string.IsNullOrWhiteSpace(userId)
+                ? Enumerable.Empty<ProviderAppointmentRow>()
+                : _service.BuildWalkinsForUser(userId, today);
+            var appointments = string.IsNullOrWhiteSpace(userId)
                 ? Enumerable.Empty<ProviderAppointmentRow>()
                 : _service.BuildRowsForUser(userId, today);
 
             var model = new ProviderTodayViewModel
             {
                 DateText = DateTime.UtcNow.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture) + " (UTC)",
-                LiveQueue = rows.Where(r => r.Status == AppointmentStatus.Arrived || r.Status == AppointmentStatus.InService).ToList(),
-                Scheduled = rows.Where(r => r.Status != AppointmentStatus.Arrived && r.Status != AppointmentStatus.InService).ToList()
+                Walkins = walkins.ToList(),
+                Appointments = appointments.ToList()
             };
 
             ViewBag.ProviderId = userId ?? string.Empty;
@@ -95,6 +98,23 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = res.Error });
 
             return Json(new { ok = true, newAppointmentId = res.Value.Id, newQueueId = res.Value.QueueId });
+        }
+
+        [HttpPost]
+        public JsonResult SaveServiceInfo(string appointmentId, string srcType, string webexUrl, string notes, string providerId)
+        {
+            if (!Guid.TryParse(appointmentId, out var apptId))
+                return Json(new { ok = false, error = "appointmentId is required" });
+
+            var normalized = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
+            if (normalized != "A" && normalized != "S")
+                return Json(new { ok = false, error = "srcType must be A or S" });
+
+            var res = _service.SaveServiceInfo(apptId, normalized[0], webexUrl, notes, providerId);
+            if (!res.Ok)
+                return Json(new { ok = false, error = res.Error });
+
+            return Json(new { ok = true });
         }
 
         [HttpPost]

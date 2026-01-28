@@ -26,7 +26,7 @@ namespace FastQ.Data.Oracle
             using (var conn = OracleDb.Open(_connectionString))
             {
                 var locationByQueue = LoadQueueLocations(conn);
-                using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_APPT_DETAILS"))
+                using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_APPT_DETAILS"))
                 {
                     OracleDb.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
                     OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -168,6 +168,16 @@ namespace FastQ.Data.Oracle
 
         public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
         {
+            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "FQ_PROCS_GET.GET_MYAPPOINTMENTS");
+        }
+
+        public IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
+        {
+            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "FQ_PROCS_GET.GET_MYWALKINS");
+        }
+
+        private IList<ProviderAppointmentData> ListForUserProc(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc, string procName)
+        {
             var list = new List<ProviderAppointmentData>();
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -175,7 +185,7 @@ namespace FastQ.Data.Oracle
             }
 
             using (var conn = OracleDb.Open(_connectionString))
-            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_MYAPPOINTMENTS"))
+            using (var cmd = OracleDb.CreateStoredProc(conn, procName))
             {
                 OracleDb.AddParam(cmd, "p_userid", userId.Trim(), DbType.String);
                 OracleDb.AddParam(cmd, "p_range_startdate", rangeStartUtc.Date, DbType.DateTime);
@@ -232,7 +242,7 @@ namespace FastQ.Data.Oracle
             var user = string.IsNullOrWhiteSpace(stampUser) ? "fastq" : stampUser.Trim();
 
             using (var conn = OracleDb.Open(_connectionString))
-            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.UPDATE_APPT_STATUS"))
+            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_IDU.UPDATE_APPT_STATUS"))
             {
                 OracleDb.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
                 OracleDb.AddParam(cmd, "p_status", status.Trim(), DbType.String);
@@ -557,7 +567,7 @@ namespace FastQ.Data.Oracle
         private static Dictionary<long, long> LoadQueueLocations(DbConnection conn)
         {
             var map = new Dictionary<long, long>();
-            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_QUEUES"))
+            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUES"))
             {
                 OracleDb.AddParam(cmd, "p_location", null, DbType.Int64);
                 OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");

@@ -21,7 +21,7 @@ namespace FastQ.Data.Oracle
             if (!IdMapper.TryToLong(id, out var queueId)) return null;
 
             using (var conn = OracleDb.Open(_connectionString))
-            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_QUEUE_DETAILS"))
+            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUE_DETAILS"))
             {
                 OracleDb.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
                 OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -118,7 +118,7 @@ namespace FastQ.Data.Oracle
 
             var list = new List<Queue>();
             using (var conn = OracleDb.Open(_connectionString))
-            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_QUEUES"))
+            using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUES"))
             {
                 OracleDb.AddParam(cmd, "p_location", locId, DbType.Int64);
                 OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -139,7 +139,7 @@ namespace FastQ.Data.Oracle
             var list = new List<Queue>();
             using (var conn = OracleDb.Open(_connectionString))
             {
-                using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS.GET_QUEUES"))
+                using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUES"))
                 {
                     OracleDb.AddParam(cmd, "p_location", null, DbType.Int64);
                     OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");

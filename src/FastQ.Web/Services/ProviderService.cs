@@ -16,6 +16,7 @@ namespace FastQ.Web.Services
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
         private readonly ILocationRepository _locations;
+        private readonly IServiceTransactionRepository _serviceTransactions;
         private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
@@ -25,6 +26,7 @@ namespace FastQ.Web.Services
                 OracleRepositoryFactory.CreateCustomerRepository(),
                 OracleRepositoryFactory.CreateQueueRepository(),
                 OracleRepositoryFactory.CreateLocationRepository(),
+                OracleRepositoryFactory.CreateServiceTransactionRepository(),
                 new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
@@ -35,6 +37,7 @@ namespace FastQ.Web.Services
             ICustomerRepository customers,
             IQueueRepository queues,
             ILocationRepository locations,
+            IServiceTransactionRepository serviceTransactions,
             IClock clock,
             IRealtimeNotifier rt)
         {
@@ -42,8 +45,46 @@ namespace FastQ.Web.Services
             _customers = customers;
             _queues = queues;
             _locations = locations;
+            _serviceTransactions = serviceTransactions;
             _clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
+        }
+
+        public Result SaveServiceInfo(Guid appointmentId, char srcType, string webexUrl, string notes, string stampUser)
+        {
+            if (!IdMapper.TryToLong(appointmentId, out var srcId))
+            {
+                return Result.Fail("Appointment Id is not mapped to a numeric ID.");
+            }
+
+            long? queueId = null;
+            long? serviceId = null;
+            string status = null;
+
+            if (char.ToUpperInvariant(srcType) == 'A')
+            {
+                var appt = _appts.Get(appointmentId);
+                if (appt == null)
+                {
+                    return Result.Fail("Appointment not found.");
+                }
+
+                if (IdMapper.TryToLong(appt.QueueId, out var qid))
+                {
+                    queueId = qid;
+                }
+
+                if (appt.ServiceId.HasValue && IdMapper.TryToLong(appt.ServiceId.Value, out var sid))
+                {
+                    serviceId = sid;
+                }
+
+                status = appt.Status.ToString();
+            }
+
+            var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
+            _serviceTransactions.SaveServiceInfo(srcType, srcId, queueId, serviceId, status, webexUrl, notes, user);
+            return Result.Success();
         }
 
         public IList<Queue> ListQueues()
@@ -104,6 +145,25 @@ namespace FastQ.Web.Services
             var rangeEnd = utcDate.Date;
             var rows = _appts.ListForUser(userId, rangeStart, rangeEnd);
 
+            return BuildProviderRows(rows);
+        }
+
+        public IList<ProviderAppointmentRow> BuildWalkinsForUser(string userId, DateTime utcDate)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return new List<ProviderAppointmentRow>();
+            }
+
+            var rangeStart = utcDate.Date;
+            var rangeEnd = utcDate.Date;
+            var rows = _appts.ListWalkinsForUser(userId, rangeStart, rangeEnd);
+
+            return BuildProviderRows(rows);
+        }
+
+        private static IList<ProviderAppointmentRow> BuildProviderRows(IList<ProviderAppointmentData> rows)
+        {
             return rows.Select(r =>
             {
                 var serviceType = !string.IsNullOrWhiteSpace(r.ServiceName)

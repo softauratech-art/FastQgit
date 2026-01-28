@@ -31,6 +31,11 @@ namespace FastQ.Data.Oracle
             return new OracleProviderRepository(GetConnectionString());
         }
 
+        public static IServiceTransactionRepository CreateServiceTransactionRepository()
+        {
+            return new OracleServiceTransactionRepository(GetConnectionString());
+        }
+
         private static string GetConnectionString()
         {
             var connString = ConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
