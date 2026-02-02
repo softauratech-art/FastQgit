@@ -50,12 +50,9 @@ namespace FastQ.Web.Services
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
-        public Result SaveServiceInfo(Guid appointmentId, char srcType, string webexUrl, string notes, string stampUser)
+        public Result SaveServiceInfo(long appointmentId, char srcType, string webexUrl, string notes, string stampUser)
         {
-            if (!IdMapper.TryToLong(appointmentId, out var srcId))
-            {
-                return Result.Fail("Appointment Id is not mapped to a numeric ID.");
-            }
+            var srcId = appointmentId;
 
             long? queueId = null;
             long? serviceId = null;
@@ -63,7 +60,8 @@ namespace FastQ.Web.Services
 
             if (char.ToUpperInvariant(srcType) == 'A')
             {
-                var appt = _appts.Get(appointmentId);
+                var apptGuid = IdMapper.FromLong(appointmentId);
+                var appt = _appts.Get(apptGuid);
                 if (appt == null)
                 {
                     return Result.Fail("Appointment not found.");
@@ -117,9 +115,10 @@ namespace FastQ.Web.Services
 
                 var contact = customer != null && customer.SmsOptIn ? "Online" : "In-Person";
 
+                var apptId = IdMapper.TryToLong(a.Id, out var mappedId) ? mappedId : 0L;
                 return new ProviderAppointmentRow
                 {
-                    AppointmentId = a.Id,
+                    AppointmentId = apptId,
                     ScheduledForUtc = a.ScheduledForUtc,
                     StartTimeText = a.ScheduledForUtc.ToString("h:mm tt"),
                     StartDateText = a.ScheduledForUtc.ToString("MMM dd, yyyy"),
@@ -134,29 +133,29 @@ namespace FastQ.Web.Services
             }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
 
-        public IList<ProviderAppointmentRow> BuildRowsForUser(string userId, DateTime utcDate)
+        public IList<ProviderAppointmentRow> BuildRowsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return new List<ProviderAppointmentRow>();
             }
 
-            var rangeStart = utcDate.Date;
-            var rangeEnd = utcDate.Date;
+            var rangeStart = rangeStartUtc.Date;
+            var rangeEnd = rangeEndUtc.Date;
             var rows = _appts.ListForUser(userId, rangeStart, rangeEnd);
 
             return BuildProviderRows(rows);
         }
 
-        public IList<ProviderAppointmentRow> BuildWalkinsForUser(string userId, DateTime utcDate)
+        public IList<ProviderAppointmentRow> BuildWalkinsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return new List<ProviderAppointmentRow>();
             }
 
-            var rangeStart = utcDate.Date;
-            var rangeEnd = utcDate.Date;
+            var rangeStart = rangeStartUtc.Date;
+            var rangeEnd = rangeEndUtc.Date;
             var rows = _appts.ListWalkinsForUser(userId, rangeStart, rangeEnd);
 
             return BuildProviderRows(rows);
@@ -261,7 +260,7 @@ namespace FastQ.Web.Services
             return dto;
         }
 
-        public Result HandleProviderAction(string action, Guid appointmentId, Guid providerId)
+        public Result HandleProviderAction(string action, long appointmentId, string providerId)
         {
             action = (action ?? string.Empty).Trim().ToLowerInvariant();
             return action switch
@@ -344,21 +343,25 @@ namespace FastQ.Web.Services
             return stale.Count;
         }
 
-        private Result QueueCustomer(Guid appointmentId, Guid providerId)
+        private Result QueueCustomer(long appointmentId, string providerId)
         {
-            var appt = _appts.Get(appointmentId);
+            var apptGuid = IdMapper.FromLong(appointmentId);
+            var appt = _appts.Get(apptGuid);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
                 return Result.Fail("Cannot queue a finished appointment.");
 
             var now = _clock.UtcNow;
-            var stampUser = providerId == Guid.Empty ? "web" : providerId.ToString("N");
+            var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
             _appts.UpdateStatus(appt.Id, "QUEUED", stampUser);
 
             appt.Status = AppointmentStatus.Arrived;
-            appt.ProviderId = providerId;
+            if (Guid.TryParse(providerId, out var parsedProvider))
+            {
+                appt.ProviderId = parsedProvider;
+            }
             appt.UpdatedUtc = now;
             appt.StampDateUtc = now;
 
@@ -368,21 +371,25 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result BeginService(Guid appointmentId, Guid providerId)
+        private Result BeginService(long appointmentId, string providerId)
         {
-            var appt = _appts.Get(appointmentId);
+            var apptGuid = IdMapper.FromLong(appointmentId);
+            var appt = _appts.Get(apptGuid);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status != AppointmentStatus.Arrived && appt.Status != AppointmentStatus.Scheduled)
                 return Result.Fail("Appointment must be queued or scheduled to begin service.");
 
             var now = _clock.UtcNow;
-            var stampUser = providerId == Guid.Empty ? "web" : providerId.ToString("N");
+            var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
             _appts.UpdateStatus(appt.Id, "STARTED", stampUser);
 
             appt.Status = AppointmentStatus.InService;
-            appt.ProviderId = providerId;
+            if (Guid.TryParse(providerId, out var parsedProvider))
+            {
+                appt.ProviderId = parsedProvider;
+            }
             appt.UpdatedUtc = now;
             appt.StampDateUtc = now;
 
@@ -392,9 +399,10 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result EndService(Guid appointmentId)
+        private Result EndService(long appointmentId)
         {
-            var appt = _appts.Get(appointmentId);
+            var apptGuid = IdMapper.FromLong(appointmentId);
+            var appt = _appts.Get(apptGuid);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status != AppointmentStatus.InService)
@@ -413,21 +421,25 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result RemoveAppointment(Guid appointmentId, Guid providerId)
+        private Result RemoveAppointment(long appointmentId, string providerId)
         {
-            var appt = _appts.Get(appointmentId);
+            var apptGuid = IdMapper.FromLong(appointmentId);
+            var appt = _appts.Get(apptGuid);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
                 return Result.Fail("Appointment is already finished.");
 
             var now = _clock.UtcNow;
-            var stampUser = providerId == Guid.Empty ? "web" : providerId.ToString("N");
+            var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
             _appts.UpdateStatus(appt.Id, "REMOVED", stampUser);
 
             appt.Status = AppointmentStatus.Cancelled;
-            appt.ProviderId = providerId;
+            if (Guid.TryParse(providerId, out var parsedProvider))
+            {
+                appt.ProviderId = parsedProvider;
+            }
             appt.UpdatedUtc = now;
             appt.StampDateUtc = now;
 

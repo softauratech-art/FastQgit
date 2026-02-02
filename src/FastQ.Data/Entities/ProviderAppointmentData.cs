@@ -4,7 +4,7 @@ namespace FastQ.Data.Entities
 {
     public class ProviderAppointmentData
     {
-        public Guid AppointmentId { get; set; }
+        public long AppointmentId { get; set; }
         public DateTime ScheduledForUtc { get; set; }
         public AppointmentStatus Status { get; set; }
         public string QueueName { get; set; }

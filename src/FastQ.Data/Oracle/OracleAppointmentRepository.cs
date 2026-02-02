@@ -215,7 +215,7 @@ namespace FastQ.Data.Oracle
 
                         list.Add(new ProviderAppointmentData
                         {
-                            AppointmentId = IdMapper.FromLong(apptId),
+                            AppointmentId = apptId,
                             ScheduledForUtc = scheduled,
                             Status = status,
                             QueueName = ReadField(reader, "NAME"),
@@ -264,55 +264,6 @@ namespace FastQ.Data.Oracle
             }
         }
 
-        private static IList<ProviderAppointmentData> BuildDemoAppointments(DateTime rangeStartUtc, DateTime rangeEndUtc)
-        {
-            var start = rangeStartUtc == default ? DateTime.UtcNow.Date : rangeStartUtc.Date;
-            var end = rangeEndUtc == default ? start.AddDays(7) : rangeEndUtc.Date;
-            if (end < start)
-            {
-                end = start.AddDays(7);
-            }
-
-            var baseDate = start.AddDays(1);
-            var appointments = new List<ProviderAppointmentData>
-            {
-                new ProviderAppointmentData
-                {
-                    AppointmentId = IdMapper.FromLong(900001),
-                    ScheduledForUtc = DateTime.SpecifyKind(baseDate.AddHours(9), DateTimeKind.Utc),
-                    Status = AppointmentStatus.Scheduled,
-                    QueueName = "Demo Queue A",
-                    ServiceName = "Initial Consultation",
-                    CustomerName = "Alex Rivera",
-                    CustomerPhone = "555-0101",
-                    SmsOptIn = true
-                },
-                new ProviderAppointmentData
-                {
-                    AppointmentId = IdMapper.FromLong(900002),
-                    ScheduledForUtc = DateTime.SpecifyKind(baseDate.AddHours(11), DateTimeKind.Utc),
-                    Status = AppointmentStatus.Arrived,
-                    QueueName = "Demo Queue B",
-                    ServiceName = "Follow-up Visit",
-                    CustomerName = "Jordan Lee",
-                    CustomerPhone = "555-0126",
-                    SmsOptIn = false
-                },
-                new ProviderAppointmentData
-                {
-                    AppointmentId = IdMapper.FromLong(900003),
-                    ScheduledForUtc = DateTime.SpecifyKind(baseDate.AddDays(1).AddHours(15), DateTimeKind.Utc),
-                    Status = AppointmentStatus.Completed,
-                    QueueName = "Demo Queue A",
-                    ServiceName = "Results Review",
-                    CustomerName = "Taylor Morgan",
-                    CustomerPhone = "555-0149",
-                    SmsOptIn = true
-                }
-            };
-
-            return appointments;
-        }
 
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
         {

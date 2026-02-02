@@ -1,6 +1,8 @@
 @using System
 @using System.Collections.Generic
+@using System.Globalization
 @using FastQ.Data.Entities
+@using FastQ.Data.Common
 @using FastQ.Web.Models
 @model ProviderTodayViewModel
 @{
@@ -8,7 +10,29 @@
     var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
     var appointmentRows = Model.Appointments ?? new List<ProviderAppointmentRow>();
     var statusOptions = Enum.GetNames(typeof(AppointmentStatus));
-    var defaultDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+    var defaultDate = (ViewBag.StartDate as string) ?? DateTime.UtcNow.ToString("yyyy-MM-dd");
+    var endDate = (ViewBag.EndDate as string) ?? defaultDate;
+    var actionName = (ViewContext.RouteData.Values["action"] as string) ?? "Today";
+    DateTime parsedStart;
+    var startDateValue = DateTime.TryParseExact(defaultDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedStart)
+        ? parsedStart.Date
+        : DateTime.UtcNow.Date;
+    DateTime parsedEnd;
+    var endDateValue = DateTime.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedEnd)
+        ? parsedEnd.Date
+        : startDateValue;
+    if (endDateValue < startDateValue)
+    {
+        endDateValue = startDateValue;
+    }
+    var rangeDays = Math.Max(1, (endDateValue - startDateValue).Days + 1);
+    var prevStart = startDateValue.AddDays(-rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var prevEnd = endDateValue.AddDays(-rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var nextStart = startDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var nextEnd = endDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var queryUserId = ViewBag.ProviderId as string ?? string.Empty;
+    var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
+    var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
 }
 @section Head {
     <style>
@@ -40,9 +64,24 @@
         .filter-group { display: grid; gap: 4px; min-width: 160px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #4b4b4b; }
         .filter-input { padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.15); font-size: 13px; background: #fff; }
         .is-hidden { display: none; }
-    </style>
+</style>
 }
 
+<div class="card note">
+    <div class="date-nav">
+        <a href="@Url.Action(actionName, "Provider", new { start = prevStart, end = prevEnd, userId = queryUserId })" aria-label="Previous day">&lt;&lt;</a>
+        <div>@Model.DateText</div>
+        <a href="@Url.Action(actionName, "Provider", new { start = nextStart, end = nextEnd, userId = queryUserId })" aria-label="Next day">&gt;&gt;</a>
+    </div>
+    <div class="action-bar" style="padding: 10px 0;">
+        <a class="btn small primary" href="@Url.Action("Today", "Provider", new { start = defaultDate, end = endDate, userId = queryUserId })">Both Appts and Walkins</a>
+        <a class="btn small secondary" href="@Url.Action("Appointments", "Provider", new { start = defaultDate, end = endDate, userId = queryUserId })">Appointments ONLY</a>
+        <a class="btn small secondary" href="@Url.Action("Walkins", "Provider", new { start = defaultDate, end = endDate, userId = queryUserId })">Walkins ONLY</a>
+    </div>
+</div>
+
+@if (showWalkins)
+{
 <div class="card">
     <div class="card-header">
         <div>
@@ -65,7 +104,11 @@
         </div>
         <div class="filter-group">
             <label for="walkinsDate">Date</label>
-            <input id="walkinsDate" class="filter-input" type="date" data-filter="date" value="@defaultDate" />
+            <div class="action-bar">
+                <button class="btn small ghost" type="button" data-date-shift="-1" aria-label="Previous day">&lt;</button>
+                <input id="walkinsDate" class="filter-input" type="date" data-filter="date" value="@defaultDate" />
+                <button class="btn small ghost" type="button" data-date-shift="1" aria-label="Next day">&gt;</button>
+            </div>
         </div>
         <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
     </div>
@@ -96,11 +139,12 @@
                     for (var i = 0; i < walkinRows.Count; i++)
                     {
                         var row = walkinRows[i];
-                        var rowId = "walkin-" + row.AppointmentId.ToString("N");
+                        var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
+                        var rowGuid = IdMapper.FromLong(row.AppointmentId).ToString();
                         var rowStatus = row.Status.ToString();
                         var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-status="@rowStatus" data-date="@rowDate">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid" data-status="@rowStatus" data-date="@rowDate">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -110,7 +154,7 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid">
                             <td colspan="8">
                                 <div class="action-bar">
                                     <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
@@ -142,15 +186,10 @@
 
     <button class="btn primary" type="button">Add Customer to Queue</button>
 </div>
+}
 
-<div class="card note">
-    <div class="date-nav">
-        <a href="#" aria-label="Previous day">&lt;&lt;</a>
-        <div>@Model.DateText</div>
-        <a href="#" aria-label="Next day">&gt;&gt;</a>
-    </div>
-</div>
-
+@if (showAppointments)
+{
 <div class="card">
     <div class="table-filters" data-table-filter="appointments">
         <div class="filter-group">
@@ -165,7 +204,11 @@
         </div>
         <div class="filter-group">
             <label for="apptDate">Date</label>
-            <input id="apptDate" class="filter-input" type="date" data-filter="date" value="@defaultDate" />
+            <div class="action-bar">
+                <button class="btn small ghost" type="button" data-date-shift="-1" aria-label="Previous day">&lt;</button>
+                <input id="apptDate" class="filter-input" type="date" data-filter="date" value="@defaultDate" />
+                <button class="btn small ghost" type="button" data-date-shift="1" aria-label="Next day">&gt;</button>
+            </div>
         </div>
         <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
     </div>
@@ -196,11 +239,12 @@
                     for (var i = 0; i < appointmentRows.Count; i++)
                     {
                         var row = appointmentRows[i];
-                        var rowId = "appt-" + row.AppointmentId.ToString("N");
+                        var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
+                        var rowGuid = IdMapper.FromLong(row.AppointmentId).ToString();
                         var rowStatus = row.Status.ToString();
                         var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-status="@rowStatus" data-date="@rowDate">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid" data-status="@rowStatus" data-date="@rowDate">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -210,7 +254,7 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid">
                             <td colspan="8">
                                 <div class="action-bar">
                                     <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
@@ -242,6 +286,7 @@
 
     <button class="btn primary" type="button">Add New Appointment</button>
 </div>
+}
 
 <div id="meetingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
     <div class="modal">
@@ -315,6 +360,19 @@
       }
     }
 
+    function updateRangeAndReload(dateValue) {
+      if (!dateValue) {
+        return;
+      }
+      var url = new URL(window.location.href);
+      url.searchParams.set("start", dateValue);
+      url.searchParams.set("end", dateValue);
+      if (currentProviderId) {
+        url.searchParams.set("userId", currentProviderId);
+      }
+      window.location.assign(url.toString());
+    }
+
     function applyTableFilters(container) {
       if (!container) {
         return;
@@ -385,6 +443,39 @@
       container.querySelectorAll(".filter-input").forEach(function (input) {
         input.addEventListener("change", function () { applyTableFilters(container); });
         input.addEventListener("input", function () { applyTableFilters(container); });
+        if (input.getAttribute("data-filter") === "date") {
+          input.addEventListener("change", function () {
+            updateRangeAndReload(input.value);
+          });
+        }
+      });
+
+      container.querySelectorAll("[data-date-shift]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var dateInput = container.querySelector('[data-filter="date"]');
+          if (!dateInput || !dateInput.value) {
+            return;
+          }
+          var parts = dateInput.value.split("-");
+          if (parts.length !== 3) {
+            return;
+          }
+          var year = parseInt(parts[0], 10);
+          var month = parseInt(parts[1], 10);
+          var day = parseInt(parts[2], 10);
+          if (!year || !month || !day) {
+            return;
+          }
+          var base = new Date(Date.UTC(year, month - 1, day));
+          var shift = parseInt(btn.getAttribute("data-date-shift") || "0", 10);
+          if (!shift) {
+            return;
+          }
+          base.setUTCDate(base.getUTCDate() + shift);
+          var nextValue = base.toISOString().slice(0, 10);
+          dateInput.value = nextValue;
+          updateRangeAndReload(nextValue);
+        });
       });
 
       var reset = container.querySelector("[data-filter-reset]");
@@ -446,6 +537,9 @@
 
     function lockAppointment(appointmentId) {
       document.querySelectorAll('[data-appointment-id="' + appointmentId + '"]').forEach(function (el) {
+        el.classList.add("locked");
+      });
+      document.querySelectorAll('[data-appointment-guid="' + appointmentId + '"]').forEach(function (el) {
         el.classList.add("locked");
       });
     }

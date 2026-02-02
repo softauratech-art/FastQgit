@@ -125,6 +125,8 @@
     <Compile Include="**\*.cs" Exclude="bin\**\*;obj\**\*" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Oracle\OracleServiceTransactionRepository.cs" />
+    <Compile Include="Repositories\IServiceTransactionRepository.cs" />
     <Compile Include="Oracle\OracleRepositoryFactory.cs" />
   </ItemGroup>
   <ItemGroup>

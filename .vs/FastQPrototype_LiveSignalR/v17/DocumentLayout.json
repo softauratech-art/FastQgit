@@ -3,11 +3,11 @@
   "WorkspaceRootPath": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\services\\signalrrealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\services\\signalrrealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\services\\providerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|c:\\users\\sahid\\onedrive\\desktop\\fastq\\src\\fastq.web\\services\\providerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\services\\providerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -15,8 +15,20 @@
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\controllers\\providercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracledb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracleservicetransactionrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracleservicetransactionrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\repositories\\iservicetransactionrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\repositories\\iservicetransactionrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracleappointmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracleappointmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\services\\signalrrealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\services\\signalrrealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\views\\provider\\today.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -25,10 +37,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.web\\models\\providertodayviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{0AA5C559-494E-41B9-B20E-EE1A4561919A}|src\\FastQ.Web\\FastQ.Web.csproj|solutionrelative:src\\fastq.web\\models\\providertodayviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\fastq.data\\oracle\\oracleappointmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4B7612E8-0294-465B-9B69-073BB967D3F1}|src\\FastQ.Data\\FastQ.Data.csproj|solutionrelative:src\\fastq.data\\oracle\\oracleappointmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|FastQ.Web||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
@@ -84,36 +92,23 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SignalRRealtimeNotifier.cs",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
-              "RelativeDocumentMoniker": "src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
-              "RelativeToolTip": "src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
-              "ViewState": "AgIAABIAAAAAAAAAAAAwwCsAAAAUAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-27T07:35:30.601Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "OracleAppointmentRepository.cs",
-              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
-              "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
-              "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
-              "ViewState": "AgIAAKcAAAAAAAAAAAAgwK4AAAANAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-27T07:14:09.096Z"
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 4,
+              "Title": "IServiceTransactionRepository.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Repositories\\IServiceTransactionRepository.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Data\\Repositories\\IServiceTransactionRepository.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Repositories\\IServiceTransactionRepository.cs",
+              "RelativeToolTip": "src\\FastQ.Data\\Repositories\\IServiceTransactionRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-02T07:39:05.439Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
               "Title": "Today.cshtml",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Views\\Provider\\Today.cshtml",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Views\\Provider\\Today.cshtml",
@@ -125,7 +120,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 8,
               "Title": "ProviderTodayViewModel.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Models\\ProviderTodayViewModel.cs",
@@ -137,7 +132,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 0,
               "Title": "OracleDb.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleDb.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleDb.cs",
@@ -145,7 +140,8 @@
               "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleDb.cs",
               "ViewState": "AgIAAAMAAAAAAAAAAAAkwBAAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T09:40:53.326Z"
+              "WhenOpened": "2026-01-22T09:40:53.326Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -155,9 +151,10 @@
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Services\\ProviderService.cs",
               "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\ProviderService.cs",
               "RelativeToolTip": "src\\FastQ.Web\\Services\\ProviderService.cs",
-              "ViewState": "AgIAADUBAAAAAAAAAADwv0gBAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAAGcBAAAAAAAAAAAgwHUBAABKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T08:52:10.556Z"
+              "WhenOpened": "2026-01-22T08:52:10.556Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -165,15 +162,52 @@
               "Title": "ProviderController.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Controllers\\ProviderController.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Controllers\\ProviderController.cs",
-              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Controllers\\ProviderController.cs",
-              "RelativeToolTip": "src\\FastQ.Web\\Controllers\\ProviderController.cs",
-              "ViewState": "AgIAADwAAAAAAAAAAAAwwEkAAAAzAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Controllers\\ProviderController.cs*",
+              "RelativeToolTip": "src\\FastQ.Web\\Controllers\\ProviderController.cs*",
+              "ViewState": "AgIAAHkAAAAAAAAAAAAkwIoAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-22T08:48:29.278Z"
+              "WhenOpened": "2026-01-22T08:48:29.278Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 3,
+              "Title": "OracleServiceTransactionRepository.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleServiceTransactionRepository.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleServiceTransactionRepository.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleServiceTransactionRepository.cs",
+              "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleServiceTransactionRepository.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-02T07:41:25.369Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "OracleAppointmentRepository.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "RelativeToolTip": "src\\FastQ.Data\\Oracle\\OracleAppointmentRepository.cs",
+              "ViewState": "AgIAAKcAAAAAAAAAAAAgwLQAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T07:14:09.096Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "SignalRRealtimeNotifier.cs",
+              "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "RelativeDocumentMoniker": "src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "ToolTip": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "RelativeToolTip": "src\\FastQ.Web\\Services\\SignalRRealtimeNotifier.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAwwCsAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T07:35:30.601Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
               "Title": "Book.aspx.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Customer\\Book.aspx.cs",
@@ -184,7 +218,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 19,
               "Title": "SignalRRealtimeNotifier.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Realtime\\SignalRRealtimeNotifier.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Realtime\\SignalRRealtimeNotifier.cs",
@@ -196,7 +230,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 9,
               "Title": "FastQ.Web",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\FastQ.Web.csproj",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\FastQ.Web.csproj",
@@ -207,7 +241,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 20,
               "Title": "BookingService.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\App\\Services\\BookingService.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\App\\Services\\BookingService.cs",
@@ -219,7 +253,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 10,
               "Title": "CallValidateUser.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\Inspection_Meeting\\InspectionMeetingWebApp\\App_Code\\CallValidateUser.cs",
               "RelativeDocumentMoniker": "..\\Inspection_Meeting\\InspectionMeetingWebApp\\App_Code\\CallValidateUser.cs",
@@ -231,7 +265,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 18,
               "Title": "Book.aspx",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Customer\\Book.aspx",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Customer\\Book.aspx",
@@ -242,7 +276,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 12,
               "Title": "Web.config",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Web.config",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Web.config",
@@ -255,7 +289,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 11,
               "Title": "app.config",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\app.config",
               "RelativeDocumentMoniker": "src\\FastQ.Data\\app.config",
@@ -267,7 +301,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 14,
               "Title": "OracleRepositoryFactory.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Oracle\\OracleRepositoryFactory.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Data\\Oracle\\OracleRepositoryFactory.cs",
@@ -279,7 +313,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 13,
               "Title": "AdminController.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Web\\Controllers\\AdminController.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Web\\Controllers\\AdminController.cs",
@@ -291,7 +325,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 15,
               "Title": "packages.config",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\packages.config",
               "RelativeDocumentMoniker": "src\\FastQ.Data\\packages.config",
@@ -303,7 +337,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 16,
               "Title": "Customer.cs",
               "DocumentMoniker": "C:\\Users\\sahid\\OneDrive\\Desktop\\FastQ\\src\\FastQ.Data\\Entities\\Customer.cs",
               "RelativeDocumentMoniker": "src\\FastQ.Data\\Entities\\Customer.cs",
