@@ -202,15 +202,36 @@ namespace FastQ.Data.Oracle
                         var statusText = ReadField(reader, "STATUS");
                         var status = MapStatus(statusText);
 
-                        var apptId = Convert.ToInt64(reader["APPOINTMENT_ID"]);
-                        var apptDate = reader["APPT_DATE"] == DBNull.Value
-                            ? DateTime.UtcNow
-                            : Convert.ToDateTime(reader["APPT_DATE"]);
-                        var startTime = ReadInterval(reader, "START_TIME");
-                        var scheduled = DateTime.SpecifyKind(apptDate, DateTimeKind.Utc);
-                        if (startTime.HasValue)
+                        var isWalkin = HasField(reader, "WALKIN_ID") || HasField(reader, "JOIN_TIME");
+                        long apptId;
+                        if (isWalkin && TryGetLong(reader, "WALKIN_ID", out var walkinId))
                         {
-                            scheduled = DateTime.SpecifyKind(apptDate.Date + startTime.Value, DateTimeKind.Utc);
+                            apptId = walkinId;
+                        }
+                        else
+                        {
+                            apptId = Convert.ToInt64(reader["APPOINTMENT_ID"]);
+                        }
+
+                        DateTime scheduled;
+                        if (isWalkin)
+                        {
+                            var joinTime = ReadDateTime(reader, "JOIN_TIME");
+                            var createdOn = ReadDateTime(reader, "CREATEDON");
+                            var baseTime = joinTime ?? createdOn ?? DateTime.UtcNow;
+                            scheduled = DateTime.SpecifyKind(baseTime, DateTimeKind.Utc);
+                        }
+                        else
+                        {
+                            var apptDate = reader["APPT_DATE"] == DBNull.Value
+                                ? DateTime.UtcNow
+                                : Convert.ToDateTime(reader["APPT_DATE"]);
+                            var startTime = ReadInterval(reader, "START_TIME");
+                            scheduled = DateTime.SpecifyKind(apptDate, DateTimeKind.Utc);
+                            if (startTime.HasValue)
+                            {
+                                scheduled = DateTime.SpecifyKind(apptDate.Date + startTime.Value, DateTimeKind.Utc);
+                            }
                         }
 
                         var first = ReadField(reader, "CUST_FNAME");
@@ -317,6 +338,19 @@ namespace FastQ.Data.Oracle
             return string.Empty;
         }
 
+        private static bool HasField(IDataRecord record, string field)
+        {
+            for (var i = 0; i < record.FieldCount; i++)
+            {
+                if (string.Equals(record.GetName(i), field, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> locationByQueue)
         {
             var apptId = Convert.ToInt64(record["APPOINTMENT_ID"]);
@@ -401,6 +435,37 @@ namespace FastQ.Data.Oracle
         private static long? TryReadLong(IDataRecord record, string field)
         {
             return TryGetLong(record, field, out var value) ? value : (long?)null;
+        }
+
+        private static DateTime? ReadDateTime(IDataRecord record, string field)
+        {
+            for (var i = 0; i < record.FieldCount; i++)
+            {
+                if (!string.Equals(record.GetName(i), field, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (record.IsDBNull(i))
+                {
+                    return null;
+                }
+
+                var value = record.GetValue(i);
+                if (value is DateTime dt)
+                {
+                    return dt;
+                }
+
+                if (DateTime.TryParse(value.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+                {
+                    return parsed;
+                }
+
+                return null;
+            }
+
+            return null;
         }
 
         private static TimeSpan? ReadInterval(IDataRecord record, string field)

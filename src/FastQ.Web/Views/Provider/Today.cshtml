@@ -62,6 +62,7 @@
         .table-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 10px 14px; background: rgba(255, 255, 255, 0.6); border-radius: 10px; margin-bottom: 12px; }
         .filter-group { display: grid; gap: 4px; min-width: 160px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #4b4b4b; }
         .filter-input { padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.15); font-size: 13px; background: #fff; }
+        .date-range { flex-wrap: nowrap; align-items: center; white-space: nowrap; }
         .is-hidden { display: none; }
 </style>
 }
@@ -102,13 +103,12 @@
             </select>
         </div>
         <div class="filter-group">
-            <label for="walkinsDate">Date</label>
-            <div class="action-bar">
+            <label for="walkinsStartDate">Date</label>
+            <div class="action-bar date-range">
                 <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
                 <input id="walkinsStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
                 <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
-            </div>
-            <div class="action-bar" style="margin-top: 6px;">
+                <span>to</span>
                 <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
                 <input id="walkinsEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
                 <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
@@ -206,13 +206,12 @@
             </select>
         </div>
         <div class="filter-group">
-            <label for="apptDate">Date</label>
-            <div class="action-bar">
+            <label for="apptStartDate">Date</label>
+            <div class="action-bar date-range">
                 <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
                 <input id="apptStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
                 <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
-            </div>
-            <div class="action-bar" style="margin-top: 6px;">
+                <span>to</span>
                 <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
                 <input id="apptEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
                 <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
