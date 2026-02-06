@@ -124,7 +124,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult ProviderAction(string action, string appointmentId, string providerId)
+        public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType)
         {
             if (string.IsNullOrWhiteSpace(action) || string.IsNullOrWhiteSpace(appointmentId))
                 return Json(new { ok = false, error = "action and appointmentId are required" });
@@ -133,13 +133,17 @@ namespace FastQ.Web.Controllers
             if (!long.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId must be a number" });
 
+            var normalizedSrc = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
+            if (normalizedSrc != "A" && normalizedSrc != "W")
+                return Json(new { ok = false, error = "srcType must be A or W" });
+
             var resolvedUserId = providerId;
             if (string.IsNullOrWhiteSpace(resolvedUserId))
             {
                 resolvedUserId = _auth.GetLoggedInWindowsUser();
             }
 
-            var res = _service.HandleProviderAction(action, apptId, resolvedUserId);
+            var res = _service.HandleProviderAction(action, normalizedSrc[0], apptId, resolvedUserId);
 
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
@@ -167,8 +171,8 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = "appointmentId must be a number" });
 
             var normalized = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
-            if (normalized != "A" && normalized != "S")
-                return Json(new { ok = false, error = "srcType must be A or S" });
+            if (normalized != "A" && normalized != "W")
+                return Json(new { ok = false, error = "srcType must be A or W" });
 
             var res = _service.SaveServiceInfo(apptId, normalized[0], webexUrl, notes, providerId);
             if (!res.Ok)

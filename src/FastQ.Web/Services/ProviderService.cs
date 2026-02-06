@@ -54,26 +54,9 @@ namespace FastQ.Web.Services
         {
             var srcId = appointmentId;
 
-            long? queueId = null;
-            long? serviceId = null;
-            string status = null;
-
-            if (char.ToUpperInvariant(srcType) == 'A')
-            {
-                var appt = _appts.Get(appointmentId);
-                if (appt == null)
-                {
-                    return Result.Fail("Appointment not found.");
-                }
-
-                queueId = appt.QueueId;
-                serviceId = appt.ServiceId;
-
-                status = appt.Status.ToString();
-            }
-
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
-            _serviceTransactions.SaveServiceInfo(srcType, srcId, queueId, serviceId, status, webexUrl, notes, user);
+            var combinedNotes = BuildServiceNotes(webexUrl, notes);
+            _serviceTransactions.SetServiceTransaction(srcType, srcId, "NOTES", user, combinedNotes);
             return Result.Success();
         }
 
@@ -251,15 +234,15 @@ namespace FastQ.Web.Services
             return dto;
         }
 
-        public Result HandleProviderAction(string action, long appointmentId, string providerId)
+        public Result HandleProviderAction(string action, char srcType, long appointmentId, string providerId)
         {
             action = (action ?? string.Empty).Trim().ToLowerInvariant();
             return action switch
             {
-                "arrive" => QueueCustomer(appointmentId, providerId),
-                "begin" => BeginService(appointmentId, providerId),
-                "end" => EndService(appointmentId),
-                "remove" => RemoveAppointment(appointmentId, providerId),
+                "arrive" => QueueCustomer(srcType, appointmentId, providerId),
+                "begin" => BeginService(srcType, appointmentId, providerId),
+                "end" => EndService(srcType, appointmentId),
+                "remove" => RemoveAppointment(srcType, appointmentId, providerId),
                 _ => Result.Fail("Unknown action")
             };
         }
@@ -334,7 +317,7 @@ namespace FastQ.Web.Services
             return stale.Count;
         }
 
-        private Result QueueCustomer(long appointmentId, string providerId)
+        private Result QueueCustomer(char srcType, long appointmentId, string providerId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
@@ -344,8 +327,12 @@ namespace FastQ.Web.Services
 
             var now = _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "CHECKIN", stampUser, null);
 
-            _appts.UpdateStatus(appt.Id, "QUEUED", stampUser);
+            if (char.ToUpperInvariant(srcType) == 'A')
+            {
+                _appts.UpdateStatus(appt.Id, "QUEUED", stampUser);
+            }
 
             appt.Status = AppointmentStatus.Arrived;
             appt.ProviderId = providerId;
@@ -358,7 +345,7 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result BeginService(long appointmentId, string providerId)
+        private Result BeginService(char srcType, long appointmentId, string providerId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
@@ -369,7 +356,11 @@ namespace FastQ.Web.Services
             var now = _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
-            _appts.UpdateStatus(appt.Id, "STARTED", stampUser);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "START", stampUser, null);
+            if (char.ToUpperInvariant(srcType) == 'A')
+            {
+                _appts.UpdateStatus(appt.Id, "STARTED", stampUser);
+            }
 
             appt.Status = AppointmentStatus.InService;
             appt.ProviderId = providerId;
@@ -382,7 +373,7 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result EndService(long appointmentId)
+        private Result EndService(char srcType, long appointmentId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
@@ -391,7 +382,11 @@ namespace FastQ.Web.Services
                 return Result.Fail("Appointment must be in service to end service.");
 
             var now = _clock.UtcNow;
-            _appts.UpdateStatus(appt.Id, "COMPLETED", "web");
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", "web", null);
+            if (char.ToUpperInvariant(srcType) == 'A')
+            {
+                _appts.UpdateStatus(appt.Id, "COMPLETED", "web");
+            }
 
             appt.Status = AppointmentStatus.Completed;
             appt.UpdatedUtc = now;
@@ -403,7 +398,7 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result RemoveAppointment(long appointmentId, string providerId)
+        private Result RemoveAppointment(char srcType, long appointmentId, string providerId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
@@ -414,7 +409,11 @@ namespace FastQ.Web.Services
             var now = _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
-            _appts.UpdateStatus(appt.Id, "REMOVED", stampUser);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "REMOVE", stampUser, null);
+            if (char.ToUpperInvariant(srcType) == 'A')
+            {
+                _appts.UpdateStatus(appt.Id, "REMOVED", stampUser);
+            }
 
             appt.Status = AppointmentStatus.Cancelled;
             appt.ProviderId = providerId;
@@ -425,6 +424,24 @@ namespace FastQ.Web.Services
             _rt.QueueChanged(appt.LocationId, appt.QueueId);
 
             return Result.Success();
+        }
+
+        private static string BuildServiceNotes(string webexUrl, string notes)
+        {
+            var safeUrl = string.IsNullOrWhiteSpace(webexUrl) ? string.Empty : webexUrl.Trim();
+            var safeNotes = string.IsNullOrWhiteSpace(notes) ? string.Empty : notes.Trim();
+
+            if (string.IsNullOrEmpty(safeUrl))
+            {
+                return safeNotes;
+            }
+
+            if (string.IsNullOrEmpty(safeNotes))
+            {
+                return "WebEx URL: " + safeUrl;
+            }
+
+            return "WebEx URL: " + safeUrl + Environment.NewLine + safeNotes;
         }
     }
 }

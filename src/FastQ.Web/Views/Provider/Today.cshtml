@@ -147,7 +147,7 @@
                         var rowStatus = row.Status.ToString();
                         var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-status="@rowStatus" data-date="@rowDate">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -157,16 +157,16 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W">
                             <td colspan="8">
                                 <div class="action-bar">
-                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId">Start</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId">End</button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId">Transfer</button>
+                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W">Start</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W">End</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W">Transfer</button>
                                     <button class="btn small ghost meeting-link" type="button"
                                             data-appointment-id="@row.AppointmentId"
-                                            data-src-type="S"
+                                            data-src-type="W"
                                             data-date="@row.StartDateText"
                                             data-time="@row.StartTimeText"
                                             data-title="@row.ServiceType"
@@ -174,7 +174,7 @@
                                             data-phone="@row.Phone">
                                         Info
                                     </button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId">Remove</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W">Remove</button>
                                 </div>
                             </td>
                         </tr>
@@ -250,7 +250,7 @@
                         var rowStatus = row.Status.ToString();
                         var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-status="@rowStatus" data-date="@rowDate">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -260,13 +260,13 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A">
                             <td colspan="8">
                                 <div class="action-bar">
-                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId">Start</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId">End</button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId">Transfer</button>
+                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A">Start</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A">End</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A">Transfer</button>
                                     <button class="btn small ghost meeting-link" type="button"
                                             data-appointment-id="@row.AppointmentId"
                                             data-src-type="A"
@@ -277,7 +277,7 @@
                                             data-phone="@row.Phone">
                                         Info
                                     </button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId">Remove</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A">Remove</button>
                                 </div>
                             </td>
                         </tr>
@@ -543,8 +543,18 @@
 
         var appointmentId = btn.getAttribute("data-appointment-id");
         var action = (btn.getAttribute("data-action") || "").toLowerCase();
+        var srcType = (btn.getAttribute("data-src-type") || "").toUpperCase();
         if (!appointmentId || !action) {
           return;
+        }
+        if (!srcType) {
+          var sourceRow = document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
+          if (sourceRow) {
+            srcType = (sourceRow.getAttribute("data-src-type") || "").toUpperCase();
+          }
+        }
+        if (!srcType) {
+          srcType = "A";
         }
 
         function normalizeStatus(text) {
@@ -599,7 +609,7 @@
           return;
         }
 
-        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, providerId: currentProviderId })
+        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, providerId: currentProviderId, srcType: srcType })
           .then(function (res) {
             if (!res || !res.ok) {
               window.alert(res && res.error ? res.error : "Action failed.");
