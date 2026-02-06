@@ -4,7 +4,6 @@ using System.Data;
 using System.Text;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using FastQ.Data.Common;
 
 namespace FastQ.Data.Oracle
 {
@@ -17,9 +16,9 @@ namespace FastQ.Data.Oracle
             _connectionString = connectionString;
         }
 
-        public Customer Get(Guid id)
+        public Customer Get(long id)
         {
-            if (!IdMapper.TryToLong(id, out var customerId)) return null;
+            if (id <= 0) return null;
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
@@ -27,7 +26,7 @@ namespace FastQ.Data.Oracle
                   FROM CUSTOMERS
                   WHERE CUSTOMER_ID = :customerId"))
             {
-                OracleDb.AddParam(cmd, "customerId", customerId, DbType.Int64);
+                OracleDb.AddParam(cmd, "customerId", id, DbType.Int64);
                 using (var reader = cmd.ExecuteReader())
                 {
                     return reader.Read() ? MapCustomer(reader) : null;
@@ -59,7 +58,7 @@ namespace FastQ.Data.Oracle
             using (var conn = OracleDb.Open(_connectionString))
             {
                 var newId = OracleDb.NextVal(conn, "CUSTOMERSEQ");
-                customer.Id = IdMapper.FromLong(newId);
+                customer.Id = newId;
 
                 SplitName(customer.Name, out var first, out var last);
                 if (!string.IsNullOrWhiteSpace(customer.FirstName)) first = customer.FirstName;
@@ -89,8 +88,9 @@ namespace FastQ.Data.Oracle
 
         public void Update(Customer customer)
         {
-            if (!IdMapper.TryToLong(customer.Id, out var customerId))
-                throw new InvalidOperationException("Customer Id is not mapped to a numeric ID.");
+            var customerId = customer.Id;
+            if (customerId <= 0)
+                throw new InvalidOperationException("Customer Id must be a numeric ID.");
 
             SplitName(customer.Name, out var first, out var last);
             if (!string.IsNullOrWhiteSpace(customer.FirstName)) first = customer.FirstName;
@@ -156,7 +156,7 @@ namespace FastQ.Data.Oracle
 
             return new Customer
             {
-                Id = IdMapper.FromLong(id),
+                Id = id,
                 FirstName = first,
                 LastName = last,
                 Email = email,

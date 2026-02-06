@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using FastQ.Data.Common;
 
 namespace FastQ.Data.Oracle
 {
@@ -16,9 +15,9 @@ namespace FastQ.Data.Oracle
             _connectionString = connectionString;
         }
 
-        public Location Get(Guid id)
+        public Location Get(long id)
         {
-            if (!IdMapper.TryToLong(id, out var locationId)) return null;
+            if (id <= 0) return null;
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
@@ -26,7 +25,7 @@ namespace FastQ.Data.Oracle
                   FROM VALIDLOCATIONS
                   WHERE LOCATION_ID = :locationId"))
             {
-                OracleDb.AddParam(cmd, "locationId", locationId, DbType.Int64);
+                OracleDb.AddParam(cmd, "locationId", id, DbType.Int64);
                 using (var reader = cmd.ExecuteReader())
                 {
                     return reader.Read() ? MapLocation(reader) : null;
@@ -38,14 +37,14 @@ namespace FastQ.Data.Oracle
         {
             using (var conn = OracleDb.Open(_connectionString))
             {
-                long locationId;
-                if (!IdMapper.TryToLong(location.Id, out locationId))
+                var locationId = location.Id;
+                if (locationId <= 0)
                 {
                     using (var cmd = OracleDb.CreateCommand(conn, "SELECT NVL(MAX(LOCATION_ID),0) + 1 FROM VALIDLOCATIONS"))
                     {
                         locationId = Convert.ToInt64(cmd.ExecuteScalar());
                     }
-                    location.Id = IdMapper.FromLong(locationId);
+                    location.Id = locationId;
                 }
 
                 using (var cmd = OracleDb.CreateCommand(conn,
@@ -69,8 +68,9 @@ namespace FastQ.Data.Oracle
 
         public void Update(Location location)
         {
-            if (!IdMapper.TryToLong(location.Id, out var locationId))
-                throw new InvalidOperationException("Location Id is not mapped to a numeric ID.");
+            var locationId = location.Id;
+            if (locationId <= 0)
+                throw new InvalidOperationException("Location Id must be a numeric ID.");
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
@@ -122,7 +122,7 @@ namespace FastQ.Data.Oracle
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
             return new Location
             {
-                Id = IdMapper.FromLong(locationId),
+                Id = locationId,
                 Name = record["LOCNAME"]?.ToString() ?? string.Empty,
                 Address = record["ADDRESS"]?.ToString() ?? string.Empty,
                 Phone = record["PHONE"]?.ToString() ?? string.Empty,

@@ -6,7 +6,6 @@ using System.Globalization;
 using System.Linq;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using FastQ.Data.Common;
 
 namespace FastQ.Data.Oracle
 {
@@ -19,16 +18,16 @@ namespace FastQ.Data.Oracle
             _connectionString = connectionString;
         }
 
-        public Appointment Get(Guid id)
+        public Appointment Get(long id)
         {
-            if (!IdMapper.TryToLong(id, out var apptId)) return null;
+            if (id <= 0) return null;
 
             using (var conn = OracleDb.Open(_connectionString))
             {
                 var locationByQueue = LoadQueueLocations(conn);
                 using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_APPT_DETAILS"))
                 {
-                    OracleDb.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
+                    OracleDb.AddParam(cmd, "p_apptid", id, DbType.Int64);
                     OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -43,12 +42,14 @@ namespace FastQ.Data.Oracle
             using (var conn = OracleDb.Open(_connectionString))
             {
                 var newId = OracleDb.NextVal(conn, "APPTSEQ");
-                appointment.Id = IdMapper.FromLong(newId);
+                appointment.Id = newId;
 
-                if (!IdMapper.TryToLong(appointment.CustomerId, out var customerId))
-                    throw new InvalidOperationException("CustomerId is not mapped to a numeric ID.");
-                if (!IdMapper.TryToLong(appointment.QueueId, out var queueId))
-                    throw new InvalidOperationException("QueueId is not mapped to a numeric ID.");
+                var customerId = appointment.CustomerId;
+                if (customerId <= 0)
+                    throw new InvalidOperationException("CustomerId must be a numeric ID.");
+                var queueId = appointment.QueueId;
+                if (queueId <= 0)
+                    throw new InvalidOperationException("QueueId must be a numeric ID.");
 
                 var apptDate = ResolveApptDate(appointment);
                 var startInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
@@ -90,12 +91,15 @@ namespace FastQ.Data.Oracle
 
         public void Update(Appointment appointment)
         {
-            if (!IdMapper.TryToLong(appointment.Id, out var apptId))
-                throw new InvalidOperationException("Appointment Id is not mapped to a numeric ID.");
-            if (!IdMapper.TryToLong(appointment.CustomerId, out var customerId))
-                throw new InvalidOperationException("CustomerId is not mapped to a numeric ID.");
-            if (!IdMapper.TryToLong(appointment.QueueId, out var queueId))
-                throw new InvalidOperationException("QueueId is not mapped to a numeric ID.");
+            var apptId = appointment.Id;
+            if (apptId <= 0)
+                throw new InvalidOperationException("Appointment Id must be a numeric ID.");
+            var customerId = appointment.CustomerId;
+            if (customerId <= 0)
+                throw new InvalidOperationException("CustomerId must be a numeric ID.");
+            var queueId = appointment.QueueId;
+            if (queueId <= 0)
+                throw new InvalidOperationException("QueueId must be a numeric ID.");
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
@@ -143,22 +147,22 @@ namespace FastQ.Data.Oracle
             }
         }
 
-        public IList<Appointment> ListByQueue(Guid queueId)
+        public IList<Appointment> ListByQueue(long queueId)
         {
-            if (!IdMapper.TryToLong(queueId, out var qid)) return new List<Appointment>();
-            return ListByFilter("a.QUEUE_ID = :queueId", cmd => OracleDb.AddParam(cmd, "queueId", qid, DbType.Int64));
+            if (queueId <= 0) return new List<Appointment>();
+            return ListByFilter("a.QUEUE_ID = :queueId", cmd => OracleDb.AddParam(cmd, "queueId", queueId, DbType.Int64));
         }
 
-        public IList<Appointment> ListByCustomer(Guid customerId)
+        public IList<Appointment> ListByCustomer(long customerId)
         {
-            if (!IdMapper.TryToLong(customerId, out var cid)) return new List<Appointment>();
-            return ListByFilter("a.CUSTOMER_ID = :customerId", cmd => OracleDb.AddParam(cmd, "customerId", cid, DbType.Int64));
+            if (customerId <= 0) return new List<Appointment>();
+            return ListByFilter("a.CUSTOMER_ID = :customerId", cmd => OracleDb.AddParam(cmd, "customerId", customerId, DbType.Int64));
         }
 
-        public IList<Appointment> ListByLocation(Guid locationId)
+        public IList<Appointment> ListByLocation(long locationId)
         {
-            if (!IdMapper.TryToLong(locationId, out var lid)) return new List<Appointment>();
-            return ListByFilter("q.LOCATION_ID = :locationId", cmd => OracleDb.AddParam(cmd, "locationId", lid, DbType.Int64));
+            if (locationId <= 0) return new List<Appointment>();
+            return ListByFilter("q.LOCATION_ID = :locationId", cmd => OracleDb.AddParam(cmd, "locationId", locationId, DbType.Int64));
         }
 
         public IList<Appointment> ListAll()
@@ -231,10 +235,11 @@ namespace FastQ.Data.Oracle
             return list;
         }
 
-        public void UpdateStatus(Guid appointmentId, string status, string stampUser, string notes = null)
+        public void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null)
         {
-            if (!IdMapper.TryToLong(appointmentId, out var apptId))
-                throw new InvalidOperationException("Appointment Id is not mapped to a numeric ID.");
+            var apptId = appointmentId;
+            if (apptId <= 0)
+                throw new InvalidOperationException("Appointment Id must be a numeric ID.");
 
             if (string.IsNullOrWhiteSpace(status))
                 throw new InvalidOperationException("Status is required.");
@@ -330,11 +335,11 @@ namespace FastQ.Data.Oracle
 
             return new Appointment
             {
-                Id = IdMapper.FromLong(apptId),
-                CustomerId = IdMapper.FromLong(customerId),
-                QueueId = IdMapper.FromLong(queueId),
-                LocationId = locationId > 0 ? IdMapper.FromLong(locationId) : Guid.Empty,
-                ServiceId = serviceId.HasValue ? IdMapper.FromLong(serviceId.Value) : (Guid?)null,
+                Id = apptId,
+                CustomerId = customerId,
+                QueueId = queueId,
+                LocationId = locationId,
+                ServiceId = serviceId,
                 RefCriteria = record["REF_CRITERIA"]?.ToString(),
                 RefValue = record["REF_VALUE"]?.ToString(),
                 ContactType = record["CONTACTTYPE"]?.ToString(),
@@ -500,19 +505,14 @@ namespace FastQ.Data.Oracle
             return string.Format(CultureInfo.InvariantCulture, "{0}{1:00} {2:hh\\:mm\\:ss}.000000", sign, days, time);
         }
 
-        private static object ToNullableLong(Guid? id)
+        private static object ToNullableLong(long? id)
         {
-            if (!id.HasValue)
+            if (!id.HasValue || id.Value <= 0)
             {
                 return DBNull.Value;
             }
 
-            if (!IdMapper.TryToLong(id.Value, out var val))
-            {
-                return DBNull.Value;
-            }
-
-            return val;
+            return id.Value;
         }
 
         private static Dictionary<long, long> LoadQueueLocations(DbConnection conn)

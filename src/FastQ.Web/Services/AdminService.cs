@@ -58,12 +58,12 @@ namespace FastQ.Web.Services
             return _locations.ListAll();
         }
 
-        public IList<Queue> ListQueuesByLocation(Guid locationId)
+        public IList<Queue> ListQueuesByLocation(long locationId)
         {
             return _queues.ListByLocation(locationId);
         }
 
-        public IList<Queue> ListQueues(Guid? locationId)
+        public IList<Queue> ListQueues(long? locationId)
         {
             return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll();
         }
@@ -73,17 +73,17 @@ namespace FastQ.Web.Services
             return _customers.ListAll();
         }
 
-        public IList<Appointment> ListAppointmentsByLocation(Guid locationId)
+        public IList<Appointment> ListAppointmentsByLocation(long locationId)
         {
             return _appts.ListByLocation(locationId);
         }
 
-        public IList<Provider> ListProviders(Guid? locationId)
+        public IList<Provider> ListProviders(long? locationId)
         {
             return locationId.HasValue ? _providers.ListByLocation(locationId.Value) : _providers.ListAll();
         }
 
-        public Queue GetQueue(Guid queueId)
+        public Queue GetQueue(long queueId)
         {
             return _queues.Get(queueId);
         }

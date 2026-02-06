@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using FastQ.Data.Common;
 
 namespace FastQ.Data.Oracle
 {
@@ -16,14 +15,14 @@ namespace FastQ.Data.Oracle
             _connectionString = connectionString;
         }
 
-        public Queue Get(Guid id)
+        public Queue Get(long id)
         {
-            if (!IdMapper.TryToLong(id, out var queueId)) return null;
+            if (id <= 0) return null;
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUE_DETAILS"))
             {
-                OracleDb.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
+                OracleDb.AddParam(cmd, "p_queueid", id, DbType.Int64);
                 OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -36,15 +35,16 @@ namespace FastQ.Data.Oracle
         {
             using (var conn = OracleDb.Open(_connectionString))
             {
-                long queueId;
-                if (!IdMapper.TryToLong(queue.Id, out queueId))
+                var queueId = queue.Id;
+                if (queueId <= 0)
                 {
                     queueId = OracleDb.NextVal(conn, "QUEUESEQ");
-                    queue.Id = IdMapper.FromLong(queueId);
+                    queue.Id = queueId;
                 }
 
-                if (!IdMapper.TryToLong(queue.LocationId, out var locationId))
-                    throw new InvalidOperationException("LocationId is not mapped to a numeric ID.");
+                var locationId = queue.LocationId;
+                if (locationId <= 0)
+                    throw new InvalidOperationException("LocationId must be a numeric ID.");
 
                 using (var cmd = OracleDb.CreateCommand(conn,
                     @"INSERT INTO VALIDQUEUES
@@ -73,10 +73,12 @@ namespace FastQ.Data.Oracle
 
         public void Update(Queue queue)
         {
-            if (!IdMapper.TryToLong(queue.Id, out var queueId))
-                throw new InvalidOperationException("Queue Id is not mapped to a numeric ID.");
-            if (!IdMapper.TryToLong(queue.LocationId, out var locationId))
-                throw new InvalidOperationException("LocationId is not mapped to a numeric ID.");
+            var queueId = queue.Id;
+            if (queueId <= 0)
+                throw new InvalidOperationException("Queue Id must be a numeric ID.");
+            var locationId = queue.LocationId;
+            if (locationId <= 0)
+                throw new InvalidOperationException("LocationId must be a numeric ID.");
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
@@ -112,15 +114,15 @@ namespace FastQ.Data.Oracle
             }
         }
 
-        public IList<Queue> ListByLocation(Guid locationId)
+        public IList<Queue> ListByLocation(long locationId)
         {
-            if (!IdMapper.TryToLong(locationId, out var locId)) return new List<Queue>();
+            if (locationId <= 0) return new List<Queue>();
 
             var list = new List<Queue>();
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUES"))
             {
-                OracleDb.AddParam(cmd, "p_location", locId, DbType.Int64);
+                OracleDb.AddParam(cmd, "p_location", locationId, DbType.Int64);
                 OracleDb.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -171,8 +173,8 @@ namespace FastQ.Data.Oracle
 
             var queue = new Queue
             {
-                Id = IdMapper.FromLong(queueId),
-                LocationId = IdMapper.FromLong(locationId),
+                Id = queueId,
+                LocationId = locationId,
                 Name = record["NAME"]?.ToString() ?? string.Empty,
                 NameEs = record["NAME_ES"]?.ToString() ?? string.Empty,
                 NameCp = record["NAME_CP"]?.ToString() ?? string.Empty,

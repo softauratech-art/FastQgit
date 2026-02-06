@@ -6,17 +6,17 @@ namespace FastQ.Data.Repositories
 {
     public interface IAppointmentRepository
     {
-        Appointment Get(Guid id);
+        Appointment Get(long id);
         void Add(Appointment appointment);
         void Update(Appointment appointment);
 
-        IList<Appointment> ListByQueue(Guid queueId);
-        IList<Appointment> ListByCustomer(Guid customerId);
-        IList<Appointment> ListByLocation(Guid locationId);
+        IList<Appointment> ListByQueue(long queueId);
+        IList<Appointment> ListByCustomer(long customerId);
+        IList<Appointment> ListByLocation(long locationId);
         IList<Appointment> ListAll();
         IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);
         IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);
-        void UpdateStatus(Guid appointmentId, string status, string stampUser, string notes = null);
+        void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null);
     }
 }
 

@@ -4,8 +4,8 @@ namespace FastQ.Data.Entities
 {
     public class Provider
     {
-        public Guid Id { get; set; }
-        public Guid LocationId { get; set; }
+        public string Id { get; set; }
+        public long LocationId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Email { get; set; }

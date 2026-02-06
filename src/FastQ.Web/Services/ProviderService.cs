@@ -60,22 +60,14 @@ namespace FastQ.Web.Services
 
             if (char.ToUpperInvariant(srcType) == 'A')
             {
-                var apptGuid = IdMapper.FromLong(appointmentId);
-                var appt = _appts.Get(apptGuid);
+                var appt = _appts.Get(appointmentId);
                 if (appt == null)
                 {
                     return Result.Fail("Appointment not found.");
                 }
 
-                if (IdMapper.TryToLong(appt.QueueId, out var qid))
-                {
-                    queueId = qid;
-                }
-
-                if (appt.ServiceId.HasValue && IdMapper.TryToLong(appt.ServiceId.Value, out var sid))
-                {
-                    serviceId = sid;
-                }
+                queueId = appt.QueueId;
+                serviceId = appt.ServiceId;
 
                 status = appt.Status.ToString();
             }
@@ -105,8 +97,8 @@ namespace FastQ.Web.Services
 
         public IList<ProviderAppointmentRow> BuildRows(
             IList<Appointment> appointments,
-            IDictionary<Guid, Queue> queueMap,
-            IDictionary<Guid, Customer> customerMap)
+            IDictionary<long, Queue> queueMap,
+            IDictionary<long, Customer> customerMap)
         {
             return appointments.Select(a =>
             {
@@ -115,10 +107,9 @@ namespace FastQ.Web.Services
 
                 var contact = customer != null && customer.SmsOptIn ? "Online" : "In-Person";
 
-                var apptId = IdMapper.TryToLong(a.Id, out var mappedId) ? mappedId : 0L;
                 return new ProviderAppointmentRow
                 {
-                    AppointmentId = apptId,
+                    AppointmentId = a.Id,
                     ScheduledForUtc = a.ScheduledForUtc,
                     StartTimeText = a.ScheduledForUtc.ToString("h:mm tt"),
                     StartDateText = a.ScheduledForUtc.ToString("MMM dd, yyyy"),
@@ -186,7 +177,7 @@ namespace FastQ.Web.Services
             }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
 
-        public QueueSnapshotDto GetQueueSnapshot(Guid locationId, Guid queueId)
+        public QueueSnapshotDto GetQueueSnapshot(long locationId, long queueId)
         {
             var location = _locations.Get(locationId);
             var queue = _queues.Get(queueId);
@@ -273,7 +264,7 @@ namespace FastQ.Web.Services
             };
         }
 
-        public Result<Appointment> TransferAppointment(Guid appointmentId, Guid targetQueueId)
+        public Result<Appointment> TransferAppointment(long appointmentId, long targetQueueId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result<Appointment>.Fail("Appointment not found.");
@@ -296,7 +287,7 @@ namespace FastQ.Web.Services
 
             var newAppt = new Appointment
             {
-                Id = Guid.NewGuid(),
+                Id = 0,
                 LocationId = appt.LocationId,
                 QueueId = targetQueueId,
                 CustomerId = appt.CustomerId,
@@ -345,8 +336,7 @@ namespace FastQ.Web.Services
 
         private Result QueueCustomer(long appointmentId, string providerId)
         {
-            var apptGuid = IdMapper.FromLong(appointmentId);
-            var appt = _appts.Get(apptGuid);
+            var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
@@ -358,10 +348,7 @@ namespace FastQ.Web.Services
             _appts.UpdateStatus(appt.Id, "QUEUED", stampUser);
 
             appt.Status = AppointmentStatus.Arrived;
-            if (Guid.TryParse(providerId, out var parsedProvider))
-            {
-                appt.ProviderId = parsedProvider;
-            }
+            appt.ProviderId = providerId;
             appt.UpdatedUtc = now;
             appt.StampDateUtc = now;
 
@@ -373,8 +360,7 @@ namespace FastQ.Web.Services
 
         private Result BeginService(long appointmentId, string providerId)
         {
-            var apptGuid = IdMapper.FromLong(appointmentId);
-            var appt = _appts.Get(apptGuid);
+            var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status != AppointmentStatus.Arrived && appt.Status != AppointmentStatus.Scheduled)
@@ -386,10 +372,7 @@ namespace FastQ.Web.Services
             _appts.UpdateStatus(appt.Id, "STARTED", stampUser);
 
             appt.Status = AppointmentStatus.InService;
-            if (Guid.TryParse(providerId, out var parsedProvider))
-            {
-                appt.ProviderId = parsedProvider;
-            }
+            appt.ProviderId = providerId;
             appt.UpdatedUtc = now;
             appt.StampDateUtc = now;
 
@@ -401,8 +384,7 @@ namespace FastQ.Web.Services
 
         private Result EndService(long appointmentId)
         {
-            var apptGuid = IdMapper.FromLong(appointmentId);
-            var appt = _appts.Get(apptGuid);
+            var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status != AppointmentStatus.InService)
@@ -423,8 +405,7 @@ namespace FastQ.Web.Services
 
         private Result RemoveAppointment(long appointmentId, string providerId)
         {
-            var apptGuid = IdMapper.FromLong(appointmentId);
-            var appt = _appts.Get(apptGuid);
+            var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
 
             if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
@@ -436,10 +417,7 @@ namespace FastQ.Web.Services
             _appts.UpdateStatus(appt.Id, "REMOVED", stampUser);
 
             appt.Status = AppointmentStatus.Cancelled;
-            if (Guid.TryParse(providerId, out var parsedProvider))
-            {
-                appt.ProviderId = parsedProvider;
-            }
+            appt.ProviderId = providerId;
             appt.UpdatedUtc = now;
             appt.StampDateUtc = now;
 

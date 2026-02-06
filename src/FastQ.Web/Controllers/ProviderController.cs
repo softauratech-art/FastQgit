@@ -1,9 +1,7 @@
 using System;
-using System;
 using System.Globalization;
 using System.Linq;
 using System.Web.Mvc;
-using FastQ.Data.Common;
 using FastQ.Data.Entities;
 using FastQ.Web.Models;
 using FastQ.Web.Services;
@@ -92,12 +90,22 @@ namespace FastQ.Web.Controllers
                 return fallback.Date;
             }
 
-            if (DateTime.TryParseExact(input.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+            var formats = new[]
             {
-                return parsed.Date;
-            }
+                "yyyy-MM-dd",
+                "yyyy-M-d",
+                "MM/dd/yyyy",
+                "M/d/yyyy",
+                "MM/dd/yy",
+                "M/d/yy",
+                "dd/MM/yyyy",
+                "d/M/yyyy",
+                "dd/MM/yy",
+                "d/M/yy"
+            };
 
-            if (DateTime.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsed))
+            DateTime parsed;
+            if (DateTime.TryParseExact(input.Trim(), formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed))
             {
                 return parsed.Date;
             }
@@ -108,7 +116,7 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public JsonResult GetQueueSnapshot(string locationId, string queueId)
         {
-            if (!Guid.TryParse(locationId, out var locId) || !Guid.TryParse(queueId, out var qId))
+            if (!long.TryParse(locationId, out var locId) || !long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "locationId and queueId are required" }, JsonRequestBehavior.AllowGet);
 
             var dto = _service.GetQueueSnapshot(locId, qId);
@@ -142,15 +150,14 @@ namespace FastQ.Web.Controllers
         [HttpPost]
         public JsonResult TransferAppointment(string appointmentId, string targetQueueId)
         {
-            if (!long.TryParse(appointmentId, out var apptId) || !Guid.TryParse(targetQueueId, out var queueId))
+            if (!long.TryParse(appointmentId, out var apptId) || !long.TryParse(targetQueueId, out var queueId))
                 return Json(new { ok = false, error = "appointmentId and targetQueueId are required" });
 
-            var res = _service.TransferAppointment(IdMapper.FromLong(apptId), queueId);
+            var res = _service.TransferAppointment(apptId, queueId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
-            var newApptId = IdMapper.TryToLong(res.Value.Id, out var newId) ? (long?)newId : null;
-            return Json(new { ok = true, newAppointmentId = newApptId, newQueueId = res.Value.QueueId });
+            return Json(new { ok = true, newAppointmentId = res.Value.Id, newQueueId = res.Value.QueueId });
         }
 
         [HttpPost]

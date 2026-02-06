@@ -1,12 +1,10 @@
-using System;
-
 namespace FastQ.Web.Models
 {
     public class AppointmentSnapshotDto
     {
-        public Guid AppointmentId { get; set; }
-        public Guid LocationId { get; set; }
-        public Guid QueueId { get; set; }
+        public long AppointmentId { get; set; }
+        public long LocationId { get; set; }
+        public long QueueId { get; set; }
 
         public string LocationName { get; set; }
         public string QueueName { get; set; }

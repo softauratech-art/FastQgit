@@ -2,7 +2,6 @@
 @using System.Collections.Generic
 @using System.Globalization
 @using FastQ.Data.Entities
-@using FastQ.Data.Common
 @using FastQ.Web.Models
 @model ProviderTodayViewModel
 @{
@@ -105,9 +104,14 @@
         <div class="filter-group">
             <label for="walkinsDate">Date</label>
             <div class="action-bar">
-                <button class="btn small ghost" type="button" data-date-shift="-1" aria-label="Previous day">&lt;</button>
-                <input id="walkinsDate" class="filter-input" type="date" data-filter="date" value="@defaultDate" />
-                <button class="btn small ghost" type="button" data-date-shift="1" aria-label="Next day">&gt;</button>
+                <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
+                <input id="walkinsStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
+                <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
+            </div>
+            <div class="action-bar" style="margin-top: 6px;">
+                <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
+                <input id="walkinsEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
+                <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
             </div>
         </div>
         <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
@@ -140,11 +144,10 @@
                     {
                         var row = walkinRows[i];
                         var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
-                        var rowGuid = IdMapper.FromLong(row.AppointmentId).ToString();
                         var rowStatus = row.Status.ToString();
                         var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid" data-status="@rowStatus" data-date="@rowDate">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-status="@rowStatus" data-date="@rowDate">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -154,7 +157,7 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
                             <td colspan="8">
                                 <div class="action-bar">
                                     <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
@@ -205,9 +208,14 @@
         <div class="filter-group">
             <label for="apptDate">Date</label>
             <div class="action-bar">
-                <button class="btn small ghost" type="button" data-date-shift="-1" aria-label="Previous day">&lt;</button>
-                <input id="apptDate" class="filter-input" type="date" data-filter="date" value="@defaultDate" />
-                <button class="btn small ghost" type="button" data-date-shift="1" aria-label="Next day">&gt;</button>
+                <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
+                <input id="apptStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
+                <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
+            </div>
+            <div class="action-bar" style="margin-top: 6px;">
+                <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
+                <input id="apptEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
+                <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
             </div>
         </div>
         <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
@@ -240,11 +248,10 @@
                     {
                         var row = appointmentRows[i];
                         var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
-                        var rowGuid = IdMapper.FromLong(row.AppointmentId).ToString();
                         var rowStatus = row.Status.ToString();
                         var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                         var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid" data-status="@rowStatus" data-date="@rowDate">
+                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-status="@rowStatus" data-date="@rowDate">
                             <td>@row.StartTimeText</td>
                             <td>@row.QueueName</td>
                             <td>@row.ServiceType</td>
@@ -254,7 +261,7 @@
                             <td>@row.ContactMethod</td>
                             <td class="text-center">&darr;</td>
                         </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-appointment-guid="@rowGuid">
+                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId">
                             <td colspan="8">
                                 <div class="action-bar">
                                     <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId">Check-In</button>
@@ -360,17 +367,27 @@
       }
     }
 
-    function updateRangeAndReload(dateValue) {
-      if (!dateValue) {
+    function updateRangeAndReload(startValue, endValue) {
+      if (!startValue || !endValue) {
         return;
       }
       var url = new URL(window.location.href);
-      url.searchParams.set("start", dateValue);
-      url.searchParams.set("end", dateValue);
+      url.searchParams.set("start", startValue);
+      url.searchParams.set("end", endValue);
       if (currentProviderId) {
         url.searchParams.set("userId", currentProviderId);
       }
       window.location.assign(url.toString());
+    }
+
+    function clampRange(startInput, endInput) {
+      if (!startInput || !endInput || !startInput.value || !endInput.value) {
+        return;
+      }
+
+      if (endInput.value < startInput.value) {
+        endInput.value = startInput.value;
+      }
     }
 
     function applyTableFilters(container) {
@@ -379,13 +396,19 @@
       }
 
       var statusInput = container.querySelector('[data-filter="status"]');
-      var dateInput = container.querySelector('[data-filter="date"]');
+      var startInput = container.querySelector('[data-filter="start"]');
+      var endInput = container.querySelector('[data-filter="end"]');
       var statusValue = (statusInput && statusInput.value ? statusInput.value : "").toLowerCase();
-      var dateValue = dateInput && dateInput.value ? dateInput.value : "";
+      var startValue = startInput && startInput.value ? startInput.value : "";
+      var endValue = endInput && endInput.value ? endInput.value : "";
       var table = container.parentElement ? container.parentElement.querySelector("table") : null;
       if (!table) {
         return;
       }
+
+      clampRange(startInput, endInput);
+      startValue = startInput && startInput.value ? startInput.value : "";
+      endValue = endInput && endInput.value ? endInput.value : "";
 
       table.querySelectorAll("tbody tr.accordion-toggle").forEach(function (row) {
         var rowStatus = (row.getAttribute("data-status") || "").toLowerCase();
@@ -395,7 +418,10 @@
         if (statusValue && statusValue !== "all" && rowStatus !== statusValue) {
           match = false;
         }
-        if (dateValue && rowDate !== dateValue) {
+        if (startValue && rowDate < startValue) {
+          match = false;
+        }
+        if (endValue && rowDate > endValue) {
           match = false;
         }
 
@@ -443,16 +469,22 @@
       container.querySelectorAll(".filter-input").forEach(function (input) {
         input.addEventListener("change", function () { applyTableFilters(container); });
         input.addEventListener("input", function () { applyTableFilters(container); });
-        if (input.getAttribute("data-filter") === "date") {
+        if (input.getAttribute("data-filter") === "start" || input.getAttribute("data-filter") === "end") {
           input.addEventListener("change", function () {
-            updateRangeAndReload(input.value);
+            var startInput = container.querySelector('[data-filter="start"]');
+            var endInput = container.querySelector('[data-filter="end"]');
+            if (startInput && endInput) {
+              clampRange(startInput, endInput);
+              updateRangeAndReload(startInput.value, endInput.value);
+            }
           });
         }
       });
 
       container.querySelectorAll("[data-date-shift]").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          var dateInput = container.querySelector('[data-filter="date"]');
+          var target = btn.getAttribute("data-date-target");
+          var dateInput = target ? container.querySelector('[data-filter="' + target + '"]') : null;
           if (!dateInput || !dateInput.value) {
             return;
           }
@@ -474,7 +506,12 @@
           base.setUTCDate(base.getUTCDate() + shift);
           var nextValue = base.toISOString().slice(0, 10);
           dateInput.value = nextValue;
-          updateRangeAndReload(nextValue);
+          var startInput = container.querySelector('[data-filter="start"]');
+          var endInput = container.querySelector('[data-filter="end"]');
+          if (startInput && endInput) {
+            clampRange(startInput, endInput);
+            updateRangeAndReload(startInput.value, endInput.value);
+          }
         });
       });
 
@@ -482,12 +519,16 @@
       if (reset) {
         reset.addEventListener("click", function () {
           var statusInput = container.querySelector('[data-filter="status"]');
-          var dateInput = container.querySelector('[data-filter="date"]');
+          var startInput = container.querySelector('[data-filter="start"]');
+          var endInput = container.querySelector('[data-filter="end"]');
           if (statusInput) {
             statusInput.value = "all";
           }
-          if (dateInput) {
-            dateInput.value = "";
+          if (startInput) {
+            startInput.value = "@defaultDate";
+          }
+          if (endInput) {
+            endInput.value = "@endDate";
           }
           applyTableFilters(container);
         });
@@ -507,8 +548,43 @@
           return;
         }
 
+        function normalizeStatus(text) {
+          return (text || "").toString().trim().toLowerCase();
+        }
+
+        function getStatusForAppointment(id) {
+          var row = document.querySelector('.accordion-toggle[data-appointment-id="' + id + '"]');
+          return row ? normalizeStatus(row.getAttribute("data-status")) : "";
+        }
+
+        function canAction(status, actionName) {
+          var finished = status === "completed" || status === "cancelled" || status === "closedbysystem" || status === "transferredout";
+          if (finished) {
+            return false;
+          }
+          if (actionName === "arrive") {
+            return status === "scheduled";
+          }
+          if (actionName === "begin") {
+            return status === "arrived" || status === "scheduled";
+          }
+          if (actionName === "end") {
+            return status === "inservice";
+          }
+          if (actionName === "remove") {
+            return !finished;
+          }
+          return true;
+        }
+
+        var status = getStatusForAppointment(appointmentId);
+        if (!canAction(status, action)) {
+          window.alert("Action not allowed for the current status.");
+          return;
+        }
+
         if (action === "transfer") {
-          var targetQueueId = window.prompt("Enter target QueueId (GUID):", "");
+          var targetQueueId = window.prompt("Enter target QueueId (number):", "");
           if (!targetQueueId) {
             return;
           }
@@ -537,9 +613,6 @@
 
     function lockAppointment(appointmentId) {
       document.querySelectorAll('[data-appointment-id="' + appointmentId + '"]').forEach(function (el) {
-        el.classList.add("locked");
-      });
-      document.querySelectorAll('[data-appointment-guid="' + appointmentId + '"]').forEach(function (el) {
         el.classList.add("locked");
       });
     }

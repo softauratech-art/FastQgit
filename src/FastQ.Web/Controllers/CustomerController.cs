@@ -13,7 +13,7 @@ namespace FastQ.Web.Controllers
             _service = new CustomerService();
         }
 
-        private static readonly Guid DefaultLocationId = new Guid("00a98ac7-0000-0000-4641-535451494430");
+        private const long DefaultLocationId = 0;
 
         [HttpGet]
         public ActionResult Book()
@@ -24,7 +24,7 @@ namespace FastQ.Web.Controllers
         [HttpPost]
         public ActionResult Book(string queueId, string phone, string firstName, string lastName)
         {
-            if (!Guid.TryParse(queueId, out var qId))
+            if (!long.TryParse(queueId, out var qId))
             {
                 ViewBag.Error = "Queue is required.";
                 return View();
@@ -69,7 +69,7 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public JsonResult GetAppointmentSnapshot(string appointmentId)
         {
-            if (!Guid.TryParse(appointmentId, out var apptId))
+            if (!long.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId is required" }, JsonRequestBehavior.AllowGet);
 
             var dto = _service.GetAppointmentSnapshot(apptId);
@@ -82,7 +82,7 @@ namespace FastQ.Web.Controllers
         [HttpPost]
         public JsonResult CancelAppointment(string appointmentId)
         {
-            if (!Guid.TryParse(appointmentId, out var apptId))
+            if (!long.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId is required" });
 
             var res = _service.Cancel(apptId);

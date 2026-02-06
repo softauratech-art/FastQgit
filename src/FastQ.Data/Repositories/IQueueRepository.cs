@@ -6,11 +6,11 @@ namespace FastQ.Data.Repositories
 {
     public interface IQueueRepository
     {
-        Queue Get(Guid id);
+        Queue Get(long id);
         void Add(Queue queue);
         void Update(Queue queue);
 
-        IList<Queue> ListByLocation(Guid locationId);
+        IList<Queue> ListByLocation(long locationId);
         IList<Queue> ListAll();
     }
 }

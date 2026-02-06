@@ -69,12 +69,12 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public JsonResult AdminSnapshot(string locationId)
         {
-            Guid locId;
-            var hasLocation = Guid.TryParse(locationId, out locId);
+            long locId;
+            var hasLocation = long.TryParse(locationId, out locId);
 
-            var queues = _service.ListQueues(hasLocation ? locId : (Guid?)null);
+            var queues = _service.ListQueues(hasLocation ? (long?)locId : null);
 
-            var providers = _service.ListProviders(hasLocation ? locId : (Guid?)null);
+            var providers = _service.ListProviders(hasLocation ? (long?)locId : null);
 
             var locations = _service.ListLocations();
 
@@ -112,7 +112,7 @@ namespace FastQ.Web.Controllers
         [HttpPost]
         public JsonResult AdminUpdate(string queueId, string maxUpcoming, string maxDaysAhead, string minHoursLead)
         {
-            if (!Guid.TryParse(queueId, out var qId))
+            if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "queueId is required" });
 
             if (!int.TryParse(maxUpcoming, out var maxUpcomingInt) ||

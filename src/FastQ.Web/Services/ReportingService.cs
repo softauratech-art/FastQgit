@@ -27,17 +27,17 @@ namespace FastQ.Web.Services
             _queues = queues;
         }
 
-        public IList<Appointment> ListAppointments(Guid? locationId)
+        public IList<Appointment> ListAppointments(long? locationId)
         {
             return locationId.HasValue ? _appts.ListByLocation(locationId.Value) : _appts.ListAll();
         }
 
-        public IList<Provider> ListProviders(Guid? locationId)
+        public IList<Provider> ListProviders(long? locationId)
         {
             return locationId.HasValue ? _providers.ListByLocation(locationId.Value) : _providers.ListAll();
         }
 
-        public IList<Queue> ListQueues(Guid? locationId)
+        public IList<Queue> ListQueues(long? locationId)
         {
             return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll();
         }

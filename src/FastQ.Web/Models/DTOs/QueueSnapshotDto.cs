@@ -1,12 +1,11 @@
-using System;
 using System.Collections.Generic;
 
 namespace FastQ.Web.Models
 {
     public class AppointmentRowDto
     {
-        public Guid AppointmentId { get; set; }
-        public Guid CustomerId { get; set; }
+        public long AppointmentId { get; set; }
+        public long CustomerId { get; set; }
         public string CustomerPhone { get; set; }
         public string Status { get; set; }
         public string ScheduledForUtc { get; set; }
@@ -15,8 +14,8 @@ namespace FastQ.Web.Models
 
     public class QueueSnapshotDto
     {
-        public Guid LocationId { get; set; }
-        public Guid QueueId { get; set; }
+        public long LocationId { get; set; }
+        public long QueueId { get; set; }
         public string LocationName { get; set; }
         public string QueueName { get; set; }
 

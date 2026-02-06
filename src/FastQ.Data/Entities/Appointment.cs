@@ -4,13 +4,13 @@ namespace FastQ.Data.Entities
 {
     public class Appointment
     {
-        public Guid Id { get; set; }
-        public Guid LocationId { get; set; }
-        public Guid QueueId { get; set; }
-        public Guid CustomerId { get; set; }
-        public Guid? ProviderId { get; set; }
+        public long Id { get; set; }
+        public long LocationId { get; set; }
+        public long QueueId { get; set; }
+        public long CustomerId { get; set; }
+        public string ProviderId { get; set; }
 
-        public Guid? ServiceId { get; set; }
+        public long? ServiceId { get; set; }
         public string RefCriteria { get; set; }
         public string RefValue { get; set; }
         public string ContactType { get; set; }

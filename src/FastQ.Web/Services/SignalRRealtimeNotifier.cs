@@ -11,7 +11,7 @@ namespace FastQ.Web.Services
         private static IHubContext Hub => GlobalHost.ConnectionManager.GetHubContext<QueueHub>();
         private const int IdPreviewLength = 8;
 
-        public void QueueChanged(Guid locationId, Guid queueId)
+        public void QueueChanged(long locationId, long queueId)
         {
             var loc = locationId.ToString();
             var q = queueId.ToString();
@@ -41,7 +41,8 @@ namespace FastQ.Web.Services
 
         private static string BuildNotificationMessage(Appointment appointment)
         {
-            var shortId = appointment.Id.ToString().Substring(0, IdPreviewLength);
+            var idText = appointment.Id.ToString();
+            var shortId = idText.Length <= IdPreviewLength ? idText : idText.Substring(0, IdPreviewLength);
             switch (appointment.Status)
             {
                 case AppointmentStatus.Scheduled:

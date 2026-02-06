@@ -5,7 +5,7 @@ namespace FastQ.Web.Services
 {
     public interface IRealtimeNotifier
     {
-        void QueueChanged(Guid locationId, Guid queueId);
+        void QueueChanged(long locationId, long queueId);
         void AppointmentChanged(Appointment appointment);
     }
 
@@ -14,7 +14,7 @@ namespace FastQ.Web.Services
         public static readonly NullRealtimeNotifier Instance = new NullRealtimeNotifier();
         private NullRealtimeNotifier() { }
 
-        public void QueueChanged(Guid locationId, Guid queueId) { }
+        public void QueueChanged(long locationId, long queueId) { }
         public void AppointmentChanged(Appointment appointment) { }
     }
 }

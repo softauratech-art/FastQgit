@@ -6,9 +6,9 @@ namespace FastQ.Data.Repositories
 {
     public interface IProviderRepository
     {
-        Provider Get(Guid id);
+        Provider Get(string id);
         void Add(Provider provider);
-        IList<Provider> ListByLocation(Guid locationId);
+        IList<Provider> ListByLocation(long locationId);
         IList<Provider> ListAll();
     }
 }

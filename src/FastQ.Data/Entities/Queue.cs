@@ -1,11 +1,9 @@
-using System;
-
 namespace FastQ.Data.Entities
 {
     public class Queue
     {
-        public Guid Id { get; set; }
-        public Guid LocationId { get; set; }
+        public long Id { get; set; }
+        public long LocationId { get; set; }
         public string Name { get; set; }
         public string NameEs { get; set; }
         public string NameCp { get; set; }

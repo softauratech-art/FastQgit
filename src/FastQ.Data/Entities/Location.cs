@@ -4,7 +4,7 @@ namespace FastQ.Data.Entities
 {
     public class Location
     {
-        public Guid Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
         public string TimeZoneId { get; set; } = "UTC";
         public string Address { get; set; }

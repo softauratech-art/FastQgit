@@ -45,24 +45,31 @@ namespace FastQ.Web.Services
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
-        public Result<Appointment> BookFirstAvailable(Guid locationId, Guid queueId, string phone, bool smsOptIn, string name = null)
+        public Result<Appointment> BookFirstAvailable(long locationId, long queueId, string phone, bool smsOptIn, string name = null)
         {
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<Appointment>.Fail("Phone is required.");
 
             var now = _clock.UtcNow;
+            var queue = _queues.Get(queueId);
+            if (queue == null) return Result<Appointment>.Fail("Queue not found.");
+
+            if (locationId <= 0)
+            {
+                locationId = queue.LocationId;
+            }
+
             var location = _locations.Get(locationId);
             if (location == null) return Result<Appointment>.Fail("Location not found.");
 
-            var queue = _queues.Get(queueId);
-            if (queue == null || queue.LocationId != locationId) return Result<Appointment>.Fail("Queue not found for this location.");
+            if (queue.LocationId != locationId) return Result<Appointment>.Fail("Queue not found for this location.");
 
             var customer = _customers.GetByPhone(phone);
             if (customer == null)
             {
                 customer = new Customer
                 {
-                    Id = Guid.NewGuid(),
+                    Id = 0,
                     Phone = phone.Trim(),
                     Name = name,
                     SmsOptIn = smsOptIn,
@@ -99,7 +106,7 @@ namespace FastQ.Web.Services
 
             var appt = new Appointment
             {
-                Id = Guid.NewGuid(),
+                Id = 0,
                 LocationId = locationId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
@@ -121,7 +128,7 @@ namespace FastQ.Web.Services
             return Result<Appointment>.Success(appt);
         }
 
-        public Result Cancel(Guid appointmentId)
+        public Result Cancel(long appointmentId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return Result.Fail("Appointment not found.");
@@ -140,7 +147,7 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        public AppointmentSnapshotDto GetAppointmentSnapshot(Guid appointmentId)
+        public AppointmentSnapshotDto GetAppointmentSnapshot(long appointmentId)
         {
             var appt = _appts.Get(appointmentId);
             if (appt == null) return null;

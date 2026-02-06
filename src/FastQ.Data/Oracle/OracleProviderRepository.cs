@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using FastQ.Data.Common;
 
 namespace FastQ.Data.Oracle
 {
@@ -16,10 +15,10 @@ namespace FastQ.Data.Oracle
             _connectionString = connectionString;
         }
 
-        public Provider Get(Guid id)
+        public Provider Get(string id)
         {
-            if (!IdMapper.TryToLong(id, out var providerId)) return null;
-            var providerKey = providerId.ToString();
+            var providerKey = (id ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(providerKey)) return null;
 
             using (var conn = OracleDb.Open(_connectionString))
             using (var cmd = OracleDb.CreateCommand(conn,
@@ -30,15 +29,16 @@ namespace FastQ.Data.Oracle
                 OracleDb.AddParam(cmd, "userId", providerKey, DbType.String);
                 using (var reader = cmd.ExecuteReader())
                 {
-                    return reader.Read() ? MapProvider(reader, Guid.Empty) : null;
+                    return reader.Read() ? MapProvider(reader, 0) : null;
                 }
             }
         }
 
         public void Add(Provider provider)
         {
-            if (!IdMapper.TryToLong(provider.Id, out var providerId))
-                throw new InvalidOperationException("Provider Id is not mapped to a numeric ID.");
+            var providerId = (provider.Id ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(providerId))
+                throw new InvalidOperationException("Provider Id is required.");
 
             SplitName(provider.Name, out var first, out var last);
             if (!string.IsNullOrWhiteSpace(provider.FirstName)) first = provider.FirstName;
@@ -55,7 +55,7 @@ namespace FastQ.Data.Oracle
                   VALUES
                     (:userId, :fname, :lname, :email, :phone, :language, :activeFlag, :adminFlag, :password, :title, SYSDATE, :stampUser)"))
             {
-                OracleDb.AddParam(cmd, "userId", providerId.ToString(), DbType.String);
+                OracleDb.AddParam(cmd, "userId", providerId, DbType.String);
                 OracleDb.AddParam(cmd, "fname", first, DbType.String);
                 OracleDb.AddParam(cmd, "lname", last, DbType.String);
                 OracleDb.AddParam(cmd, "email", email, DbType.String);
@@ -70,9 +70,9 @@ namespace FastQ.Data.Oracle
             }
         }
 
-        public IList<Provider> ListByLocation(Guid locationId)
+        public IList<Provider> ListByLocation(long locationId)
         {
-            if (!IdMapper.TryToLong(locationId, out var locId)) return new List<Provider>();
+            if (locationId <= 0) return new List<Provider>();
 
             var list = new List<Provider>();
             using (var conn = OracleDb.Open(_connectionString))
@@ -83,12 +83,12 @@ namespace FastQ.Data.Oracle
                   JOIN VALIDQUEUES q ON q.QUEUE_ID = p.QUEUE_ID
                   WHERE q.LOCATION_ID = :locationId"))
             {
-                OracleDb.AddParam(cmd, "locationId", locId, DbType.Int64);
+                OracleDb.AddParam(cmd, "locationId", locationId, DbType.Int64);
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        var provider = MapProvider(reader, IdMapper.FromLong(locId));
+                        var provider = MapProvider(reader, locationId);
                         if (provider != null) list.Add(provider);
                     }
                 }
@@ -109,7 +109,7 @@ namespace FastQ.Data.Oracle
             {
                 while (reader.Read())
                 {
-                    var provider = MapProvider(reader, Guid.Empty);
+                    var provider = MapProvider(reader, 0);
                     if (provider != null) list.Add(provider);
                 }
             }
@@ -117,13 +117,10 @@ namespace FastQ.Data.Oracle
             return list;
         }
 
-        private static Provider MapProvider(IDataRecord record, Guid locationId)
+        private static Provider MapProvider(IDataRecord record, long locationId)
         {
             var userIdText = record["USER_ID"]?.ToString() ?? string.Empty;
-            if (!long.TryParse(userIdText, out var userId))
-            {
-                return null;
-            }
+            if (string.IsNullOrWhiteSpace(userIdText)) return null;
 
             var first = record["FNAME"]?.ToString() ?? string.Empty;
             var last = record["LNAME"]?.ToString() ?? string.Empty;
@@ -132,8 +129,8 @@ namespace FastQ.Data.Oracle
             var adminFlag = (record["ADMINFLAG"]?.ToString() ?? "N") == "Y";
             return new Provider
             {
-                Id = IdMapper.FromLong(userId),
-                LocationId = locationId == Guid.Empty ? Guid.Empty : locationId,
+                Id = userIdText,
+                LocationId = locationId,
                 FirstName = first,
                 LastName = last,
                 Email = record["EMAIL"]?.ToString() ?? string.Empty,
