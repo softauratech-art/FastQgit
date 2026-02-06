@@ -542,6 +542,18 @@ namespace FastQ.Data.Oracle
                 return AppointmentStatus.Scheduled;
 
             var trimmed = statusText.Trim();
+            if (trimmed.Equals("ARRIVED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Arrived;
+            if (trimmed.Equals("IN PROGRESS", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.InService;
+            if (trimmed.Equals("DONE", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Completed;
+            if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Cancelled;
+            if (trimmed.Equals("CANCELED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("CANCELLED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Cancelled;
+            if (trimmed.Equals("REJOINED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Arrived;
             if (trimmed.Equals("QUEUED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.Arrived;
             if (trimmed.Equals("STARTED", StringComparison.OrdinalIgnoreCase))

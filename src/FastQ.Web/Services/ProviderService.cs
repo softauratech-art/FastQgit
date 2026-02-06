@@ -55,8 +55,7 @@ namespace FastQ.Web.Services
             var srcId = appointmentId;
 
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
-            var combinedNotes = BuildServiceNotes(webexUrl, notes);
-            _serviceTransactions.SetServiceTransaction(srcType, srcId, "NOTES", user, combinedNotes);
+            _serviceTransactions.SaveServiceInfo(srcType, srcId, webexUrl, notes, user);
             return Result.Success();
         }
 
@@ -101,7 +100,7 @@ namespace FastQ.Web.Services
                     CustomerName = customer?.Name ?? "Unknown",
                     Phone = customer?.Phone ?? "-",
                     Status = a.Status,
-                    StatusText = a.Status.ToString().ToUpperInvariant(),
+                    StatusText = GetStatusText(a.Status),
                     ContactMethod = contact
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
@@ -154,10 +153,22 @@ namespace FastQ.Web.Services
                     CustomerName = string.IsNullOrWhiteSpace(r.CustomerName) ? "Unknown" : r.CustomerName,
                     Phone = string.IsNullOrWhiteSpace(r.CustomerPhone) ? "-" : r.CustomerPhone,
                     Status = r.Status,
-                    StatusText = r.Status.ToString().ToUpperInvariant(),
+                    StatusText = GetStatusText(r.Status),
                     ContactMethod = r.SmsOptIn ? "Online" : "In-Person"
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
+        }
+
+        private static string GetStatusText(AppointmentStatus status)
+        {
+            return status switch
+            {
+                AppointmentStatus.Arrived => "ARRIVED",
+                AppointmentStatus.InService => "IN PROGRESS",
+                AppointmentStatus.Completed => "DONE",
+                AppointmentStatus.Cancelled => "REMOVED",
+                _ => status.ToString().ToUpperInvariant()
+            };
         }
 
         public QueueSnapshotDto GetQueueSnapshot(long locationId, long queueId)
@@ -319,129 +330,123 @@ namespace FastQ.Web.Services
 
         private Result QueueCustomer(char srcType, long appointmentId, string providerId)
         {
-            var appt = _appts.Get(appointmentId);
-            if (appt == null) return Result.Fail("Appointment not found.");
+            var upperSrc = char.ToUpperInvariant(srcType);
+            Appointment appt = null;
+            if (upperSrc == 'A')
+            {
+                appt = _appts.Get(appointmentId);
+                if (appt == null) return Result.Fail("Appointment not found.");
+            }
 
-            if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
+            if (appt != null && (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem))
                 return Result.Fail("Cannot queue a finished appointment.");
 
             var now = _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
             _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "CHECKIN", stampUser, null);
 
-            if (char.ToUpperInvariant(srcType) == 'A')
+            if (upperSrc == 'A' && appt != null)
             {
-                _appts.UpdateStatus(appt.Id, "QUEUED", stampUser);
+                appt.Status = AppointmentStatus.Arrived;
+                appt.ProviderId = providerId;
+                appt.UpdatedUtc = now;
+                appt.StampDateUtc = now;
+
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
-
-            appt.Status = AppointmentStatus.Arrived;
-            appt.ProviderId = providerId;
-            appt.UpdatedUtc = now;
-            appt.StampDateUtc = now;
-
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
 
             return Result.Success();
         }
 
         private Result BeginService(char srcType, long appointmentId, string providerId)
         {
-            var appt = _appts.Get(appointmentId);
-            if (appt == null) return Result.Fail("Appointment not found.");
+            var upperSrc = char.ToUpperInvariant(srcType);
+            Appointment appt = null;
+            if (upperSrc == 'A')
+            {
+                appt = _appts.Get(appointmentId);
+                if (appt == null) return Result.Fail("Appointment not found.");
+            }
 
-            if (appt.Status != AppointmentStatus.Arrived && appt.Status != AppointmentStatus.Scheduled)
+            if (appt != null && appt.Status != AppointmentStatus.Arrived && appt.Status != AppointmentStatus.Scheduled)
                 return Result.Fail("Appointment must be queued or scheduled to begin service.");
 
             var now = _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
             _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "START", stampUser, null);
-            if (char.ToUpperInvariant(srcType) == 'A')
+            if (upperSrc == 'A' && appt != null)
             {
-                _appts.UpdateStatus(appt.Id, "STARTED", stampUser);
+                appt.Status = AppointmentStatus.InService;
+                appt.ProviderId = providerId;
+                appt.UpdatedUtc = now;
+                appt.StampDateUtc = now;
+
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
-
-            appt.Status = AppointmentStatus.InService;
-            appt.ProviderId = providerId;
-            appt.UpdatedUtc = now;
-            appt.StampDateUtc = now;
-
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
 
             return Result.Success();
         }
 
         private Result EndService(char srcType, long appointmentId)
         {
-            var appt = _appts.Get(appointmentId);
-            if (appt == null) return Result.Fail("Appointment not found.");
+            var upperSrc = char.ToUpperInvariant(srcType);
+            Appointment appt = null;
+            if (upperSrc == 'A')
+            {
+                appt = _appts.Get(appointmentId);
+                if (appt == null) return Result.Fail("Appointment not found.");
+            }
 
-            if (appt.Status != AppointmentStatus.InService)
+            if (appt != null && appt.Status != AppointmentStatus.InService)
                 return Result.Fail("Appointment must be in service to end service.");
 
             var now = _clock.UtcNow;
             _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", "web", null);
-            if (char.ToUpperInvariant(srcType) == 'A')
+            if (upperSrc == 'A' && appt != null)
             {
-                _appts.UpdateStatus(appt.Id, "COMPLETED", "web");
+                appt.Status = AppointmentStatus.Completed;
+                appt.UpdatedUtc = now;
+                appt.StampDateUtc = now;
+
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
-
-            appt.Status = AppointmentStatus.Completed;
-            appt.UpdatedUtc = now;
-            appt.StampDateUtc = now;
-
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
 
             return Result.Success();
         }
 
         private Result RemoveAppointment(char srcType, long appointmentId, string providerId)
         {
-            var appt = _appts.Get(appointmentId);
-            if (appt == null) return Result.Fail("Appointment not found.");
+            var upperSrc = char.ToUpperInvariant(srcType);
+            Appointment appt = null;
+            if (upperSrc == 'A')
+            {
+                appt = _appts.Get(appointmentId);
+                if (appt == null) return Result.Fail("Appointment not found.");
+            }
 
-            if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
+            if (appt != null && (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem))
                 return Result.Fail("Appointment is already finished.");
 
             var now = _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
             _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "REMOVE", stampUser, null);
-            if (char.ToUpperInvariant(srcType) == 'A')
+            if (upperSrc == 'A' && appt != null)
             {
-                _appts.UpdateStatus(appt.Id, "REMOVED", stampUser);
+                appt.Status = AppointmentStatus.Cancelled;
+                appt.ProviderId = providerId;
+                appt.UpdatedUtc = now;
+                appt.StampDateUtc = now;
+
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
-
-            appt.Status = AppointmentStatus.Cancelled;
-            appt.ProviderId = providerId;
-            appt.UpdatedUtc = now;
-            appt.StampDateUtc = now;
-
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
 
             return Result.Success();
-        }
-
-        private static string BuildServiceNotes(string webexUrl, string notes)
-        {
-            var safeUrl = string.IsNullOrWhiteSpace(webexUrl) ? string.Empty : webexUrl.Trim();
-            var safeNotes = string.IsNullOrWhiteSpace(notes) ? string.Empty : notes.Trim();
-
-            if (string.IsNullOrEmpty(safeUrl))
-            {
-                return safeNotes;
-            }
-
-            if (string.IsNullOrEmpty(safeNotes))
-            {
-                return "WebEx URL: " + safeUrl;
-            }
-
-            return "WebEx URL: " + safeUrl + Environment.NewLine + safeNotes;
         }
     }
 }
