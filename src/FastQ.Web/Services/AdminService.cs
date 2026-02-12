@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FastQ.Data.Entities;
-using FastQ.Data.Oracle;
+using FastQ.Data.Db;
 using FastQ.Data.Repositories;
 using FastQ.Web.Helpers;
 
@@ -20,11 +20,11 @@ namespace FastQ.Web.Services
 
         public AdminService()
             : this(
-                OracleRepositoryFactory.CreateAppointmentRepository(),
-                OracleRepositoryFactory.CreateCustomerRepository(),
-                OracleRepositoryFactory.CreateQueueRepository(),
-                OracleRepositoryFactory.CreateLocationRepository(),
-                OracleRepositoryFactory.CreateProviderRepository(),
+                DbRepositoryFactory.CreateAppointmentRepository(),
+                DbRepositoryFactory.CreateCustomerRepository(),
+                DbRepositoryFactory.CreateQueueRepository(),
+                DbRepositoryFactory.CreateLocationRepository(),
+                DbRepositoryFactory.CreateProviderRepository(),
                 new SystemClock(),
                 new SignalRRealtimeNotifier())
         {

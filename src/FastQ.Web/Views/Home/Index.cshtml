@@ -1,87 +1,94 @@
 @using FastQ.Web.Services
 @{
     ViewBag.Title = "Home";
-    var providerUserId = new AuthService().GetLoggedInWindowsUser();
-    var providerTodayUrl = Url.Action("Today", "Provider", new
-    {
-        userId = string.IsNullOrWhiteSpace(providerUserId) ? null : providerUserId
-    });
+    var providerTodayUrl = Url.Action("Today", "Provider");
 }
-<div class="hero">
-    <div class="card">
-        <div class="eyebrow">Live SignalR Prototype</div>
-        <h1 class="page-title">FastQ keeps every queue in sync, in real time.</h1>
-        <p class="lead">Book an appointment, watch it instantly appear for the provider, and follow every state change live.</p>
-        <div class="row" style="margin-top:16px;">
-            <a class="btn primary" href="/Customer/Book">Start a Booking</a>
-            <a class="btn ghost" href="@providerTodayUrl">Open Provider View</a>
-        </div>
-    </div>
 
-    <div class="card note">
-        <div class="card-header">
-            <div>
-                <div class="eyebrow">Demo IDs</div>
-                <h3 class="card-title">Use these seeded IDs</h3>
-            </div>
-            <span class="badge accent">Ready</span>
-        </div>
-        <div class="stack">
-            <div class="stat">
-                <div class="stat-label">Location ID</div>
-                <div class="stat-value"><code>00a98ac7-0000-0000-4641-535451494430</code></div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">General Queue</div>
-                <div class="stat-value"><code>0153158e-0000-0000-4641-535451494430</code></div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Secondary Queue</div>
-                <div class="stat-value"><code>01fca055-0000-0000-4641-535451494430</code></div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Provider ID</div>
-                <div class="stat-value"><code>02a62b1c-0000-0000-4641-535451494430</code></div>
-            </div>
+@section PageHeader {
+    @*<div class="eyebrow">Queue Management System</div>
+    <h1 class="page-title">FastQ keeps every queue in sync, in real time.</h1>
+    <p class="lead">Book an appointment, watch it instantly appear for the provider, and follow every state change live.</p>*@
+
+    <div>
+        <div class="topbar-title">FastQ Manager</div>
+        <div class="topbar-sub">
+            FastQ keeps every queue in sync, in real time.
+            Book an appointment, watch it instantly appear for the provider, and follow every state change live.
         </div>
     </div>
-</div>
+}
+
+@*<div class="hero">
+        <div class="card">
+            <div class="row" style="margin-top:16px;">
+                <a class="btn primary" href="/Customer/Book">Start a Booking</a>
+                <a class="btn ghost" href="@providerTodayUrl">Open Provider View</a>
+            </div>
+        </div>
+
+        <div class="card note" style="display:none;">
+            <div class="card-header">
+                <div>
+                    <div class="eyebrow">Demo IDs</div>
+                    <h3 class="card-title">Use these seeded IDs</h3>
+                </div>
+                <span class="badge accent">Ready</span>
+            </div>
+            <div class="stack">
+                <div class="stat">
+                    <div class="stat-label">Location ID</div>
+                    <div class="stat-value"><code>00a98ac7-0000-0000-4641-535451494430</code></div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">General Queue</div>
+                    <div class="stat-value"><code>0153158e-0000-0000-4641-535451494430</code></div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Secondary Queue</div>
+                    <div class="stat-value"><code>01fca055-0000-0000-4641-535451494430</code></div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Provider ID</div>
+                    <div class="stat-value"><code>02a62b1c-0000-0000-4641-535451494430</code></div>
+                </div>
+            </div>
+        </div>
+    </div>*@
 
 
-<div class="grid-2">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Customer Journey</h3>
-            <span class="pill">Live booking</span>
+    <div class="card grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Customer Journey</h3>
+                <span class="pill">Live booking</span>
+            </div>
+            <p class="muted">Submit a new appointment and immediately receive a live status screen with queue position and updates.</p>
+            <a class="btn secondary" href="/Customer/Book">New Appointment</a>
+            <a class="btn secondary" href="/Customer/Walkin">New Walkin</a>
         </div>
-        <p class="muted">Submit a new appointment and immediately receive a live status screen with queue position and updates.</p>
-        <a class="btn secondary" href="/Customer/Book">Go to Customer Booking</a>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Provider Console</h3>
-            <span class="pill">Real-time queue</span>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Provider Console</h3>
+                <span class="pill">Real-time queue</span>
+            </div>
+            <p class="muted">Manage arrivals, service start, completion, and transfers while customers see every change.</p>
+            <a class="btn secondary" href="@providerTodayUrl">Go to Provider Today</a>
         </div>
-        <p class="muted">Manage arrivals, service start, completion, and transfers while customers see every change.</p>
-        <a class="btn secondary" href="@providerTodayUrl">Go to Provider Today</a>
-    </div>
-</div>
-
-<div class="grid-2">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Reporting</h3>
-            <span class="pill">Live metrics</span>
+   
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Reporting</h3>
+                <span class="pill">Live metrics</span>
+            </div>
+            <p class="muted">Track provider activity, cancellations, and daily performance with live updates.</p>
+            <a class="btn secondary" href="/Reporting/Overview">Open Reporting</a>
         </div>
-        <p class="muted">Track provider activity, cancellations, and daily performance with live updates.</p>
-        <a class="btn secondary" href="/Reporting/Overview">Open Reporting</a>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Admin Controls</h3>
-            <span class="pill">Queue settings</span>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Admin Controls</h3>
+                <span class="pill">Queue settings</span>
+            </div>
+            <p class="muted">Manage queue configuration, review provider roster, and run maintenance actions.</p>
+            <a class="btn secondary" href="/Admin/Dashboard">Open Admin</a>
         </div>
-        <p class="muted">Manage queue configuration, review provider roster, and run maintenance actions.</p>
-        <a class="btn secondary" href="/Admin/Dashboard">Open Admin</a>
     </div>
-</div>

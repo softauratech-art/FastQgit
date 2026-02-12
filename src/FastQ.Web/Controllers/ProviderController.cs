@@ -20,37 +20,28 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Today(string userId, string start, string end)
+        public ActionResult Today(string start, string end)
         {
-            return BuildTodayView(userId, start, end, true, true, "Today");
+            return BuildTodayView(start, end, true, true);
         }
 
         [HttpGet]
-        public ActionResult Appointments(string userId, string start, string end)
+        public ActionResult Appointments(string start, string end)
         {
-            return BuildTodayView(userId, start, end, false, true, "Appointments");
+            return BuildTodayView(start, end, false, true);
         }
 
         [HttpGet]
-        public ActionResult Walkins(string userId, string start, string end)
+        public ActionResult Walkins(string start, string end)
         {
-            return BuildTodayView(userId, start, end, true, false, "Walkins");
+            return BuildTodayView(start, end, true, false);
         }
 
-        private ActionResult BuildTodayView(string userId, string start, string end, bool showWalkins, bool showAppointments, string actionName)
+        private ActionResult BuildTodayView(string start, string end, bool showWalkins, bool showAppointments)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                var resolvedUserId = _auth.GetLoggedInWindowsUser();
-                if (!string.IsNullOrWhiteSpace(resolvedUserId))
-                {
-                    return RedirectToAction(actionName, new { userId = resolvedUserId, start = start, end = end });
-                }
+            var userId = _auth.GetLoggedInWindowsUser();
 
-                userId = resolvedUserId;
-            }
-
-            var rangeStart = ParseDateOrDefault(start, DateTime.UtcNow.Date);
+            var rangeStart = ParseDateOrDefault(start, DateTime.Now.Date);  //ParseDateOrDefault(start, DateTime.UtcNow.Date);
             var rangeEnd = ParseDateOrDefault(end, rangeStart);
             if (rangeEnd < rangeStart)
             {
@@ -64,9 +55,13 @@ namespace FastQ.Web.Controllers
                 ? _service.BuildRowsForUser(userId, rangeStart, rangeEnd)
                 : Enumerable.Empty<ProviderAppointmentRow>();
 
+            //var dateText = rangeStart == rangeEnd
+            //    ? rangeStart.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture) + " (UTC)"
+            //    : string.Format(CultureInfo.InvariantCulture, "{0:ddd, MMM dd yyyy} - {1:ddd, MMM dd yyyy} (UTC)", rangeStart, rangeEnd);
+            
             var dateText = rangeStart == rangeEnd
-                ? rangeStart.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture) + " (UTC)"
-                : string.Format(CultureInfo.InvariantCulture, "{0:ddd, MMM dd yyyy} - {1:ddd, MMM dd yyyy} (UTC)", rangeStart, rangeEnd);
+                            ? rangeStart.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture)
+                            : string.Format(CultureInfo.InvariantCulture, "{0:ddd, MMM dd yyyy} - {1:ddd, MMM dd yyyy}", rangeStart, rangeEnd);
 
             var model = new ProviderTodayViewModel
             {
@@ -137,11 +132,7 @@ namespace FastQ.Web.Controllers
             if (normalizedSrc != "A" && normalizedSrc != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
 
-            var resolvedUserId = providerId;
-            if (string.IsNullOrWhiteSpace(resolvedUserId))
-            {
-                resolvedUserId = _auth.GetLoggedInWindowsUser();
-            }
+            var resolvedUserId = _auth.GetLoggedInWindowsUser();
 
             var res = _service.HandleProviderAction(action, normalizedSrc[0], apptId, resolvedUserId);
 
@@ -174,7 +165,8 @@ namespace FastQ.Web.Controllers
             if (normalized != "A" && normalized != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
 
-            var res = _service.SaveServiceInfo(apptId, normalized[0], webexUrl, notes, providerId);
+            var resolvedUserId = _auth.GetLoggedInWindowsUser();
+            var res = _service.SaveServiceInfo(apptId, normalized[0], webexUrl, notes, resolvedUserId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 

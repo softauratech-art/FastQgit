@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FQ.Manager.Data", "src\FastQ.Data\FQ.Manager.Data.csproj", "{4B7612E8-0294-465B-9B69-073BB967D3F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FQ.Manager.Web", "src\FastQ.Web\FQ.Manager.Web.csproj", "{0AA5C559-494E-41B9-B20E-EE1A4561919A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4B7612E8-0294-465B-9B69-073BB967D3F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B7612E8-0294-465B-9B69-073BB967D3F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B7612E8-0294-465B-9B69-073BB967D3F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B7612E8-0294-465B-9B69-073BB967D3F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AA5C559-494E-41B9-B20E-EE1A4561919A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AA5C559-494E-41B9-B20E-EE1A4561919A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AA5C559-494E-41B9-B20E-EE1A4561919A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AA5C559-494E-41B9-B20E-EE1A4561919A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {01530898-C804-4A80-9F90-A81F99F79AF2}
+	EndGlobalSection
+EndGlobal

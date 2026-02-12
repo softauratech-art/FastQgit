@@ -29,7 +29,6 @@
     var prevEnd = endDateValue.AddDays(-rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     var nextStart = startDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     var nextEnd = endDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-    var queryUserId = ViewBag.ProviderId as string ?? string.Empty;
     var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
 }
@@ -38,58 +37,196 @@
         .table-striped tbody tr:nth-child(even) {
             background: rgba(255, 255, 255, 0.5);
         }
-        .accordion-toggle { cursor: pointer; }
-        .accordion-toggle.locked { opacity: 0.45; }
-        .row-actions { display: none; }
-        .row-actions.is-open { display: table-row; }
-        .row-actions.locked { opacity: 0.45; }
-        .row-actions.locked .action-bar { pointer-events: none; }
-        .row-actions td { padding: 0 8px 12px; }
-        .action-bar { display: flex; gap: 8px; flex-wrap: wrap; }
-        .table-card { overflow-x: auto; }
-        .date-nav { display: flex; align-items: center; gap: 10px; font-family: var(--font-heading); }
-        .date-nav a { color: var(--accent); font-weight: 700; }
-        .text-center { text-align: center; }
-        .modal-backdrop.show { display: flex; }
-        .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .modal-title { margin: 0; font-size: 18px; font-weight: 700; }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
-        .modal-body { display: grid; gap: 10px; }
-        .field-row { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; }
+
+        .accordion-toggle {
+            cursor: pointer;
+        }
+
+            .accordion-toggle.locked {
+                opacity: 0.45;
+            }
+
+        .row-actions {
+            display: none;
+        }
+
+            .row-actions.is-open {
+                display: table-row;
+            }
+
+            .row-actions.locked {
+                opacity: 0.45;
+            }
+
+                .row-actions.locked .action-bar {
+                    pointer-events: none;
+                }
+
+            .row-actions td {
+                padding: 0 8px 12px;
+            }
+
+        .action-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .table-card {
+            overflow-x: auto;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-heading);
+        }
+
+            .date-nav a {
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-body {
+            display: grid;
+            gap: 10px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+
         .modal-body input,
-        .modal-body textarea { padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.15); font-size: 13px; }
-        .helper-text { font-size: 12px; color: #5b5b5b; }
-        .table-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 10px 14px; background: rgba(255, 255, 255, 0.6); border-radius: 10px; margin-bottom: 12px; }
-        .filter-group { display: grid; gap: 4px; min-width: 160px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #4b4b4b; }
-        .filter-input { padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.15); font-size: 13px; background: #fff; }
-        .date-range { flex-wrap: nowrap; align-items: center; white-space: nowrap; }
-        .is-hidden { display: none; }
-</style>
+        .modal-body textarea {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            font-size: 13px;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #5b5b5b;
+        }
+
+        .table-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: end;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .filter-group {
+            display: grid;
+            gap: 4px;
+            min-width: 160px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #4b4b4b;
+        }
+
+        .filter-input {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            font-size: 13px;
+            background: #fff;
+        }
+
+        .date-range {
+            flex-wrap: nowrap;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .is-hidden {
+            display: none;
+        }
+    </style>
+}
+
+@section PageHeader {
+<div>
+    <div class="topbar-title">Schedule for @Model.DateText</div>
+    <div class="topbar-sub">Appointments and walk-in customers</div>
+</div>
+<div class="top-actions">
+    <button class="icon-btn" type="button" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 17h5l-1.4-1.4A4 4 0 0 1 17 12.8V10a5 5 0 0 0-10 0v2.8a4 4 0 0 1-1.6 3.2L4 17h5"></path>
+            <path d="M9 17a3 3 0 0 0 6 0"></path>
+        </svg>
+    </button>
+    <button class="icon-btn" type="button" aria-label="Support">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 11a8 8 0 0 1 16 0v5"></path>
+            <path d="M4 16a2 2 0 0 0 2 2h2v-5H6a2 2 0 0 0-2 2Z"></path>
+            <path d="M20 16a2 2 0 0 1-2 2h-2v-5h2a2 2 0 0 1 2 2Z"></path>
+        </svg>
+    </button>
+    <button class="icon-btn" type="button" aria-label="User menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="3.5"></circle>
+            <path d="M5 20c1.5-4 12.5-4 14 0"></path>
+        </svg>
+    </button>
+    <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input type="text" placeholder="Search queues, names, or status" />
+    </div>
+</div>
 }
 
 <div class="card note">
     <div class="date-nav">
-        <a href="@Url.Action(actionName, "Provider", new { start = prevStart, end = prevEnd, userId = queryUserId })" aria-label="Previous day">&lt;&lt;</a>
-        <div>@Model.DateText</div>
-        <a href="@Url.Action(actionName, "Provider", new { start = nextStart, end = nextEnd, userId = queryUserId })" aria-label="Next day">&gt;&gt;</a>
+        @*<a href="@Url.Action(actionName, "Provider", new { start = prevStart, end = prevEnd })" aria-label="Previous day">&lt;&lt;</a>*@
+        @*<div>@Model.DateText</div>*@
+        @*<a href="@Url.Action(actionName, "Provider", new { start = nextStart, end = nextEnd })" aria-label="Next day">&gt;&gt;</a>*@
     </div>
-    <div class="action-bar" style="padding: 10px 0;">
-        <a class="btn small primary" href="@Url.Action("Today", "Provider", new { start = defaultDate, end = endDate, userId = queryUserId })">Both Appts and Walkins</a>
-        <a class="btn small secondary" href="@Url.Action("Appointments", "Provider", new { start = defaultDate, end = endDate, userId = queryUserId })">Appointments ONLY</a>
-        <a class="btn small secondary" href="@Url.Action("Walkins", "Provider", new { start = defaultDate, end = endDate, userId = queryUserId })">Walkins ONLY</a>
-    </div>
-</div>
-
-@if (showWalkins)
-{
-<div class="card">
-    <div class="card-header">
-        <div>
-            <div class="eyebrow">Provider</div>
-            <h2 class="page-title">Today's Schedule</h2>
-        </div>
-        <span class="badge accent">Walk-Ins</span>
-    </div>
+    @*<div class="action-bar" style="padding: 10px 0;">
+            <a class="btn small primary" href="@Url.Action("Today", "Provider", new { start = defaultDate, end = endDate })">Both Appts and Walkins</a>
+            <a class="btn small secondary" href="@Url.Action("Appointments", "Provider", new { start = defaultDate, end = endDate })">Appointments ONLY</a>
+            <a class="btn small secondary" href="@Url.Action("Walkins", "Provider", new { start = defaultDate, end = endDate })">Walkins ONLY</a>
+        </div>*@
 
     <div class="table-filters" data-table-filter="walkins">
         <div class="filter-group">
@@ -117,181 +254,220 @@
         <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
     </div>
 
-    <div class="table-card">
-        <table class="table table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>Start</th>
-                    <th>Queue</th>
-                    <th>Type of Service</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Status</th>
-                    <th>Contact</th>
-                    <th class="text-center">Expand</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (walkinRows.Count == 0)
-                {
+</div>
+
+@if (showWalkins)
+{
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="eyebrow">Provider</div>
+                @*<h2 class="page-title">Today's Schedule</h2>*@
+            </div>
+            <span class="badge accent">Walk-Ins</span>
+        </div>
+
+        @*<div class="table-filters" data-table-filter="walkins">
+                <div class="filter-group">
+                    <label for="walkinsStatus">Status</label>
+                    <select id="walkinsStatus" class="filter-input" data-filter="status">
+                        <option value="all">All</option>
+                        @foreach (var status in statusOptions)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="walkinsStartDate">Date</label>
+                    <div class="action-bar date-range">
+                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
+                        <input id="walkinsStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
+                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
+                        <span>to</span>
+                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
+                        <input id="walkinsEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
+                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
+                    </div>
+                </div>
+                <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
+            </div>*@
+
+        <div class="table-card">
+            <table class="table table-striped table-sm">
+                <thead>
                     <tr>
-                        <td colspan="8" class="text-center">No walk-ins for today.</td>
+                        <th>Start</th>
+                        <th>Queue</th>
+                        <th>Type of Service</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Contact</th>
+                        <th class="text-center">Expand</th>
                     </tr>
-                }
-                else
-                {
-                    for (var i = 0; i < walkinRows.Count; i++)
+                </thead>
+                <tbody>
+                    @if (walkinRows.Count == 0)
                     {
-                        var row = walkinRows[i];
-                        var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
-                        var rowStatus = row.Status.ToString();
-                        var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
-                        var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate">
-                            <td>@row.StartTimeText</td>
-                            <td>@row.QueueName</td>
-                            <td>@row.ServiceType</td>
-                            <td>@row.CustomerName</td>
-                            <td>@row.Phone</td>
-                            <td class="@statusClass">@row.StatusText</td>
-                            <td>@row.ContactMethod</td>
-                            <td class="text-center">&darr;</td>
-                        </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W">
-                            <td colspan="8">
-                                <div class="action-bar">
-                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W">Check-In</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W">Start</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W">End</button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W">Transfer</button>
-                                    <button class="btn small ghost meeting-link" type="button"
-                                            data-appointment-id="@row.AppointmentId"
-                                            data-src-type="W"
-                                            data-date="@row.StartDateText"
-                                            data-time="@row.StartTimeText"
-                                            data-title="@row.ServiceType"
-                                            data-customer="@row.CustomerName"
-                                            data-phone="@row.Phone">
-                                        Info
-                                    </button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W">Remove</button>
-                                </div>
-                            </td>
+                        <tr>
+                            <td colspan="8" class="text-center">No walk-ins for today.</td>
                         </tr>
                     }
-                }
-                <tr class="table-empty is-hidden">
-                    <td colspan="8" class="text-center">No results match the selected filters.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+                    else
+                    {
+                        for (var i = 0; i < walkinRows.Count; i++)
+                        {
+                            var row = walkinRows[i];
+                            var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
+                            var rowStatus = row.Status.ToString();
+                            var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
+                            var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
+                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate">
+                                <td>@row.StartTimeText</td>
+                                <td>@row.QueueName</td>
+                                <td>@row.ServiceType</td>
+                                <td>@row.CustomerName</td>
+                                <td>@row.Phone</td>
+                                <td class="@statusClass">@row.StatusText</td>
+                                <td>@row.ContactMethod</td>
+                                <td class="text-center">&darr;</td>
+                            </tr>
+                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W">
+                                <td colspan="8">
+                                    <div class="action-bar">
+                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W">Check-In</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W">Start</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W">End</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W">Transfer</button>
+                                        <button class="btn small ghost meeting-link" type="button"
+                                                data-appointment-id="@row.AppointmentId"
+                                                data-src-type="W"
+                                                data-date="@row.StartDateText"
+                                                data-time="@row.StartTimeText"
+                                                data-title="@row.ServiceType"
+                                                data-customer="@row.CustomerName"
+                                                data-phone="@row.Phone">
+                                            Info
+                                        </button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    <tr class="table-empty is-hidden">
+                        <td colspan="8" class="text-center">No results match the selected filters.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-    <button class="btn primary" type="button">Add Customer to Queue</button>
-</div>
+        <button class="btn primary" type="button">Add Customer to Queue</button>
+    </div>
 }
 
 @if (showAppointments)
 {
-<div class="card">
-    <div class="table-filters" data-table-filter="appointments">
-        <div class="filter-group">
-            <label for="apptStatus">Status</label>
-            <select id="apptStatus" class="filter-input" data-filter="status">
-                <option value="all">All</option>
-                @foreach (var status in statusOptions)
-                {
-                    <option value="@status">@status</option>
-                }
-            </select>
-        </div>
-        <div class="filter-group">
-            <label for="apptStartDate">Date</label>
-            <div class="action-bar date-range">
-                <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
-                <input id="apptStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
-                <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
-                <span>to</span>
-                <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
-                <input id="apptEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
-                <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
-            </div>
-        </div>
-        <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
-    </div>
+    <div class="card">
+        @*<div class="table-filters" data-table-filter="appointments">
+                <div class="filter-group">
+                    <label for="apptStatus">Status</label>
+                    <select id="apptStatus" class="filter-input" data-filter="status">
+                        <option value="all">All</option>
+                        @foreach (var status in statusOptions)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="apptStartDate">Date</label>
+                    <div class="action-bar date-range">
+                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
+                        <input id="apptStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
+                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
+                        <span>to</span>
+                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
+                        <input id="apptEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
+                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
+                    </div>
+                </div>
+                <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
+            </div>*@
 
-    <div class="table-card">
-        <table class="table table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>Start</th>
-                    <th>Queue</th>
-                    <th>Type of Service</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Status</th>
-                    <th>Contact</th>
-                    <th class="text-center">Expand</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (appointmentRows.Count == 0)
-                {
+        <div class="table-card">
+            <table class="table table-striped table-sm">
+                <thead>
                     <tr>
-                        <td colspan="8" class="text-center">No appointments scheduled for today.</td>
+                        <th>Start</th>
+                        <th>Queue</th>
+                        <th>Type of Service</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Contact</th>
+                        <th class="text-center">Expand</th>
                     </tr>
-                }
-                else
-                {
-                    for (var i = 0; i < appointmentRows.Count; i++)
+                </thead>
+                <tbody>
+                    @if (appointmentRows.Count == 0)
                     {
-                        var row = appointmentRows[i];
-                        var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
-                        var rowStatus = row.Status.ToString();
-                        var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
-                        var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                        <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate">
-                            <td>@row.StartTimeText</td>
-                            <td>@row.QueueName</td>
-                            <td>@row.ServiceType</td>
-                            <td>@row.CustomerName</td>
-                            <td>@row.Phone</td>
-                            <td class="@statusClass">@row.StatusText</td>
-                            <td>@row.ContactMethod</td>
-                            <td class="text-center">&darr;</td>
-                        </tr>
-                        <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A">
-                            <td colspan="8">
-                                <div class="action-bar">
-                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A">Check-In</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A">Start</button>
-                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A">End</button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A">Transfer</button>
-                                    <button class="btn small ghost meeting-link" type="button"
-                                            data-appointment-id="@row.AppointmentId"
-                                            data-src-type="A"
-                                            data-date="@row.StartDateText"
-                                            data-time="@row.StartTimeText"
-                                            data-title="@row.ServiceType"
-                                            data-customer="@row.CustomerName"
-                                            data-phone="@row.Phone">
-                                        Info
-                                    </button>
-                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A">Remove</button>
-                                </div>
-                            </td>
+                        <tr>
+                            <td colspan="8" class="text-center">No appointments scheduled for today.</td>
                         </tr>
                     }
-                }
-                <tr class="table-empty is-hidden">
-                    <td colspan="8" class="text-center">No results match the selected filters.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+                    else
+                    {
+                        for (var i = 0; i < appointmentRows.Count; i++)
+                        {
+                            var row = appointmentRows[i];
+                            var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
+                            var rowStatus = row.Status.ToString();
+                            var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
+                            var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
+                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate">
+                                <td>@row.StartTimeText</td>
+                                <td>@row.QueueName</td>
+                                <td>@row.ServiceType</td>
+                                <td>@row.CustomerName</td>
+                                <td>@row.Phone</td>
+                                <td class="@statusClass">@row.StatusText</td>
+                                <td>@row.ContactMethod</td>
+                                <td class="text-center">&darr;</td>
+                            </tr>
+                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A">
+                                <td colspan="8">
+                                    <div class="action-bar">
+                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A">Check-In</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A">Start</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A">End</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A">Transfer</button>
+                                        <button class="btn small ghost meeting-link" type="button"
+                                                data-appointment-id="@row.AppointmentId"
+                                                data-src-type="A"
+                                                data-date="@row.StartDateText"
+                                                data-time="@row.StartTimeText"
+                                                data-title="@row.ServiceType"
+                                                data-customer="@row.CustomerName"
+                                                data-phone="@row.Phone">
+                                            Info
+                                        </button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    <tr class="table-empty is-hidden">
+                        <td colspan="8" class="text-center">No results match the selected filters.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-    <button class="btn primary" type="button">Add New Appointment</button>
-</div>
+        <button class="btn primary" type="button">Add New Appointment</button>
+    </div>
 }
 
 <div id="meetingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
@@ -336,7 +512,7 @@
 </div>
 
 @section Scripts {
-<script>
+    <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
     var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
@@ -373,9 +549,6 @@
       var url = new URL(window.location.href);
       url.searchParams.set("start", startValue);
       url.searchParams.set("end", endValue);
-      if (currentProviderId) {
-        url.searchParams.set("userId", currentProviderId);
-      }
       window.location.assign(url.toString());
     }
 
@@ -609,7 +782,7 @@
           return;
         }
 
-        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, providerId: currentProviderId, srcType: srcType })
+        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
           .then(function (res) {
             if (!res || !res.ok) {
               window.alert(res && res.error ? res.error : "Action failed.");
@@ -693,8 +866,7 @@
           appointmentId: appointmentId,
           srcType: srcType,
           webexUrl: urlInput ? urlInput.value : "",
-          notes: notesInput ? notesInput.value : "",
-          providerId: currentProviderId
+          notes: notesInput ? notesInput.value : ""
         };
 
         postForm(saveServiceInfoUrl, payload)
@@ -708,6 +880,5 @@
       });
     }
   })();
-</script>
+    </script>
 }
-

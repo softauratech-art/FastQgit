@@ -7,6 +7,7 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public ActionResult Index()
         {
+            HttpContext.Session["fq_this_entity"] = 1;
             return View();
         }
     }

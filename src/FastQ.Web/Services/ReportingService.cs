@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FastQ.Data.Entities;
-using FastQ.Data.Oracle;
+using FastQ.Data.Db;
 using FastQ.Data.Repositories;
 
 namespace FastQ.Web.Services
@@ -14,9 +14,9 @@ namespace FastQ.Web.Services
 
         public ReportingService()
             : this(
-                OracleRepositoryFactory.CreateAppointmentRepository(),
-                OracleRepositoryFactory.CreateProviderRepository(),
-                OracleRepositoryFactory.CreateQueueRepository())
+                DbRepositoryFactory.CreateAppointmentRepository(),
+                DbRepositoryFactory.CreateProviderRepository(),
+                DbRepositoryFactory.CreateQueueRepository())
         {
         }
 

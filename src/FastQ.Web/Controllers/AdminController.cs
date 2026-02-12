@@ -19,6 +19,10 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public ActionResult Dashboard()
         {
+            return View(new AdminDashboardViewModel()); 
+            
+            
+            
             var locations = _service.ListLocations();
             var location = locations.FirstOrDefault();
             if (location == null)
