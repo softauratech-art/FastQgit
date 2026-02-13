@@ -511,11 +511,57 @@
     </div>
 </div>
 
+<div id="serviceRouteModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="serviceRouteModalTitle">Route Customer</h5>
+            <button class="btn small ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="field-row">
+                <div>Target Type:</div>
+                <select id="routeTargetKind" class="filter-input">
+                    <option value="W">Walkin (FCFS)</option>
+                    <option value="A">Appointment</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <div>Queue Id:</div>
+                <input id="routeTargetQueueId" type="number" min="1" />
+            </div>
+            <div class="field-row">
+                <div>Service Id:</div>
+                <input id="routeTargetServiceId" type="number" min="1" />
+            </div>
+            <div class="field-row" id="routeDateRow">
+                <div>Target Date:</div>
+                <input id="routeTargetDate" type="date" />
+            </div>
+            <div class="field-row">
+                <div>Ref Value:</div>
+                <input id="routeRefValue" type="text" />
+            </div>
+            <div class="field-row">
+                <div>Notes:</div>
+                <textarea id="routeNotes" rows="3"></textarea>
+            </div>
+            <input id="routeMode" type="hidden" value="" />
+            <input id="routeSrcType" type="hidden" value="" />
+            <input id="routeSrcId" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
+            <button class="btn primary" type="button" id="saveRoute">Submit</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
     var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
+    var endServiceUrl = "@Url.Action("EndService", "Provider")";
     var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
 
@@ -540,6 +586,43 @@
       if (modal) {
         modal.classList.add("show");
       }
+    }
+
+    function toggleRouteDateRow() {
+      var targetKind = document.getElementById("routeTargetKind");
+      var dateRow = document.getElementById("routeDateRow");
+      if (!targetKind || !dateRow) {
+        return;
+      }
+      dateRow.classList.toggle("is-hidden", targetKind.value !== "A");
+    }
+
+    function openRouteModal(mode, appointmentId, srcType) {
+      var routeMode = document.getElementById("routeMode");
+      var routeSrcType = document.getElementById("routeSrcType");
+      var routeSrcId = document.getElementById("routeSrcId");
+      var targetKind = document.getElementById("routeTargetKind");
+      var targetQueueId = document.getElementById("routeTargetQueueId");
+      var targetServiceId = document.getElementById("routeTargetServiceId");
+      var targetDate = document.getElementById("routeTargetDate");
+      var refValue = document.getElementById("routeRefValue");
+      var notes = document.getElementById("routeNotes");
+
+      if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
+        return;
+      }
+
+      routeMode.value = mode;
+      routeSrcType.value = srcType;
+      routeSrcId.value = appointmentId;
+      targetKind.value = srcType === "A" ? "A" : "W";
+      if (targetQueueId) targetQueueId.value = "";
+      if (targetServiceId) targetServiceId.value = "";
+      if (targetDate) targetDate.value = "";
+      if (refValue) refValue.value = "";
+      if (notes) notes.value = "";
+      toggleRouteDateRow();
+      openModal("serviceRouteModal");
     }
 
     function updateRangeAndReload(startValue, endValue) {
@@ -766,15 +849,31 @@
         }
 
         if (action === "transfer") {
-          var targetQueueId = window.prompt("Enter target QueueId (number):", "");
-          if (!targetQueueId) {
+          openRouteModal("transfer", appointmentId, srcType);
+          return;
+        }
+
+        if (action === "end") {
+          var additionalAnswer = window.confirm("Does the customer need any additional service today?");
+          if (additionalAnswer) {
+            openRouteModal("end-add", appointmentId, srcType);
             return;
           }
 
-          postForm(transferUrl, { appointmentId: appointmentId, targetQueueId: targetQueueId })
+          postForm(endServiceUrl, {
+              appointmentId: appointmentId,
+              srcType: srcType,
+              additionalService: "N",
+              targetQueueId: "",
+              targetServiceId: "",
+              targetKind: "",
+              targetDate: "",
+              refValue: "",
+              notes: ""
+            })
             .then(function (res) {
               if (!res || !res.ok) {
-                window.alert(res && res.error ? res.error : "Transfer failed.");
+                window.alert(res && res.error ? res.error : "End service failed.");
                 return;
               }
               window.location.reload();
@@ -877,6 +976,90 @@
             }
             closeModal("meetingModal");
           });
+      });
+    }
+
+    var routeTargetKind = document.getElementById("routeTargetKind");
+    if (routeTargetKind) {
+      routeTargetKind.addEventListener("change", toggleRouteDateRow);
+      toggleRouteDateRow();
+    }
+
+    var saveRoute = document.getElementById("saveRoute");
+    if (saveRoute) {
+      saveRoute.addEventListener("click", function () {
+        var routeMode = document.getElementById("routeMode");
+        var routeSrcType = document.getElementById("routeSrcType");
+        var routeSrcId = document.getElementById("routeSrcId");
+        var targetKindInput = document.getElementById("routeTargetKind");
+        var targetQueueIdInput = document.getElementById("routeTargetQueueId");
+        var targetServiceIdInput = document.getElementById("routeTargetServiceId");
+        var targetDateInput = document.getElementById("routeTargetDate");
+        var refValueInput = document.getElementById("routeRefValue");
+        var notesInput = document.getElementById("routeNotes");
+
+        var mode = routeMode ? routeMode.value : "";
+        var srcType = routeSrcType ? routeSrcType.value : "";
+        var appointmentId = routeSrcId ? routeSrcId.value : "";
+        var targetKind = targetKindInput ? targetKindInput.value : "";
+        var targetQueueId = targetQueueIdInput ? targetQueueIdInput.value : "";
+        var targetServiceId = targetServiceIdInput ? targetServiceIdInput.value : "";
+        var targetDate = targetDateInput ? targetDateInput.value : "";
+        var refValue = refValueInput ? refValueInput.value : "";
+        var notes = notesInput ? notesInput.value : "";
+
+        if (!appointmentId || !srcType || !targetQueueId) {
+          window.alert("Source and target queue are required.");
+          return;
+        }
+        if (targetKind === "A" && !targetDate) {
+          window.alert("Target date is required for appointment target.");
+          return;
+        }
+
+        if (mode === "transfer") {
+          postForm(transferUrl, {
+              appointmentId: appointmentId,
+              srcType: srcType,
+              targetQueueId: targetQueueId,
+              targetKind: targetKind,
+              targetServiceId: targetServiceId || "",
+              targetDate: targetDate || "",
+              refValue: refValue || "",
+              notes: notes || ""
+            })
+            .then(function (res) {
+              if (!res || !res.ok) {
+                window.alert(res && res.error ? res.error : "Transfer failed.");
+                return;
+              }
+              closeModal("serviceRouteModal");
+              window.location.reload();
+            });
+          return;
+        }
+
+        if (mode === "end-add") {
+          postForm(endServiceUrl, {
+              appointmentId: appointmentId,
+              srcType: srcType,
+              additionalService: "Y",
+              targetQueueId: targetQueueId,
+              targetServiceId: targetServiceId || "",
+              targetKind: targetKind,
+              targetDate: targetDate || "",
+              refValue: refValue || "",
+              notes: notes || ""
+            })
+            .then(function (res) {
+              if (!res || !res.ok) {
+                window.alert(res && res.error ? res.error : "End and add failed.");
+                return;
+              }
+              closeModal("serviceRouteModal");
+              window.location.reload();
+            });
+        }
       });
     }
   })();

@@ -143,16 +143,103 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult TransferAppointment(string appointmentId, string targetQueueId)
+        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string refValue, string notes)
         {
-            if (!long.TryParse(appointmentId, out var apptId) || !long.TryParse(targetQueueId, out var queueId))
-                return Json(new { ok = false, error = "appointmentId and targetQueueId are required" });
+            if (!long.TryParse(appointmentId, out var srcId) || !long.TryParse(targetQueueId, out var queueId))
+                return Json(new { ok = false, error = "appointmentId and targetQueueId are required numeric values" });
 
-            var res = _service.TransferAppointment(apptId, queueId);
+            var normalizedSrc = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
+            if (normalizedSrc != "A" && normalizedSrc != "W")
+                return Json(new { ok = false, error = "srcType must be A or W" });
+
+            var normalizedTarget = string.IsNullOrWhiteSpace(targetKind) ? normalizedSrc : targetKind.Trim().ToUpperInvariant();
+            if (normalizedTarget != "A" && normalizedTarget != "W")
+                return Json(new { ok = false, error = "targetKind must be A or W" });
+
+            long parsedTargetServiceId;
+            long? targetService = long.TryParse(targetServiceId, out parsedTargetServiceId) ? parsedTargetServiceId : (long?)null;
+
+            DateTime parsedTargetDate;
+            DateTime? targetDateUtc = DateTime.TryParseExact(
+                (targetDate ?? string.Empty).Trim(),
+                new[] { "yyyy-MM-dd", "yyyy-M-d", "MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy" },
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out parsedTargetDate)
+                ? parsedTargetDate.Date
+                : (DateTime?)null;
+
+            var req = new ProviderService.TransferRequest
+            {
+                SrcType = normalizedSrc[0],
+                SrcId = srcId,
+                TargetQueueId = queueId,
+                TargetServiceId = targetService,
+                TargetKind = normalizedTarget[0],
+                TargetDateUtc = targetDateUtc,
+                RefValue = refValue,
+                Notes = notes,
+                StampUser = _auth.GetLoggedInWindowsUser()
+            };
+
+            var res = _service.TransferSource(req);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
-            return Json(new { ok = true, newAppointmentId = res.Value.Id, newQueueId = res.Value.QueueId });
+            return Json(new { ok = true, newSrcId = res.Value, newQueueId = queueId, targetKind = normalizedTarget });
+        }
+
+        [HttpPost]
+        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string refValue, string notes)
+        {
+            long srcId;
+            if (!long.TryParse(appointmentId, out srcId))
+                return Json(new { ok = false, error = "appointmentId must be numeric" });
+
+            var normalizedSrc = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
+            if (normalizedSrc != "A" && normalizedSrc != "W")
+                return Json(new { ok = false, error = "srcType must be A or W" });
+
+            var wantsAdditional = string.Equals((additionalService ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+
+            long parsedQueue;
+            long? queueId = long.TryParse(targetQueueId, out parsedQueue) ? parsedQueue : (long?)null;
+            long parsedService;
+            long? serviceId = long.TryParse(targetServiceId, out parsedService) ? parsedService : (long?)null;
+
+            var normalizedTargetKind = string.IsNullOrWhiteSpace(targetKind) ? (string)null : targetKind.Trim().ToUpperInvariant();
+            if (normalizedTargetKind != null && normalizedTargetKind != "A" && normalizedTargetKind != "W")
+                return Json(new { ok = false, error = "targetKind must be A or W" });
+
+            DateTime parsedTargetDate;
+            DateTime? targetDateUtc = DateTime.TryParseExact(
+                (targetDate ?? string.Empty).Trim(),
+                new[] { "yyyy-MM-dd", "yyyy-M-d", "MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy" },
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out parsedTargetDate)
+                ? parsedTargetDate.Date
+                : (DateTime?)null;
+
+            var req = new ProviderService.CloseAndAddRequest
+            {
+                SrcType = normalizedSrc[0],
+                SrcId = srcId,
+                AdditionalService = wantsAdditional,
+                TargetQueueId = queueId,
+                TargetServiceId = serviceId,
+                TargetKind = string.IsNullOrWhiteSpace(normalizedTargetKind) ? (char?)null : normalizedTargetKind[0],
+                TargetDateUtc = targetDateUtc,
+                RefValue = refValue,
+                Notes = notes,
+                StampUser = _auth.GetLoggedInWindowsUser()
+            };
+
+            var res = _service.EndServiceAndOptionallyAdd(req);
+            if (!res.Ok)
+                return Json(new { ok = false, error = res.Error });
+
+            return Json(new { ok = true, newSrcId = res.Value });
         }
 
         [HttpPost]

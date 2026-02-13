@@ -264,7 +264,7 @@ namespace FastQ.Data.Db
             var user = string.IsNullOrWhiteSpace(stampUser) ? "fastq" : stampUser.Trim();
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_IDU.UPDATE_APPT_STATUS"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS.UPDATE_APPT_STATUS"))
             {
                 DataAccess.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_status", status.Trim(), DbType.String);
@@ -610,4 +610,3 @@ namespace FastQ.Data.Db
         }
     }
 }
-

@@ -258,51 +258,142 @@ namespace FastQ.Web.Services
             };
         }
 
-        public Result<Appointment> TransferAppointment(long appointmentId, long targetQueueId)
+        public sealed class TransferRequest
         {
-            var appt = _appts.Get(appointmentId);
-            if (appt == null) return Result<Appointment>.Fail("Appointment not found.");
+            public char SrcType { get; set; }
+            public long SrcId { get; set; }
+            public long TargetQueueId { get; set; }
+            public long? TargetServiceId { get; set; }
+            public char TargetKind { get; set; } // A(new appt) or W(new walkin)
+            public DateTime? TargetDateUtc { get; set; } // required for A
+            public string RefValue { get; set; }
+            public string Notes { get; set; }
+            public string StampUser { get; set; }
+        }
 
-            var targetQueue = _queues.Get(targetQueueId);
-            if (targetQueue == null) return Result<Appointment>.Fail("Target queue not found.");
+        public sealed class CloseAndAddRequest
+        {
+            public char SrcType { get; set; }
+            public long SrcId { get; set; }
+            public bool AdditionalService { get; set; }
+            public long? TargetQueueId { get; set; }
+            public long? TargetServiceId { get; set; }
+            public char? TargetKind { get; set; }
+            public DateTime? TargetDateUtc { get; set; }
+            public string RefValue { get; set; }
+            public string Notes { get; set; }
+            public string StampUser { get; set; }
+        }
 
-            if (targetQueue.LocationId != appt.LocationId)
-                return Result<Appointment>.Fail("Transfer must be within the same location.");
+        public Result<long> TransferSource(TransferRequest request)
+        {
+            if (request == null) return Result<long>.Fail("Transfer request is required.");
+            if (request.SrcId <= 0) return Result<long>.Fail("Source id is required.");
+            if (request.TargetQueueId <= 0) return Result<long>.Fail("Target queue is required.");
 
-            if (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem)
-                return Result<Appointment>.Fail("Cannot transfer a finished appointment.");
+            var srcType = char.ToUpperInvariant(request.SrcType);
+            if (srcType != 'A' && srcType != 'W') return Result<long>.Fail("Source type must be A or W.");
 
-            var now = _clock.UtcNow;
-            _appts.UpdateStatus(appt.Id, "Transfered", "web");
+            var targetKind = char.ToUpperInvariant(request.TargetKind);
+            if (targetKind != 'A' && targetKind != 'W') return Result<long>.Fail("Target kind must be A or W.");
+            if (targetKind == 'A' && !request.TargetDateUtc.HasValue)
+                return Result<long>.Fail("Target date is required for appointment transfer.");
 
-            appt.Status = AppointmentStatus.TransferredOut;
-            appt.UpdatedUtc = now;
-            appt.StampDateUtc = now;
+            var targetQueue = _queues.Get(request.TargetQueueId);
+            if (targetQueue == null) return Result<long>.Fail("Target queue not found.");
 
-            var newAppt = new Appointment
+            Appointment sourceAppt = null;
+            if (srcType == 'A')
             {
-                Id = 0,
-                LocationId = appt.LocationId,
-                QueueId = targetQueueId,
-                CustomerId = appt.CustomerId,
-                ScheduledForUtc = _clock.UtcNow,
-                Status = AppointmentStatus.Arrived,
-                CreatedBy = "web",
-                StampUser = "web",
-                CreatedOnUtc = _clock.UtcNow,
-                StampDateUtc = _clock.UtcNow,
-                CreatedUtc = _clock.UtcNow,
-                UpdatedUtc = _clock.UtcNow
-            };
-            _appts.Add(newAppt);
+                sourceAppt = _appts.Get(request.SrcId);
+                if (sourceAppt == null) return Result<long>.Fail("Appointment not found.");
+                if (sourceAppt.Status == AppointmentStatus.Completed || sourceAppt.Status == AppointmentStatus.Cancelled || sourceAppt.Status == AppointmentStatus.ClosedBySystem)
+                    return Result<long>.Fail("Cannot transfer a finished appointment.");
+            }
 
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+            var stampUser = string.IsNullOrWhiteSpace(request.StampUser) ? "web" : request.StampUser.Trim();
+            var newSrcId = _serviceTransactions.TransferSource(
+                srcType,
+                request.SrcId,
+                request.TargetQueueId,
+                request.TargetServiceId,
+                targetKind,
+                request.TargetDateUtc,
+                request.RefValue,
+                request.Notes,
+                stampUser);
 
-            _rt.AppointmentChanged(newAppt);
-            _rt.QueueChanged(newAppt.LocationId, newAppt.QueueId);
+            if (sourceAppt != null)
+            {
+                sourceAppt.Status = AppointmentStatus.TransferredOut;
+                sourceAppt.UpdatedUtc = _clock.UtcNow;
+                sourceAppt.StampDateUtc = _clock.UtcNow;
+                _rt.AppointmentChanged(sourceAppt);
+                _rt.QueueChanged(sourceAppt.LocationId, sourceAppt.QueueId);
+            }
 
-            return Result<Appointment>.Success(newAppt);
+            _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
+            return Result<long>.Success(newSrcId);
+        }
+
+        public Result<long> EndServiceAndOptionallyAdd(CloseAndAddRequest request)
+        {
+            if (request == null) return Result<long>.Fail("Request is required.");
+            if (request.SrcId <= 0) return Result<long>.Fail("Source id is required.");
+
+            var srcType = char.ToUpperInvariant(request.SrcType);
+            if (srcType != 'A' && srcType != 'W') return Result<long>.Fail("Source type must be A or W.");
+
+            if (request.AdditionalService)
+            {
+                if (!request.TargetQueueId.HasValue || request.TargetQueueId.Value <= 0)
+                    return Result<long>.Fail("Target queue is required.");
+                if (!request.TargetKind.HasValue)
+                    return Result<long>.Fail("Target kind is required.");
+
+                var targetKind = char.ToUpperInvariant(request.TargetKind.Value);
+                if (targetKind != 'A' && targetKind != 'W')
+                    return Result<long>.Fail("Target kind must be A or W.");
+                if (targetKind == 'A' && !request.TargetDateUtc.HasValue)
+                    return Result<long>.Fail("Target date is required for appointment target.");
+            }
+
+            var stampUser = string.IsNullOrWhiteSpace(request.StampUser) ? "web" : request.StampUser.Trim();
+            var newSrcId = _serviceTransactions.CloseAndAddSource(
+                srcType,
+                request.SrcId,
+                request.AdditionalService,
+                request.TargetQueueId,
+                request.TargetServiceId,
+                request.TargetKind,
+                request.TargetDateUtc,
+                request.RefValue,
+                request.Notes,
+                stampUser);
+
+            if (srcType == 'A')
+            {
+                var appt = _appts.Get(request.SrcId);
+                if (appt != null)
+                {
+                    appt.Status = AppointmentStatus.Completed;
+                    appt.UpdatedUtc = _clock.UtcNow;
+                    appt.StampDateUtc = _clock.UtcNow;
+                    _rt.AppointmentChanged(appt);
+                    _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                }
+            }
+
+            if (request.TargetQueueId.HasValue && request.TargetQueueId.Value > 0)
+            {
+                var targetQueue = _queues.Get(request.TargetQueueId.Value);
+                if (targetQueue != null)
+                {
+                    _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
+                }
+            }
+
+            return Result<long>.Success(newSrcId);
         }
 
         public int CloseStaleScheduledAppointments(int staleHours)
