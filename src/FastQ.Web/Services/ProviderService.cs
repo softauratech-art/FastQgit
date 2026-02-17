@@ -64,6 +64,21 @@ namespace FastQ.Web.Services
             return _queues.ListAll();
         }
 
+        public IList<Queue> ListTransferQueues(long? locationId)
+        {
+            if (locationId.HasValue && locationId.Value > 0)
+            {
+                return _queues.ListByLocation(locationId.Value);
+            }
+
+            return _queues.ListAll();
+        }
+
+        public IList<Tuple<long, string>> ListTransferServices(long queueId)
+        {
+            return _queues.ListServicesByQueue(queueId);
+        }
+
         public IList<Customer> ListCustomers()
         {
             return _customers.ListAll();

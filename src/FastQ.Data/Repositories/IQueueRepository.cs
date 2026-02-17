@@ -12,6 +12,7 @@ namespace FastQ.Data.Repositories
 
         IList<Queue> ListByLocation(long locationId);
         IList<Queue> ListAll();
+        IList<Tuple<long, string>> ListServicesByQueue(long queueId);
     }
 }
 

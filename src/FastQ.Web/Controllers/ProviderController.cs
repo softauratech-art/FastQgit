@@ -118,6 +118,40 @@ namespace FastQ.Web.Controllers
             return Json(new { ok = true, data = dto }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult GetTransferQueues(string locationId)
+        {
+            long parsedLocationId;
+            long? location = long.TryParse(locationId, out parsedLocationId) ? parsedLocationId : (long?)null;
+            var queues = _service.ListTransferQueues(location)
+                .Select(q => new
+                {
+                    code = q.Id.ToString(CultureInfo.InvariantCulture),
+                    name = q.Name ?? string.Empty
+                })
+                .ToList();
+
+            return Json(new { ok = true, data = queues }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetTransferServices(string queueId)
+        {
+            long parsedQueueId;
+            if (!long.TryParse(queueId, out parsedQueueId) || parsedQueueId <= 0)
+                return Json(new { ok = false, error = "queueId is required" }, JsonRequestBehavior.AllowGet);
+
+            var services = _service.ListTransferServices(parsedQueueId)
+                .Select(s => new
+                {
+                    code = s.Item1.ToString(CultureInfo.InvariantCulture),
+                    name = s.Item2 ?? string.Empty
+                })
+                .ToList();
+
+            return Json(new { ok = true, data = services }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType)
         {

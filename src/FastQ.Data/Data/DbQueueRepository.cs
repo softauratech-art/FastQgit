@@ -155,6 +155,34 @@ namespace FastQ.Data.Db
 
             return list;
         }
+        public IList<Tuple<long, string>> ListServicesByQueue(long queueId)
+        {
+            var list = new List<Tuple<long, string>>();
+            if (queueId <= 0)
+            {
+                return list;
+            }
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_SERVICES"))
+            {
+                DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var serviceId = Convert.ToInt64(reader["SERVICE_ID"]);
+                        var serviceName = reader["SERVICE_NAME"] == DBNull.Value
+                            ? string.Empty
+                            : reader["SERVICE_NAME"].ToString();
+                        list.Add(Tuple.Create(serviceId, serviceName));
+                    }
+                }
+            }
+
+            return list;
+        }
 
         private static Queue MapQueue(IDataRecord record)
         {

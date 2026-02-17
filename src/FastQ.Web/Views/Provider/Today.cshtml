@@ -526,12 +526,16 @@
                 </select>
             </div>
             <div class="field-row">
-                <div>Queue Id:</div>
-                <input id="routeTargetQueueId" type="number" min="1" />
+                <div>Queue:</div>
+                <select id="routeTargetQueueId" class="filter-input">
+                    <option value="">Select queue</option>
+                </select>
             </div>
             <div class="field-row">
-                <div>Service Id:</div>
-                <input id="routeTargetServiceId" type="number" min="1" />
+                <div>Service:</div>
+                <select id="routeTargetServiceId" class="filter-input">
+                    <option value="">Select service</option>
+                </select>
             </div>
             <div class="field-row" id="routeDateRow">
                 <div>Target Date:</div>
@@ -556,6 +560,25 @@
     </div>
 </div>
 
+<div id="endServiceModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="endServiceModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="endServiceModalTitle">End Service</h5>
+            <button class="btn small ghost" type="button" data-modal-close="endServiceModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <p>Does the customer need any additional service today?</p>
+            <input id="endServiceSrcId" type="hidden" value="" />
+            <input id="endServiceSrcType" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="endServiceModal">Cancel</button>
+            <button class="btn secondary" type="button" data-end-choice="end-only">End Only</button>
+            <button class="btn primary" type="button" data-end-choice="end-add">End + Add Service</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
   (function () {
@@ -563,6 +586,8 @@
     var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
     var endServiceUrl = "@Url.Action("EndService", "Provider")";
     var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
+    var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
+    var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
 
     function postForm(url, data) {
@@ -572,6 +597,84 @@
         credentials: "same-origin",
         body: new URLSearchParams(data).toString()
       }).then(function (r) { return r.json(); });
+    }
+
+    function getJson(url) {
+      return fetch(url, {
+        method: "GET",
+        credentials: "same-origin"
+      }).then(function (r) { return r.json(); });
+    }
+
+    function setSelectOptions(selectElement, items, placeholderText) {
+      if (!selectElement) {
+        return;
+      }
+
+      selectElement.innerHTML = "";
+      var placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = placeholderText;
+      selectElement.appendChild(placeholder);
+
+      (items || []).forEach(function (item) {
+        var option = document.createElement("option");
+        option.value = item.code || "";
+        option.textContent = item.name || item.code || "";
+        selectElement.appendChild(option);
+      });
+    }
+
+    function loadRouteServices(queueCode, selectedServiceCode) {
+      var serviceSelect = document.getElementById("routeTargetServiceId");
+      if (!serviceSelect) {
+        return Promise.resolve();
+      }
+
+      if (!queueCode) {
+        setSelectOptions(serviceSelect, [], "Select service");
+        return Promise.resolve();
+      }
+
+      var url = getTransferServicesUrl + "?queueId=" + encodeURIComponent(queueCode);
+      return getJson(url).then(function (res) {
+        if (!res || !res.ok) {
+          setSelectOptions(serviceSelect, [], "Select service");
+          return;
+        }
+
+        setSelectOptions(serviceSelect, res.data || [], "Select service");
+        if (selectedServiceCode) {
+          serviceSelect.value = selectedServiceCode;
+        }
+      }).catch(function () {
+        setSelectOptions(serviceSelect, [], "Select service");
+      });
+    }
+
+    function loadRouteQueues(selectedQueueCode, selectedServiceCode) {
+      var queueSelect = document.getElementById("routeTargetQueueId");
+      if (!queueSelect) {
+        return Promise.resolve();
+      }
+
+      return getJson(getTransferQueuesUrl).then(function (res) {
+        if (!res || !res.ok) {
+          setSelectOptions(queueSelect, [], "Select queue");
+          loadRouteServices("", "");
+          return;
+        }
+
+        setSelectOptions(queueSelect, res.data || [], "Select queue");
+        if (selectedQueueCode) {
+          queueSelect.value = selectedQueueCode;
+        }
+
+        return loadRouteServices(queueSelect.value, selectedServiceCode || "");
+      }).catch(function () {
+        setSelectOptions(queueSelect, [], "Select queue");
+        return loadRouteServices("", "");
+      });
     }
 
     function closeModal(id) {
@@ -622,7 +725,33 @@
       if (refValue) refValue.value = "";
       if (notes) notes.value = "";
       toggleRouteDateRow();
+      loadRouteQueues("", "");
       openModal("serviceRouteModal");
+    }
+
+    function openEndServiceModal(appointmentId, srcType) {
+      var srcIdInput = document.getElementById("endServiceSrcId");
+      var srcTypeInput = document.getElementById("endServiceSrcType");
+      if (!srcIdInput || !srcTypeInput) {
+        return;
+      }
+      srcIdInput.value = appointmentId;
+      srcTypeInput.value = srcType;
+      openModal("endServiceModal");
+    }
+
+    function submitEndOnly(appointmentId, srcType) {
+      return postForm(endServiceUrl, {
+          appointmentId: appointmentId,
+          srcType: srcType,
+          additionalService: "N",
+          targetQueueId: "",
+          targetServiceId: "",
+          targetKind: "",
+          targetDate: "",
+          refValue: "",
+          notes: ""
+        });
     }
 
     function updateRangeAndReload(startValue, endValue) {
@@ -854,30 +983,7 @@
         }
 
         if (action === "end") {
-          var additionalAnswer = window.confirm("Does the customer need any additional service today?");
-          if (additionalAnswer) {
-            openRouteModal("end-add", appointmentId, srcType);
-            return;
-          }
-
-          postForm(endServiceUrl, {
-              appointmentId: appointmentId,
-              srcType: srcType,
-              additionalService: "N",
-              targetQueueId: "",
-              targetServiceId: "",
-              targetKind: "",
-              targetDate: "",
-              refValue: "",
-              notes: ""
-            })
-            .then(function (res) {
-              if (!res || !res.ok) {
-                window.alert(res && res.error ? res.error : "End service failed.");
-                return;
-              }
-              window.location.reload();
-            });
+          openEndServiceModal(appointmentId, srcType);
           return;
         }
 
@@ -912,6 +1018,36 @@
     document.querySelectorAll("[data-modal-close]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         closeModal(btn.getAttribute("data-modal-close"));
+      });
+    });
+
+    document.querySelectorAll("[data-end-choice]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var choice = btn.getAttribute("data-end-choice");
+        var srcIdInput = document.getElementById("endServiceSrcId");
+        var srcTypeInput = document.getElementById("endServiceSrcType");
+        var appointmentId = srcIdInput ? srcIdInput.value : "";
+        var srcType = srcTypeInput ? srcTypeInput.value : "";
+        if (!appointmentId || !srcType) {
+          closeModal("endServiceModal");
+          return;
+        }
+
+        if (choice === "end-add") {
+          closeModal("endServiceModal");
+          openRouteModal("end-add", appointmentId, srcType);
+          return;
+        }
+
+        submitEndOnly(appointmentId, srcType)
+          .then(function (res) {
+            if (!res || !res.ok) {
+              window.alert(res && res.error ? res.error : "End service failed.");
+              return;
+            }
+            closeModal("endServiceModal");
+            window.location.reload();
+          });
       });
     });
 
@@ -983,6 +1119,13 @@
     if (routeTargetKind) {
       routeTargetKind.addEventListener("change", toggleRouteDateRow);
       toggleRouteDateRow();
+    }
+
+    var routeTargetQueueId = document.getElementById("routeTargetQueueId");
+    if (routeTargetQueueId) {
+      routeTargetQueueId.addEventListener("change", function () {
+        loadRouteServices(routeTargetQueueId.value || "", "");
+      });
     }
 
     var saveRoute = document.getElementById("saveRoute");
