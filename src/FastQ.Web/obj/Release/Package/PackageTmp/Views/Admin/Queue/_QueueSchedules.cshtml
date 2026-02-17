@@ -1,0 +1,34 @@
+﻿@model FastQ.Web.Models.Admin.QueueScheduleVM
+
+
+
+        
+            <tr id="Q-@Model.QueueId">
+                @Html.HiddenFor(model => model.Id)
+                <td>
+                    @Model.BeginDate.ToShortDateString()
+                </td>
+                <td>
+                    @Model.EndDate.ToShortDateString()
+                </td>
+                <td>
+                    @(System.Xml.XmlConvert.ToTimeSpan(@Model.OpenTime))
+                </td>
+                <td>
+                    @(System.Xml.XmlConvert.ToTimeSpan(@Model.CloseTime))
+                </td>
+                <td>
+                    @(System.Xml.XmlConvert.ToTimeSpan(@Model.Duration))
+                </td>
+                <td>
+                    @Model.WeeklySchPrettyPrint (@Model.WeeklySchedule)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => Model.ResourcesAvailable)
+                </td>
+                @*<td>
+                        @Html.ActionLink("Edit", "Edit", new { id = model.Id }) |
+                        @Html.ActionLink("Details", "Details", new { id = model.Id }) |
+                        @Html.ActionLink("Delete", "Delete", new { id = model.Id })
+                    </td>*@
+            </tr>

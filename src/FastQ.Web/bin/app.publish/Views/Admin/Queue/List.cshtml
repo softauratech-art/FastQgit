@@ -1,0 +1,135 @@
+﻿@model IEnumerable<FastQ.Web.Models.Admin.QueueVM>
+@using FastQ.Web.Helpers;
+@{
+    ViewBag.Title = "View";
+}
+@section Head{
+    <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
+
+    @*<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="https: //cdn.datatables.net/2.3.7/css/dataTables.bootstrap5.css" rel="stylesheet" />*@
+    <style>
+        .dt-length {
+            display: inline-flex;
+        }
+
+        div.dt-container select.dt-input {
+            margin-right: 5px;
+        }
+    </style>
+}
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Manage Queues</div>
+        <div class="topbar-sub">Add and manage Queues and Schedules</div>
+    </div>
+    <div class="top-actions">
+        <div>
+            @Html.ActionLink("Create New", "Create", null, new { @class = "btn primary" })
+        </div>
+    </div>
+}
+<div class="card">
+    @*<h2>List</h2>*@
+
+    <table id="Qdata" class="table">
+        <thead>
+            <tr>
+                <th class="no-sort">
+                    @Html.DisplayNameFor(model => model.Id)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Name)
+                </th>
+                <th>
+                    In Spanish
+                </th>
+                <th>
+                    In Creole
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.ActiveFlag)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EmpOnly)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LeadTimeMin)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LeadTimeMax)
+                </th>
+                <th class="no-sort">
+                    Action
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @*@Html.DisplayFor(modelItem => item.Id)*@
+                        @Html.ActionLink(item.Id.ToString(), "Details", new { id = item.Id }, new { @class = "pill" })
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Name)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.NameES)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.NameCP)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ActiveFlag)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.EmpOnly)
+                    </td>
+                    @*<td>
+                            @Html.DisplayFor(modelItem => item.HideInKiosk)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.HideInMonitor)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.HasGuidelines)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.HasUploads)
+                        </td>*@
+                    <td>
+                        @Utilities.TranslateLeadTimes(item.LeadTimeMin)
+                    </td>
+                    <td>
+                        @Utilities.TranslateLeadTimes(item.LeadTimeMax)
+                    </td>
+                    <td>
+                        @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
+                        @Html.ActionLink("Delete", "Delete", new { id = item.Id })
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@section Scripts{
+    <script src="https://cdn.datatables.net/2.3.7/js/dataTables.min.js"></script>
+    @*<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.datatables.net/2.3.7/js/dataTables.js"></script>
+        <script src="https://cdn.datatables.net/2.3.7/js/dataTables.bootstrap5.js"></script>*@
+    <script>
+        $(document).ready(function () {
+            $('#Qdata').DataTable({
+                "columnDefs": [
+                    { "targets": [8], "orderable": false }
+                ],
+                layout: {
+                    topStart: { pageLength: { text: "_MENU_  per page" } },
+                    topEnd: 'search'
+                }
+            });
+        });
+    </script>
+}

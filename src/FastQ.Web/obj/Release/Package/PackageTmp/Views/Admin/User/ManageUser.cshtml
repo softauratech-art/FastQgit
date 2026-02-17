@@ -1,0 +1,117 @@
+﻿
+@model FastQ.Web.Models.Admin.UserVM
+
+@{
+    ViewBag.Title = "View Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="card">
+
+
+    @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("details"))
+    {
+        <h2>User Details</h2>
+        <table cellpadding="5">
+            <tr>
+                <td>User ID :</td>
+                <td>@Model.UserId</td>
+            </tr>
+            <tr>
+                <td>First Name :</td>
+                <td>@Model.FirstName</td>
+            </tr>
+            <tr>
+                <td>Last Name :</td>
+                <td>@Model.LastName</td>
+            </tr>
+            <tr>
+                <td>Email :</td>
+                <td>@Model.Email</td>
+            </tr>
+            <tr>
+                <td colspan="2" align="right">
+                    <a href="/user" class="btn btn-small">Return to List</a>
+                </td>
+            </tr>
+        </table>
+    }
+
+    @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("edit")
+        || ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("create")
+    )
+    {
+            using (Html.BeginForm("Edit", "User", FormMethod.Post))
+            {
+            <h2>Manage User</h2>
+            <table cellpadding="5">
+                <tr>
+                    <td>User ID :</td>
+                    <td>@Html.TextBoxFor(m => m.UserId)</td>
+                </tr>
+                <tr>
+                    <td>First Name :</td>
+                    <td>@Html.TextBoxFor(m => m.FirstName)</td>
+                </tr>
+                <tr>
+                    <td>Last Name :</td>
+                    <td>@Html.TextBoxFor(m => m.LastName)</td>
+                </tr>
+                <tr>
+                    <td>Email :</td>
+                    <td>@Html.TextBoxFor(m => m.Email)</td>
+                </tr>
+                <tr><td></td>
+                    <td>
+                        <input type="submit" value="Save" class="btn secondary"
+                                   formaction="/user/edit/@Model.UserId" />
+                        <span>&nbsp;</span>
+                        <input type="submit" value="Cancel" class="btn ghost"
+                                   formaction="/user" />
+                    </td>
+                </tr>
+            </table>
+            }
+        }
+
+
+    @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("delete"))
+  
+    {
+        using (Html.BeginForm("Delete", "User", FormMethod.Post))
+        {
+            <h2>Delete User</h2>
+            <table cellpadding="5">
+                <tr>
+                    <td>User ID :</td>
+                    <td>@Model.UserId</td>
+                </tr>
+                <tr>
+                    <td>First Name :</td>
+                    <td>@Model.FirstName</td>
+                </tr>
+                <tr>
+                    <td>Last Name :</td>
+                    <td>@Model.LastName</td>
+                </tr>
+                <tr>
+                    <td>Email :</td>
+                    <td>@Model.Email</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <h3>Are you sure you want to delete this user?</h3>
+                        <button type="submit" class="btn secondary"
+                                formaction="/user/delete/@Model.UserId">
+                            Yes
+                        </button>
+                        &nbsp;&nbsp;
+                        <button type="submit" class="btn ghost"
+                                formaction="/user">
+                            No
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        }
+    }
+    </div>

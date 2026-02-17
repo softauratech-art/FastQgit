@@ -1,0 +1,160 @@
+﻿@model FastQ.Web.Models.Admin.QueueVM
+
+@{
+    ViewBag.Title = "ManageQueue";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var isActiveFlag = Model.ActiveFlag.IsEmpty() ? false : Model.ActiveFlag.Equals("Y");
+    var isEmpOnly = Model.EmpOnly.IsEmpty() ? false : Model.EmpOnly.Equals("Y");
+    var isHideInKiosk = Model.HideInKiosk.IsEmpty() ? false : Model.HideInKiosk.Equals("Y");
+    var isHideInMonitor = Model.HideInMonitor.IsEmpty() ? false : Model.HideInMonitor.Equals("Y");
+    var isHasGuidelines = Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.Equals("Y");
+    var isHasUploads = Model.HasUploads.IsEmpty() ? false : Model.HasUploads.Equals("Y");
+}
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Manage Queue</div>
+        <div class="topbar-sub">Manage Queues Configuration, Services and Schedules</div>
+    </div>
+    <div class="top-actions">
+        <div>
+            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn" })
+        </div>
+    </div>
+}
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+<div class="card">
+    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+    @Html.HiddenFor(model => model.Id)
+
+    <div class="form-grid" style="padding: 6px;">
+        @*<div class="field">
+                @Html.LabelFor(model => model.LocationId, htmlAttributes: new { @class = "control-label" })
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.LocationId, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.LocationId, "", new { @class = "text-danger" })
+                </div>
+            </div>*@
+
+        <div class="field">
+            @Html.LabelFor(model => model.Name, htmlAttributes: new { @class = "control-label" })
+            @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="field">
+            @Html.LabelFor(model => model.NameES, htmlAttributes: new { @class = "control-label" })
+            @Html.EditorFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="field">
+            @Html.LabelFor(model => model.NameCP, htmlAttributes: new { @class = "control-label" })
+            @Html.EditorFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.NameCP, "", new { @class = "text-danger" })
+        </div>
+    </div>
+    <div class="form-grid-6" style="padding: 10px;">
+        <div>
+            @Html.LabelFor(model => model.ActiveFlag, htmlAttributes: new { @class = "control-label" })
+            @Html.CheckBoxFor(model => isActiveFlag)
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.EmpOnly, htmlAttributes: new { @class = "control-label" })
+            @Html.CheckBoxFor(model => isEmpOnly)
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HideInKiosk, htmlAttributes: new { @class = "control-label" })
+            @Html.CheckBoxFor(model => isHideInKiosk)
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HideInMonitor, htmlAttributes: new { @class = "control-label" })
+            @Html.CheckBoxFor(model => isHideInMonitor)
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HasGuidelines, htmlAttributes: new { @class = "control-label" })
+            @Html.CheckBoxFor(model => isHasGuidelines)
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HasUploads, htmlAttributes: new { @class = "control-label" })
+            @Html.CheckBoxFor(model => isHasUploads)
+        </div>
+    </div>
+    <div class="form-grid" style="padding: 6px;">
+        <div class="field">
+            @Html.LabelFor(model => model.LeadTimeMin, htmlAttributes: new { @class = "control-label" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.LeadTimeMin, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.LeadTimeMin, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="field">
+            @Html.LabelFor(model => model.LeadTimeMax, htmlAttributes: new { @class = "control-label" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.LeadTimeMax, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.LeadTimeMax, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div style="padding: 6px;">
+            <div>
+                <input type="button" id="btnAddSchedule" class="btn small primary" value="Add Schedule" style="float:right;" />
+                <table class="table" id="ScheduleSection">
+                    <thead>
+                        <tr>
+                            <th>Begins</th>
+                            <th>Ends</th>
+                            <th>Opens At</th>
+                            <th>Closes At</th>
+                            <th>Duration</th>
+                            <th>Weekly</th>
+                            <th>Avail. Res</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    @foreach (var item in Model.Schedules)
+                    {
+                        @Html.Partial("../Admin/Queue/_ScheduleEdit", item)
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div style="padding-top: 10px; text-align:center">
+        <input type="submit" value="Save" class="btn secondary" />
+        <input type="button" value="Cancel" class="btn ghost" />
+    </div>
+</div>
+}
+
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            $("#btnAddSchedule").click(function () {
+                //alert("btn clicked");
+                $.ajax({
+                    url: '/Queue/DisplayNewSchedule',
+                    type: 'GET',
+                    success: function (partialView) {
+                        $('#ScheduleSection tbody').append(partialView);
+                    }
+                });
+            });
+        });
+    </script> }

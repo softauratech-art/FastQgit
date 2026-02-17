@@ -1,0 +1,163 @@
+﻿@model FastQ.Web.Models.Admin.QueueVM
+@using FastQ.Web.Helpers
+@using System.Collections.Generic
+@{
+    ViewBag.Title = "Queue Details";
+    var isActiveFlag = Model.ActiveFlag.IsEmpty() ? false : Model.ActiveFlag.Equals("Y");
+    var isEmpOnly = Model.EmpOnly.IsEmpty() ? false : Model.EmpOnly.Equals("Y");
+    var isHideInKiosk = Model.HideInKiosk.IsEmpty() ? false : Model.HideInKiosk.Equals("Y");
+    var isHideInMonitor = Model.HideInMonitor.IsEmpty() ? false : Model.HideInMonitor.Equals("Y");
+    var isHasGuidelines = Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.Equals("Y");
+    var isHasUploads = Model.HasUploads.IsEmpty() ? false : Model.HasUploads.Equals("Y");
+}
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Queue Details</div>
+        <div class="topbar-sub">View Queues Configuration, Services and Schedules</div>
+    </div>
+    <div class="top-actions">
+        <div>@Html.ActionLink("Back to List", "Index", null, new { @class = "btn" })</div>
+    </div>
+}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Queue Details</h3>
+        <div>@Html.ActionLink("Edit Queue", "Edit", new { id = Model.Id }, new { @class = "btn small primary" })</div>
+    </div>
+
+    <div class="form-grid" style="padding: 6px;">
+        @*<div class="field">
+                @Html.LabelFor(model => model.LocationId)
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.LocationId, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.LocationId, "", new { @class = "text-danger" })
+                </div>
+            </div>*@
+
+        <div class="field">
+            @Html.LabelFor(model => model.Name)
+            @Html.TextBoxFor(model => model.Name, new { @readonly = "readonly" })
+        </div>
+
+        <div class="field">
+            <label>Spanish</label>
+            @Html.TextBoxFor(model => model.NameES, new { @readonly = "readonly" })
+        </div>
+
+        <div class="field">
+            <label>Creole</label>
+            @Html.TextBoxFor(model => model.NameCP, new { @readonly = "readonly" })
+        </div>
+    </div>
+    <div class="form-grid-6" style="padding: 16px;">
+        <div>
+            @Html.LabelFor(model => model.ActiveFlag)
+            @Html.CheckBoxFor(model => isActiveFlag, new { disabled = "disabled" })
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.EmpOnly)
+            @Html.DisplayFor(model => isEmpOnly, new { disabled = "disabled" })
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HideInKiosk)
+            @Html.DisplayFor(model => isHideInKiosk, new { disabled = "disabled" })
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HideInMonitor)
+            @Html.DisplayFor(model => isHideInMonitor, new { disabled = "disabled" })
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HasGuidelines)
+            @Html.DisplayFor(model => isHasGuidelines, new { disabled = "disabled" })
+        </div>
+
+        <div>
+            @Html.LabelFor(model => model.HasUploads)
+            @Html.DisplayFor(model => isHasUploads, new { disabled = "disabled" })
+        </div>
+    </div>
+    <div class="form-grid-6" style="padding: 6px;">
+        <div class="field">
+            @Html.LabelFor(model => model.LeadTimeMin)
+            <div class="col-md-10">
+                @Html.TextBox("txtLeadTimeMin", @Utilities.TranslateLeadTimes(Model.LeadTimeMin), new { @readonly = "readonly" })
+            </div>
+        </div>
+
+        <div class="field">
+            @Html.LabelFor(model => model.LeadTimeMax)
+            <div class="col-md-10">
+                @Html.TextBox("txtLeadTimeMax", @Utilities.TranslateLeadTimes(Model.LeadTimeMax), new { @readonly = "readonly" })
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:10px;">
+        <h3>Schedules</h3>
+        <div style="padding: 6px;">
+            <div class="field">
+                <table class="table" id="ScheduleSection">
+                    <thead>
+                        <tr>
+                            <th>Begins</th>
+                            <th>Ends</th>
+                            <th>Opens At</th>
+                            <th>Closes At</th>
+                            <th>Duration</th>
+                            <th>Weekly</th>
+                            <th>Avail. Res</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Schedules)
+                        {
+                            @*@Html.Partial("../Admin/Queue/_QueueSchedules", item)*@
+
+                            <tr id="QSrow-@item.Id">
+                                <td>
+                                    @item.BeginDate.ToShortDateString()
+                                </td>
+                                <td>
+                                    @item.EndDate.ToShortDateString()
+                                </td>
+                                <td>
+                                    @(System.Xml.XmlConvert.ToTimeSpan(item.OpenTime))
+                                </td>
+                                <td>
+                                    @(System.Xml.XmlConvert.ToTimeSpan(item.CloseTime))
+                                </td>
+                                <td>
+                                    @(System.Xml.XmlConvert.ToTimeSpan(item.Duration))
+                                </td>
+                                <td>
+                                    @{
+                                        IEnumerable<int> digits = item.WeeklySchedule.Select(c => (int)Char.GetNumericValue(c));
+                                        digits = @item.WeeklySchedule.Select(c => (int)Char.GetNumericValue(c));
+                                        string ret = string.Empty;
+                                        foreach (int i in digits)
+                                            ret += FastQ.Web.Helpers.Utilities.TranslateToDayOfWeek(i - 1, Utilities.DayofWeekType.Short);
+                                    }
+                                    @ret
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.ResourcesAvailable)
+                                </td>
+                                @*<td>
+                                        @Html.ActionLink("Edit", "Edit", new { id = model.Id }) |
+                                        @Html.ActionLink("Details", "Details", new { id = model.Id }) |
+                                        @Html.ActionLink("Delete", "Delete", new { id = model.Id })
+                                    </td>*@
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

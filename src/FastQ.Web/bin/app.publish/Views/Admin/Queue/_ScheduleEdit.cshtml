@@ -1,0 +1,53 @@
+﻿@model FastQ.Web.Models.Admin.QueueScheduleVM
+
+
+@*@using (Html.BeginForm()) {*@ 
+
+
+   @*@Html.AntiForgeryToken()
+   @Html.ValidationSummary(true, "", new { @class = "text-danger" })*@
+
+
+<tr id="QSrow-@Model.Id">
+    @*@Html.LabelFor(model => model.QueueId, htmlAttributes: new { @class = "control-label col-md-2" })*@
+    <td>
+        @Html.HiddenFor(model => model.Id)
+        @Html.HiddenFor(model => model.QueueId)
+        @Html.TextBoxFor(model => model.BeginDate, new { @style = "width:160px" })
+        @Html.ValidationMessageFor(model => model.BeginDate, "", new { @class = "text-danger" })
+    </td>
+    <td>
+        @Html.TextBoxFor(model => model.EndDate, new { @style = "width:160px" })
+        @Html.ValidationMessageFor(model => model.EndDate, "", new { @class = "text-danger" })
+    </td>
+    <td>
+        @Html.TextBoxFor(model => model.OpenTime, new { @style = "width:80px" })
+        @Html.ValidationMessageFor(model => model.OpenTime, "", new { @class = "text-danger" })
+    </td>
+    <td>
+        @Html.TextBoxFor(model => model.CloseTime, new { @style = "width:80px" })
+        @Html.ValidationMessageFor(model => model.CloseTime, "", new { @class = "text-danger" })
+    </td>
+    <td>
+        @Html.TextBoxFor(model => model.Duration, new { @style = "width:80px" })
+        @Html.ValidationMessageFor(model => model.Duration, "", new { @class = "text-danger" })
+    </td>
+    <td>
+        @Html.TextBoxFor(model => model.WeeklySchedule, new { htmlAttributes = new { @class = "form-control" } })
+        @Html.ValidationMessageFor(model => model.WeeklySchedule, "", new { @class = "text-danger" })
+    </td>
+    <td>
+        @Html.TextBoxFor(model => model.ResourcesAvailable, new { htmlAttributes = new { @class = "form-control" } })
+        @Html.ValidationMessageFor(model => model.ResourcesAvailable, "", new { @class = "text-danger" })
+    </td>
+    <td class="col-md-offset-2 col-md-10">
+        @*<input type="submit" value="Save" class="btn btn-default" />*@
+        <a style="visibility:hidden"> Delete :</a>   @*just to make the button align *@
+        <button id="Btn_DeleteSchedule" type="submit">
+            Delete
+        </button>
+    </td>
+</tr>
+
+@*}*@
+
