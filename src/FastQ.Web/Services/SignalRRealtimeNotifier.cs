@@ -18,6 +18,8 @@ namespace FastQ.Web.Services
 
             Hub.Clients.Group($"loc:{loc}").queueUpdated(loc, q);
             Hub.Clients.Group($"queue:{q}").queueUpdated(loc, q);
+            // Provider dashboard is cross-queue; broadcast to all clients so every board can refresh.
+            Hub.Clients.All.queueUpdated(loc, q);
         }
 
         public void AppointmentChanged(Appointment appointment)
@@ -65,5 +67,4 @@ namespace FastQ.Web.Services
         }
     }
 }
-
 

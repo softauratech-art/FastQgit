@@ -831,23 +831,29 @@
       }
     }
 
-    document.querySelectorAll(".accordion-toggle").forEach(function (row) {
-      row.addEventListener("click", function () {
-        var targetId = row.getAttribute("data-target");
-        if (!targetId) {
+    function bindAccordionRows() {
+      document.querySelectorAll(".accordion-toggle").forEach(function (row) {
+        if (row.getAttribute("data-bound-accordion") === "1") {
           return;
         }
-        document.querySelectorAll(".row-actions").forEach(function (detail) {
-          if (detail.id !== targetId) {
-            detail.classList.remove("is-open");
+        row.setAttribute("data-bound-accordion", "1");
+        row.addEventListener("click", function () {
+          var targetId = row.getAttribute("data-target");
+          if (!targetId) {
+            return;
+          }
+          document.querySelectorAll(".row-actions").forEach(function (detail) {
+            if (detail.id !== targetId) {
+              detail.classList.remove("is-open");
+            }
+          });
+          var target = document.getElementById(targetId);
+          if (target) {
+            target.classList.toggle("is-open");
           }
         });
-        var target = document.getElementById(targetId);
-        if (target) {
-          target.classList.toggle("is-open");
-        }
       });
-    });
+    }
 
     document.querySelectorAll(".table-filters").forEach(function (container) {
       container.querySelectorAll(".filter-input").forEach(function (input) {
@@ -921,8 +927,42 @@
       applyTableFilters(container);
     });
 
-    document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
-      btn.addEventListener("click", function (event) {
+    function normalizeStatus(text) {
+      return (text || "").toString().trim().toLowerCase();
+    }
+
+    function getStatusForAppointment(id) {
+      var row = document.querySelector('.accordion-toggle[data-appointment-id="' + id + '"]');
+      return row ? normalizeStatus(row.getAttribute("data-status")) : "";
+    }
+
+    function canAction(status, actionName) {
+      var finished = status === "completed" || status === "cancelled" || status === "closedbysystem" || status === "transferredout";
+      if (finished) {
+        return false;
+      }
+      if (actionName === "arrive") {
+        return status === "scheduled";
+      }
+      if (actionName === "begin") {
+        return status === "arrived" || status === "scheduled";
+      }
+      if (actionName === "end") {
+        return status === "inservice";
+      }
+      if (actionName === "remove") {
+        return !finished;
+      }
+      return true;
+    }
+
+    function bindProviderActionButtons() {
+      document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
+        if (btn.getAttribute("data-bound-provider-action") === "1") {
+          return;
+        }
+        btn.setAttribute("data-bound-provider-action", "1");
+        btn.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -940,35 +980,6 @@
         }
         if (!srcType) {
           srcType = "A";
-        }
-
-        function normalizeStatus(text) {
-          return (text || "").toString().trim().toLowerCase();
-        }
-
-        function getStatusForAppointment(id) {
-          var row = document.querySelector('.accordion-toggle[data-appointment-id="' + id + '"]');
-          return row ? normalizeStatus(row.getAttribute("data-status")) : "";
-        }
-
-        function canAction(status, actionName) {
-          var finished = status === "completed" || status === "cancelled" || status === "closedbysystem" || status === "transferredout";
-          if (finished) {
-            return false;
-          }
-          if (actionName === "arrive") {
-            return status === "scheduled";
-          }
-          if (actionName === "begin") {
-            return status === "arrived" || status === "scheduled";
-          }
-          if (actionName === "end") {
-            return status === "inservice";
-          }
-          if (actionName === "remove") {
-            return !finished;
-          }
-          return true;
         }
 
         var status = getStatusForAppointment(appointmentId);
@@ -993,10 +1004,11 @@
               window.alert(res && res.error ? res.error : "Action failed.");
               return;
             }
-            window.location.reload();
+            queueLiveSync();
           });
+        });
       });
-    });
+    }
 
     function lockAppointment(appointmentId) {
       document.querySelectorAll('[data-appointment-id="' + appointmentId + '"]').forEach(function (el) {
@@ -1004,14 +1016,210 @@
       });
     }
 
-    window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
-      console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, currentProviderId);
-      if (providerId && currentProviderId && providerId.toLowerCase() === currentProviderId.toLowerCase()) {
+    function getStatusTextForDisplay(normalizedStatus) {
+      if (normalizedStatus === "arrived") return "ARRIVED";
+      if (normalizedStatus === "inservice") return "IN PROGRESS";
+      if (normalizedStatus === "completed") return "DONE";
+      if (normalizedStatus === "cancelled") return "REMOVED";
+      if (normalizedStatus === "scheduled") return "SCHEDULED";
+      if (normalizedStatus === "transferredout") return "TRANSFERRED";
+      return (normalizedStatus || "").toUpperCase();
+    }
+
+    function applyLiveStatus(appointmentId, status) {
+      var row = document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
+      if (!row) {
         return;
       }
+
+      var normalized = normalizeStatus(status);
+      row.setAttribute("data-status", status || "");
+      var statusCell = row.children.length > 5 ? row.children[5] : null;
+      if (statusCell) {
+        statusCell.textContent = getStatusTextForDisplay(normalized);
+        statusCell.classList.toggle("error", normalized === "cancelled");
+      }
+    }
+
+    var liveSyncTimer = null;
+    var liveSyncInFlight = false;
+    function getRowKey(row) {
+      if (!row) {
+        return "";
+      }
+      var srcType = row.getAttribute("data-src-type") || "";
+      var appointmentId = row.getAttribute("data-appointment-id") || "";
+      return srcType + ":" + appointmentId;
+    }
+
+    function findDetailRowByTarget(tableBody, targetId) {
+      if (!tableBody || !targetId) {
+        return null;
+      }
+      return tableBody.querySelector('tr[id="' + targetId + '"]');
+    }
+
+    function collectRowPairs(tableBody) {
+      var pairs = [];
+      if (!tableBody) {
+        return pairs;
+      }
+
+      tableBody.querySelectorAll("tr.accordion-toggle").forEach(function (summaryRow) {
+        var targetId = summaryRow.getAttribute("data-target") || "";
+        var detailRow = findDetailRowByTarget(tableBody, targetId);
+        if (!detailRow) {
+          return;
+        }
+        pairs.push({
+          key: getRowKey(summaryRow),
+          summary: summaryRow,
+          detail: detailRow
+        });
+      });
+
+      return pairs;
+    }
+
+    function applyIncomingRows(currentBody, incomingBody) {
+      if (!currentBody || !incomingBody) {
+        return;
+      }
+
+      var incomingPairs = collectRowPairs(incomingBody);
+      var incomingKeys = {};
+      incomingPairs.forEach(function (pair) {
+        incomingKeys[pair.key] = true;
+      });
+
+      // Remove rows that no longer exist in server response.
+      collectRowPairs(currentBody).forEach(function (pair) {
+        if (incomingKeys[pair.key]) {
+          return;
+        }
+        pair.summary.parentNode.removeChild(pair.summary);
+        pair.detail.parentNode.removeChild(pair.detail);
+      });
+
+      var emptyRow = currentBody.querySelector("tr.table-empty");
+      incomingPairs.forEach(function (pair) {
+        var keyParts = pair.key.split(":");
+        var srcType = keyParts[0] || "";
+        var appointmentId = keyParts.length > 1 ? keyParts[1] : "";
+        var selector = 'tr.accordion-toggle[data-appointment-id="' + appointmentId + '"][data-src-type="' + srcType + '"]';
+        var currentSummary = currentBody.querySelector(selector);
+        var incomingSummary = document.importNode(pair.summary, true);
+        var incomingDetail = document.importNode(pair.detail, true);
+
+        if (currentSummary) {
+          var currentTargetId = currentSummary.getAttribute("data-target") || "";
+          var currentDetail = findDetailRowByTarget(currentBody, currentTargetId);
+          currentBody.insertBefore(incomingSummary, currentSummary);
+          currentSummary.parentNode.removeChild(currentSummary);
+          if (currentDetail) {
+            currentBody.insertBefore(incomingDetail, currentDetail);
+            currentDetail.parentNode.removeChild(currentDetail);
+          } else if (emptyRow) {
+            currentBody.insertBefore(incomingDetail, emptyRow);
+          } else {
+            currentBody.appendChild(incomingDetail);
+          }
+          return;
+        }
+
+        if (emptyRow) {
+          currentBody.insertBefore(incomingSummary, emptyRow);
+          currentBody.insertBefore(incomingDetail, emptyRow);
+        } else {
+          currentBody.appendChild(incomingSummary);
+          currentBody.appendChild(incomingDetail);
+        }
+      });
+    }
+
+    function syncTablesFromServer() {
+      if (liveSyncInFlight) {
+        return;
+      }
+
+      liveSyncInFlight = true;
+      var openRowIds = Array.prototype.map.call(
+        document.querySelectorAll(".row-actions.is-open"),
+        function (el) { return el.id; }
+      );
+      var lockedIds = Array.prototype.map.call(
+        document.querySelectorAll(".accordion-toggle.locked"),
+        function (el) { return el.getAttribute("data-appointment-id") || ""; }
+      ).filter(function (id) { return !!id; });
+
+      fetch(window.location.pathname + window.location.search, {
+        method: "GET",
+        credentials: "same-origin"
+      })
+        .then(function (res) { return res.text(); })
+        .then(function (html) {
+          var parser = new DOMParser();
+          var nextDoc = parser.parseFromString(html, "text/html");
+          var currentBodies = document.querySelectorAll(".table-card table tbody");
+          var nextBodies = nextDoc.querySelectorAll(".table-card table tbody");
+          var count = Math.min(currentBodies.length, nextBodies.length);
+
+          for (var i = 0; i < count; i++) {
+            applyIncomingRows(currentBodies[i], nextBodies[i]);
+          }
+
+          bindAccordionRows();
+          bindProviderActionButtons();
+          bindMeetingLinks();
+
+          openRowIds.forEach(function (id) {
+            var detail = document.getElementById(id);
+            if (detail) {
+              detail.classList.add("is-open");
+            }
+          });
+          lockedIds.forEach(function (id) {
+            lockAppointment(id);
+          });
+
+          document.querySelectorAll(".table-filters").forEach(function (container) {
+            applyTableFilters(container);
+          });
+          liveSyncInFlight = false;
+        })
+        .catch(function () {
+          liveSyncInFlight = false;
+        });
+    }
+
+    function queueLiveSync() {
+      if (liveSyncTimer) {
+        return;
+      }
+      liveSyncTimer = setTimeout(function () {
+        liveSyncTimer = null;
+        syncTablesFromServer();
+      }, 300);
+    }
+
+    window.onFastQQueueUpdated = function () {
+      queueLiveSync();
+    };
+
+    window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
+      console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, currentProviderId);
       var normalized = (status || "").toString().toLowerCase();
-      if (normalized === "inservice" || normalized === "completed" || normalized === "cancelled") {
+      var hasRow = !!document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
+      applyLiveStatus(appointmentId, status);
+      if (normalized === "inservice" || normalized === "completed" || normalized === "cancelled" || normalized === "transferredout" || normalized === "scheduled" || normalized === "arrived") {
         lockAppointment(appointmentId);
+        document.querySelectorAll(".table-filters").forEach(function (container) {
+          applyTableFilters(container);
+        });
+      }
+      // New rows (e.g. transfer target) may not exist locally yet.
+      if (!hasRow && (normalized === "scheduled" || normalized === "arrived")) {
+        queueLiveSync();
       }
     };
 
@@ -1046,44 +1254,50 @@
               return;
             }
             closeModal("endServiceModal");
-            window.location.reload();
+            queueLiveSync();
           });
       });
     });
 
-    document.querySelectorAll(".meeting-link").forEach(function (link) {
-      link.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        var appointmentId = link.getAttribute("data-appointment-id") || "";
-        var srcType = link.getAttribute("data-src-type") || "A";
-
-        var mid = document.getElementById("mid");
-        var meetingDate = document.getElementById("meetingDate");
-        var meetingTime = document.getElementById("meetingTime");
-        var meetingTitle = document.getElementById("meetingTitle");
-        var meetingCustomer = document.getElementById("meetingCustomer");
-        var meetingPhone = document.getElementById("meetingPhone");
-        var urlInput = document.getElementById("mURL");
-        var notesInput = document.getElementById("mNotes");
-
-        if (mid) {
-          mid.textContent = appointmentId;
-          mid.setAttribute("data-appointment-id", appointmentId);
-          mid.setAttribute("data-src-type", srcType);
+    function bindMeetingLinks() {
+      document.querySelectorAll(".meeting-link").forEach(function (link) {
+        if (link.getAttribute("data-bound-meeting-link") === "1") {
+          return;
         }
-        if (meetingDate) meetingDate.textContent = link.getAttribute("data-date") || "";
-        if (meetingTime) meetingTime.textContent = link.getAttribute("data-time") || "";
-        if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
-        if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
-        if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
-        if (urlInput) urlInput.value = "";
-        if (notesInput) notesInput.value = "";
+        link.setAttribute("data-bound-meeting-link", "1");
+        link.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
 
-        openModal("meetingModal");
+          var appointmentId = link.getAttribute("data-appointment-id") || "";
+          var srcType = link.getAttribute("data-src-type") || "A";
+
+          var mid = document.getElementById("mid");
+          var meetingDate = document.getElementById("meetingDate");
+          var meetingTime = document.getElementById("meetingTime");
+          var meetingTitle = document.getElementById("meetingTitle");
+          var meetingCustomer = document.getElementById("meetingCustomer");
+          var meetingPhone = document.getElementById("meetingPhone");
+          var urlInput = document.getElementById("mURL");
+          var notesInput = document.getElementById("mNotes");
+
+          if (mid) {
+            mid.textContent = appointmentId;
+            mid.setAttribute("data-appointment-id", appointmentId);
+            mid.setAttribute("data-src-type", srcType);
+          }
+          if (meetingDate) meetingDate.textContent = link.getAttribute("data-date") || "";
+          if (meetingTime) meetingTime.textContent = link.getAttribute("data-time") || "";
+          if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
+          if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
+          if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
+          if (urlInput) urlInput.value = "";
+          if (notesInput) notesInput.value = "";
+
+          openModal("meetingModal");
+        });
       });
-    });
+    }
 
     var saveMeeting = document.getElementById("saveMeeting");
     if (saveMeeting) {
@@ -1177,7 +1391,7 @@
                 return;
               }
               closeModal("serviceRouteModal");
-              window.location.reload();
+              queueLiveSync();
             });
           return;
         }
@@ -1200,11 +1414,15 @@
                 return;
               }
               closeModal("serviceRouteModal");
-              window.location.reload();
+              queueLiveSync();
             });
         }
       });
     }
+
+    bindAccordionRows();
+    bindProviderActionButtons();
+    bindMeetingLinks();
   })();
     </script>
 }
