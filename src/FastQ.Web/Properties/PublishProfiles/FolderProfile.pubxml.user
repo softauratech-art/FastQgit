@@ -3,7 +3,7 @@
 <Project>
   <PropertyGroup>
     <_PublishTargetUrl>C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Web\bin\app.publish\</_PublishTargetUrl>
-    <History>True|2026-02-17T16:01:06.2435363Z||;False|2026-02-17T21:58:54.2967732+06:00||;</History>
+    <History>True|2026-02-18T20:28:01.6831498Z||;True|2026-02-17T22:01:06.2435363+06:00||;False|2026-02-17T21:58:54.2967732+06:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
   <ItemGroup>
@@ -14,19 +14,19 @@
       <publishTime>02/06/2026 06:27:04</publishTime>
     </File>
     <File Include="bin/FastQ.Data.dll">
-      <publishTime>02/17/2026 21:54:56</publishTime>
+      <publishTime>02/19/2026 02:27:38</publishTime>
     </File>
     <File Include="bin/FastQ.Data.dll.config">
       <publishTime>02/06/2026 06:27:04</publishTime>
     </File>
     <File Include="bin/FastQ.Data.pdb">
-      <publishTime>02/17/2026 21:54:56</publishTime>
+      <publishTime>02/19/2026 02:27:38</publishTime>
     </File>
     <File Include="bin/FastQ.Web.dll">
-      <publishTime>02/17/2026 22:01:05</publishTime>
+      <publishTime>02/19/2026 02:27:40</publishTime>
     </File>
     <File Include="bin/FastQ.Web.pdb">
-      <publishTime>02/17/2026 22:01:05</publishTime>
+      <publishTime>02/19/2026 02:27:40</publishTime>
     </File>
     <File Include="bin/Microsoft.AspNet.SignalR.Core.dll">
       <publishTime>02/06/2026 06:27:04</publishTime>
@@ -207,6 +207,9 @@
     </File>
     <File Include="Views/Shared/_Layout.cshtml">
       <publishTime>02/11/2026 22:13:01</publishTime>
+    </File>
+    <File Include="Views/web.config">
+      <publishTime>02/06/2026 15:39:34</publishTime>
     </File>
     <File Include="Views/_ViewStart.cshtml">
       <publishTime>02/06/2026 06:27:04</publishTime>
