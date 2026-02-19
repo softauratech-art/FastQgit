@@ -7,6 +7,7 @@ namespace FastQ.Data.Repositories
     public interface IQueueRepository
     {
         Queue Get(long id);
+        Queue GetQueueDetails(long id);
         void Add(Queue queue);
         void Update(Queue queue);
 
@@ -15,4 +16,3 @@ namespace FastQ.Data.Repositories
         IList<Tuple<long, string>> ListServicesByQueue(long queueId);
     }
 }
-

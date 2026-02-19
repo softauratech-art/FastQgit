@@ -18,6 +18,24 @@ namespace FastQ.Data.Db
             if (id <= 0) return null;
 
             using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn,
+                @"SELECT QUEUE_ID, NAME, NAME_ES, NAME_CP, LOCATION_ID, ACTIVEFLAG, EMP_ONLY, HIDE_IN_KIOSK, HIDE_IN_MONITOR, LEAD_TIME_MIN, LEAD_TIME_MAX, HAS_GUIDELINES, HAS_UPLOADS
+                  FROM VALIDQUEUES
+                  WHERE QUEUE_ID = :queueId"))
+            {
+                DataAccess.AddParam(cmd, "queueId", id, DbType.Int64);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    return reader.Read() ? MapQueue(reader) : null;
+                }
+            }
+        }
+
+        public Queue GetQueueDetails(long id)
+        {
+            if (id <= 0) return null;
+
+            using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUE_DETAILS"))
             {
                 DataAccess.AddParam(cmd, "p_queueid", id, DbType.Int64);
