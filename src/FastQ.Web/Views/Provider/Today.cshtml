@@ -1209,13 +1209,16 @@
     window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
       console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, currentProviderId);
       var normalized = (status || "").toString().toLowerCase();
+      var isSelf = (providerId || "").toString().toLowerCase() === (currentProviderId || "").toString().toLowerCase();
       var hasRow = !!document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
       applyLiveStatus(appointmentId, status);
       if (normalized === "inservice" || normalized === "completed" || normalized === "cancelled" || normalized === "transferredout" || normalized === "scheduled" || normalized === "arrived") {
-        lockAppointment(appointmentId);
-        document.querySelectorAll(".table-filters").forEach(function (container) {
-          applyTableFilters(container);
-        });
+        if (!isSelf) {
+          lockAppointment(appointmentId);
+          document.querySelectorAll(".table-filters").forEach(function (container) {
+            applyTableFilters(container);
+          });
+        }
       }
       // New rows (e.g. transfer target) may not exist locally yet.
       if (!hasRow && (normalized === "scheduled" || normalized === "arrived")) {
