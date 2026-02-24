@@ -50,7 +50,7 @@ namespace FastQ.Data.Db
             }
         }
 
-        public long TransferSource(char srcType, long srcId, long targetQueueId, long? targetServiceId, char targetKind, DateTime? targetDateUtc, string refValue, string notes, string stampUser)
+        public long TransferSource(char srcType, long srcId, long targetQueueId, long? targetServiceId, char targetKind, DateTime? targetDateUtc, string refValue, string notes, string stampUser, string sourceAction)
         {
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS.TRANSFER_SOURCE"))
@@ -64,6 +64,7 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_ref_value", refValue, DbType.String);
                 DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
                 DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
+                DataAccess.AddParam(cmd, "p_source_action", sourceAction, DbType.String);
 
                 var outNewId = cmd.CreateParameter();
                 outNewId.ParameterName = "p_new_src_id";

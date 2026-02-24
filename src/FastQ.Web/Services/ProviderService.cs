@@ -267,7 +267,7 @@ namespace FastQ.Web.Services
             {
                 "arrive" => QueueCustomer(srcType, appointmentId, providerId),
                 "begin" => BeginService(srcType, appointmentId, providerId),
-                "end" => EndService(srcType, appointmentId),
+                "end" => EndService(srcType, appointmentId, providerId),
                 "remove" => RemoveAppointment(srcType, appointmentId, providerId),
                 _ => Result.Fail("Unknown action")
             };
@@ -336,7 +336,8 @@ namespace FastQ.Web.Services
                 request.TargetDateUtc,
                 request.RefValue,
                 request.Notes,
-                stampUser);
+                stampUser,
+                "TRANSFER");
 
             if (sourceAppt != null)
             {
@@ -392,6 +393,7 @@ namespace FastQ.Web.Services
                 if (appt != null)
                 {
                     appt.Status = AppointmentStatus.Completed;
+                    appt.ProviderId = request.StampUser;
                     appt.UpdatedUtc = _clock.UtcNow;
                     appt.StampDateUtc = _clock.UtcNow;
                     _rt.AppointmentChanged(appt);
@@ -496,7 +498,7 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private Result EndService(char srcType, long appointmentId)
+        private Result EndService(char srcType, long appointmentId, string providerId)
         {
             var upperSrc = char.ToUpperInvariant(srcType);
             Appointment appt = null;
@@ -510,10 +512,12 @@ namespace FastQ.Web.Services
                 return Result.Fail("Appointment must be in service to end service.");
 
             var now = _clock.UtcNow;
-            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", "web", null);
+            var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", stampUser, null);
             if (upperSrc == 'A' && appt != null)
             {
                 appt.Status = AppointmentStatus.Completed;
+                appt.ProviderId = providerId;
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
