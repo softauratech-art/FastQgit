@@ -64,7 +64,6 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_ref_value", refValue, DbType.String);
                 DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
                 DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
-                DataAccess.AddParam(cmd, "p_source_action", sourceAction, DbType.String);
 
                 var outNewId = cmd.CreateParameter();
                 outNewId.ParameterName = "p_new_src_id";
@@ -78,6 +77,8 @@ namespace FastQ.Data.Db
                 outMsg.DbType = DbType.String;
                 outMsg.Size = 4000;
                 cmd.Parameters.Add(outMsg);
+
+                DataAccess.AddParam(cmd, "p_source_action", sourceAction, DbType.String);
 
                 cmd.ExecuteNonQuery();
 

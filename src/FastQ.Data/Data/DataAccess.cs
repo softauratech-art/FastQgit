@@ -39,6 +39,7 @@ namespace FastQ.Data
             var cmd = conn.CreateCommand();
             cmd.CommandText = procedureName;
             cmd.CommandType = CommandType.StoredProcedure;
+            TrySetBindByName(cmd);
             return cmd;
         }
 
@@ -84,6 +85,16 @@ namespace FastQ.Data
             var value = Enum.Parse(enumType, "RefCursor");
             prop.SetValue(parameter, value, null);
         }
+
+        private static void TrySetBindByName(DbCommand command)
+        {
+            var prop = command.GetType().GetProperty("BindByName");
+            if (prop == null || !prop.CanWrite || prop.PropertyType != typeof(bool))
+            {
+                return;
+            }
+
+            prop.SetValue(command, true, null);
+        }
     }
 }
-
