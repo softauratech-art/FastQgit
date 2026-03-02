@@ -140,6 +140,87 @@
             color: #5b5b5b;
         }
 
+        .route-modal .modal {
+            width: min(680px, 92vw);
+            border-radius: 10px;
+            background: #f8fafc;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .route-modal .modal-header {
+            padding: 16px 18px 6px;
+        }
+
+        .route-modal .modal-title {
+            font-size: 20px;
+            color: #1f2937;
+        }
+
+        .route-modal .modal-body {
+            padding: 0 18px 12px;
+            gap: 12px;
+        }
+
+        .route-form-row {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .route-form-row label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .route-form-row .route-input,
+        .route-form-row select,
+        .route-form-row textarea,
+        .route-form-row input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #cbd5f5;
+            background: #ffffff;
+            font-size: 13px;
+            color: #1f2937;
+        }
+
+        .route-form-row textarea {
+            min-height: 96px;
+            resize: vertical;
+        }
+
+        .route-modal .modal-footer {
+            padding: 8px 18px 16px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .route-modal .modal-footer .btn.primary {
+            background: #19a24b;
+            border-color: #19a24b;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .route-modal .modal-footer .btn.primary:hover {
+            background: #15803d;
+            border-color: #15803d;
+        }
+
+        .route-modal .modal-footer .btn.ghost {
+            color: #3b82f6;
+        }
+
+        @media (max-width: 640px) {
+            .route-form-row {
+                grid-template-columns: 1fr;
+                align-items: start;
+            }
+        }
+
         .table-filters {
             display: flex;
             flex-wrap: wrap;
@@ -177,6 +258,15 @@
 
         .is-hidden {
             display: none;
+        }
+
+        .table-name-label {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #4b5563;
         }
     </style>
 }
@@ -293,6 +383,7 @@
                 <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
             </div>*@
 
+        <div class="table-name-label">Table: WALKINS</div>
         <div class="table-card">
             <table class="table table-striped table-sm">
                 <thead>
@@ -396,6 +487,7 @@
                 <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
             </div>*@
 
+        <div class="table-name-label">Table: APPOINTMENTS</div>
         <div class="table-card">
             <table class="table table-striped table-sm">
                 <thead>
@@ -511,42 +603,56 @@
     </div>
 </div>
 
-<div id="serviceRouteModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
+<div id="serviceRouteModal" class="modal-backdrop route-modal" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
     <div class="modal">
         <div class="modal-header">
-            <h5 class="modal-title" id="serviceRouteModalTitle">Route Customer</h5>
+            <h5 class="modal-title" id="serviceRouteModalTitle">Transfer Appointment</h5>
             <button class="btn small ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
         </div>
         <div class="modal-body">
-            <div class="field-row">
-                <div>Target Type:</div>
-                <select id="routeTargetKind" class="filter-input">
+            <div class="route-form-row">
+                <label for="routeTargetKind">Target Type</label>
+                <select id="routeTargetKind" class="route-input">
                     <option value="W">Walkin (FCFS)</option>
                     <option value="A">Appointment</option>
                 </select>
             </div>
-            <div class="field-row">
-                <div>Queue:</div>
-                <select id="routeTargetQueueId" class="filter-input">
+            <div class="route-form-row">
+                <label for="routeTargetQueueId">Queue</label>
+                <select id="routeTargetQueueId" class="route-input">
                     <option value="">Select queue</option>
                 </select>
             </div>
-            <div class="field-row">
-                <div>Service:</div>
-                <select id="routeTargetServiceId" class="filter-input">
+            <div class="route-form-row">
+                <label for="routeTargetServiceId">Service</label>
+                <select id="routeTargetServiceId" class="route-input">
                     <option value="">Select service</option>
                 </select>
             </div>
-            <div class="field-row" id="routeDateRow">
-                <div>Target Date:</div>
-                <input id="routeTargetDate" type="date" />
+            <div class="route-form-row route-appointment-only" id="routeDateRow">
+                <label for="routeTargetDate">Target Date</label>
+                <select id="routeTargetDate" class="route-input">
+                    <option value="">Select date</option>
+                </select>
             </div>
-            <div class="field-row">
-                <div>Ref Value:</div>
-                <input id="routeRefValue" type="text" />
+            <div class="route-form-row route-appointment-only" id="routeTimeRow">
+                <label for="routeTargetTime">Target Time</label>
+                <select id="routeTargetTime" class="route-input">
+                    <option value="">Select time</option>
+                </select>
             </div>
-            <div class="field-row">
-                <div>Notes:</div>
+            <div class="route-form-row">
+                <label for="routeRefValue">Reference</label>
+                <select id="routeRefValue" class="route-input">
+                    <option value="">Select reference</option>
+                    <option value="PHONE">Phone Follow-up</option>
+                    <option value="EMAIL">Email Follow-up</option>
+                    <option value="WALKIN">Walk-in Return</option>
+                    <option value="REFERRAL">Referral</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="routeNotes">Comments</label>
                 <textarea id="routeNotes" rows="3"></textarea>
             </div>
             <input id="routeMode" type="hidden" value="" />
@@ -555,7 +661,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
-            <button class="btn primary" type="button" id="saveRoute">Submit</button>
+            <button class="btn primary" type="button" id="saveRoute">Transfer Appointment</button>
         </div>
     </div>
 </div>
@@ -691,13 +797,105 @@
       }
     }
 
-    function toggleRouteDateRow() {
-      var targetKind = document.getElementById("routeTargetKind");
-      var dateRow = document.getElementById("routeDateRow");
-      if (!targetKind || !dateRow) {
+    function setSelectValues(selectElement, values, placeholder) {
+      if (!selectElement) {
         return;
       }
-      dateRow.classList.toggle("is-hidden", targetKind.value !== "A");
+
+      selectElement.innerHTML = "";
+      var placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = placeholder;
+      selectElement.appendChild(placeholderOption);
+
+      (values || []).forEach(function (item) {
+        var option = document.createElement("option");
+        option.value = item.value;
+        option.textContent = item.label;
+        selectElement.appendChild(option);
+      });
+    }
+
+    function formatRouteDateLabel(dateValue) {
+      var labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return labels[dateValue.getDay()] + ", " + months[dateValue.getMonth()] + " " + dateValue.getDate() + ", " + dateValue.getFullYear();
+    }
+
+    function toTwoDigits(value) {
+      return value < 10 ? "0" + value : String(value);
+    }
+
+    function populateRouteDateOptions(selectedDateValue) {
+      var dateSelect = document.getElementById("routeTargetDate");
+      if (!dateSelect) {
+        return;
+      }
+
+      var base = new Date();
+      base.setHours(0, 0, 0, 0);
+      var options = [];
+      for (var i = 0; i < 31; i++) {
+        var dateValue = new Date(base.getTime());
+        dateValue.setDate(base.getDate() + i);
+        var yyyy = String(dateValue.getFullYear());
+        var mm = toTwoDigits(dateValue.getMonth() + 1);
+        var dd = toTwoDigits(dateValue.getDate());
+        options.push({
+          value: yyyy + "-" + mm + "-" + dd,
+          label: formatRouteDateLabel(dateValue)
+        });
+      }
+
+      setSelectValues(dateSelect, options, "Select date");
+      if (selectedDateValue) {
+        dateSelect.value = selectedDateValue;
+      }
+    }
+
+    function populateRouteTimeOptions(selectedTimeValue) {
+      var timeSelect = document.getElementById("routeTargetTime");
+      if (!timeSelect) {
+        return;
+      }
+
+      var options = [];
+      for (var hour = 0; hour < 24; hour++) {
+        for (var minute = 0; minute < 60; minute += 30) {
+          var hh = toTwoDigits(hour);
+          var mm = toTwoDigits(minute);
+          options.push({
+            value: hh + ":" + mm,
+            label: hh + ":" + mm
+          });
+        }
+      }
+
+      setSelectValues(timeSelect, options, "Select time");
+      if (selectedTimeValue) {
+        timeSelect.value = selectedTimeValue;
+      }
+    }
+
+    function buildRouteTargetDateTime(dateValue, timeValue) {
+      if (!dateValue) {
+        return "";
+      }
+      if (!timeValue) {
+        return dateValue;
+      }
+      return dateValue + " " + timeValue;
+    }
+
+    function toggleRouteDateRow() {
+      var targetKind = document.getElementById("routeTargetKind");
+      if (!targetKind) {
+        return;
+      }
+      var showAppointmentFields = targetKind.value === "A";
+      document.querySelectorAll(".route-appointment-only").forEach(function (row) {
+        row.classList.toggle("is-hidden", !showAppointmentFields);
+      });
     }
 
     function openRouteModal(mode, appointmentId, srcType) {
@@ -708,6 +906,7 @@
       var targetQueueId = document.getElementById("routeTargetQueueId");
       var targetServiceId = document.getElementById("routeTargetServiceId");
       var targetDate = document.getElementById("routeTargetDate");
+      var targetTime = document.getElementById("routeTargetTime");
       var refValue = document.getElementById("routeRefValue");
       var notes = document.getElementById("routeNotes");
 
@@ -721,7 +920,10 @@
       targetKind.value = srcType === "A" ? "A" : "W";
       if (targetQueueId) targetQueueId.value = "";
       if (targetServiceId) targetServiceId.value = "";
+      populateRouteDateOptions("");
+      populateRouteTimeOptions("");
       if (targetDate) targetDate.value = "";
+      if (targetTime) targetTime.value = "";
       if (refValue) refValue.value = "";
       if (notes) notes.value = "";
       toggleRouteDateRow();
@@ -1355,6 +1557,7 @@
         var targetQueueIdInput = document.getElementById("routeTargetQueueId");
         var targetServiceIdInput = document.getElementById("routeTargetServiceId");
         var targetDateInput = document.getElementById("routeTargetDate");
+        var targetTimeInput = document.getElementById("routeTargetTime");
         var refValueInput = document.getElementById("routeRefValue");
         var notesInput = document.getElementById("routeNotes");
 
@@ -1365,15 +1568,17 @@
         var targetQueueId = targetQueueIdInput ? targetQueueIdInput.value : "";
         var targetServiceId = targetServiceIdInput ? targetServiceIdInput.value : "";
         var targetDate = targetDateInput ? targetDateInput.value : "";
+        var targetTime = targetTimeInput ? targetTimeInput.value : "";
         var refValue = refValueInput ? refValueInput.value : "";
         var notes = notesInput ? notesInput.value : "";
+        var targetDateTime = buildRouteTargetDateTime(targetDate, targetTime);
 
         if (!appointmentId || !srcType || !targetQueueId) {
           window.alert("Source and target queue are required.");
           return;
         }
-        if (targetKind === "A" && !targetDate) {
-          window.alert("Target date is required for appointment target.");
+        if (targetKind === "A" && (!targetDate || !targetTime)) {
+          window.alert("Target date and time are required for appointment target.");
           return;
         }
 
@@ -1384,7 +1589,7 @@
               targetQueueId: targetQueueId,
               targetKind: targetKind,
               targetServiceId: targetServiceId || "",
-              targetDate: targetDate || "",
+              targetDate: targetDateTime || "",
               refValue: refValue || "",
               notes: notes || ""
             })
@@ -1407,7 +1612,7 @@
               targetQueueId: targetQueueId,
               targetServiceId: targetServiceId || "",
               targetKind: targetKind,
-              targetDate: targetDate || "",
+              targetDate: targetDateTime || "",
               refValue: refValue || "",
               notes: notes || ""
             })

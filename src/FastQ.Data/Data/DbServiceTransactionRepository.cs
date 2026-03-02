@@ -60,7 +60,7 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_target_queue_id", targetQueueId, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_target_service_id", targetServiceId.HasValue ? (object)targetServiceId.Value : DBNull.Value, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_target_kind", targetKind.ToString(), DbType.String);
-                DataAccess.AddParam(cmd, "p_target_date", targetDateUtc.HasValue ? (object)targetDateUtc.Value.Date : DBNull.Value, DbType.DateTime);
+                DataAccess.AddParam(cmd, "p_target_date", targetDateUtc.HasValue ? (object)targetDateUtc.Value : DBNull.Value, DbType.DateTime);
                 DataAccess.AddParam(cmd, "p_ref_value", refValue, DbType.String);
                 DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
                 DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
@@ -106,7 +106,7 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_target_queue_id", targetQueueId.HasValue ? (object)targetQueueId.Value : DBNull.Value, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_target_service_id", targetServiceId.HasValue ? (object)targetServiceId.Value : DBNull.Value, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_target_kind", targetKind.HasValue ? targetKind.Value.ToString() : (object)DBNull.Value, DbType.String);
-                DataAccess.AddParam(cmd, "p_target_date", targetDateUtc.HasValue ? (object)targetDateUtc.Value.Date : DBNull.Value, DbType.DateTime);
+                DataAccess.AddParam(cmd, "p_target_date", targetDateUtc.HasValue ? (object)targetDateUtc.Value : DBNull.Value, DbType.DateTime);
                 DataAccess.AddParam(cmd, "p_ref_value", refValue, DbType.String);
                 DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
                 DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);

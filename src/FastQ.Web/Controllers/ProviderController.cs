@@ -196,11 +196,25 @@ namespace FastQ.Web.Controllers
             DateTime parsedTargetDate;
             DateTime? targetDateUtc = DateTime.TryParseExact(
                 (targetDate ?? string.Empty).Trim(),
-                new[] { "yyyy-MM-dd", "yyyy-M-d", "MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy" },
+                new[]
+                {
+                    "yyyy-MM-dd HH:mm",
+                    "yyyy-M-d H:mm",
+                    "yyyy-MM-dd",
+                    "yyyy-M-d",
+                    "MM/dd/yyyy HH:mm",
+                    "M/d/yyyy H:mm",
+                    "MM/dd/yyyy",
+                    "M/d/yyyy",
+                    "dd/MM/yyyy HH:mm",
+                    "d/M/yyyy H:mm",
+                    "dd/MM/yyyy",
+                    "d/M/yyyy"
+                },
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
                 out parsedTargetDate)
-                ? parsedTargetDate.Date
+                ? parsedTargetDate
                 : (DateTime?)null;
 
             var req = new ProviderService.TransferRequest
@@ -248,11 +262,25 @@ namespace FastQ.Web.Controllers
             DateTime parsedTargetDate;
             DateTime? targetDateUtc = DateTime.TryParseExact(
                 (targetDate ?? string.Empty).Trim(),
-                new[] { "yyyy-MM-dd", "yyyy-M-d", "MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy" },
+                new[]
+                {
+                    "yyyy-MM-dd HH:mm",
+                    "yyyy-M-d H:mm",
+                    "yyyy-MM-dd",
+                    "yyyy-M-d",
+                    "MM/dd/yyyy HH:mm",
+                    "M/d/yyyy H:mm",
+                    "MM/dd/yyyy",
+                    "M/d/yyyy",
+                    "dd/MM/yyyy HH:mm",
+                    "d/M/yyyy H:mm",
+                    "dd/MM/yyyy",
+                    "d/M/yyyy"
+                },
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
                 out parsedTargetDate)
-                ? parsedTargetDate.Date
+                ? parsedTargetDate
                 : (DateTime?)null;
 
             var req = new ProviderService.CloseAndAddRequest
