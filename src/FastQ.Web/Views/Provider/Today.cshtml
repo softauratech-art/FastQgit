@@ -287,11 +287,11 @@
 
         .table-name-label {
             margin: 0 0 8px;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.04em;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
-            color: #4b5563;
+            color: #1f2937;
         }
     </style>
 }
@@ -344,6 +344,10 @@
         </div>*@
 
     <div class="table-filters" data-table-filter="walkins">
+        <div class="filter-group">
+            <label for="customerNameSearch">Customer</label>
+            <input id="customerNameSearch" class="filter-input" type="search" data-filter="customer" placeholder="Search customer name" />
+        </div>
         <div class="filter-group">
             <label for="walkinsStatus">Status</label>
             <select id="walkinsStatus" class="filter-input" data-filter="status">
@@ -408,7 +412,7 @@
                 <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
             </div>*@
 
-        <div class="table-name-label">Table: WALKINS</div>
+        <div class="table-name-label">Walkins</div>
         <div class="table-card">
             <table class="table table-striped table-sm">
                 <thead>
@@ -439,7 +443,7 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate">
+                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
                                 <td>@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -512,7 +516,7 @@
                 <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
             </div>*@
 
-        <div class="table-name-label">Table: APPOINTMENTS</div>
+        <div class="table-name-label">Appointments</div>
         <div class="table-card">
             <table class="table table-striped table-sm">
                 <thead>
@@ -543,7 +547,7 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate">
+                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
                                 <td>@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -1376,14 +1380,21 @@
         return;
       }
 
+      var customerInput = container.querySelector('[data-filter="customer"]');
       var statusInput = container.querySelector('[data-filter="status"]');
       var startInput = container.querySelector('[data-filter="start"]');
       var endInput = container.querySelector('[data-filter="end"]');
+      var customerValue = (customerInput && customerInput.value ? customerInput.value : "").toLowerCase().trim();
       var statusValue = (statusInput && statusInput.value ? statusInput.value : "").toLowerCase();
       var startValue = startInput && startInput.value ? startInput.value : "";
       var endValue = endInput && endInput.value ? endInput.value : "";
-      var table = container.parentElement ? container.parentElement.querySelector("table") : null;
-      if (!table) {
+      var tables = container.parentElement
+        ? Array.prototype.slice.call(container.parentElement.querySelectorAll("table"))
+        : [];
+      if (!tables.length) {
+        tables = Array.prototype.slice.call(document.querySelectorAll(".table-card table"));
+      }
+      if (!tables.length) {
         return;
       }
 
@@ -1391,41 +1402,47 @@
       startValue = startInput && startInput.value ? startInput.value : "";
       endValue = endInput && endInput.value ? endInput.value : "";
 
-      table.querySelectorAll("tbody tr.accordion-toggle").forEach(function (row) {
-        var rowStatus = (row.getAttribute("data-status") || "").toLowerCase();
-        var rowDate = row.getAttribute("data-date") || "";
-        var match = true;
+      tables.forEach(function (table) {
+        table.querySelectorAll("tbody tr.accordion-toggle").forEach(function (row) {
+          var rowStatus = (row.getAttribute("data-status") || "").toLowerCase();
+          var rowDate = row.getAttribute("data-date") || "";
+          var rowCustomer = (row.getAttribute("data-customer") || "").toLowerCase();
+          var match = true;
 
-        if (statusValue && statusValue !== "all" && rowStatus !== statusValue) {
-          match = false;
-        }
-        if (startValue && rowDate < startValue) {
-          match = false;
-        }
-        if (endValue && rowDate > endValue) {
-          match = false;
-        }
+          if (customerValue && rowCustomer.indexOf(customerValue) === -1) {
+            match = false;
+          }
+          if (statusValue && statusValue !== "all" && rowStatus !== statusValue) {
+            match = false;
+          }
+          if (startValue && rowDate < startValue) {
+            match = false;
+          }
+          if (endValue && rowDate > endValue) {
+            match = false;
+          }
 
-        row.classList.toggle("is-hidden", !match);
-        var apptId = row.getAttribute("data-appointment-id");
-        if (apptId) {
-          document.querySelectorAll('.row-actions[data-appointment-id="' + apptId + '"]').forEach(function (detail) {
-            detail.classList.toggle("is-hidden", !match);
-            if (!match) {
-              detail.classList.remove("is-open");
-            }
-          });
+          row.classList.toggle("is-hidden", !match);
+          var apptId = row.getAttribute("data-appointment-id");
+          if (apptId) {
+            document.querySelectorAll('.row-actions[data-appointment-id="' + apptId + '"]').forEach(function (detail) {
+              detail.classList.toggle("is-hidden", !match);
+              if (!match) {
+                detail.classList.remove("is-open");
+              }
+            });
+          }
+        });
+
+        var visibleRows = Array.prototype.filter.call(
+          table.querySelectorAll("tbody tr.accordion-toggle"),
+          function (row) { return !row.classList.contains("is-hidden"); }
+        );
+        var emptyRow = table.querySelector("tbody tr.table-empty");
+        if (emptyRow) {
+          emptyRow.classList.toggle("is-hidden", visibleRows.length > 0);
         }
       });
-
-      var visibleRows = Array.prototype.filter.call(
-        table.querySelectorAll("tbody tr.accordion-toggle"),
-        function (row) { return !row.classList.contains("is-hidden"); }
-      );
-      var emptyRow = table.querySelector("tbody tr.table-empty");
-      if (emptyRow) {
-        emptyRow.classList.toggle("is-hidden", visibleRows.length > 0);
-      }
     }
 
     function bindAccordionRows() {
@@ -1505,9 +1522,13 @@
       var reset = container.querySelector("[data-filter-reset]");
       if (reset) {
         reset.addEventListener("click", function () {
+          var customerInput = container.querySelector('[data-filter="customer"]');
           var statusInput = container.querySelector('[data-filter="status"]');
           var startInput = container.querySelector('[data-filter="start"]');
           var endInput = container.querySelector('[data-filter="end"]');
+          if (customerInput) {
+            customerInput.value = "";
+          }
           if (statusInput) {
             statusInput.value = "all";
           }
