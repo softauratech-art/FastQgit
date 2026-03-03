@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using FastQ.Data.Entities;
@@ -19,55 +20,7 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public ActionResult Dashboard()
         {
-            return View(new AdminDashboardViewModel()); 
-            
-            
-            
-            var locations = _service.ListLocations();
-            var location = locations.FirstOrDefault();
-            if (location == null)
-                return View(new AdminDashboardViewModel());
-
-            var queues = _service.ListQueuesByLocation(location.Id).ToList();
-            var customers = _service.ListAllCustomers().ToList();
-            var appointments = _service.ListAppointmentsByLocation(location.Id).ToList();
-
-            var queueMap = queues.ToDictionary(q => q.Id, q => q);
-            var customerMap = customers.ToDictionary(c => c.Id, c => c);
-
-            var rows = appointments.Select(a =>
-            {
-                queueMap.TryGetValue(a.QueueId, out var queue);
-                customerMap.TryGetValue(a.CustomerId, out var customer);
-
-                var localTime = a.ScheduledForUtc.ToLocalTime();
-                var contact = customer != null && customer.SmsOptIn ? "Online" : "In-Person";
-
-                return new AdminAppointmentRow
-                {
-                    AppointmentId = a.Id,
-                    ScheduledForUtc = a.ScheduledForUtc,
-                    StartTimeText = localTime.ToString("h:mm tt"),
-                    StartDateText = localTime.ToString("MMM dd, yyyy"),
-                    QueueName = queue?.Name ?? "Unknown Queue",
-                    ServiceType = queue?.Name != null ? $"Questions: {queue.Name}" : "Questions: General",
-                    CustomerName = customer?.Name ?? "Unknown",
-                    Phone = customer?.Phone ?? "-",
-                    Status = a.Status,
-                    StatusText = a.Status.ToString().ToUpperInvariant(),
-                    ContactMethod = contact
-                };
-            }).OrderBy(r => r.ScheduledForUtc).ToList();
-
-            var today = DateTime.UtcNow.Date;
-            var model = new AdminDashboardViewModel
-            {
-                LocationName = location.Name,
-                TodayAppointments = rows.Where(r => r.ScheduledForUtc.Date == today).ToList(),
-                UpcomingAppointments = rows.Where(r => r.ScheduledForUtc.Date > today).ToList()
-            };
-
-            return View(model);
+            return View(BuildDashboardModel());
         }
 
         [HttpGet]
@@ -146,6 +99,65 @@ namespace FastQ.Web.Controllers
             var hours = staleHours <= 0 ? 12 : staleHours;
             var closed = _service.CloseStaleScheduledAppointments(hours);
             return Json(new { ok = true, closed = closed });
+        }
+
+        private AdminDashboardViewModel BuildDashboardModel()
+        {
+            var location = _service.GetPrimaryLocation();
+            if (location == null)
+            {
+                return new AdminDashboardViewModel();
+            }
+
+            var rows = BuildAppointmentRows(location);
+            var today = DateTime.Today;
+
+            return new AdminDashboardViewModel
+            {
+                LocationId = location.Id,
+                LocationName = location.Name,
+                TodayAppointments = rows.Where(r => r.ScheduledForLocal.Date == today).ToList(),
+                UpcomingAppointments = rows.Where(r => r.ScheduledForLocal.Date > today).ToList()
+            };
+        }
+
+        private IList<AdminAppointmentRow> BuildAppointmentRows(Location location)
+        {
+            var queues = _service.ListQueuesByLocation(location.Id).ToDictionary(q => q.Id, q => q);
+            var customers = _service.ListAllCustomers().ToDictionary(c => c.Id, c => c);
+            var appointments = _service.ListAppointmentsByLocation(location.Id);
+
+            return appointments
+                .Select(a =>
+                {
+                    queues.TryGetValue(a.QueueId, out var queue);
+                    customers.TryGetValue(a.CustomerId, out var customer);
+
+                    var localTime = a.ScheduledForUtc.ToLocalTime();
+                    var contact = string.IsNullOrWhiteSpace(a.ContactType)
+                        ? (customer != null && customer.SmsOptIn ? "Virtual" : "In-Person")
+                        : a.ContactType;
+
+                    return new AdminAppointmentRow
+                    {
+                        AppointmentId = a.Id,
+                        ScheduledForUtc = a.ScheduledForUtc,
+                        ScheduledForLocal = localTime,
+                        StartTimeText = localTime.ToString("h:mm tt"),
+                        StartDateText = localTime.ToString("MMM dd, yyyy"),
+                        QueueName = queue?.Name ?? "Unknown Queue",
+                        ServiceType = queue?.Name ?? "General",
+                        CustomerName = customer?.Name ?? "Unknown",
+                        Phone = customer?.Phone ?? "-",
+                        Status = a.Status,
+                        StatusText = a.Status.ToString().ToUpperInvariant(),
+                        ContactMethod = contact,
+                        Notes = string.IsNullOrWhiteSpace(a.MoreInfo) ? "No notes added." : a.MoreInfo,
+                        MeetingUrl = a.MeetingUrl
+                    };
+                })
+                .OrderBy(r => r.ScheduledForLocal)
+                .ToList();
         }
     }
 }

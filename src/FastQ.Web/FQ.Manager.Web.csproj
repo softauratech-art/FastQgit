@@ -164,6 +164,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Attributes\AuthorizeUsers.cs" />
     <Compile Include="Controllers\AdminController.cs" />
+    <Compile Include="Controllers\CalendarController.cs" />
     <Compile Include="Controllers\Admin\QueueController.cs" />
     <Compile Include="Controllers\Admin\UserController.cs" />
     <Compile Include="Controllers\CustomerController.cs" />
@@ -186,6 +187,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AdminService.cs" />
     <Compile Include="Services\AuthService.cs" />
+    <Compile Include="Services\CalendarService.cs" />
     <Compile Include="Services\CustomerService.cs" />
     <Compile Include="Services\IRealtimeNotifier.cs" />
     <Compile Include="Services\ProviderService.cs" />
@@ -203,6 +205,7 @@
     <Content Include="Scripts\jquery.signalR-2.4.3.js" />
     <Content Include="Scripts\jquery.signalR-2.4.3.min.js" />
     <Content Include="Scripts\table-sortable.js" />
+    <Content Include="Views\Admin\Calendar.cshtml" />
     <Content Include="Views\Admin\Dashboard.cshtml" />
     <Content Include="Views\Admin\Queue\List.cshtml" />
     <Content Include="Views\Admin\Queue\ManageQueue.cshtml" />

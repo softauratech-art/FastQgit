@@ -2,6 +2,7 @@
 @{
     Layout = null;
     var providerTodayUrl = Url.Action("Today", "Provider");
+    var adminCalendarUrl = Url.Action("Index", "Calendar");
 }
 <!DOCTYPE html>
 <html>
@@ -106,7 +107,7 @@
                         <span class="nav-text">My Queues</span>
                     </a>
 
-                    <a class="nav-link" href="@providerTodayUrl">
+                    <a class="nav-link" href="@adminCalendarUrl">
                         <i class="bi bi-calendar"></i>
                         <span class="nav-text">Calendar</span>
                     </a>
