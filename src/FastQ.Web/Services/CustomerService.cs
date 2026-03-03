@@ -128,6 +128,113 @@ namespace FastQ.Web.Services
             return Result<Appointment>.Success(appt);
         }
 
+        public Result<Appointment> CreateScheduled(
+            long queueId,
+            string serviceId,
+            string refValue,
+            string customerName,
+            string phone,
+            string contactType,
+            DateTime scheduledForUtc,
+            string notes,
+            string meetingUrl,
+            string stampUser)
+        {
+            if (queueId <= 0)
+                return Result<Appointment>.Fail("Queue is required.");
+            if (string.IsNullOrWhiteSpace(customerName))
+                return Result<Appointment>.Fail("Customer name is required.");
+            if (string.IsNullOrWhiteSpace(phone))
+                return Result<Appointment>.Fail("Phone is required.");
+
+            var queue = _queues.Get(queueId);
+            if (queue == null) return Result<Appointment>.Fail("Queue not found.");
+
+            var now = _clock.UtcNow;
+            var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
+            var customer = GetOrCreateCustomer(customerName, phone, !string.IsNullOrWhiteSpace(meetingUrl), user, now);
+
+            var appt = new Appointment
+            {
+                Id = 0,
+                LocationId = queue.LocationId,
+                QueueId = queueId,
+                CustomerId = customer.Id,
+                ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
+                RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
+                MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+                MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
+                Status = AppointmentStatus.Scheduled,
+                CreatedBy = user,
+                StampUser = user,
+                CreatedOnUtc = now,
+                StampDateUtc = now,
+                CreatedUtc = now,
+                UpdatedUtc = now
+            };
+            appt.ScheduledForUtc = scheduledForUtc;
+
+            _appts.Add(appt);
+            _rt.AppointmentChanged(appt);
+            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+
+            return Result<Appointment>.Success(appt);
+        }
+
+        public Result<long> CreateWalkin(
+            long queueId,
+            string serviceId,
+            string refValue,
+            string customerName,
+            string phone,
+            string contactType,
+            string notes,
+            string stampUser)
+        {
+            if (queueId <= 0)
+                return Result<long>.Fail("Queue is required.");
+            if (string.IsNullOrWhiteSpace(customerName))
+                return Result<long>.Fail("Customer name is required.");
+            if (string.IsNullOrWhiteSpace(phone))
+                return Result<long>.Fail("Phone is required.");
+
+            var queue = _queues.Get(queueId);
+            if (queue == null) return Result<long>.Fail("Queue not found.");
+
+            var now = _clock.UtcNow;
+            var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
+            var customer = GetOrCreateCustomer(customerName, phone, false, user, now);
+
+            var walkin = new Appointment
+            {
+                Id = 0,
+                LocationId = queue.LocationId,
+                QueueId = queueId,
+                CustomerId = customer.Id,
+                ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
+                RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
+                MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+                Status = AppointmentStatus.Arrived,
+                CreatedBy = user,
+                StampUser = user,
+                CreatedOnUtc = now,
+                StampDateUtc = now,
+                CreatedUtc = now,
+                UpdatedUtc = now
+            };
+            walkin.ScheduledForUtc = now;
+
+            var newId = _appts.AddWalkin(walkin);
+            _rt.AppointmentChanged(walkin);
+            _rt.QueueChanged(walkin.LocationId, walkin.QueueId);
+
+            return Result<long>.Success(newId);
+        }
+
         public Result Cancel(long appointmentId)
         {
             var appt = _appts.Get(appointmentId);
@@ -180,6 +287,41 @@ namespace FastQ.Web.Services
             if (idx >= 0) snapshot.PositionInQueue = idx + 1;
 
             return snapshot;
+        }
+
+        private Customer GetOrCreateCustomer(string name, string phone, bool smsOptIn, string stampUser, DateTime now)
+        {
+            var customer = _customers.GetByPhone(phone);
+            if (customer == null)
+            {
+                customer = new Customer
+                {
+                    Id = 0,
+                    Phone = phone.Trim(),
+                    Name = (name ?? string.Empty).Trim(),
+                    SmsOptIn = smsOptIn,
+                    ActiveFlag = true,
+                    CreatedUtc = now,
+                    UpdatedUtc = now,
+                    StampDateUtc = now,
+                    StampUser = stampUser
+                };
+                customer.Email = BuildPlaceholderEmail(customer);
+                _customers.Add(customer);
+                return customer;
+            }
+
+            customer.SmsOptIn = smsOptIn;
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                customer.Name = name.Trim();
+            }
+            customer.Phone = phone.Trim();
+            customer.UpdatedUtc = now;
+            customer.StampDateUtc = now;
+            customer.StampUser = stampUser;
+            _customers.Update(customer);
+            return customer;
         }
 
         private static string BuildPlaceholderEmail(Customer customer)

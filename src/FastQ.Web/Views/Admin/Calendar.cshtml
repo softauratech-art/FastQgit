@@ -486,7 +486,10 @@
             <button class="btn small ghost" type="button" id="calendarTodayBtn">Today</button>
         </div>
     </div>
-    <button type="button" class="btn secondary" data-modal-open="addAppointmentModal">Add Appointment</button>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn secondary" data-modal-open="addAppointmentModal">Add Appointment</button>
+        <button type="button" class="btn ghost" data-modal-open="addWalkinModal">Add Walk-In</button>
+    </div>
 </div>
 
 <div class="calendar-shell">
@@ -620,11 +623,23 @@
                     </div>
 
                     <div class="calendar-field">
+                        <label for="serviceId">Service</label>
+                        <select id="serviceId" name="serviceId">
+                            <option value="">Select service</option>
+                        </select>
+                    </div>
+
+                    <div class="calendar-field">
                         <label for="contactType">Contact Type</label>
                         <select id="contactType" name="contactType">
-                            <option value="In-Person">In-Person</option>
-                            <option value="Virtual">Virtual</option>
-                            <option value="Phone">Phone</option>
+                            <option value="">Select contact type</option>
+                        </select>
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="refValue">Reference</label>
+                        <select id="refValue" name="refValue">
+                            <option value="">Select reference</option>
                         </select>
                     </div>
 
@@ -663,6 +678,81 @@
             <div class="calendar-modal-footer">
                 <button type="button" class="btn ghost" data-modal-close="addAppointmentModal">Cancel</button>
                 <button type="submit" class="btn secondary">Save Appointment</button>
+            </div>
+        }
+    </div>
+</div>
+
+<div id="addWalkinModal" class="calendar-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addWalkinTitle">
+    <div class="calendar-modal">
+        <div class="calendar-modal-header">
+            <div>
+                <h3 id="addWalkinTitle">Add Walk-In</h3>
+                <div class="muted">Create a same-day queue entry directly from the calendar.</div>
+            </div>
+            <button type="button" class="btn small ghost" data-modal-close="addWalkinModal">Close</button>
+        </div>
+
+        @using (Html.BeginForm("AddWalkin", "Calendar", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="calendar-modal-body">
+                <input type="hidden" name="month" value="@Model.DisplayMonth.ToString("yyyy-MM-01")" />
+                <input type="hidden" name="selectedDate" value="@modalDate.ToString("yyyy-MM-dd")" />
+
+                <div class="calendar-form-grid">
+                    <div class="calendar-field">
+                        <label for="walkinQueueId">Queue</label>
+                        <select id="walkinQueueId" name="queueId" required>
+                            <option value="">Select a queue</option>
+                            @foreach (var queue in Model.QueueOptions)
+                            {
+                                <option value="@queue.Value">@queue.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinServiceId">Service</label>
+                        <select id="walkinServiceId" name="serviceId">
+                            <option value="">Select service</option>
+                        </select>
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinContactType">Contact Type</label>
+                        <select id="walkinContactType" name="contactType">
+                            <option value="">Select contact type</option>
+                        </select>
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinRefValue">Reference</label>
+                        <select id="walkinRefValue" name="refValue">
+                            <option value="">Select reference</option>
+                        </select>
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinCustomerName">Customer Name</label>
+                        <input id="walkinCustomerName" name="customerName" type="text" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinPhone">Phone</label>
+                        <input id="walkinPhone" name="phone" type="tel" required />
+                    </div>
+
+                    <div class="calendar-field full">
+                        <label for="walkinNotes">Notes</label>
+                        <textarea id="walkinNotes" name="notes" placeholder="Walk-in intake notes or routing context"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calendar-modal-footer">
+                <button type="button" class="btn ghost" data-modal-close="addWalkinModal">Cancel</button>
+                <button type="submit" class="btn secondary">Save Walk-In</button>
             </div>
         }
     </div>
@@ -791,8 +881,10 @@
             var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
+            var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
+            var activeRouteQueueDetails = null;
 
             function openModal(id) {
                 var modal = document.getElementById(id);
@@ -867,6 +959,81 @@
                 });
             }
 
+            function parseIsoDurationToMinutes(text) {
+                var match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/i.exec((text || "").trim());
+                if (!match) {
+                    return 0;
+                }
+                var days = parseInt(match[1] || "0", 10);
+                var hours = parseInt(match[2] || "0", 10);
+                var minutes = parseInt(match[3] || "0", 10);
+                return (((days * 24) + hours) * 60) + minutes;
+            }
+
+            function getWeekdayCode(dateValue) {
+                var day = dateValue.getDay();
+                return day === 0 ? "7" : String(day);
+            }
+
+            function isScheduleActiveOnDate(schedule, dateValue) {
+                if (!schedule || !dateValue) {
+                    return false;
+                }
+                var dateText = dateValue.toISOString().slice(0, 10);
+                var begin = (schedule.dateBegin || "").slice(0, 10);
+                var end = (schedule.dateEnd || "").slice(0, 10);
+                if (begin && dateText < begin) {
+                    return false;
+                }
+                if (end && dateText > end) {
+                    return false;
+                }
+                var weekly = (schedule.weeklySch || "").toString();
+                if (!weekly) {
+                    return true;
+                }
+                return weekly.indexOf(getWeekdayCode(dateValue)) >= 0;
+            }
+
+            function setRouteReferenceOptions(items, selectedValue) {
+                var refSelect = document.getElementById("routeRefValue");
+                if (!refSelect) {
+                    return;
+                }
+                setSelectOptions(refSelect, items || [], "Select reference");
+                if (selectedValue) {
+                    refSelect.value = selectedValue;
+                }
+            }
+
+            function populateEntryModalOptions(prefix, details) {
+                var serviceSelect = document.getElementById(prefix + "ServiceId");
+                var contactSelect = document.getElementById(prefix + "ContactType");
+                var refSelect = document.getElementById(prefix + "RefValue");
+
+                setSelectOptions(serviceSelect, details && details.services ? details.services : [], "Select service");
+                setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
+                setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
+                if (prefix === "") {
+                    syncMeetingField();
+                }
+            }
+
+            function loadEntryModalQueueDetails(prefix, queueCode) {
+                if (!queueCode) {
+                    populateEntryModalOptions(prefix, null);
+                    return Promise.resolve();
+                }
+
+                return getJson(getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode))
+                    .then(function (res) {
+                        populateEntryModalOptions(prefix, res && res.ok ? res.data : null);
+                    })
+                    .catch(function () {
+                        populateEntryModalOptions(prefix, null);
+                    });
+            }
+
             function loadRouteServices(queueCode, selectedServiceCode) {
                 var serviceSelect = document.getElementById("routeTargetServiceId");
                 if (!serviceSelect) {
@@ -874,23 +1041,39 @@
                 }
 
                 if (!queueCode) {
+                    activeRouteQueueDetails = null;
                     setSelectOptions(serviceSelect, [], "Select service");
+                    setRouteReferenceOptions([], "");
+                    populateRouteDateOptions("");
+                    populateRouteTimeOptions("");
                     return Promise.resolve();
                 }
 
-                var url = getTransferServicesUrl + "?queueId=" + encodeURIComponent(queueCode);
+                var url = getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode);
                 return getJson(url).then(function (res) {
                     if (!res || !res.ok) {
+                        activeRouteQueueDetails = null;
                         setSelectOptions(serviceSelect, [], "Select service");
+                        setRouteReferenceOptions([], "");
+                        populateRouteDateOptions("");
+                        populateRouteTimeOptions("");
                         return;
                     }
 
-                    setSelectOptions(serviceSelect, res.data || [], "Select service");
+                    activeRouteQueueDetails = res.data || null;
+                    setSelectOptions(serviceSelect, (res.data && res.data.services) || [], "Select service");
                     if (selectedServiceCode) {
                         serviceSelect.value = selectedServiceCode;
                     }
+                    setRouteReferenceOptions((res.data && res.data.refOptions) || [], "");
+                    populateRouteDateOptions("");
+                    populateRouteTimeOptions("");
                 }).catch(function () {
+                    activeRouteQueueDetails = null;
                     setSelectOptions(serviceSelect, [], "Select service");
+                    setRouteReferenceOptions([], "");
+                    populateRouteDateOptions("");
+                    populateRouteTimeOptions("");
                 });
             }
 
@@ -954,6 +1137,38 @@
                     return;
                 }
 
+                if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
+                    var options = [];
+                    var seen = {};
+                    var base = new Date();
+                    base.setHours(0, 0, 0, 0);
+                    for (var i = 0; i < 31; i++) {
+                        var dateValue = new Date(base.getTime());
+                        dateValue.setDate(base.getDate() + i);
+                        var active = activeRouteQueueDetails.schedules.some(function (schedule) {
+                            return isScheduleActiveOnDate(schedule, dateValue);
+                        });
+                        if (!active) {
+                            continue;
+                        }
+                        var value = dateValue.toISOString().slice(0, 10);
+                        if (seen[value]) {
+                            continue;
+                        }
+                        seen[value] = true;
+                        options.push({
+                            value: value,
+                            label: formatRouteDateLabel(dateValue)
+                        });
+                    }
+
+                    setSelectValues(dateSelect, options, "Select date");
+                    if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
+                        dateSelect.value = selectedDateValue;
+                    }
+                    return;
+                }
+
                 var base = new Date();
                 base.setHours(0, 0, 0, 0);
                 var options = [];
@@ -978,6 +1193,53 @@
             function populateRouteTimeOptions(selectedTimeValue) {
                 var timeSelect = document.getElementById("routeTargetTime");
                 if (!timeSelect) {
+                    return;
+                }
+
+                if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
+                    var selectedDateInput = document.getElementById("routeTargetDate");
+                    var selectedDateValue = selectedDateInput ? selectedDateInput.value : "";
+                    if (!selectedDateValue) {
+                        setSelectValues(timeSelect, [], "Select time");
+                        return;
+                    }
+
+                    var dateValue = new Date(selectedDateValue + "T00:00:00");
+                    var options = [];
+                    var seen = {};
+
+                    activeRouteQueueDetails.schedules.forEach(function (schedule) {
+                        if (!isScheduleActiveOnDate(schedule, dateValue)) {
+                            return;
+                        }
+
+                        var openMinutes = parseIsoDurationToMinutes(schedule.openTime);
+                        var closeMinutes = parseIsoDurationToMinutes(schedule.closeTime);
+                        var intervalMinutes = parseIsoDurationToMinutes(schedule.intervalTime) || 30;
+                        if (closeMinutes <= openMinutes) {
+                            return;
+                        }
+
+                        for (var minutes = openMinutes; minutes < closeMinutes; minutes += intervalMinutes) {
+                            var hh = toTwoDigits(Math.floor(minutes / 60) % 24);
+                            var mm = toTwoDigits(minutes % 60);
+                            var value = hh + ":" + mm;
+                            if (seen[value]) {
+                                continue;
+                            }
+                            seen[value] = true;
+                            options.push({
+                                value: value,
+                                label: value
+                            });
+                        }
+                    });
+
+                    options.sort(function (a, b) { return a.value.localeCompare(b.value); });
+                    setSelectValues(timeSelect, options, "Select time");
+                    if (selectedTimeValue && options.some(function (o) { return o.value === selectedTimeValue; })) {
+                        timeSelect.value = selectedTimeValue;
+                    }
                     return;
                 }
 
@@ -1248,6 +1510,8 @@
             });
 
             var contactType = document.getElementById("contactType");
+            var queueIdSelect = document.getElementById("queueId");
+            var walkinQueueIdSelect = document.getElementById("walkinQueueId");
             var meetingUrlField = document.getElementById("meetingUrlField");
             var meetingUrl = document.getElementById("meetingUrl");
 
@@ -1256,7 +1520,7 @@
                     return;
                 }
 
-                var isVirtual = contactType.value === "Virtual";
+                var isVirtual = contactType.value === "Virtual" || contactType.value === "OM";
                 meetingUrlField.style.display = isVirtual ? "flex" : "none";
                 if (meetingUrl) {
                     meetingUrl.required = isVirtual;
@@ -1269,6 +1533,26 @@
             if (contactType) {
                 contactType.addEventListener("change", syncMeetingField);
                 syncMeetingField();
+            }
+            if (queueIdSelect) {
+                queueIdSelect.addEventListener("change", function () {
+                    loadEntryModalQueueDetails("", queueIdSelect.value || "");
+                });
+                if (queueIdSelect.value) {
+                    loadEntryModalQueueDetails("", queueIdSelect.value);
+                } else {
+                    populateEntryModalOptions("", null);
+                }
+            }
+            if (walkinQueueIdSelect) {
+                walkinQueueIdSelect.addEventListener("change", function () {
+                    loadEntryModalQueueDetails("walkin", walkinQueueIdSelect.value || "");
+                });
+                if (walkinQueueIdSelect.value) {
+                    loadEntryModalQueueDetails("walkin", walkinQueueIdSelect.value);
+                } else {
+                    populateEntryModalOptions("walkin", null);
+                }
             }
 
             document.querySelectorAll("[data-end-choice]").forEach(function (btn) {
@@ -1333,8 +1617,19 @@
 
             var routeTargetKind = document.getElementById("routeTargetKind");
             if (routeTargetKind) {
-                routeTargetKind.addEventListener("change", toggleRouteDateRow);
+                routeTargetKind.addEventListener("change", function () {
+                    toggleRouteDateRow();
+                    populateRouteDateOptions("");
+                    populateRouteTimeOptions("");
+                });
                 toggleRouteDateRow();
+            }
+
+            var routeTargetDate = document.getElementById("routeTargetDate");
+            if (routeTargetDate) {
+                routeTargetDate.addEventListener("change", function () {
+                    populateRouteTimeOptions("");
+                });
             }
 
             var routeTargetQueueId = document.getElementById("routeTargetQueueId");

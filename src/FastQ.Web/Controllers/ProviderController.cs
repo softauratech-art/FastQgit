@@ -11,11 +11,13 @@ namespace FastQ.Web.Controllers
     public class ProviderController : Controller
     {
         private readonly ProviderService _service;
+        private readonly CustomerService _customerService;
         private readonly AuthService _auth;
 
         public ProviderController()
         {
             _service = new ProviderService();
+            _customerService = new CustomerService();
             _auth = new AuthService();
         }
 
@@ -152,6 +154,40 @@ namespace FastQ.Web.Controllers
             return Json(new { ok = true, data = services }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult GetQueueDetails(string queueId)
+        {
+            if (!long.TryParse(queueId, out var parsedQueueId) || parsedQueueId <= 0)
+                return Json(new { ok = false, error = "queueId is required" }, JsonRequestBehavior.AllowGet);
+
+            var details = _service.GetQueueDetailOptions(parsedQueueId);
+            if (details == null)
+                return Json(new { ok = false, error = "Queue details not found" }, JsonRequestBehavior.AllowGet);
+
+            return Json(new
+            {
+                ok = true,
+                data = new
+                {
+                    queueId = details.QueueId,
+                    services = details.Services.Select(s => new { code = s.Code, name = s.Name }).ToList(),
+                    contactOptions = details.ContactOptions.Select(c => new { code = c.Code, name = c.Name }).ToList(),
+                    refOptions = details.RefOptions.Select(r => new { code = r.Code, name = r.Name }).ToList(),
+                    schedules = details.Schedules.Select(s => new
+                    {
+                        scheduleId = s.ScheduleId,
+                        dateBegin = s.DateBegin,
+                        dateEnd = s.DateEnd,
+                        openTime = s.OpenTime,
+                        closeTime = s.CloseTime,
+                        intervalTime = s.IntervalTime,
+                        weeklySch = s.WeeklySchedule,
+                        availableResources = s.AvailableResources
+                    }).ToList()
+                }
+            }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType)
         {
@@ -174,6 +210,59 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = res.Error });
 
             return Json(new { ok = true });
+        }
+
+        [HttpPost]
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        {
+            if (!long.TryParse(queueId, out var qId))
+                return Json(new { ok = false, error = "Queue is required." });
+
+            if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                return Json(new { ok = false, error = "Appointment date is required." });
+
+            if (!TimeSpan.TryParse((startTime ?? string.Empty).Trim(), CultureInfo.InvariantCulture, out var parsedTime))
+                return Json(new { ok = false, error = "Start time is required." });
+
+            var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
+            var res = _customerService.CreateScheduled(
+                qId,
+                serviceId,
+                refValue,
+                customerName,
+                phone,
+                contactType,
+                localStart.ToUniversalTime(),
+                notes,
+                meetingUrl,
+                _auth.GetLoggedInWindowsUser());
+
+            if (!res.Ok)
+                return Json(new { ok = false, error = res.Error });
+
+            return Json(new { ok = true, id = res.Value.Id });
+        }
+
+        [HttpPost]
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string notes)
+        {
+            if (!long.TryParse(queueId, out var qId))
+                return Json(new { ok = false, error = "Queue is required." });
+
+            var res = _customerService.CreateWalkin(
+                qId,
+                serviceId,
+                refValue,
+                customerName,
+                phone,
+                contactType,
+                notes,
+                _auth.GetLoggedInWindowsUser());
+
+            if (!res.Ok)
+                return Json(new { ok = false, error = res.Error });
+
+            return Json(new { ok = true, id = res.Value });
         }
 
         [HttpPost]

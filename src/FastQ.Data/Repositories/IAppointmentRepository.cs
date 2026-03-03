@@ -8,6 +8,7 @@ namespace FastQ.Data.Repositories
     {
         Appointment Get(long id);
         void Add(Appointment appointment);
+        long AddWalkin(Appointment appointment);
         void Update(Appointment appointment);
 
         IList<Appointment> ListByQueue(long queueId);
@@ -19,4 +20,3 @@ namespace FastQ.Data.Repositories
         void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null);
     }
 }
-

@@ -38,6 +38,8 @@ namespace FastQ.Web.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult AddAppointment(
             string queueId,
+            string serviceId,
+            string refValue,
             string customerName,
             string phone,
             string contactType,
@@ -78,6 +80,8 @@ namespace FastQ.Web.Controllers
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
             var res = _service.CreateScheduledAppointment(
                 qId,
+                serviceId,
+                refValue,
                 customerName,
                 phone,
                 contactType,
@@ -97,6 +101,51 @@ namespace FastQ.Web.Controllers
             {
                 month = parsedDate.ToString("yyyy-MM-01"),
                 selectedDate = parsedDate.ToString("yyyy-MM-dd")
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult AddWalkin(
+            string queueId,
+            string serviceId,
+            string refValue,
+            string customerName,
+            string phone,
+            string contactType,
+            string notes,
+            string month,
+            string selectedDate)
+        {
+            var displayMonth = ParseMonth(month);
+            var selected = ParseDate(selectedDate) ?? displayMonth;
+
+            if (!long.TryParse(queueId, out var qId))
+            {
+                return CalendarError(displayMonth, selected, "Queue is required.");
+            }
+
+            var res = _service.CreateWalkin(
+                qId,
+                serviceId,
+                refValue,
+                customerName,
+                phone,
+                contactType,
+                notes);
+
+            if (!res.Ok)
+            {
+                return CalendarError(displayMonth, selected, res.Error);
+            }
+
+            TempData["CalendarMessage"] = "Walk-in added to the queue.";
+            TempData["CalendarMessageIsError"] = "false";
+
+            return RedirectToAction("Index", new
+            {
+                month = displayMonth.ToString("yyyy-MM-01"),
+                selectedDate = selected.ToString("yyyy-MM-dd")
             });
         }
 

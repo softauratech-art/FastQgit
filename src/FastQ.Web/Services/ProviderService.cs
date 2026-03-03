@@ -7,6 +7,7 @@ using FastQ.Data.Db;
 using FastQ.Data.Repositories;
 using FastQ.Web.Helpers;
 using FastQ.Web.Models;
+using Newtonsoft.Json.Linq;
 
 namespace FastQ.Web.Services
 {
@@ -77,6 +78,40 @@ namespace FastQ.Web.Services
         public IList<Tuple<long, string>> ListTransferServices(long queueId)
         {
             return _queues.ListServicesByQueue(queueId);
+        }
+
+        public QueueDetailOptions GetQueueDetailOptions(long queueId)
+        {
+            if (queueId <= 0)
+            {
+                return null;
+            }
+
+            var jsonParts = _queues.GetQueueDetailsJson(queueId);
+            if (jsonParts == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var servicesJson = ParseJsonObject(jsonParts.Item1);
+                var schedulesJson = ParseJsonObject(jsonParts.Item2);
+                var detailsJson = ParseJsonObject(jsonParts.Item3);
+
+                return new QueueDetailOptions
+                {
+                    QueueId = queueId,
+                    Services = ReadOptions(servicesJson?["services"], "service_id", "service_name"),
+                    ContactOptions = ReadOptions(detailsJson?["contactoptions"], "type_key", "type_val"),
+                    RefOptions = ReadOptions(detailsJson?["refoptions"], "ref_key", "ref_val"),
+                    Schedules = ReadSchedules(schedulesJson?["schedules"])
+                };
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public IList<Customer> ListCustomers()
@@ -557,6 +592,98 @@ namespace FastQ.Web.Services
             }
 
             return Result.Success();
+        }
+
+        private static JObject ParseJsonObject(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return null;
+            }
+
+            return JObject.Parse(json);
+        }
+
+        private static IList<QueueLookupOption> ReadOptions(JToken token, string codeField, string nameField)
+        {
+            var list = new List<QueueLookupOption>();
+            var array = token as JArray;
+            if (array == null)
+            {
+                return list;
+            }
+
+            foreach (var item in array.OfType<JObject>())
+            {
+                var code = item[codeField]?.ToString() ?? string.Empty;
+                var name = item[nameField]?.ToString() ?? code;
+                if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                list.Add(new QueueLookupOption
+                {
+                    Code = code,
+                    Name = name
+                });
+            }
+
+            return list;
+        }
+
+        private static IList<QueueScheduleOption> ReadSchedules(JToken token)
+        {
+            var list = new List<QueueScheduleOption>();
+            var array = token as JArray;
+            if (array == null)
+            {
+                return list;
+            }
+
+            foreach (var item in array.OfType<JObject>())
+            {
+                list.Add(new QueueScheduleOption
+                {
+                    ScheduleId = item["schedule_id"]?.ToObject<long>() ?? 0,
+                    DateBegin = item["date_begin"]?.ToString() ?? string.Empty,
+                    DateEnd = item["date_end"]?.ToString() ?? string.Empty,
+                    OpenTime = item["open_time"]?.ToString() ?? string.Empty,
+                    CloseTime = item["close_time"]?.ToString() ?? string.Empty,
+                    IntervalTime = item["interval_time"]?.ToString() ?? string.Empty,
+                    WeeklySchedule = item["weekly_sch"]?.ToString() ?? string.Empty,
+                    AvailableResources = item["available_resources"]?.ToObject<int?>() ?? 0
+                });
+            }
+
+            return list;
+        }
+
+        public sealed class QueueDetailOptions
+        {
+            public long QueueId { get; set; }
+            public IList<QueueLookupOption> Services { get; set; } = new List<QueueLookupOption>();
+            public IList<QueueLookupOption> ContactOptions { get; set; } = new List<QueueLookupOption>();
+            public IList<QueueLookupOption> RefOptions { get; set; } = new List<QueueLookupOption>();
+            public IList<QueueScheduleOption> Schedules { get; set; } = new List<QueueScheduleOption>();
+        }
+
+        public sealed class QueueLookupOption
+        {
+            public string Code { get; set; }
+            public string Name { get; set; }
+        }
+
+        public sealed class QueueScheduleOption
+        {
+            public long ScheduleId { get; set; }
+            public string DateBegin { get; set; }
+            public string DateEnd { get; set; }
+            public string OpenTime { get; set; }
+            public string CloseTime { get; set; }
+            public string IntervalTime { get; set; }
+            public string WeeklySchedule { get; set; }
+            public int AvailableResources { get; set; }
         }
     }
 }

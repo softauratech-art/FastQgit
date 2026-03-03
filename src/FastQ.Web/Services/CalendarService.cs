@@ -13,20 +13,24 @@ namespace FastQ.Web.Services
     public class CalendarService
     {
         private readonly ProviderService _providerService;
+        private readonly CustomerService _customerService;
         private readonly IQueueRepository _queues;
 
         public CalendarService()
             : this(
                 new ProviderService(),
+                new CustomerService(),
                 DbRepositoryFactory.CreateQueueRepository())
         {
         }
 
         public CalendarService(
             ProviderService providerService,
+            CustomerService customerService,
             IQueueRepository queues)
         {
             _providerService = providerService;
+            _customerService = customerService;
             _queues = queues;
         }
 
@@ -72,6 +76,8 @@ namespace FastQ.Web.Services
 
         public Result<Appointment> CreateScheduledAppointment(
             long queueId,
+            string serviceId,
+            string refValue,
             string customerName,
             string phone,
             string contactType,
@@ -79,31 +85,37 @@ namespace FastQ.Web.Services
             string notes,
             string meetingUrl)
         {
-            if (queueId <= 0)
-                return Result<Appointment>.Fail("Queue is required.");
+            return _customerService.CreateScheduled(
+                queueId,
+                serviceId,
+                refValue,
+                customerName,
+                phone,
+                contactType,
+                scheduledForUtc,
+                notes,
+                meetingUrl,
+                "web");
+        }
 
-            if (string.IsNullOrWhiteSpace(customerName))
-                return Result<Appointment>.Fail("Customer name is required.");
-
-            if (string.IsNullOrWhiteSpace(phone))
-                return Result<Appointment>.Fail("Phone is required.");
-
-            var queue = _queues.Get(queueId);
-            if (queue == null)
-                return Result<Appointment>.Fail("Queue not found.");
-
-            var appointment = new Appointment
-            {
-                QueueId = queueId,
-                LocationId = queue.LocationId,
-                ContactType = string.IsNullOrWhiteSpace(contactType) ? "In-Person" : contactType.Trim(),
-                MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
-                MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
-                Status = AppointmentStatus.Scheduled
-            };
-            appointment.ScheduledForUtc = scheduledForUtc;
-
-            return Result<Appointment>.Success(appointment);
+        public Result<long> CreateWalkin(
+            long queueId,
+            string serviceId,
+            string refValue,
+            string customerName,
+            string phone,
+            string contactType,
+            string notes)
+        {
+            return _customerService.CreateWalkin(
+                queueId,
+                serviceId,
+                refValue,
+                customerName,
+                phone,
+                contactType,
+                notes,
+                "web");
         }
 
         private static IList<AdminCalendarDay> BuildCalendarDays(DateTime monthStart, DateTime selectedDate, IDictionary<DateTime, int> counts)

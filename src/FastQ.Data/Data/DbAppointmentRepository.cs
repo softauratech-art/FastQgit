@@ -85,6 +85,55 @@ namespace FastQ.Data.Db
             }
         }
 
+        public long AddWalkin(Appointment appointment)
+        {
+            using (var conn = DataAccess.Open())
+            {
+                var newId = DataAccess.NextVal(conn, "WALKINSEQ");
+                appointment.Id = newId;
+
+                var customerId = appointment.CustomerId;
+                if (customerId <= 0)
+                    throw new InvalidOperationException("CustomerId must be a numeric ID.");
+                var queueId = appointment.QueueId;
+                if (queueId <= 0)
+                    throw new InvalidOperationException("QueueId must be a numeric ID.");
+
+                var joinInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
+                var endInterval = OracleInterval(appointment.EndTime);
+                var createdBy = string.IsNullOrWhiteSpace(appointment.CreatedBy) ? "fastq" : appointment.CreatedBy;
+                var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
+
+                using (var cmd = DataAccess.CreateCommand(conn,
+                    @"INSERT INTO WALKINS
+                        (WALKIN_ID, CUSTOMER_ID, QUEUE_ID, SERVICE_ID, REF_CRITERIA, REF_VALUE, CONTACTTYPE, MOREINFO,
+                         JOIN_TIME, END_TIME, STATUS, MEETINGURL, LANGUAGE_PREF, CREATEDBY, CREATEDON, STAMPUSER, STAMPDATE)
+                      VALUES
+                        (:walkinId, :customerId, :queueId, :serviceId, :refCriteria, :refValue, :contactType, :moreInfo,
+                         TO_DSINTERVAL(:joinTime), TO_DSINTERVAL(:endTime), :status, :meetingUrl, :languagePref, :createdBy, SYSDATE, :stampUser, SYSDATE)"))
+                {
+                    DataAccess.AddParam(cmd, "walkinId", newId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "serviceId", ToNullableLong(appointment.ServiceId), DbType.Int64);
+                    DataAccess.AddParam(cmd, "refCriteria", appointment.RefCriteria, DbType.String);
+                    DataAccess.AddParam(cmd, "refValue", appointment.RefValue, DbType.String);
+                    DataAccess.AddParam(cmd, "contactType", appointment.ContactType, DbType.String);
+                    DataAccess.AddParam(cmd, "moreInfo", appointment.MoreInfo, DbType.String);
+                    DataAccess.AddParam(cmd, "joinTime", joinInterval, DbType.String);
+                    DataAccess.AddParam(cmd, "endTime", endInterval, DbType.String);
+                    DataAccess.AddParam(cmd, "status", appointment.Status.ToString(), DbType.String);
+                    DataAccess.AddParam(cmd, "meetingUrl", appointment.MeetingUrl, DbType.String);
+                    DataAccess.AddParam(cmd, "languagePref", appointment.LanguagePreference, DbType.String);
+                    DataAccess.AddParam(cmd, "createdBy", createdBy, DbType.String);
+                    DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
+                    cmd.ExecuteNonQuery();
+                }
+
+                return newId;
+            }
+        }
+
         public void Update(Appointment appointment)
         {
             var apptId = appointment.Id;

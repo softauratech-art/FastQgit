@@ -202,6 +202,35 @@ namespace FastQ.Data.Db
             return list;
         }
 
+        public Tuple<string, string, string> GetQueueDetailsJson(long queueId)
+        {
+            if (queueId <= 0)
+            {
+                return null;
+            }
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn,
+                @"SELECT Q_SERVICES, Q_SCHEDULES, Q_DETAILS
+                  FROM VW_QUEUE_DETAILS_JSON
+                  WHERE QUEUE_ID = :queueId"))
+            {
+                DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (!reader.Read())
+                    {
+                        return null;
+                    }
+
+                    var servicesJson = reader["Q_SERVICES"] == DBNull.Value ? string.Empty : reader["Q_SERVICES"].ToString();
+                    var schedulesJson = reader["Q_SCHEDULES"] == DBNull.Value ? string.Empty : reader["Q_SCHEDULES"].ToString();
+                    var detailsJson = reader["Q_DETAILS"] == DBNull.Value ? string.Empty : reader["Q_DETAILS"].ToString();
+                    return Tuple.Create(servicesJson, schedulesJson, detailsJson);
+                }
+            }
+        }
+
         private static Queue MapQueue(IDataRecord record)
         {
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
