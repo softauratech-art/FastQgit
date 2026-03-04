@@ -11,30 +11,36 @@ namespace FastQ.Web.Services
         private static IHubContext Hub => GlobalHost.ConnectionManager.GetHubContext<QueueHub>();
         private const int IdPreviewLength = 8;
 
-        public void QueueChanged(long locationId, long queueId)
+        public void QueueChanged(long locationId, long queueId, string actorUserId = null)
         {
             var loc = locationId.ToString();
             var q = queueId.ToString();
+            var actor = NormalizeActorUserId(actorUserId);
 
-            Hub.Clients.Group($"loc:{loc}").queueUpdated(loc, q);
-            Hub.Clients.Group($"queue:{q}").queueUpdated(loc, q);
+            Hub.Clients.Group($"loc:{loc}").queueUpdated(loc, q, actor);
+            Hub.Clients.Group($"queue:{q}").queueUpdated(loc, q, actor);
             // Provider dashboard is cross-queue; broadcast to all clients so every board can refresh.
-            Hub.Clients.All.queueUpdated(loc, q);
+            Hub.Clients.All.queueUpdated(loc, q, actor);
         }
 
-        public void AppointmentChanged(Appointment appointment)
+        public void AppointmentChanged(Appointment appointment, string actorUserId = null)
         {
             var apptId = appointment.Id.ToString();
             var loc = appointment.LocationId.ToString();
             var q = appointment.QueueId.ToString();
             var providerId = appointment.ProviderId?.ToString() ?? string.Empty;
+            var actor = NormalizeActorUserId(actorUserId);
+            if (string.IsNullOrEmpty(actor))
+            {
+                actor = NormalizeActorUserId(providerId);
+            }
 
-            Hub.Clients.Group($"appt:{apptId}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            Hub.Clients.Group($"appt:{apptId}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId, actor);
             // location + queue listeners can also choose to react
-            Hub.Clients.Group($"loc:{loc}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
-            Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            Hub.Clients.Group($"loc:{loc}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId, actor);
+            Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId, actor);
             // Providers are not always joined to groups; broadcast status as well.
-            Hub.Clients.All.appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            Hub.Clients.All.appointmentUpdated(apptId, appointment.Status.ToString(), providerId, actor);
 
             var message = BuildNotificationMessage(appointment);
             if (!string.IsNullOrWhiteSpace(message))
@@ -65,6 +71,10 @@ namespace FastQ.Web.Services
                     return null;
             }
         }
+
+        private static string NormalizeActorUserId(string actorUserId)
+        {
+            return string.IsNullOrWhiteSpace(actorUserId) ? string.Empty : actorUserId.Trim();
+        }
     }
 }
-

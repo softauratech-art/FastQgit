@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace FastQ.Data.Entities
 {
     public class Queue
@@ -16,7 +18,12 @@ namespace FastQ.Data.Entities
         public string LeadTimeMin { get; set; }
         public string LeadTimeMax { get; set; }
 
+        public string[] RefCriterias { get; set; }
+        public string[] ContactMethods { get; set; }
+
         public QueueConfig Config { get; set; } = new QueueConfig();
+        public IList<QService> Services { get; set; }
+        public IList<QSchedule> Schedules { get; set; }
     }
 }
 

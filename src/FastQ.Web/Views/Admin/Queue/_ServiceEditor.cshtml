@@ -1,0 +1,43 @@
+﻿@model FastQ.Web.Models.Admin.QueueServiceVM
+
+@{ var secname = "ServiceSection";}
+ 
+<form action="/Queue/EditService" data-id="@Model.Id" data-secname="@secname" id="submitSvcForm" onsubmit="return postQchildForm(this);">
+    @Html.AntiForgeryToken()
+    <div id="@secname-@Model.Id">
+        <div>
+            @Html.HiddenFor(model => model.Id)
+            @Html.HiddenFor(model => model.QueueId)
+            @Html.Label("Id", "Service Id")           
+            @Html.DisplayFor(model => model.Id, new { htmlAttributes = new { @class = "form-control" } })            
+        </div>
+        <div class="col-md-10 mt-2">
+            @Html.Label("Name","Service Name")
+            @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control", @required = "required" } })
+            @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+        </div>
+        <div class="mt-2">
+            @Html.Label("NameES", "Name (Spanish)")
+            @Html.EditorFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control", @required = "required" } })
+            @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
+        </div>
+        <div class="mt-2">
+            @Html.Label("NameCP", "Name (Creole)")
+            @Html.EditorFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control", @required = "required" } })
+            @Html.ValidationMessageFor(model => model.NameCP, "", new { @class = "text-danger" })
+        </div>
+        <div class="mt-2">
+            @Html.Label("ActiveFlag", "Is Active?")
+            @*<div class="checkbox">*@
+                @Html.EditorFor(model => model.ActiveFlag)
+                @Html.ValidationMessageFor(model => model.ActiveFlag, "", new { @style = "margin-left: 1em;", @class = "text-danger" })
+            @*</div>*@
+        </div>
+        <div style="margin: 1em 0px; border-top: solid 1px #ccc"></div>
+        <div>
+            <input type="submit" value="Submit" class="btn secondary btn-primary btn-block"/>
+            <input data-bs-dismiss="modal" onclick="closeModal('form-modal')" type="button" class="mt-2" value="Cancel" style="margin-left:5px;" />
+        </div>
+    </div>
+    </form>
+

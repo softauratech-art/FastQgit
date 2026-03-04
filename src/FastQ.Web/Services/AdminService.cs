@@ -60,12 +60,14 @@ namespace FastQ.Web.Services
 
         public IList<Queue> ListQueuesByLocation(long locationId)
         {
-            return _queues.ListByLocation(locationId);
+            //return _queues.ListByLocation(locationId);
+            return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser());
         }
 
         public IList<Queue> ListQueues(long? locationId)
         {
-            return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll();
+            //return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll()
+            return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser()); 
         }
 
         public IList<Customer> ListAllCustomers()
@@ -90,7 +92,7 @@ namespace FastQ.Web.Services
 
         public void UpdateQueue(Queue queue)
         {
-            _queues.Update(queue);
+            _queues.AddOrUpdateQueue(queue, new AuthService().GetLoggedInWindowsUser());
         }
 
         public int CloseStaleScheduledAppointments(int staleHours)
@@ -109,8 +111,8 @@ namespace FastQ.Web.Services
                 a.StampDateUtc = now;
                 _appts.Update(a);
 
-                _rt.AppointmentChanged(a);
-                _rt.QueueChanged(a.LocationId, a.QueueId);
+                _rt.AppointmentChanged(a, "system");
+                _rt.QueueChanged(a.LocationId, a.QueueId, "system");
             }
 
             return stale.Count;

@@ -1,0 +1,14 @@
+﻿/* override default settings for FQ */
+.dt-length {
+    display: inline-flex;
+}
+
+.dt-length label {
+    width: 85px;
+}
+
+div.dt-container select.dt-input {
+    margin-right: 5px;
+    max-height: 30px;
+}
+

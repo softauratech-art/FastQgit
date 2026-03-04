@@ -122,8 +122,8 @@ namespace FastQ.Web.Services
 
             _appts.Add(appt);
 
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(locationId, queueId);
+            _rt.AppointmentChanged(appt, appt.CreatedBy);
+            _rt.QueueChanged(locationId, queueId, appt.CreatedBy);
 
             return Result<Appointment>.Success(appt);
         }
@@ -177,8 +177,8 @@ namespace FastQ.Web.Services
             appt.ScheduledForUtc = scheduledForUtc;
 
             _appts.Add(appt);
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+            _rt.AppointmentChanged(appt, user);
+            _rt.QueueChanged(appt.LocationId, appt.QueueId, user);
 
             return Result<Appointment>.Success(appt);
         }
@@ -229,8 +229,8 @@ namespace FastQ.Web.Services
             walkin.ScheduledForUtc = now;
 
             var newId = _appts.AddWalkin(walkin);
-            _rt.AppointmentChanged(walkin);
-            _rt.QueueChanged(walkin.LocationId, walkin.QueueId);
+            _rt.AppointmentChanged(walkin, user);
+            _rt.QueueChanged(walkin.LocationId, walkin.QueueId, user);
 
             return Result<long>.Success(newId);
         }
@@ -248,8 +248,8 @@ namespace FastQ.Web.Services
             appt.StampDateUtc = appt.UpdatedUtc;
             _appts.Update(appt);
 
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+            _rt.AppointmentChanged(appt, appt.StampUser);
+            _rt.QueueChanged(appt.LocationId, appt.QueueId, appt.StampUser);
 
             return Result.Success();
         }

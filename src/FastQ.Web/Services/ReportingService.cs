@@ -39,7 +39,9 @@ namespace FastQ.Web.Services
 
         public IList<Queue> ListQueues(long? locationId)
         {
-            return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll();
+            //return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll();
+            return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser()) ;
+
         }
     }
 }

@@ -139,6 +139,8 @@
     <Compile Include="Entities\Location.cs" />
     <Compile Include="Entities\Provider.cs" />
     <Compile Include="Entities\ProviderAppointmentData.cs" />
+    <Compile Include="Entities\QSchedule.cs" />
+    <Compile Include="Entities\QService.cs" />
     <Compile Include="Entities\Queue.cs" />
     <Compile Include="Entities\QueueConfig.cs" />
     <Compile Include="Entities\User.cs" />

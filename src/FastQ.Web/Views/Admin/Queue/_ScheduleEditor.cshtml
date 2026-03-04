@@ -1,0 +1,77 @@
+﻿@model FastQ.Web.Models.Admin.QueueScheduleVM
+
+@{  
+    var secname = "ScheduleSection";
+}
+
+<form action="/Queue/EditSchedule" data-id="@Model.Id" data-secname="@secname" id="submitSchForm" onsubmit="return postQchildForm(this);">
+    @Html.AntiForgeryToken()
+    <div class="validation-summary-error text-danger"></div>
+    <div class="container-fluid" id="@secname-@Model.Id">
+        <div class="grid-2 row">
+            <div class="col">
+                @Html.HiddenFor(model => model.Id)
+                @Html.HiddenFor(model => model.QueueId)
+                @Html.Label("BeginDate", "Begins From")
+                @Html.TextBox("BeginDate", Model.BeginDate == DateTime.MinValue ? DateTime.Now.Date.ToString("yyyy-MM-dd") : Model.BeginDate.ToString("yyyy-MM-dd"), new { @type = "date", @required = "true", @class = "input-date", @style = "display:block;" }) @*, new { @style = "width:160px" }*@
+                @Html.ValidationMessageFor(model => model.BeginDate, "", new { @class = "text-danger" })
+            </div>
+            <div class="col">
+                @Html.Label("EndDate", "Ends On")
+                @Html.TextBox("EndDate", Model.BeginDate == DateTime.MinValue ? DateTime.Now.Date.ToString("yyyy-MM-dd") : Model.EndDate.ToString("yyyy-MM-dd"), new { @type = "date", @required = "true", @class = "input-date", @style = "display:block;" }) @*, new { @style = "width:160px" }*@
+                @Html.ValidationMessageFor(model => model.EndDate, "", new { @class = "text-danger" })
+            </div>
+        </div>
+        <div class="row grid-2 mt-3">
+            <div class="col">
+                @Html.Label("OpenTime", "Opens At")
+                @Html.TextBoxFor(model => model.OpenTime, new { @class = "time", @required = "true" })
+                @Html.ValidationMessageFor(model => model.OpenTime, "", new { @class = "text-danger" })
+            </div>
+            <div class="col">
+                @Html.Label("CloseTime", "Closes At")
+                @Html.TextBoxFor(model => model.CloseTime, new { @class = "time", @required = "true" })
+                @Html.ValidationMessageFor(model => model.CloseTime, "", new { @class = "text-danger time" })
+            </div>
+        </div>
+        <div class="row  grid-2 mt-3">
+            <div class="col">
+                @Html.Label("Duration", "Duration")
+                @Html.DropDownListFor(model => model.Duration, Model.GetDurations(), "--- Select ---", new { @style = "font-size:0.9em", @required = "true" })
+                @Html.ValidationMessageFor(model => model.Duration, "", new { @class = "text-danger" })
+            </div>
+            <div class="col">
+                @Html.Label("ResourcesAvailable", "# of available resources")
+                @Html.TextBoxFor(model => model.ResourcesAvailable, new { @class = "form-control", @type = "number", @min = "1", @max = "5", @step = "1", @required = "true", @style="display:block;" })
+
+                @Html.ValidationMessageFor(model => model.ResourcesAvailable, "", new { @class = "text-danger" })
+            </div>
+        </div>
+        <div class="row  mt-3">
+            <div class="col">
+                @Html.Label("WeeklySchedule", "Weekly Schedule")
+                <div class="weekDays-selector mt-2">
+                    @foreach (var item in Model.AvailableWeekdays)
+                    {
+                        <input type="checkbox" name="WeeklySchedule" id="weekday-@item.Text" class="weekday" value="@item.Value" @(item.Selected ? "checked" : "") />
+                        <label for="weekday-@item.Text">@item.Text</label>
+                    }
+                </div>
+                @Html.ValidationMessageFor(model => model.WeeklySchedule, "", new { @class = "text-danger" })
+            </div>
+
+        </div>
+    </div><div style="border-top: solid 1px #ccc"></div>
+    <div>
+        <input type="submit" value="Submit" class="btn secondary btn-primary btn-block" />
+        <input data-bs-dismiss="modal" onclick="closeModal('form-modal')" type="button" class="mt-2" value="Cancel" style="margin-left:5px;" />
+
+    </div>
+</form>
+<script>
+    $(document).ready(function () {
+        $("input.time").fxtime();
+        $("#OpenTime").fxtime('val', '@Model.OpenTime');
+        $("#CloseTime").fxtime('val','@Model.CloseTime');
+    });
+</script>

@@ -10,7 +10,7 @@ namespace FastQ.Web.Controllers.Admin
     public class UserController : Controller
     {        
         // GET: User       
-        [AuthorizeUsers]       
+        //[AuthorizeUsers]       
         public ActionResult Index()        
         {
             IList<UserVM> lUsers;

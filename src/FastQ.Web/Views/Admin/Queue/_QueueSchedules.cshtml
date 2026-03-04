@@ -1,34 +1,49 @@
-﻿@model FastQ.Web.Models.Admin.QueueScheduleVM
+﻿@model IEnumerable<FastQ.Web.Models.Admin.QueueScheduleVM>
+@*@model FastQ.Web.Models.Admin.QueueScheduleVM*@
 
+<table class="table bg-transparent" id="ScheduleSection">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Begins</th>
+            <th>Ends</th>
+            <th>Opens At</th>
+            <th>Closes At</th>
+            <th>Duration</th>
+            <th>Weekly</th>
+            <th>Avail. Res</th>
+            <th class="text-center">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    @if (Model != null)
+    {
+        foreach (var item in Model)
+        {
+            <tr id="QSchrow-@item.Id">
+                <td>@Html.DisplayFor(model => item.Id)</td>
+                <td>@item.BeginDate.ToShortDateString()</td>
+                <td>@item.EndDate.ToShortDateString()</td>
+                <td>@System.Xml.XmlConvert.ToTimeSpan(item.OpenTime)</td>
+                <td>@System.Xml.XmlConvert.ToTimeSpan(item.CloseTime)</td>
+                <td>@FastQ.Web.Helpers.Utilities.ParseTimeInterval(item.Duration)</td>
+                <td>@FastQ.Web.Helpers.Utilities.WeeklySchPrettyPrint(item.WeeklySchedule, " ")</td>
+                <td>@Html.DisplayFor(model => item.ResourcesAvailable)</td>
 
-
-        
-            <tr id="Q-@Model.QueueId">
-                @Html.HiddenFor(model => model.Id)
-                <td>
-                    @Model.BeginDate.ToShortDateString()
+                <td nowrap style="text-align:right;">
+                    <button onclick="showInPopup('@Url.Action("EditSchedule", "Queue",new {id=item.Id})','Update Schedule')"
+                            class="btn small btn-sm btn-outline-primary border-0">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btnDeleteSch btn small btn-sm btn-outline-danger border-0"
+                            data-secname="ScheduleSection"
+                            data-id="@item.Id"
+                            data-action='@Url.Action("DeleteSchedule", "Queue",new {id=item.Id})'>
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
                 </td>
-                <td>
-                    @Model.EndDate.ToShortDateString()
-                </td>
-                <td>
-                    @(System.Xml.XmlConvert.ToTimeSpan(@Model.OpenTime))
-                </td>
-                <td>
-                    @(System.Xml.XmlConvert.ToTimeSpan(@Model.CloseTime))
-                </td>
-                <td>
-                    @(System.Xml.XmlConvert.ToTimeSpan(@Model.Duration))
-                </td>
-                <td>
-                    @Model.WeeklySchPrettyPrint (@Model.WeeklySchedule)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => Model.ResourcesAvailable)
-                </td>
-                @*<td>
-                        @Html.ActionLink("Edit", "Edit", new { id = model.Id }) |
-                        @Html.ActionLink("Details", "Details", new { id = model.Id }) |
-                        @Html.ActionLink("Delete", "Delete", new { id = model.Id })
-                    </td>*@
             </tr>
+        }
+    }
+    </tbody>
+</table>

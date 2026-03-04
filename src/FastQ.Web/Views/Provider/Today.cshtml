@@ -33,6 +33,7 @@
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
 }
 @section Head {
+    <link href="~/Content/modal.css" rel="stylesheet" />
     <style>
         .table-striped tbody tr:nth-child(even) {
             background: rgba(255, 255, 255, 0.5);
@@ -92,34 +93,6 @@
             text-align: center;
         }
 
-        .modal-backdrop.show {
-            display: flex;
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .modal-title {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .modal-body {
-            display: grid;
-            gap: 10px;
-        }
-
         .field-row {
             display: grid;
             grid-template-columns: 120px 1fr;
@@ -127,44 +100,8 @@
             align-items: center;
         }
 
-        .modal-body input,
-        .modal-body textarea {
-            padding: 6px 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 0, 0, 0.15);
-            font-size: 13px;
-        }
-
-        .helper-text {
-            font-size: 12px;
-            color: #5b5b5b;
-        }
-
-        .modal-feedback {
-            display: none;
-            margin-top: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .modal-feedback.show {
-            display: block;
-        }
-
-        .modal-feedback.error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-        }
-
-        .modal-feedback.success {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #065f46;
-        }
-
+        
+/*
         .route-modal .modal {
             width: min(680px, 92vw);
             border-radius: 10px;
@@ -185,7 +122,7 @@
         .route-modal .modal-body {
             padding: 0 18px 12px;
             gap: 12px;
-        }
+        }*/
 
         .route-form-row {
             display: grid;
@@ -223,7 +160,7 @@
             align-items: center;
         }
 
-        .route-modal .modal-footer .btn.primary {
+/*        .route-modal .modal-footer .btn.primary {
             background: #19a24b;
             border-color: #19a24b;
             color: #ffffff;
@@ -237,7 +174,7 @@
 
         .route-modal .modal-footer .btn.ghost {
             color: #3b82f6;
-        }
+        }*/
 
         @@media (max-width: 640px) {
             .route-form-row {
@@ -1820,14 +1757,15 @@
       }, 300);
     }
 
-    window.onFastQQueueUpdated = function () {
+    window.onFastQQueueUpdated = function (locationId, queueId, actorUserId) {
       queueLiveSync();
     };
 
-    window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
-      console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, currentProviderId);
+    window.onFastQAppointmentUpdated = function (appointmentId, status, providerId, actorUserId) {
+      console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, actorUserId, currentProviderId);
       var normalized = (status || "").toString().toLowerCase();
-      var isSelf = (providerId || "").toString().toLowerCase() === (currentProviderId || "").toString().toLowerCase();
+      var actor = (actorUserId || providerId || "").toString().toLowerCase();
+      var isSelf = actor === (currentProviderId || "").toString().toLowerCase();
       var hasRow = !!document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
       applyLiveStatus(appointmentId, status);
       if (normalized === "inservice" || normalized === "completed" || normalized === "cancelled" || normalized === "transferredout" || normalized === "scheduled" || normalized === "arrived") {

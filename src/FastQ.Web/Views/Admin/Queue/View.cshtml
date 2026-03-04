@@ -1,14 +1,55 @@
 ﻿@model FastQ.Web.Models.Admin.QueueVM
 @using FastQ.Web.Helpers
 @using System.Collections.Generic
-@{
-    ViewBag.Title = "Queue Details";
-    var isActiveFlag = Model.ActiveFlag.IsEmpty() ? false : Model.ActiveFlag.Equals("Y");
-    var isEmpOnly = Model.EmpOnly.IsEmpty() ? false : Model.EmpOnly.Equals("Y");
-    var isHideInKiosk = Model.HideInKiosk.IsEmpty() ? false : Model.HideInKiosk.Equals("Y");
-    var isHideInMonitor = Model.HideInMonitor.IsEmpty() ? false : Model.HideInMonitor.Equals("Y");
-    var isHasGuidelines = Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.Equals("Y");
-    var isHasUploads = Model.HasUploads.IsEmpty() ? false : Model.HasUploads.Equals("Y");
+@section Head
+    {
+    <!-- Latest compiled and minified CSS -->
+    @*<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
+            rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">*@
+    <link rel="stylesheet" href="~/Content/queueadmin.css" />
+    <style>
+        .section-configuration {
+            margin-bottom: 5px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 0.375rem;
+        }
+
+            .section-configuration h2 {
+                font-family: var(--font-heading);
+                font-size: 20px;
+                font-weight: 400;
+                margin: 0;
+            }
+
+        .configuration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+            .configuration-header h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-main);
+                margin: 0;
+            }
+
+        .config-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .readonly-checkbox {
+            pointer-events: none;
+            cursor: default;
+            opacity: 1
+        }
+    </style>
 }
 
 @section PageHeader {
@@ -16,148 +57,229 @@
         <div class="topbar-title">Queue Details</div>
         <div class="topbar-sub">View Queues Configuration, Services and Schedules</div>
     </div>
-    <div class="top-actions">
-        <div>@Html.ActionLink("Back to List", "Index", null, new { @class = "btn" })</div>
-    </div>
+    @*<div class="top-actions">
+            <div>@Html.ActionLink("Back to List", "Index", null, new { @class = "btn btn-outline-secondary" })</div>
+        </div>*@
 }
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Queue Details</h3>
-        <div>@Html.ActionLink("Edit Queue", "Edit", new { id = Model.Id }, new { @class = "btn small primary" })</div>
-    </div>
 
-    <div class="form-grid" style="padding: 6px;">
-        @*<div class="field">
-                @Html.LabelFor(model => model.LocationId)
-                <div class="col-md-10">
-                    @Html.EditorFor(model => model.LocationId, new { htmlAttributes = new { @class = "form-control" } })
-                    @Html.ValidationMessageFor(model => model.LocationId, "", new { @class = "text-danger" })
+<section class="section-configuration card">
+    <div class="configuration-header">
+        <h2>Configuration</h2>
+        <div style="float:right">
+            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn small ghost" })<span style="margin-left:16px;"></span>
+            @Html.ActionLink("Edit Queue", "Edit", new { id = Model.Id }, new { @class = "btn small primary" })
+        </div>
+    </div>
+    <div class="card-grid">
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title"><i class="bi bi-card-heading"></i>Identity & Translations</div>
+                <div class="form-group">
+                    @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
+                    @Html.DisplayFor(model => model.Id)
                 </div>
-            </div>*@
-
-        <div class="field">
-            @Html.LabelFor(model => model.Name)
-            @Html.TextBoxFor(model => model.Name, new { @readonly = "readonly" })
-        </div>
-
-        <div class="field">
-            <label>Spanish</label>
-            @Html.TextBoxFor(model => model.NameES, new { @readonly = "readonly" })
-        </div>
-
-        <div class="field">
-            <label>Creole</label>
-            @Html.TextBoxFor(model => model.NameCP, new { @readonly = "readonly" })
-        </div>
-    </div>
-    <div class="form-grid-6" style="padding: 16px;">
-        <div>
-            @Html.LabelFor(model => model.ActiveFlag)
-            @Html.CheckBoxFor(model => isActiveFlag, new { disabled = "disabled" })
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.EmpOnly)
-            @Html.DisplayFor(model => isEmpOnly, new { disabled = "disabled" })
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HideInKiosk)
-            @Html.DisplayFor(model => isHideInKiosk, new { disabled = "disabled" })
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HideInMonitor)
-            @Html.DisplayFor(model => isHideInMonitor, new { disabled = "disabled" })
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HasGuidelines)
-            @Html.DisplayFor(model => isHasGuidelines, new { disabled = "disabled" })
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HasUploads)
-            @Html.DisplayFor(model => isHasUploads, new { disabled = "disabled" })
-        </div>
-    </div>
-    <div class="form-grid-6" style="padding: 6px;">
-        <div class="field">
-            @Html.LabelFor(model => model.LeadTimeMin)
-            <div class="col-md-10">
-                @Html.TextBox("txtLeadTimeMin", @Utilities.TranslateLeadTimes(Model.LeadTimeMin), new { @readonly = "readonly" })
+                <div class="form-group">
+                    @Html.LabelFor(model => model.Name, "Name (Primary English)", new { @class = "form-label control-label" })
+                    @Html.TextBoxFor(model => model.Name, new { htmlAttributes = new { @class = "form-control", @readonly = "true" } })
+                </div>
+                <div class="form-group">
+                    @Html.LabelFor(model => model.NameES, htmlAttributes: new { @class = "form-label control-label" })
+                    @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
+                    @Html.TextBoxFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control", @readonly = "true" } })
+                </div>
+                <div class="form-group">
+                    @Html.LabelFor(model => model.NameCP, htmlAttributes: new { @class = "form-label control-label" })
+                    @Html.TextBoxFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control", @readonly = "true" } })
+                </div>
             </div>
         </div>
 
-        <div class="field">
-            @Html.LabelFor(model => model.LeadTimeMax)
-            <div class="col-md-10">
-                @Html.TextBox("txtLeadTimeMax", @Utilities.TranslateLeadTimes(Model.LeadTimeMax), new { @readonly = "readonly" })
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title"><i class="bi bi-eye"></i>  Visibility & Rules</div>
+                <div class="switch-group">
+                    @Html.LabelFor(model => model.ActiveFlag, new { @class = "switch-label" })
+                    <label class="switch">
+                        <input type="checkbox" id="ActiveFlag" @(Model.ActiveFlag ? "checked" : "") />
+                        @*Html.CheckBoxFor(model => model.ActiveFlag, new { @onclick = "return false;" })*@
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="switch-group">
+                    @Html.LabelFor(model => model.EmpOnly, new { @class = "switch-label" })
+                    <div class="switch">
+                        <input type="checkbox" id="EmpOnly" @(Model.EmpOnly ? "checked" : "") onclick="return false;" />
+                        @*@Html.CheckBoxFor(model => model.EmpOnly, new { @onclick = "return false;" })*@
+                        <span class="slider"></span>
+                    </div>
+                </div>
+                <div class="switch-group">
+                    @Html.LabelFor(model => model.HideInKiosk, new { @class = "switch-label" })
+                    <div class="switch">
+                        <input type="checkbox" id="HideInKiosk" @(Model.HideInKiosk ? "checked" : "") onclick="return false;" />
+                        <span class="slider"></span>
+                    </div>
+                </div>
+                <div class="switch-group">
+                    @Html.LabelFor(model => model.HideInMonitor, new { @class = "switch-label" })
+                    <div class="switch">
+                        <input type="checkbox" id="HideInMonitor" @(Model.HideInMonitor ? "checked" : "") onclick="return false;" />
+                        <span class="slider"></span>
+                    </div>
+                </div>
+                <div class="switch-group">
+                    @Html.LabelFor(model => model.HasGuidelines, new { @class = "switch-label" })
+                    <div class="switch">
+                        <input type="checkbox" id="HasGuidelines" @(Model.HasGuidelines ? "checked" : "") onclick="return false;" />
+                        <span class="slider"></span>
+                    </div>
+                </div>
+                <div class="switch-group">
+                    @Html.LabelFor(model => model.HasUploads, new { @class = "switch-label" })
+                    <div class="switch">
+                        <input type="checkbox" id="HasUploads"  
+                               @(Model.HasUploads ? "checked" : "")
+                               onclick="return false;" />
+                        <span class="slider"></span>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="card" style="margin-top:10px;">
-        <h3>Schedules</h3>
-        <div style="padding: 6px;">
-            <div class="field">
-                <table class="table" id="ScheduleSection">
-                    <thead>
-                        <tr>
-                            <th>Begins</th>
-                            <th>Ends</th>
-                            <th>Opens At</th>
-                            <th>Closes At</th>
-                            <th>Duration</th>
-                            <th>Weekly</th>
-                            <th>Avail. Res</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model.Schedules)
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>
+                <div class="range-container">
+                    <div class="range-display">
+                        @Html.LabelFor(model => model.LeadTimeMin, htmlAttributes: new { @class = "control-label" })
+                        @*<span class="slider-value">12</span>*@
+                    </div>
+                    @*<input type="range" min="1" max="48" value="12" class="slider-control">*@
+                    @Html.TextBox("LeadTimeMin", @Utilities.ParseTimeInterval(Model.LeadTimeMin), new { @readonly = "readonly" })
+                </div>
+
+                <div class="range-container" style="margin-top: 20px;">
+                    <div class="range-display">
+                        @Html.LabelFor(model => model.LeadTimeMax, htmlAttributes: new { @class = "control-label" })
+                    </div>
+                    @Html.TextBox("LeadTimeMax", @Utilities.ParseTimeInterval(Model.LeadTimeMax), new { @readonly = "readonly" })                    
+                </div>
+                <div class="form-group pt-3">
+                    @Html.LabelFor(model => model.SelectedRefCriterias, htmlAttributes: new { @class = "control-label" })
+                    <div class="tag-group">
+                        @foreach (var item in Model.AvailableRefCriterias)
                         {
-                            @*@Html.Partial("../Admin/Queue/_QueueSchedules", item)*@
-
-                            <tr id="QSrow-@item.Id">
-                                <td>
-                                    @item.BeginDate.ToShortDateString()
-                                </td>
-                                <td>
-                                    @item.EndDate.ToShortDateString()
-                                </td>
-                                <td>
-                                    @(System.Xml.XmlConvert.ToTimeSpan(item.OpenTime))
-                                </td>
-                                <td>
-                                    @(System.Xml.XmlConvert.ToTimeSpan(item.CloseTime))
-                                </td>
-                                <td>
-                                    @(System.Xml.XmlConvert.ToTimeSpan(item.Duration))
-                                </td>
-                                <td>
-                                    @{
-                                        IEnumerable<int> digits = item.WeeklySchedule.Select(c => (int)Char.GetNumericValue(c));
-                                        digits = @item.WeeklySchedule.Select(c => (int)Char.GetNumericValue(c));
-                                        string ret = string.Empty;
-                                        foreach (int i in digits)
-                                            ret += FastQ.Web.Helpers.Utilities.TranslateToDayOfWeek(i - 1, Utilities.DayofWeekType.Short);
-                                    }
-                                    @ret
-                                </td>
-                                <td>
-                                    @Html.DisplayFor(modelItem => item.ResourcesAvailable)
-                                </td>
-                                @*<td>
-                                        @Html.ActionLink("Edit", "Edit", new { id = model.Id }) |
-                                        @Html.ActionLink("Details", "Details", new { id = model.Id }) |
-                                        @Html.ActionLink("Delete", "Delete", new { id = model.Id })
-                                    </td>*@
-                            </tr>
+                            <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                <input type="checkbox" onclick="return false;"
+                                       name="SelectedRefCriterias"
+                                       value="@item.Value"
+                                       style="pointer-events: none; cursor: default; opacity: 1;"
+                                       @(item.IsChecked ? "checked" : "") />
+                                @item.Name
+                            </label>
                         }
-                    </tbody>
-                </table>
+                    </div>
+                </div>
+
+                <div class="form-group pt-3">
+                    @Html.LabelFor(model => model.SelectedContactMethods, htmlAttributes: new { @class = "control-label" })
+                    <div class="tag-group">
+                        @foreach (var item in Model.AvailableContactMethods)
+                        {
+                            <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                <input type="checkbox" onclick="return false;"
+                                       name="SelectedContactMethods"
+                                       value="@item.Value"
+                                       @(item.IsChecked ? "checked" : "") />
+                                @item.Name
+                            </label>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
+
+
+
     </div>
+</section>
+
+
+<div class="card">
+    <div class="card-title">Services</div>
+    @if (Model.Services == null)
+    {
+        <div>No Services assigned</div>
+    }
+    else
+    {
+        <div class="table-card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>In Spanish</th>
+                        <th>In Creole</th>
+                        <th>Active?</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @foreach (var item in Model.Services)
+                    {
+                        <tr id="Qsvcrow-@item.Id">
+                            <td>@item.Id</td>
+                            <td>@item.Name</td>
+                            <td>@item.NameES</td>
+                            <td>@item.NameCP</td>
+                            <td class="text-center"><span class="@(item.ActiveFlag? "status-dot" : "inactive-dot" )" ></span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
+<div class="card">
+    <div class="card-title">Schedules</div>
+    @if (Model.Schedules == null)
+    {
+        <div>No Schedules assigned</div>
+    }
+    else
+    {
+        <div class="table-card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Begins</th>
+                        <th>Ends</th>
+                        <th>Opens At</th>
+                        <th>Closes At</th>
+                        <th>Duration</th>
+                        <th>Weekly</th>
+                        <th>Avail. Res</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Schedules)
+                    {
+                        @*@Html.Partial("../Admin/Queue/_QueueSchedules", item)*@
+                        <tr id="QSrow-@item.Id">
+                            <td>@item.BeginDate.ToShortDateString()</td>
+                            <td>@item.EndDate.ToShortDateString()</td>
+                            <td>@(System.Xml.XmlConvert.ToTimeSpan(item.OpenTime))</td>
+                            <td>@(System.Xml.XmlConvert.ToTimeSpan(item.CloseTime))</td>
+                            <td>@(System.Xml.XmlConvert.ToTimeSpan(item.Duration))</td>
+                            <td>@Utilities.WeeklySchPrettyPrint(item.WeeklySchedule, " ")</td>
+                            <td>@Html.DisplayFor(modelItem => item.ResourcesAvailable)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -2,7 +2,6 @@
 @{
     Layout = null;
     var providerTodayUrl = Url.Action("Today", "Provider");
-    var adminCalendarUrl = Url.Action("Index", "Calendar");
 }
 <!DOCTYPE html>
 <html>
@@ -29,9 +28,9 @@
             z-index: 9999;
         }
 
-        .fastq-modal-backdrop.show {
-            display: flex;
-        }
+            .fastq-modal-backdrop.show {
+                display: flex;
+            }
 
         .fastq-modal {
             background: #ffffff;
@@ -97,17 +96,17 @@
             <nav class="drawer-nav">
                 <div class="nav-section">
                     <div class="nav-title">Overview</div>
-                    <a class="nav-link active" href="/Home/Index">
+                    <a class="nav-link active" href="@Url.Action("Index", "Home")" title="Dashboard" aria-label="Dashboard">
                         <i class="bi bi-house"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
 
-                    <a class="nav-link" href="@providerTodayUrl">
+                    <a class="nav-link" href="@Url.Action("Today", "Provider")" title="My Queues" aria-label="My Queues">
                         <i class="bi bi-person-lines-fill"></i>
                         <span class="nav-text">My Queues</span>
                     </a>
 
-                    <a class="nav-link" href="@adminCalendarUrl">
+                    <a class="nav-link" href="@Url.Action("Index", "Calendar")">
                         <i class="bi bi-calendar"></i>
                         <span class="nav-text">Calendar</span>
                     </a>
@@ -118,7 +117,7 @@
 
                     <a class="nav-link" href="/Customer/Book">
                         <i class="bi bi-plus-circle"></i>
-                        <span class="nav-text">Booking</span>
+                        <span class="nav-text">Appointment</span>
                     </a>
 
                     <a class="nav-link" href="/Customer/Walkin">
@@ -130,11 +129,11 @@
 
                 <div class="nav-section">
                     <div class="nav-title">Admin</div>
-                    <a class="nav-link" href="/Queue">
+                    <a class="nav-link" href="@Url.Action("Index", "Queue")">
                         <i class="bi bi-list-task"></i>
                         <span class="nav-text">Queues</span>
-                    </a>                    
-                    <a class="nav-link" href="/User">
+                    </a>
+                    <a class="nav-link" href="@Url.Action("Index", "User")">
                         <i class="bi bi-people"></i>
                         <span class="nav-text">Users</span>
                     </a>
@@ -142,31 +141,36 @@
 
 
                 <div class="nav-section">
-                    <div class="nav-title">Operations</div>
+                    <div class="nav-title">Reports</div>
 
-                    <a class="nav-link" href="#">
+                    <a class="nav-link" href="/">
                         <!--/Reporting/Overview-->
                         <i class="bi bi-bar-chart-line"></i>
                         <span class="nav-text">Reports</span>
                     </a>
 
-                    <a class="nav-link" href="/Admin/Dashboard">
-                        <i class="bi bi-gear"></i>
-                        <span class="nav-text">Settings</span>
-                    </a>
-                    <a class="nav-link" href="#">
-                        <i class="bi bi-search"></i>
-                        <span class="nav-text">Search</span>
-                    </a>
-                    <a class="nav-link" href="#">
-                        <i class="bi bi-question-circle"></i>
-                        <span class="nav-text">Help</span>
+                    <a class="nav-link" href="/">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="nav-text">Logout</span>
                     </a>
 
-                    <a class="nav-link" href="/Customer/Login">
-                        <i class="bi bi-person"></i>
-                        <span class="nav-text">Profile</span>
-                    </a>
+                    @*<a class="nav-link" href="/Admin/Dashboard">
+                            <i class="bi bi-gear"></i>
+                            <span class="nav-text">Settings</span>
+                        </a>
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-search"></i>
+                            <span class="nav-text">Search</span>
+                        </a>
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-question-circle"></i>
+                            <span class="nav-text">Help</span>
+                        </a>
+
+                        <a class="nav-link" href="/Customer/Login">
+                            <i class="bi bi-person"></i>
+                            <span class="nav-text"></span>
+                        </a>*@
                 </div>
 
             </nav>
@@ -175,6 +179,7 @@
                     <div class="status-title">System Health</div>
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span class="pill">Online</span>
+                        <span class="muted"></span>
                     </div>
                 </div>
             </div>
@@ -226,8 +231,34 @@
                 toggle.setAttribute("aria-expanded", (!collapsed).toString());
                 toggle.setAttribute("aria-label", collapsed ? "Expand navigation" : "Collapse navigation");
             });
+
+            //// Highlight the active link based on URL
+            //const currentPath = location.pathname;
+            //const navLinks = document.querySelectorAll('.nav-link');
+            //navLinks.forEach(l => {
+            //    l.classList.remove('active');
+            //    if (l.pathname === currentPath) {
+            //        l.classList.add('active');
+            //    }
+            //});
+
+            // Get all navigation links
+            const navLinks = document.querySelectorAll('.nav-link');
+            const currentPath = window.location.pathname;
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                const linkPath = new URL(link.href).pathname;
+                if (currentPath.startsWith(linkPath) && linkPath !== "/") {
+                    link.classList.add('active');
+                }
+                // Special handling for the root path if needed, to avoid matching everything
+                if (linkPath === "/" && currentPath === "/") {
+                    link.classList.add('active');
+                }
+            });
         })();
 
+        // signalR related ???
         (function () {
             var modal = document.getElementById("fastq_error_modal");
             var titleEl = document.getElementById("fastqErrorTitle");

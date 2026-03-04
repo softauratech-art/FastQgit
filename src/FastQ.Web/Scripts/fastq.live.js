@@ -17,13 +17,13 @@
 
       var self = this;
 
-      this.hub.client.queueUpdated = function (locationId, queueId) {
-        if (window.onFastQQueueUpdated) window.onFastQQueueUpdated(safe(locationId), safe(queueId));
+      this.hub.client.queueUpdated = function (locationId, queueId, actorUserId) {
+        if (window.onFastQQueueUpdated) window.onFastQQueueUpdated(safe(locationId), safe(queueId), safe(actorUserId));
       };
 
-      this.hub.client.appointmentUpdated = function (appointmentId, status, providerId) {
+      this.hub.client.appointmentUpdated = function (appointmentId, status, providerId, actorUserId) {
         if (window.onFastQAppointmentUpdated) {
-          window.onFastQAppointmentUpdated(safe(appointmentId), safe(status), safe(providerId));
+          window.onFastQAppointmentUpdated(safe(appointmentId), safe(status), safe(providerId), safe(actorUserId));
         }
       };
 

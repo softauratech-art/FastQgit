@@ -1,15 +1,44 @@
 ﻿@model FastQ.Web.Models.Admin.QueueVM
+@using FastQ.Web.Helpers
 
 @{
     ViewBag.Title = "ManageQueue";
     Layout = "~/Views/Shared/_Layout.cshtml";
+}
 
-    var isActiveFlag = Model.ActiveFlag.IsEmpty() ? false : Model.ActiveFlag.Equals("Y");
-    var isEmpOnly = Model.EmpOnly.IsEmpty() ? false : Model.EmpOnly.Equals("Y");
-    var isHideInKiosk = Model.HideInKiosk.IsEmpty() ? false : Model.HideInKiosk.Equals("Y");
-    var isHideInMonitor = Model.HideInMonitor.IsEmpty() ? false : Model.HideInMonitor.Equals("Y");
-    var isHasGuidelines = Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.IsEmpty() ? false : Model.HasGuidelines.Equals("Y");
-    var isHasUploads = Model.HasUploads.IsEmpty() ? false : Model.HasUploads.Equals("Y");
+@section Head
+    {
+    <!-- Latest compiled and minified CSS -->
+    @*<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">*@
+    <link rel="stylesheet" href="~/Content/queueadmin.css" />
+    <link rel="stylesheet" href="~/Content/modal.css" />
+    <style>
+        .section-configuration {
+            margin-bottom: 5px;
+        }
+
+        .configuration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+            .configuration-header h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-main);
+                margin: 0;
+            }
+
+        .config-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+    </style>
 }
 
 @section PageHeader {
@@ -18,143 +47,410 @@
         <div class="topbar-sub">Manage Queues Configuration, Services and Schedules</div>
     </div>
     <div class="top-actions">
-        <div>
-            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn" })
-        </div>
+        @*<div>
+                  @Html.ActionLink("Back to List", "Index", null, new { @class = "btn btn-outline-secondary" })
+            </div>*@
     </div>
 }
+@{
+    if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <strong>Error:</strong> @ViewBag.ErrorMessage
+        </div>
+    }
 
-@using (Html.BeginForm())
+    if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success">
+            <strong>Success:</strong> @ViewBag.SuccessMessage
+        </div>
+    }
+}
+
+@using (Html.BeginForm("Edit", "Queue"))
 {
-    @Html.AntiForgeryToken()
+    @Html.AntiForgeryToken();
+    Html.Validate("QueueVM");
+    <section class="section-configuration card">
+        <div class="configuration-header">
+            <h2>Configuration</h2>
+            @*<div class="primary-actions">
+                    <button class="btn btn-cancel">Cancel</button>
+                    <button class="btn btn-save"><i class="bi bi-check"></i> Save</button>
+                </div>*@
+            @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+
+        <div class="primary-actions">
+            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn small ghost" })<span style="margin-left:16px;"></span>
+            <input type="submit" value="Save Config" class="btn small secondary" />
+        </div>
+        </div>
+
+        <div class="grid-3">
+            <div class="card">
+                @Html.HiddenFor(model => model.Id)
+                @Html.HiddenFor(model => model.LocationId)
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-card-heading"></i>Identity & Translations</div>
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
+                        @Html.DisplayFor(model => model.Id)
+                    </div>
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Name, "Name (Primary English)", new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                    <div class="form-group">
+                        @Html.Label("NameES", "Spanish", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                    <div class="form-group">
+                        @Html.Label("NameCP", "Creole", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.NameCP, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control" } })
+
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-eye"></i> Visibility & Rules</div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.ActiveFlag, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="ActiveFlag" id="ActiveFlag" @(Model.ActiveFlag ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.EmpOnly, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="EmpOnly" id="EmpOnly" @(Model.EmpOnly ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HideInKiosk, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HideInKiosk" id="HideInKiosk" @(Model.HideInKiosk ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HideInMonitor, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HideInMonitor" id="HideInMonitor" @(Model.HideInMonitor ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HasGuidelines, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HasGuidelines" id="HasGuidelines" @(Model.HasGuidelines ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        @*<div class="form-check form-switch">
+                                @Html.CheckBoxFor(model => model.HasGuidelines, new { @class = "form-check-input", @role = "switch" })
+                                @Html.Label("HasGuidelines", "Has Guidelines?", new { @class = "form-check-label" })
+                            </div>*@
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HasUploads, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HasUploads" id="HasUploads" @(Model.HasUploads ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        @*<div class="form-check form-switch">
+                                @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
+                                @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
+                            </div>*@
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>
+                    <div class="range-container">
+                        <div class="range-display">
+                            @Html.LabelFor(model => model.LeadTimeMin, "Min. Lead Time", htmlAttributes: new { @class = "control-label" })
+                        </div>
+                        @Html.DropDownListFor(model => model.LeadTimeMin, Model.GetLeadTimes("LeadTimeMin"), "- Select-", new { @style = "font-size:0.9em" })
+                        @Html.ValidationMessageFor(model => model.LeadTimeMin, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="range-container" style="margin-top: 20px;">
+                        <div class="range-display">
+                            @Html.LabelFor(model => model.LeadTimeMax, "Max. Lead Time", htmlAttributes: new { @class = "control-label" })
+                        </div>
+                        @Html.DropDownListFor(model => model.LeadTimeMax, Model.GetLeadTimes("LeadTimeMax"), "- Select-", new { @style = "font-size:0.9em" })
+                        @Html.ValidationMessageFor(model => model.LeadTimeMax, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group pt-3">
+                        @Html.Label("SelectedRefCiriterias", "Reference Data", htmlAttributes: new { @class = "control-label" })
+                        <div class="tag-group">
+                            @foreach (var item in Model.AvailableRefCriterias)
+                            {
+                                <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                    <input type="checkbox"
+                                           name="SelectedRefCriterias"
+                                           value="@item.Value"
+                                           @(item.IsChecked ? "checked" : "") />
+                                    @item.Name
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="form-group pt-3">
+                        @Html.Label("SelectedContactMethods", "Appointment Types", htmlAttributes: new { @class = "control-label" })
+                        <div class="tag-group">
+                            @foreach (var item in Model.AvailableContactMethods)
+                            {
+                                <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                    <input type="checkbox"
+                                           name="SelectedContactMethods"
+                                           value="@item.Value"
+                                           @(item.IsChecked ? "checked" : "") />
+                                    @item.Name
+                                </label>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        </div>
+    </section>
+}
 
 <div class="card">
-    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-    @Html.HiddenFor(model => model.Id)
-
-    <div class="form-grid" style="padding: 6px;">
-        @*<div class="field">
-                @Html.LabelFor(model => model.LocationId, htmlAttributes: new { @class = "control-label" })
-                <div class="col-md-10">
-                    @Html.EditorFor(model => model.LocationId, new { htmlAttributes = new { @class = "form-control" } })
-                    @Html.ValidationMessageFor(model => model.LocationId, "", new { @class = "text-danger" })
-                </div>
-            </div>*@
-
-        <div class="field">
-            @Html.LabelFor(model => model.Name, htmlAttributes: new { @class = "control-label" })
-            @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
-            @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
-        </div>
-
-        <div class="field">
-            @Html.LabelFor(model => model.NameES, htmlAttributes: new { @class = "control-label" })
-            @Html.EditorFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control" } })
-            @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
-        </div>
-
-        <div class="field">
-            @Html.LabelFor(model => model.NameCP, htmlAttributes: new { @class = "control-label" })
-            @Html.EditorFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control" } })
-            @Html.ValidationMessageFor(model => model.NameCP, "", new { @class = "text-danger" })
-        </div>
+    <div class="card-title" style="display:block;">
+        Services
+        <a onclick="showInPopup('@Url.Action("AddService","Queue", Model.Id)','New Service')" class="btn small primary btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#form-modal" style="float:right" role="button">Add Service</a>
     </div>
-    <div class="form-grid-6" style="padding: 10px;">
-        <div>
-            @Html.LabelFor(model => model.ActiveFlag, htmlAttributes: new { @class = "control-label" })
-            @Html.CheckBoxFor(model => isActiveFlag)
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.EmpOnly, htmlAttributes: new { @class = "control-label" })
-            @Html.CheckBoxFor(model => isEmpOnly)
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HideInKiosk, htmlAttributes: new { @class = "control-label" })
-            @Html.CheckBoxFor(model => isHideInKiosk)
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HideInMonitor, htmlAttributes: new { @class = "control-label" })
-            @Html.CheckBoxFor(model => isHideInMonitor)
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HasGuidelines, htmlAttributes: new { @class = "control-label" })
-            @Html.CheckBoxFor(model => isHasGuidelines)
-        </div>
-
-        <div>
-            @Html.LabelFor(model => model.HasUploads, htmlAttributes: new { @class = "control-label" })
-            @Html.CheckBoxFor(model => isHasUploads)
-        </div>
-    </div>
-    <div class="form-grid" style="padding: 6px;">
-        <div class="field">
-            @Html.LabelFor(model => model.LeadTimeMin, htmlAttributes: new { @class = "control-label" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.LeadTimeMin, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.LeadTimeMin, "", new { @class = "text-danger" })
-            </div>
-        </div>
-
-        <div class="field">
-            @Html.LabelFor(model => model.LeadTimeMax, htmlAttributes: new { @class = "control-label" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.LeadTimeMax, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.LeadTimeMax, "", new { @class = "text-danger" })
-            </div>
-        </div>
-
-    </div>
-
-    <div class="card" style="margin-top:16px;">
-        <div style="padding: 6px;">
-            <div>
-                <input type="button" id="btnAddSchedule" class="btn small primary" value="Add Schedule" style="float:right;" />
-                <table class="table" id="ScheduleSection">
-                    <thead>
-                        <tr>
-                            <th>Begins</th>
-                            <th>Ends</th>
-                            <th>Opens At</th>
-                            <th>Closes At</th>
-                            <th>Duration</th>
-                            <th>Weekly</th>
-                            <th>Avail. Res</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    @foreach (var item in Model.Schedules)
-                    {
-                        @Html.Partial("../Admin/Queue/_ScheduleEdit", item)
-                    }
-                </table>
-            </div>
-        </div>
-    </div>
-
-
-    <div style="padding-top: 10px; text-align:center">
-        <input type="submit" value="Save" class="btn secondary" />
-        <input type="button" value="Cancel" class="btn ghost" />
+    <div class="table-card">
+        @if (Model.Services != null)
+        {
+            Html.RenderPartial("../Admin/Queue/_QueueServices", Model.Services);
+        }
+        else
+        {
+            <div id="ServiceSection">No records found</div>
+        }
     </div>
 </div>
-}
 
+<div class="card">
+    <div class="card-title" style="display:block;">
+        Schedules
+        <a onclick="showInPopup('@Url.Action("AddSchedule","Queue", Model.Id)','New Schedule')" class="btn small primary btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#form-modal" style="float:right" role="button">Add Schedule</a>
+    </div>
+
+    <div class="table-card">
+        @if (Model.Schedules != null)
+        {
+            Html.RenderPartial("../Admin/Queue/_QueueSchedules", Model.Schedules);
+        }
+        else
+        {
+            <div id="ScheduleSection">No records found</div>
+        }
+    </div>
+</div>
+
+
+
+
+<div id="form-modal" class="modal-backdrop"  role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title"></h5>
+            <button type="button" class="btn-close" onclick="closeModal('form-modal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
+            <!--Content from Partial-View-Editors-->
+        </div>
+        <div class="modal-footer">
+        </div>
+    </div>
+</div>
 @section Scripts{
+    @*included in _Layout: <script src="~/Scripts/jquery-3.7.1.min.js"></script>*@
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+    @*<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>*@
+    <script src="~/Scripts/jquery-fxtime.js"></script>
     <script>
+        function clearModalBody(id) {
+            $('#' + id + ' .modal-body').empty();
+            $('#' + id + ' .modal-title').empty();
+
+        }
+        function closeModal(id) {
+            var modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove("show");
+                clearModalBody(id);
+            }
+        }
+        function openModal(id) {
+            var modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add("show");
+            }
+        }
+
         $(document).ready(function () {
-            $("#btnAddSchedule").click(function () {
-                //alert("btn clicked");
+            $("input.time").fxtime();
+
+            showInPopup = (url, title) => {
                 $.ajax({
-                    url: '/Queue/DisplayNewSchedule',
                     type: 'GET',
-                    success: function (partialView) {
-                        $('#ScheduleSection tbody').append(partialView);
+                    url: url,
+                    data: {queueid: @Model.Id},
+                    success: function (res) {
+                        $('#form-modal .modal-body').html(res);
+                        $('#form-modal .modal-title').html(title);
+                        //$('#form-modal').modal('show');
+                        openModal('form-modal');
                     }
-                });
+                })
+            }
+
+            deleteRecord = (obj) => {
+                var partialviewdiv = $(obj).data("secname");
+                var sid = $(obj).data("id");
+                var urlaction = $(obj).data("action");
+                var qid = @Model.Id;
+
+                if (confirm('Are you sure to delete this record (id: ' + sid + ') ?')) {
+                    try {
+                        const postData = {
+                            id: sid,
+                            queueid: qid
+                        };
+
+                        fetch(urlaction, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(postData),
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Server responded with ${response.status}`);
+                                }
+                                // Return the response as plain text (HTML string)
+                                return response.text();
+                            })
+                            .then(html => {
+                                // reload partial view
+                                $(`#${partialviewdiv}`).replaceWith(html);
+                                $('#form-modal .modal-body').html('Record deleted successfully');
+                                $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
+                            })
+                            .catch(error => {
+                                console.error('There has been a problem with your fetch operation:', error);
+                                $('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                            });
+
+                    } catch (ex) {
+                        console.log(ex);
+                    }
+                }
+            }
+        });
+
+        $(document).on('click', '.btnDeleteSvc', function(){
+            deleteRecord(this);
+        });
+
+        $(document).on('click', '.btnDeleteSch', function () {
+            deleteRecord(this);
+        });
+
+        function postQchildForm(form) {
+            try {
+                var sid = $(form).data("id");
+                var partialviewdiv = $(form).data("secname");
+                var errcode;
+                fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            errcode = response.status;
+                            throw new Error(`Server responded with ${response.status}`);
+                        }
+                        // Return the response as plain text (HTML string)
+                        return response.text();
+                    })
+                    .then(html => {
+                        // reload partial view
+                        $(`#${partialviewdiv}`).replaceWith(html);
+                        $('#form-modal .modal-body').html('Record updated successfully');
+                        $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
+                    })
+                    .catch(error => {
+                        if (errcode == 400)
+                            $('#form-modal .validation-summary-error').html(`Please fill out all fields`);
+                        else
+                            $('#form-modal .validation-summary-error').html(`Update Failed ${error}`);
+                        //was:$('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                    });
+
+            } catch (err) {
+                console.error('Submission failed:', err);
+                $('#form-modal .modal-body').html(`Submission failed ${err}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+            }
+            // Prevents default form submission
+            return false;
+        }
+
+        function showErrors(errors) {
+            $(".validation - summary - erros").empty();
+            var errlist = $('<ul></ul>');
+            for (var key in errors) {
+                if (errros.hasOwnProperty(key)) {
+                    errors[key].forEach(function (errmsg) {
+                        errlist.append('<li>' + errmsg + '</li>');
+                    });
+                }
+            }
+            $(".validation - summary - erros").append(errlist);
+        }
+
+        // Pill tag click handling
+        document.querySelectorAll('.pill-tag input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
+                    this.parentElement.classList.add('active');
+                } else {
+                    this.parentElement.classList.remove('active');
+                }
             });
         });
     </script> }
+

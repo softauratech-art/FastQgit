@@ -4,76 +4,114 @@
     ViewBag.Title = "View";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+@section Head{
+    <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/datatablesFQ.css" rel="stylesheet" />
+    <style>
+        .dt-length {
+            display: none;
+        }
+    </style>
+}
+
 @section PageHeader {
     <div>
         <div class="topbar-title">Manage User Accounts</div>
         <div class="topbar-sub">Add, Edit and Remove users</div>
     </div>
+
     <div class="top-actions">
-        <div>
-            @Html.ActionLink("Create New", "Create", null, new { @class = "btn primary" })
-        </div>
-        <div class="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20l-3.5-3.5"></path>
-            </svg>
-            <input type="text" placeholder="Search by name" />
-        </div>
+
     </div>
+
+    @*<div class="top-actions">
+            <div>
+                @Html.ActionLink("Create New", "Create", null, new { @class = "btn primary" })
+            </div>
+            <div class="search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="M20 20l-3.5-3.5"></path>
+                </svg>
+                <input type="text" placeholder="Search by name" />
+            </div>
+        </div>*@
 }
 
 <div class="card">
-    <table class="table" style="text-align:left">
-        <tr>
-            <th>@Html.DisplayNameFor(model => model.UserId)</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>@Html.DisplayNameFor(model => model.Email)</th>
-            <th>@Html.DisplayNameFor(model => model.Title)</th>
-            <th>Admin?</th>
-            <th>Active?</th>
-            <th>Language</th>
-            <th></th>
-        </tr>
-
-        @foreach (var item in Model)
-        {
+    
+    @Html.ActionLink("Create New", "Edit", 0, new { @class = "btn primary", @style="float:right;" })
+    
+    <table id="Udata" class="table" style="font-size:0.95em">
+        <thead>
             <tr>
-                <td style="text-decoration: underline">
-                    @Html.ActionLink(item.UserId, "Details", new { id = item.UserId })
-                </td>
-
-                <td>
-                    @Html.DisplayFor(modelItem => item.FirstName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.LastName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Email)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Title)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.IsAdmin)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.IsActive)
-                </td>
-
-                <td>
-                    @Html.DisplayFor(modelItem => item.OtherLanguage)
-                </td>
-                <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.UserId }) |
-                    @*@Html.ActionLink("Details", "Details", new { id = item.UserId }) |*@
-                    @Html.ActionLink("Delete", "Delete", new { id = item.UserId })
-                </td>
+                <th>@Html.DisplayNameFor(model => model.UserId)</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>@Html.DisplayNameFor(model => model.Email)</th>
+                @*<th>@Html.DisplayNameFor(model => model.Title)</th>*@
+                <th>Admin?</th>
+                <th>Active?</th>
+                <th>Language</th>
+                <th></th>
             </tr>
-        }
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td style="text-decoration: underline">
+                        @Html.ActionLink(item.UserId, "Details", new { id = item.UserId })
+                    </td>
 
+                    <td>
+                        @Html.DisplayFor(modelItem => item.FirstName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.LastName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Email)
+                    </td>
+                    @*<td>
+                            @Html.DisplayFor(modelItem => item.Title)
+                        </td>*@
+                    <td>
+                        @Html.DisplayFor(modelItem => item.IsAdmin)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.IsActive)
+                    </td>
+
+                    <td>
+                        @Html.DisplayFor(modelItem => item.OtherLanguage)
+                    </td>
+                    <td>
+                        @Html.ActionLink("Edit", "Edit", new { id = item.UserId }) |
+                        @*@Html.ActionLink("Details", "Details", new { id = item.UserId }) |*@
+                        @Html.ActionLink("Delete", "Delete", new { id = item.UserId })
+                    </td>
+                </tr>
+            }
+        </tbody>
 
     </table>
 </div>
+@section Scripts{
+    <script src="https://cdn.datatables.net/2.3.7/js/dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#Udata').DataTable({
+                /*"dom": 'frtip',*/
+                "columnDefs": [
+                    { "targets": [7], "orderable": false }
+                ],
+                "layout": {
+                    topStart: 'search',
+                    topEnd: { pageLength: { text: "_MENU_ per page" } }
+                },
+                "pageLength": 50 // Sets the default page size to 50
+            });
+        });
+    </script>
+}

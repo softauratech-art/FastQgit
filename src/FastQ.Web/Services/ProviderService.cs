@@ -62,17 +62,18 @@ namespace FastQ.Web.Services
 
         public IList<Queue> ListQueues()
         {
-            return _queues.ListAll();
+            //return _queues.ListAll();
+            return _queues.ListByEntity(null, new AuthService().GetLoggedInWindowsUser());
         }
 
         public IList<Queue> ListTransferQueues(long? locationId)
         {
             if (locationId.HasValue && locationId.Value > 0)
             {
-                return _queues.ListByLocation(locationId.Value);
+                return _queues.ListByEntity(locationId.Value, new AuthService().GetLoggedInWindowsUser());
             }
 
-            return _queues.ListAll();
+            return _queues.ListByEntity(null, new AuthService().GetLoggedInWindowsUser());
         }
 
         public IList<Tuple<long, string>> ListTransferServices(long queueId)
@@ -377,13 +378,26 @@ namespace FastQ.Web.Services
             if (sourceAppt != null)
             {
                 sourceAppt.Status = AppointmentStatus.TransferredOut;
+                sourceAppt.ProviderId = stampUser;
+                sourceAppt.StampUser = stampUser;
                 sourceAppt.UpdatedUtc = _clock.UtcNow;
                 sourceAppt.StampDateUtc = _clock.UtcNow;
-                _rt.AppointmentChanged(sourceAppt);
-                _rt.QueueChanged(sourceAppt.LocationId, sourceAppt.QueueId);
+                _rt.AppointmentChanged(sourceAppt, stampUser);
+                _rt.QueueChanged(sourceAppt.LocationId, sourceAppt.QueueId, stampUser);
             }
 
-            _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
+            if (targetKind == 'A' && newSrcId > 0)
+            {
+                var targetAppt = _appts.Get(newSrcId);
+                if (targetAppt != null)
+                {
+                    targetAppt.ProviderId = stampUser;
+                    targetAppt.StampUser = stampUser;
+                    _rt.AppointmentChanged(targetAppt, stampUser);
+                }
+            }
+
+            _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id, stampUser);
             return Result<long>.Success(newSrcId);
         }
 
@@ -428,20 +442,32 @@ namespace FastQ.Web.Services
                 if (appt != null)
                 {
                     appt.Status = AppointmentStatus.Completed;
-                    appt.ProviderId = request.StampUser;
+                    appt.ProviderId = stampUser;
+                    appt.StampUser = stampUser;
                     appt.UpdatedUtc = _clock.UtcNow;
                     appt.StampDateUtc = _clock.UtcNow;
-                    _rt.AppointmentChanged(appt);
-                    _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                    _rt.AppointmentChanged(appt, stampUser);
+                    _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
                 }
             }
 
             if (request.TargetQueueId.HasValue && request.TargetQueueId.Value > 0)
             {
+                if (request.AdditionalService && request.TargetKind.HasValue && char.ToUpperInvariant(request.TargetKind.Value) == 'A' && newSrcId > 0)
+                {
+                    var targetAppt = _appts.Get(newSrcId);
+                    if (targetAppt != null)
+                    {
+                        targetAppt.ProviderId = stampUser;
+                        targetAppt.StampUser = stampUser;
+                        _rt.AppointmentChanged(targetAppt, stampUser);
+                    }
+                }
+
                 var targetQueue = _queues.Get(request.TargetQueueId.Value);
                 if (targetQueue != null)
                 {
-                    _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
+                    _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id, stampUser);
                 }
             }
 
@@ -464,8 +490,8 @@ namespace FastQ.Web.Services
                 a.StampDateUtc = now;
                 _appts.Update(a);
 
-                _rt.AppointmentChanged(a);
-                _rt.QueueChanged(a.LocationId, a.QueueId);
+                _rt.AppointmentChanged(a, "system");
+                _rt.QueueChanged(a.LocationId, a.QueueId, "system");
             }
 
             return stale.Count;
@@ -495,8 +521,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.AppointmentChanged(appt, stampUser);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
             }
 
             return Result.Success();
@@ -526,8 +552,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.AppointmentChanged(appt, stampUser);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
             }
 
             return Result.Success();
@@ -556,8 +582,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.AppointmentChanged(appt, stampUser);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
             }
 
             return Result.Success();
@@ -587,8 +613,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.AppointmentChanged(appt, stampUser);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
             }
 
             return Result.Success();
