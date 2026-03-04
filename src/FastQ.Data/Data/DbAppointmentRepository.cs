@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
+using Newtonsoft.Json.Linq;
 
 namespace FastQ.Data.Db
 {
@@ -37,50 +38,36 @@ namespace FastQ.Data.Db
         {
             using (var conn = DataAccess.Open())
             {
-                var newId = DataAccess.NextVal(conn, "APPTSEQ");
-                appointment.Id = newId;
-
-                var customerId = appointment.CustomerId;
-                if (customerId <= 0)
-                    throw new InvalidOperationException("CustomerId must be a numeric ID.");
                 var queueId = appointment.QueueId;
                 if (queueId <= 0)
                     throw new InvalidOperationException("QueueId must be a numeric ID.");
+                var customerEmail = (appointment.CustomerEmail ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(customerEmail))
+                    throw new InvalidOperationException("CustomerEmail is required for FQ_EXTERNAL.INSERT_APPT.");
 
-                var apptDate = ResolveApptDate(appointment);
-                var startInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
-                var endInterval = OracleInterval(appointment.EndTime);
-                var createdBy = string.IsNullOrWhiteSpace(appointment.CreatedBy) ? "fastq" : appointment.CreatedBy;
-                var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
-
-                using (var cmd = DataAccess.CreateCommand(conn,
-                    @"INSERT INTO APPOINTMENTS
-                        (APPOINTMENT_ID, CUSTOMER_ID, QUEUE_ID, SERVICE_ID, REF_CRITERIA, REF_VALUE, CONTACTTYPE, MOREINFO,
-                         APPT_DATE, START_TIME, END_TIME, STATUS, CONFCODE, MEETINGURL, LANGUAGE_PREF,
-                         CREATEDBY, CREATEDON, STAMPUSER, STAMPDATE)
-                      VALUES
-                        (:apptId, :customerId, :queueId, :serviceId, :refCriteria, :refValue, :contactType, :moreInfo,
-                         :apptDate, TO_DSINTERVAL(:startTime), TO_DSINTERVAL(:endTime), :status, :confCode, :meetingUrl, :languagePref,
-                         :createdBy, SYSDATE, :stampUser, SYSDATE)"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_EXTERNAL.INSERT_APPT"))
                 {
-                    DataAccess.AddParam(cmd, "apptId", newId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "serviceId", ToNullableLong(appointment.ServiceId), DbType.Int64);
-                    DataAccess.AddParam(cmd, "refCriteria", appointment.RefCriteria, DbType.String);
-                    DataAccess.AddParam(cmd, "refValue", appointment.RefValue, DbType.String);
-                    DataAccess.AddParam(cmd, "contactType", appointment.ContactType, DbType.String);
-                    DataAccess.AddParam(cmd, "moreInfo", appointment.MoreInfo, DbType.String);
-                    DataAccess.AddParam(cmd, "status", appointment.Status.ToString(), DbType.String);
-                    DataAccess.AddParam(cmd, "apptDate", apptDate, DbType.DateTime);
-                    DataAccess.AddParam(cmd, "startTime", startInterval, DbType.String);
-                    DataAccess.AddParam(cmd, "endTime", endInterval, DbType.String);
-                    DataAccess.AddParam(cmd, "confCode", appointment.ConfirmationCode, DbType.String);
-                    DataAccess.AddParam(cmd, "meetingUrl", appointment.MeetingUrl, DbType.String);
-                    DataAccess.AddParam(cmd, "languagePref", appointment.LanguagePreference, DbType.String);
-                    DataAccess.AddParam(cmd, "createdBy", createdBy, DbType.String);
-                    DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
+                    DataAccess.AddParam(cmd, "p_email", customerEmail, DbType.String);
+                    DataAccess.AddParam(cmd, "p_json", BuildInsertApptPayload(appointment), DbType.String);
+
+                    var confCode = DataAccess.AddParam(cmd, "p_confcode", null, DbType.String);
+                    confCode.Direction = ParameterDirection.Output;
+                    confCode.Size = 32;
+
+                    var outMsg = DataAccess.AddParam(cmd, "p_out", null, DbType.String);
+                    outMsg.Direction = ParameterDirection.Output;
+                    outMsg.Size = 4000;
+
                     cmd.ExecuteNonQuery();
+
+                    var error = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(error))
+                        throw new InvalidOperationException(error);
+
+                    appointment.ConfirmationCode = confCode.Value == DBNull.Value ? null : confCode.Value?.ToString();
+                    appointment.Id = LookupAppointmentIdByConfirmationCode(conn, appointment.ConfirmationCode);
+                    if (appointment.Id <= 0)
+                        throw new InvalidOperationException("FQ_EXTERNAL.INSERT_APPT did not return a resolvable appointment id.");
                 }
             }
         }
@@ -571,6 +558,50 @@ namespace FastQ.Data.Db
             return negative ? -result : result;
         }
 
+        private static string BuildInsertApptPayload(Appointment appointment)
+        {
+            var payload = new JArray(
+                new JObject
+                {
+                    ["REF_CRITERIA"] = appointment.RefCriteria,
+                    ["REF_VALUE"] = appointment.RefValue,
+                    ["QUEUE_ID"] = appointment.QueueId,
+                    ["SERVICE_ID"] = appointment.ServiceId.HasValue && appointment.ServiceId.Value > 0 ? (object)appointment.ServiceId.Value : null,
+                    ["CONTACTTYPE"] = appointment.ContactType,
+                    ["MOREINFO"] = appointment.MoreInfo,
+                    ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy hh.mm.ss tt", CultureInfo.InvariantCulture).ToUpperInvariant(),
+                    ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay),
+                    ["END_TIME"] = OracleInterval(appointment.EndTime),
+                    ["STATUS"] = appointment.Status.ToString().ToUpperInvariant(),
+                    ["LANGUAGE_PREF"] = appointment.LanguagePreference
+                });
+
+            return payload.ToString();
+        }
+
+        private static long LookupAppointmentIdByConfirmationCode(DbConnection conn, string confirmationCode)
+        {
+            if (string.IsNullOrWhiteSpace(confirmationCode))
+            {
+                return 0;
+            }
+
+            using (var cmd = DataAccess.CreateCommand(conn,
+                @"SELECT APPOINTMENT_ID
+                    FROM APPOINTMENTS
+                   WHERE CONFCODE = :confCode"))
+            {
+                DataAccess.AddParam(cmd, "confCode", confirmationCode.Trim(), DbType.String);
+                var value = cmd.ExecuteScalar();
+                if (value == null || value == DBNull.Value)
+                {
+                    return 0;
+                }
+
+                return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+            }
+        }
+
         private static DateTime ResolveApptDate(Appointment appointment)
         {
             if (appointment.ApptDateUtc != default)
@@ -603,7 +634,7 @@ namespace FastQ.Data.Db
                 return AppointmentStatus.Arrived;
             if (trimmed.Equals("STARTED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.InService;
-            if (trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.Equals("TRANSFERRED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("TRANSFERED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("TRANSFERRED OUT", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.TransferredOut;
             if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.Cancelled;
@@ -659,3 +690,5 @@ namespace FastQ.Data.Db
         }
     }
 }
+
+

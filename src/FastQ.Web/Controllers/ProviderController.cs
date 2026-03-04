@@ -327,7 +327,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string refValue, string notes)
+        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string refValue, string notes, string completionNotes)
         {
             long srcId;
             if (!long.TryParse(appointmentId, out srcId))
@@ -372,6 +372,8 @@ namespace FastQ.Web.Controllers
                 ? parsedTargetDate
                 : (DateTime?)null;
 
+            var resolvedUserId = _auth.GetLoggedInWindowsUser();
+
             var req = new ProviderService.CloseAndAddRequest
             {
                 SrcType = normalizedSrc[0],
@@ -383,12 +385,19 @@ namespace FastQ.Web.Controllers
                 TargetDateUtc = targetDateUtc,
                 RefValue = refValue,
                 Notes = notes,
-                StampUser = _auth.GetLoggedInWindowsUser()
+                StampUser = resolvedUserId
             };
 
             var res = _service.EndServiceAndOptionallyAdd(req);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
+
+            if (!string.IsNullOrWhiteSpace(completionNotes))
+            {
+                var saveRes = _service.SaveServiceInfo(srcId, normalizedSrc[0], null, completionNotes, resolvedUserId);
+                if (!saveRes.Ok)
+                    return Json(new { ok = true, newSrcId = res.Value, warning = saveRes.Error });
+            }
 
             return Json(new { ok = true, newSrcId = res.Value });
         }
@@ -420,4 +429,3 @@ namespace FastQ.Web.Controllers
         }
     }
 }
-

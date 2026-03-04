@@ -26,12 +26,20 @@ namespace FastQ.Web.Controllers
         {
             if (!long.TryParse(queueId, out var qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Queue is required." });
+                }
                 ViewBag.Error = "Queue is required.";
                 return View();
             }
 
             if (string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "First name, last name, and mobile number are required." });
+                }
                 ViewBag.Error = "First name, last name, and mobile number are required.";
                 return View();
             }
@@ -40,8 +48,22 @@ namespace FastQ.Web.Controllers
             var res = _service.BookFirstAvailable(DefaultLocationId, qId, phone, true, name);
             if (!res.Ok)
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = res.Error });
+                }
                 ViewBag.Error = res.Error;
                 return View();
+            }
+
+            if (Request.IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    ok = true,
+                    appointmentId = res.Value.Id,
+                    redirectUrl = $"/Customer/Home?appointmentId={Uri.EscapeDataString(res.Value.Id.ToString())}"
+                });
             }
 
             return Redirect($"/Customer/Home?appointmentId={Uri.EscapeDataString(res.Value.Id.ToString())}");

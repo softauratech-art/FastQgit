@@ -54,26 +54,46 @@ namespace FastQ.Web.Controllers
 
             if (!long.TryParse(queueId, out var qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Queue is required." });
+                }
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
 
             if (string.IsNullOrWhiteSpace(customerName))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Customer name is required." });
+                }
                 return CalendarError(displayMonth, selected, "Customer name is required.");
             }
 
             if (string.IsNullOrWhiteSpace(phone))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Phone is required." });
+                }
                 return CalendarError(displayMonth, selected, "Phone is required.");
             }
 
             if (!DateTime.TryParseExact(appointmentDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Appointment date is required." });
+                }
                 return CalendarError(displayMonth, selected, "Appointment date is required.");
             }
 
             if (!TimeSpan.TryParse(startTime, CultureInfo.InvariantCulture, out var parsedTime))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Start time is required." });
+                }
                 return CalendarError(displayMonth, parsedDate, "Start time is required.");
             }
 
@@ -91,7 +111,23 @@ namespace FastQ.Web.Controllers
 
             if (!res.Ok)
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = res.Error });
+                }
                 return CalendarError(displayMonth, parsedDate, res.Error);
+            }
+
+            if (Request.IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    ok = true,
+                    message = "Appointment added to the calendar.",
+                    appointmentId = res.Value.Id,
+                    month = parsedDate.ToString("yyyy-MM-01"),
+                    selectedDate = parsedDate.ToString("yyyy-MM-dd")
+                });
             }
 
             TempData["CalendarMessage"] = "Appointment added to the calendar.";
@@ -122,6 +158,10 @@ namespace FastQ.Web.Controllers
 
             if (!long.TryParse(queueId, out var qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Queue is required." });
+                }
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
 
@@ -136,7 +176,23 @@ namespace FastQ.Web.Controllers
 
             if (!res.Ok)
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = res.Error });
+                }
                 return CalendarError(displayMonth, selected, res.Error);
+            }
+
+            if (Request.IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    ok = true,
+                    message = "Walk-in added to the queue.",
+                    walkinId = res.Value,
+                    month = displayMonth.ToString("yyyy-MM-01"),
+                    selectedDate = selected.ToString("yyyy-MM-dd")
+                });
             }
 
             TempData["CalendarMessage"] = "Walk-in added to the queue.";

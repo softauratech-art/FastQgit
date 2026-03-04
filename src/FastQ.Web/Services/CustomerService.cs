@@ -86,6 +86,7 @@ namespace FastQ.Web.Services
             {
                 customer.SmsOptIn = smsOptIn;
                 if (!string.IsNullOrWhiteSpace(name)) customer.Name = name;
+                if (string.IsNullOrWhiteSpace(customer.Email)) customer.Email = BuildPlaceholderEmail(customer);
                 customer.UpdatedUtc = now;
                 customer.StampDateUtc = now;
                 _customers.Update(customer);
@@ -110,6 +111,7 @@ namespace FastQ.Web.Services
                 LocationId = locationId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
+                CustomerEmail = customer.Email,
                 ScheduledForUtc = candidate,
                 Status = AppointmentStatus.Scheduled,
                 CreatedBy = "web",
@@ -160,6 +162,7 @@ namespace FastQ.Web.Services
                 LocationId = queue.LocationId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
+                CustomerEmail = customer.Email,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
                 RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
@@ -213,6 +216,7 @@ namespace FastQ.Web.Services
                 LocationId = queue.LocationId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
+                CustomerEmail = customer.Email,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
                 RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
@@ -315,6 +319,10 @@ namespace FastQ.Web.Services
             if (!string.IsNullOrWhiteSpace(name))
             {
                 customer.Name = name.Trim();
+            }
+            if (string.IsNullOrWhiteSpace(customer.Email))
+            {
+                customer.Email = BuildPlaceholderEmail(customer);
             }
             customer.Phone = phone.Trim();
             customer.UpdatedUtc = now;

@@ -902,8 +902,47 @@
                 modal.classList.remove("show");
             }
 
+            var liveSyncTimer = null;
+            var liveSyncInFlight = false;
+
+            function syncCalendarFromServer() {
+                if (liveSyncInFlight) {
+                    return;
+                }
+
+                liveSyncInFlight = true;
+                fetch(window.location.pathname + window.location.search, {
+                    method: "GET",
+                    credentials: "same-origin"
+                })
+                    .then(function (res) { return res.text(); })
+                    .then(function (html) {
+                        var parser = new DOMParser();
+                        var nextDoc = parser.parseFromString(html, "text/html");
+                        var currentShell = document.querySelector(".calendar-shell");
+                        var nextShell = nextDoc.querySelector(".calendar-shell");
+                        if (currentShell && nextShell) {
+                            currentShell.innerHTML = nextShell.innerHTML;
+                        }
+
+                        bindProviderActionButtons();
+                        bindMeetingLinks();
+                        liveSyncInFlight = false;
+                    })
+                    .catch(function () {
+                        liveSyncInFlight = false;
+                    });
+            }
+
             function queueLiveSync() {
-                window.location.reload();
+                if (liveSyncTimer) {
+                    return;
+                }
+
+                liveSyncTimer = setTimeout(function () {
+                    liveSyncTimer = null;
+                    syncCalendarFromServer();
+                }, 300);
             }
 
             function goToCalendar(monthDate, preferredDay) {
@@ -927,7 +966,10 @@
             function postForm(url, data) {
                 return fetch(url, {
                     method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
                     credentials: "same-origin",
                     body: new URLSearchParams(data).toString()
                 }).then(function (r) { return r.json(); });
@@ -1454,6 +1496,68 @@
                 });
             }
 
+            function bindCalendarCreateForms() {
+                var appointmentForm = document.querySelector("#addAppointmentModal form");
+                if (appointmentForm && appointmentForm.getAttribute("data-bound-ajax-submit") !== "1") {
+                    appointmentForm.setAttribute("data-bound-ajax-submit", "1");
+                    appointmentForm.addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        var formData = new FormData(appointmentForm);
+                        fetch(appointmentForm.action, {
+                            method: "POST",
+                            headers: { "X-Requested-With": "XMLHttpRequest" },
+                            credentials: "same-origin",
+                            body: new URLSearchParams(formData)
+                        })
+                            .then(function (res) { return res.json(); })
+                            .then(function (res) {
+                                if (!res || !res.ok) {
+                                    window.alert(res && res.error ? res.error : "Could not add appointment.");
+                                    return;
+                                }
+                                closeModal("addAppointmentModal");
+                                if (window.FastQLive && window.FastQLive.toast) {
+                                    window.FastQLive.toast(res.message || "Appointment added.");
+                                }
+                                queueLiveSync();
+                            })
+                            .catch(function () {
+                                window.alert("Could not add appointment.");
+                            });
+                    });
+                }
+
+                var walkinForm = document.querySelector("#addWalkinModal form");
+                if (walkinForm && walkinForm.getAttribute("data-bound-ajax-submit") !== "1") {
+                    walkinForm.setAttribute("data-bound-ajax-submit", "1");
+                    walkinForm.addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        var formData = new FormData(walkinForm);
+                        fetch(walkinForm.action, {
+                            method: "POST",
+                            headers: { "X-Requested-With": "XMLHttpRequest" },
+                            credentials: "same-origin",
+                            body: new URLSearchParams(formData)
+                        })
+                            .then(function (res) { return res.json(); })
+                            .then(function (res) {
+                                if (!res || !res.ok) {
+                                    window.alert(res && res.error ? res.error : "Could not add walk-in.");
+                                    return;
+                                }
+                                closeModal("addWalkinModal");
+                                if (window.FastQLive && window.FastQLive.toast) {
+                                    window.FastQLive.toast(res.message || "Walk-in added.");
+                                }
+                                queueLiveSync();
+                            })
+                            .catch(function () {
+                                window.alert("Could not add walk-in.");
+                            });
+                    });
+                }
+            }
+
             document.querySelectorAll("[data-modal-open]").forEach(function (btn) {
                 btn.addEventListener("click", function () {
                     openModal(btn.getAttribute("data-modal-open"));
@@ -1720,6 +1824,15 @@
                 });
             }
 
+            window.onFastQQueueUpdated = function () {
+                queueLiveSync();
+            };
+
+            window.onFastQAppointmentUpdated = function () {
+                queueLiveSync();
+            };
+
+            bindCalendarCreateForms();
             bindProviderActionButtons();
             bindMeetingLinks();
 

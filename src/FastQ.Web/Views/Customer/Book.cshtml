@@ -3,7 +3,7 @@
     var error = ViewBag.Error as string;
     var msgClass = string.IsNullOrWhiteSpace(error) ? "muted" : "muted error";
 }
-<form method="post" action="/Customer/Book">
+<form method="post" action="/Customer/Book" id="bookForm">
     <div class="card">
         <div class="eyebrow">Create Appointment</div>
         <h2 class="page-title">Follow the 5 steps to schedule.</h2>
@@ -15,7 +15,7 @@
             <div>
                 <div class="eyebrow">Stepper</div>
                 <h3 class="card-title">1. Select Queue &amp; Service</h3>
-                <p class="card-subtitle">2. Select Contact method · 3. Select Date and Time · 4. Provide reference · 5. Contact Details</p>
+                <p class="card-subtitle">2. Select Contact method | 3. Select Date and Time | 4. Provide reference | 5. Contact Details</p>
             </div>
             <span class="badge accent">Required</span>
         </div>
@@ -141,7 +141,7 @@
         </div>
 
         <div class="row" style="margin-top:16px;">
-            <button type="submit" class="btn secondary" onclick="return FastQBook.validate();">Create Appointment</button>
+            <button type="submit" class="btn secondary">Create Appointment</button>
             <button type="button" class="btn ghost" onclick="FastQBook.clear()">Clear</button>
             <span id="msg" class="@msgClass">@error</span>
         </div>
@@ -223,7 +223,7 @@ var FastQBook = {
 
   renderSummary: function() {
     $("#summaryQueue").text(this.state.queueName || "Queue");
-    var timeText = (this.state.date || "Select date") + " · " + (this.state.slot || "Select time");
+    var timeText = (this.state.date || "Select date") + " | " + (this.state.slot || "Select time");
     $("#summaryTime").text(timeText);
   },
 
@@ -266,8 +266,19 @@ var FastQBook = {
     } catch(e) { /* ignore */ }
   },
 
+  saveProfile: function() {
+    this.syncInfo();
+    var fullName = (this.state.firstName + " " + this.state.lastName).trim();
+    localStorage.setItem("fastq_customer_profile", JSON.stringify({
+      name: fullName,
+      phone: this.state.phone || "",
+      email: this.state.email || ""
+    }));
+  },
+
   validate: function() {
     this.syncInfo();
+    $("#msg").removeClass("ok").removeClass("error");
     if (!this.state.queueId || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.email) {
       $("#msg").addClass("error").text("First name, Last name, Mobile, Email, and Queue are required.");
       return false;
@@ -277,6 +288,48 @@ var FastQBook = {
       return false;
     }
     return true;
+  },
+
+  submit: function() {
+    if (!this.validate()) {
+      return false;
+    }
+
+    this.saveProfile();
+    $("#msg").removeClass("ok").removeClass("error").text("Creating appointment...");
+
+    var payload = {
+      queueId: this.state.queueId,
+      phone: this.state.phone,
+      firstName: this.state.firstName,
+      lastName: this.state.lastName
+    };
+
+    fetch("/Customer/Book", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      credentials: "same-origin",
+      body: new URLSearchParams(payload).toString()
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(res){
+        if (!res || !res.ok) {
+          $("#msg").addClass("error").text(res && res.error ? res.error : "Could not create appointment.");
+          return;
+        }
+
+        $("#msg").addClass("ok").text("Appointment created.");
+        var redirectUrl = res.redirectUrl || ("/Customer/Home?appointmentId=" + encodeURIComponent(res.appointmentId || ""));
+        window.location.assign(redirectUrl);
+      })
+      .catch(function(){
+        $("#msg").addClass("error").text("Could not create appointment.");
+      });
+
+    return false;
   },
 
   clear: function() {
@@ -307,6 +360,14 @@ var FastQBook = {
     this.renderSlots();
     this.hydrateProfile();
     this.syncQueue();
+
+    var form = document.getElementById("bookForm");
+    if (form) {
+      form.addEventListener("submit", function(event) {
+        event.preventDefault();
+        FastQBook.submit();
+      });
+    }
   }
 };
 
