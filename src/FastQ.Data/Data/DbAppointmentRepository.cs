@@ -566,7 +566,9 @@ namespace FastQ.Data.Db
                     ["REF_CRITERIA"] = appointment.RefCriteria,
                     ["REF_VALUE"] = appointment.RefValue,
                     ["QUEUE_ID"] = appointment.QueueId,
-                    ["SERVICE_ID"] = appointment.ServiceId.HasValue && appointment.ServiceId.Value > 0 ? (object)appointment.ServiceId.Value : null,
+                    ["SERVICE_ID"] = appointment.ServiceId.HasValue && appointment.ServiceId.Value > 0
+                        ? (JToken)new JValue(appointment.ServiceId.Value)
+                        : JValue.CreateNull(),
                     ["CONTACTTYPE"] = appointment.ContactType,
                     ["MOREINFO"] = appointment.MoreInfo,
                     ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy hh.mm.ss tt", CultureInfo.InvariantCulture).ToUpperInvariant(),
