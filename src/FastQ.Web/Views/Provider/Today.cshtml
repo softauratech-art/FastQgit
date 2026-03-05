@@ -930,17 +930,50 @@
       return day === 0 ? "7" : String(day);
     }
 
+    function parseDateOnly(value) {
+      if (!value) {
+        return null;
+      }
+      var raw = value.toString().trim();
+      if (!raw) {
+        return null;
+      }
+
+      var date = new Date(raw);
+      if (!isNaN(date.getTime())) {
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      var iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+      if (iso) {
+        date = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      var mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw);
+      if (mdy) {
+        date = new Date(parseInt(mdy[3], 10), parseInt(mdy[1], 10) - 1, parseInt(mdy[2], 10));
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      return null;
+    }
+
     function isScheduleActiveOnDate(schedule, dateValue) {
       if (!schedule || !dateValue) {
         return false;
       }
-      var dateText = dateValue.toISOString().slice(0, 10);
-      var begin = (schedule.dateBegin || "").slice(0, 10);
-      var end = (schedule.dateEnd || "").slice(0, 10);
-      if (begin && dateText < begin) {
+      var day = new Date(dateValue.getTime());
+      day.setHours(0, 0, 0, 0);
+      var begin = parseDateOnly(schedule.dateBegin || "");
+      var end = parseDateOnly(schedule.dateEnd || "");
+      if (begin && day < begin) {
         return false;
       }
-      if (end && dateText > end) {
+      if (end && day > end) {
         return false;
       }
       var weekly = (schedule.weeklySch || "").toString();

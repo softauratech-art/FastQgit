@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Web.Mvc;
@@ -162,7 +163,18 @@ namespace FastQ.Web.Controllers
 
             var details = _service.GetQueueDetailOptions(parsedQueueId);
             if (details == null)
+            {
+                Trace.TraceWarning("GetQueueDetails queueId={0}: service returned null details.", parsedQueueId);
                 return Json(new { ok = false, error = "Queue details not found" }, JsonRequestBehavior.AllowGet);
+            }
+
+            Trace.TraceInformation(
+                "GetQueueDetails queueId={0}: returning services={1}, contacts={2}, refs={3}, schedules={4}.",
+                parsedQueueId,
+                details.Services.Count,
+                details.ContactOptions.Count,
+                details.RefOptions.Count,
+                details.Schedules.Count);
 
             return Json(new
             {
