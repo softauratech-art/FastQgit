@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
 
@@ -19,7 +18,12 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID, FNAME, LNAME, EMAIL, PHONE, SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+                @"SELECT CUSTOMER_ID,
+                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
                   FROM CUSTOMERS
                   WHERE CUSTOMER_ID = :customerId"))
             {
@@ -38,11 +42,16 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID, FNAME, LNAME, EMAIL, PHONE, SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+                @"SELECT CUSTOMER_ID,
+                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
                   FROM CUSTOMERS
-                  WHERE PHONE = :phone"))
+                  WHERE lower(FQ_CRYPTO_PKG.DECRYPT(PHONE)) = lower(:phone)"))
             {
-                DataAccess.AddParam(cmd, "phone", Encoding.UTF8.GetBytes(phone), DbType.Binary);
+                DataAccess.AddParam(cmd, "phone", phone, DbType.String);
                 using (var reader = cmd.ExecuteReader())
                 {
                     return reader.Read() ? MapCustomer(reader) : null;
@@ -68,13 +77,15 @@ namespace FastQ.Data.Db
                     @"INSERT INTO CUSTOMERS
                         (CUSTOMER_ID, FNAME, LNAME, EMAIL, PHONE, SMS_OPTIN, ACTIVEFLAG, STAMPUSER, STAMPDATE)
                       VALUES
-                        (:customerId, :fname, :lname, :email, :phone, :smsOptIn, :activeFlag, :stampUser, SYSDATE)"))
+                        (:customerId, FQ_CRYPTO_PKG.ENCRYPT(:fname), FQ_CRYPTO_PKG.ENCRYPT(:lname),
+                         FQ_CRYPTO_PKG.ENCRYPT(:email), FQ_CRYPTO_PKG.ENCRYPT(:phone),
+                         :smsOptIn, :activeFlag, :stampUser, SYSDATE)"))
                 {
                     DataAccess.AddParam(cmd, "customerId", newId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "fname", Encoding.UTF8.GetBytes(first), DbType.Binary);
-                    DataAccess.AddParam(cmd, "lname", Encoding.UTF8.GetBytes(last), DbType.Binary);
-                    DataAccess.AddParam(cmd, "email", Encoding.UTF8.GetBytes(email), DbType.Binary);
-                    DataAccess.AddParam(cmd, "phone", Encoding.UTF8.GetBytes(customer.Phone ?? string.Empty), DbType.Binary);
+                    DataAccess.AddParam(cmd, "fname", first, DbType.String);
+                    DataAccess.AddParam(cmd, "lname", last, DbType.String);
+                    DataAccess.AddParam(cmd, "email", email, DbType.String);
+                    DataAccess.AddParam(cmd, "phone", customer.Phone ?? string.Empty, DbType.String);
                     DataAccess.AddParam(cmd, "smsOptIn", customer.SmsOptIn ? "Y" : "N", DbType.String);
                     DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
                     DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
@@ -99,20 +110,20 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
                 @"UPDATE CUSTOMERS
-                  SET FNAME = :fname,
-                      LNAME = :lname,
-                      EMAIL = :email,
-                      PHONE = :phone,
+                  SET FNAME = FQ_CRYPTO_PKG.ENCRYPT(:fname),
+                      LNAME = FQ_CRYPTO_PKG.ENCRYPT(:lname),
+                      EMAIL = FQ_CRYPTO_PKG.ENCRYPT(:email),
+                      PHONE = FQ_CRYPTO_PKG.ENCRYPT(:phone),
                       SMS_OPTIN = :smsOptIn,
                       ACTIVEFLAG = :activeFlag,
                       STAMPUSER = :stampUser,
                       STAMPDATE = SYSDATE
                   WHERE CUSTOMER_ID = :customerId"))
             {
-                DataAccess.AddParam(cmd, "fname", Encoding.UTF8.GetBytes(first), DbType.Binary);
-                DataAccess.AddParam(cmd, "lname", Encoding.UTF8.GetBytes(last), DbType.Binary);
-                DataAccess.AddParam(cmd, "email", Encoding.UTF8.GetBytes(email), DbType.Binary);
-                DataAccess.AddParam(cmd, "phone", Encoding.UTF8.GetBytes(customer.Phone ?? string.Empty), DbType.Binary);
+                DataAccess.AddParam(cmd, "fname", first, DbType.String);
+                DataAccess.AddParam(cmd, "lname", last, DbType.String);
+                DataAccess.AddParam(cmd, "email", email, DbType.String);
+                DataAccess.AddParam(cmd, "phone", customer.Phone ?? string.Empty, DbType.String);
                 DataAccess.AddParam(cmd, "smsOptIn", customer.SmsOptIn ? "Y" : "N", DbType.String);
                 DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
                 DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
@@ -126,7 +137,12 @@ namespace FastQ.Data.Db
             var list = new List<Customer>();
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID, FNAME, LNAME, EMAIL, PHONE, SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+                @"SELECT CUSTOMER_ID,
+                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
                   FROM CUSTOMERS"))
             using (var reader = cmd.ExecuteReader())
             {
@@ -171,8 +187,12 @@ namespace FastQ.Data.Db
         {
             var ordinal = record.GetOrdinal(field);
             if (record.IsDBNull(ordinal)) return string.Empty;
-            var bytes = (byte[])record.GetValue(ordinal);
-            return Encoding.UTF8.GetString(bytes);
+            var value = record.GetValue(ordinal);
+            if (value is byte[] bytes)
+            {
+                return System.Text.Encoding.UTF8.GetString(bytes);
+            }
+            return value?.ToString() ?? string.Empty;
         }
 
         private static void SplitName(string name, out string first, out string last)
@@ -201,4 +221,3 @@ namespace FastQ.Data.Db
         }
     }
 }
-
