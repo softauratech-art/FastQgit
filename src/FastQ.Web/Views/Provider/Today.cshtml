@@ -701,11 +701,15 @@
             </div>
             <div class="route-form-row">
                 <label for="addApptDate">Date</label>
-                <input id="addApptDate" class="route-input" type="date" value="@defaultDate" />
+                <select id="addApptDate" class="route-input">
+                    <option value="">Select date</option>
+                </select>
             </div>
             <div class="route-form-row">
                 <label for="addApptTime">Start Time</label>
-                <input id="addApptTime" class="route-input" type="time" value="09:00" />
+                <select id="addApptTime" class="route-input">
+                    <option value="">Select time</option>
+                </select>
             </div>
             <div class="route-form-row">
                 <label for="addApptMeetingUrl">Meeting URL</label>
@@ -789,6 +793,10 @@
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var activeRouteQueueDetails = null;
+    var activeEntryQueueDetails = {
+      addAppt: null,
+      addWalkin: null
+    };
 
     function postForm(url, data) {
       return fetch(url, {
@@ -833,16 +841,23 @@
 
     function loadEntryQueueDetails(prefix, queueCode) {
       if (!queueCode) {
+        activeEntryQueueDetails[prefix] = null;
         populateEntryModalOptions(prefix, null);
+        populateEntryModalDateTime(prefix, null);
         return Promise.resolve();
       }
 
       return getJson(getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode))
         .then(function (res) {
-          populateEntryModalOptions(prefix, res && res.ok ? res.data : null);
+          var details = res && res.ok ? res.data : null;
+          activeEntryQueueDetails[prefix] = details;
+          populateEntryModalOptions(prefix, details);
+          populateEntryModalDateTime(prefix, details);
         })
         .catch(function () {
+          activeEntryQueueDetails[prefix] = null;
           populateEntryModalOptions(prefix, null);
+          populateEntryModalDateTime(prefix, null);
         });
     }
 
@@ -874,17 +889,9 @@
         }
       });
 
-      var dateInput = document.getElementById(prefix + "Date");
-      if (dateInput) {
-        dateInput.value = "@defaultDate";
-      }
-
-      var timeInput = document.getElementById(prefix + "Time");
-      if (timeInput) {
-        timeInput.value = "09:00";
-      }
-
+      activeEntryQueueDetails[prefix] = null;
       populateEntryModalOptions(prefix, null);
+      populateEntryModalDateTime(prefix, null);
     }
 
     function parseIsoDurationToMinutes(text) {
@@ -896,6 +903,26 @@
       var hours = parseInt(match[2] || "0", 10);
       var minutes = parseInt(match[3] || "0", 10);
       return (((days * 24) + hours) * 60) + minutes;
+    }
+
+    function normalizeScheduleWindow(openMinutes, closeMinutes) {
+      var dayMinutes = 24 * 60;
+      if (openMinutes < 0 || closeMinutes < 0) {
+        return null;
+      }
+      if (closeMinutes <= openMinutes) {
+        closeMinutes += 12 * 60;
+      }
+      if (closeMinutes <= openMinutes) {
+        closeMinutes += 12 * 60;
+      }
+      if (closeMinutes > dayMinutes) {
+        closeMinutes = dayMinutes;
+      }
+      if (closeMinutes <= openMinutes) {
+        return null;
+      }
+      return { open: openMinutes, close: closeMinutes };
     }
 
     function getWeekdayCode(dateValue) {
@@ -924,6 +951,34 @@
     }
 
     function buildScheduleDateOptions(details, selectedDateValue) {
+      var options = getScheduleDateOptions(details);
+      var select = document.getElementById("routeTargetDate");
+      setSelectValues(select, options, "Select date");
+      if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
+        select.value = selectedDateValue;
+      }
+      return options;
+    }
+
+    function buildScheduleTimeOptions(details, selectedTimeValue, selectedDateValue) {
+      var select = document.getElementById("routeTargetTime");
+      if (!select) {
+        return;
+      }
+
+      if (!selectedDateValue) {
+        setSelectValues(select, [], "Select time");
+        return;
+      }
+
+      var times = getScheduleTimeOptions(details, selectedDateValue);
+      setSelectValues(select, times, "Select time");
+      if (selectedTimeValue && times.some(function (o) { return o.value === selectedTimeValue; })) {
+        select.value = selectedTimeValue;
+      }
+    }
+
+    function getScheduleDateOptions(details) {
       var options = [];
       var schedules = details && details.schedules ? details.schedules : [];
       var seen = {};
@@ -948,24 +1003,12 @@
           label: formatRouteDateLabel(candidate)
         });
       }
-
-      var select = document.getElementById("routeTargetDate");
-      setSelectValues(select, options, "Select date");
-      if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
-        select.value = selectedDateValue;
-      }
       return options;
     }
 
-    function buildScheduleTimeOptions(details, selectedTimeValue, selectedDateValue) {
-      var select = document.getElementById("routeTargetTime");
-      if (!select) {
-        return;
-      }
-
+    function getScheduleTimeOptions(details, selectedDateValue) {
       if (!selectedDateValue) {
-        setSelectValues(select, [], "Select time");
-        return;
+        return [];
       }
 
       var dateValue = new Date(selectedDateValue + "T00:00:00");
@@ -980,11 +1023,12 @@
         var openMinutes = parseIsoDurationToMinutes(schedule.openTime);
         var closeMinutes = parseIsoDurationToMinutes(schedule.closeTime);
         var intervalMinutes = parseIsoDurationToMinutes(schedule.intervalTime) || 30;
-        if (closeMinutes <= openMinutes) {
+        var window = normalizeScheduleWindow(openMinutes, closeMinutes);
+        if (!window) {
           return;
         }
 
-        for (var minutes = openMinutes; minutes < closeMinutes; minutes += intervalMinutes) {
+        for (var minutes = window.open; minutes < window.close; minutes += intervalMinutes) {
           var hh = toTwoDigits(Math.floor(minutes / 60) % 24);
           var mm = toTwoDigits(minutes % 60);
           var value = hh + ":" + mm;
@@ -1000,9 +1044,44 @@
       });
 
       times.sort(function (a, b) { return a.value.localeCompare(b.value); });
-      setSelectValues(select, times, "Select time");
-      if (selectedTimeValue && times.some(function (o) { return o.value === selectedTimeValue; })) {
-        select.value = selectedTimeValue;
+      return times;
+    }
+
+    function populateEntryModalDateTime(prefix, details) {
+      var dateSelect = document.getElementById(prefix + "Date");
+      var timeSelect = document.getElementById(prefix + "Time");
+      if (!dateSelect || !timeSelect) {
+        return;
+      }
+
+      var dateOptions = getScheduleDateOptions(details);
+      setSelectValues(dateSelect, dateOptions, "Select date");
+
+      var selectedDate = "";
+      if (dateOptions.length > 0) {
+        selectedDate = dateOptions[0].value;
+        dateSelect.value = selectedDate;
+      }
+
+      var timeOptions = getScheduleTimeOptions(details, selectedDate);
+      setSelectValues(timeSelect, timeOptions, "Select time");
+      if (timeOptions.length > 0) {
+        timeSelect.value = timeOptions[0].value;
+      }
+    }
+
+    function refreshEntryModalTimeOptions(prefix) {
+      var details = activeEntryQueueDetails[prefix];
+      var dateSelect = document.getElementById(prefix + "Date");
+      var timeSelect = document.getElementById(prefix + "Time");
+      if (!dateSelect || !timeSelect) {
+        return;
+      }
+      var selectedDate = dateSelect.value || "";
+      var timeOptions = getScheduleTimeOptions(details, selectedDate);
+      setSelectValues(timeSelect, timeOptions, "Select time");
+      if (timeOptions.length > 0) {
+        timeSelect.value = timeOptions[0].value;
       }
     }
 
@@ -1166,26 +1245,7 @@
         buildScheduleDateOptions(activeRouteQueueDetails, selectedDateValue);
         return;
       }
-
-      var base = new Date();
-      base.setHours(0, 0, 0, 0);
-      var options = [];
-      for (var i = 0; i < 31; i++) {
-        var dateValue = new Date(base.getTime());
-        dateValue.setDate(base.getDate() + i);
-        var yyyy = String(dateValue.getFullYear());
-        var mm = toTwoDigits(dateValue.getMonth() + 1);
-        var dd = toTwoDigits(dateValue.getDate());
-        options.push({
-          value: yyyy + "-" + mm + "-" + dd,
-          label: formatRouteDateLabel(dateValue)
-        });
-      }
-
-      setSelectValues(dateSelect, options, "Select date");
-      if (selectedDateValue) {
-        dateSelect.value = selectedDateValue;
-      }
+      setSelectValues(dateSelect, [], "Select date");
     }
 
     function populateRouteTimeOptions(selectedTimeValue) {
@@ -1199,23 +1259,7 @@
         buildScheduleTimeOptions(activeRouteQueueDetails, selectedTimeValue, selectedDateValue ? selectedDateValue.value : "");
         return;
       }
-
-      var options = [];
-      for (var hour = 0; hour < 24; hour++) {
-        for (var minute = 0; minute < 60; minute += 30) {
-          var hh = toTwoDigits(hour);
-          var mm = toTwoDigits(minute);
-          options.push({
-            value: hh + ":" + mm,
-            label: hh + ":" + mm
-          });
-        }
-      }
-
-      setSelectValues(timeSelect, options, "Select time");
-      if (selectedTimeValue) {
-        timeSelect.value = selectedTimeValue;
-      }
+      setSelectValues(timeSelect, [], "Select time");
     }
 
     function buildRouteTargetDateTime(dateValue, timeValue) {
@@ -2039,6 +2083,13 @@
     if (addApptQueueId) {
       addApptQueueId.addEventListener("change", function () {
         loadEntryQueueDetails("addAppt", addApptQueueId.value || "");
+      });
+    }
+
+    var addApptDate = document.getElementById("addApptDate");
+    if (addApptDate) {
+      addApptDate.addEventListener("change", function () {
+        refreshEntryModalTimeOptions("addAppt");
       });
     }
 

@@ -230,6 +230,26 @@ var FastQBook = {
     return (((days * 24) + hours) * 60) + minutes;
   },
 
+  normalizeScheduleWindow: function (openMinutes, closeMinutes) {
+    var dayMinutes = 24 * 60;
+    if (openMinutes < 0 || closeMinutes < 0) {
+      return null;
+    }
+    if (closeMinutes <= openMinutes) {
+      closeMinutes += 12 * 60;
+    }
+    if (closeMinutes <= openMinutes) {
+      closeMinutes += 12 * 60;
+    }
+    if (closeMinutes > dayMinutes) {
+      closeMinutes = dayMinutes;
+    }
+    if (closeMinutes <= openMinutes) {
+      return null;
+    }
+    return { open: openMinutes, close: closeMinutes };
+  },
+
   toTwoDigits: function (value) {
     return value < 10 ? ("0" + value) : String(value);
   },
@@ -320,12 +340,12 @@ var FastQBook = {
       var openMinutes = FastQBook.parseIsoDurationToMinutes(schedule.openTime);
       var closeMinutes = FastQBook.parseIsoDurationToMinutes(schedule.closeTime);
       var intervalMinutes = FastQBook.parseIsoDurationToMinutes(schedule.intervalTime) || 30;
-
-      if (closeMinutes <= openMinutes) {
+      var window = FastQBook.normalizeScheduleWindow(openMinutes, closeMinutes);
+      if (!window) {
         return;
       }
 
-      for (var minutes = openMinutes; minutes < closeMinutes; minutes += intervalMinutes) {
+      for (var minutes = window.open; minutes < window.close; minutes += intervalMinutes) {
         var hh = FastQBook.toTwoDigits(Math.floor(minutes / 60) % 24);
         var mm = FastQBook.toTwoDigits(minutes % 60);
         var value = hh + ":" + mm;

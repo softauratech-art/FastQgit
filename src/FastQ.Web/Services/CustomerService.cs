@@ -466,10 +466,12 @@ namespace FastQ.Web.Services
                 var interval = ParseIsoDurationMinutes(row["interval_time"]?.ToString());
                 if (interval <= 0)
                     interval = 30;
-                if (close <= open)
+
+                var normalizedWindow = NormalizeScheduleWindow(open, close);
+                if (!normalizedWindow.HasValue)
                     continue;
 
-                for (var slot = open; slot < close; slot += interval)
+                for (var slot = normalizedWindow.Value.Open; slot < normalizedWindow.Value.Close; slot += interval)
                 {
                     if (slot == minutes)
                         return true;
@@ -531,6 +533,31 @@ namespace FastQ.Web.Services
                     return 0;
             }
             return total;
+        }
+
+        private static ScheduleWindow? NormalizeScheduleWindow(int open, int close)
+        {
+            const int dayMinutes = 24 * 60;
+            if (open < 0 || close < 0)
+                return null;
+
+            if (close <= open)
+                close += 12 * 60;
+            if (close <= open)
+                close += 12 * 60;
+
+            if (close > dayMinutes)
+                close = dayMinutes;
+            if (close <= open)
+                return null;
+
+            return new ScheduleWindow { Open = open, Close = close };
+        }
+
+        private struct ScheduleWindow
+        {
+            public int Open;
+            public int Close;
         }
     }
 }
