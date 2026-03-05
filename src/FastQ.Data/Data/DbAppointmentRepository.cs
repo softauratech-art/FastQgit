@@ -571,7 +571,8 @@ namespace FastQ.Data.Db
                         : JValue.CreateNull(),
                     ["CONTACTTYPE"] = appointment.ContactType,
                     ["MOREINFO"] = appointment.MoreInfo,
-                    ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy hh.mm.ss tt", CultureInfo.InvariantCulture).ToUpperInvariant(),
+                    // INSERT_APPT stores START_TIME/END_TIME separately; sending date-only avoids NLS-dependent ORA-01830 on implicit DATE conversion.
+                    ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy", CultureInfo.InvariantCulture).ToUpperInvariant(),
                     ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay),
                     ["END_TIME"] = OracleInterval(appointment.EndTime),
                     ["STATUS"] = appointment.Status.ToString().ToUpperInvariant(),
