@@ -13,8 +13,6 @@ namespace FastQ.Web.Controllers
             _service = new CustomerService();
         }
 
-        private const long DefaultLocationId = 0;
-
         [HttpGet]
         public ActionResult Book()
         {
@@ -22,7 +20,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult Book(string queueId, string phone, string firstName, string lastName)
+        public ActionResult Book(string queueId, string serviceId, string refValue, string phone, string firstName, string lastName, string contactType, string appointmentDate, string startTime, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
             {
@@ -44,8 +42,49 @@ namespace FastQ.Web.Controllers
                 return View();
             }
 
+            if (string.IsNullOrWhiteSpace(serviceId))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Service is required." });
+                }
+                ViewBag.Error = "Service is required.";
+                return View();
+            }
+
+            if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Appointment date is required." });
+                }
+                ViewBag.Error = "Appointment date is required.";
+                return View();
+            }
+
+            if (!TimeSpan.TryParse((startTime ?? string.Empty).Trim(), out var parsedTime))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Start time is required." });
+                }
+                ViewBag.Error = "Start time is required.";
+                return View();
+            }
+
             var name = ($"{firstName} {lastName}").Trim();
-            var res = _service.BookFirstAvailable(DefaultLocationId, qId, phone, true, name);
+            var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
+            var res = _service.CreateScheduled(
+                qId,
+                serviceId,
+                refValue,
+                name,
+                phone,
+                contactType,
+                localStart.ToUniversalTime(),
+                notes,
+                null,
+                "web");
             if (!res.Ok)
             {
                 if (Request.IsAjaxRequest())

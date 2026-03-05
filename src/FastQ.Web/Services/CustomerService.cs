@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
@@ -6,6 +7,7 @@ using FastQ.Data.Db;
 using FastQ.Data.Repositories;
 using FastQ.Web.Helpers;
 using FastQ.Web.Models;
+using Newtonsoft.Json.Linq;
 
 namespace FastQ.Web.Services
 {
@@ -105,11 +107,17 @@ namespace FastQ.Web.Services
             if (candidate < earliest) candidate = candidate.AddHours(1);
             if (candidate > latest) return Result<Appointment>.Fail($"No available slots within {queue.Config.MaxDaysAhead} days.");
 
+            var queueService = queue.Services == null
+                ? null
+                : queue.Services.FirstOrDefault(s => s != null && s.ActiveFlag)
+                    ?? queue.Services.FirstOrDefault(s => s != null);
+
             var appt = new Appointment
             {
                 Id = 0,
                 LocationId = locationId,
                 QueueId = queueId,
+                ServiceId = queueService?.Id,
                 CustomerId = customer.Id,
                 CustomerEmail = customer.Email,
                 ScheduledForUtc = candidate,
@@ -124,10 +132,12 @@ namespace FastQ.Web.Services
 
             _appts.Add(appt);
 
-            _rt.AppointmentChanged(appt, appt.CreatedBy);
-            _rt.QueueChanged(locationId, queueId, appt.CreatedBy);
+            var insertedAppt = _appts.Get(appt.Id) ?? appt;
 
-            return Result<Appointment>.Success(appt);
+            _rt.AppointmentChanged(insertedAppt, appt.CreatedBy);
+            _rt.QueueChanged(insertedAppt.LocationId, insertedAppt.QueueId, appt.CreatedBy);
+
+            return Result<Appointment>.Success(insertedAppt);
         }
 
         public Result<Appointment> CreateScheduled(
@@ -148,9 +158,20 @@ namespace FastQ.Web.Services
                 return Result<Appointment>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<Appointment>.Fail("Phone is required.");
+            if (!long.TryParse(serviceId, out var parsedServiceId) || parsedServiceId <= 0)
+                return Result<Appointment>.Fail("Service is required.");
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
+
+            var validation = ValidateScheduledInputAgainstQueueDetails(
+                queueId,
+                parsedServiceId,
+                contactType,
+                refValue,
+                scheduledForUtc);
+            if (!validation.Ok)
+                return Result<Appointment>.Fail(validation.Error);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -163,7 +184,7 @@ namespace FastQ.Web.Services
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 CustomerEmail = customer.Email,
-                ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
+                ServiceId = parsedServiceId,
                 RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
@@ -180,10 +201,11 @@ namespace FastQ.Web.Services
             appt.ScheduledForUtc = scheduledForUtc;
 
             _appts.Add(appt);
-            _rt.AppointmentChanged(appt, user);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId, user);
+            var insertedAppt = _appts.Get(appt.Id) ?? appt;
+            _rt.AppointmentChanged(insertedAppt, user);
+            _rt.QueueChanged(insertedAppt.LocationId, insertedAppt.QueueId, user);
 
-            return Result<Appointment>.Success(appt);
+            return Result<Appointment>.Success(insertedAppt);
         }
 
         public Result<long> CreateWalkin(
@@ -347,6 +369,168 @@ namespace FastQ.Web.Services
             var first = customer.FirstName ?? "customer";
             var last = customer.LastName ?? "unknown";
             return $"{first}.{last}@placeholder.local".Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        private Result ValidateScheduledInputAgainstQueueDetails(long queueId, long serviceId, string contactType, string refValue, DateTime scheduledForUtc)
+        {
+            var jsonParts = _queues.GetQueueDetailsJson(queueId);
+            if (jsonParts == null)
+                return Result.Fail("Queue details not found.");
+
+            try
+            {
+                var servicesJson = ParseJsonObject(jsonParts.Item1);
+                var schedulesJson = ParseJsonObject(jsonParts.Item2);
+                var detailsJson = ParseJsonObject(jsonParts.Item3);
+
+                var serviceCodes = ReadOptionCodes(servicesJson?["services"], "service_id");
+                if (serviceCodes.Count > 0 && !serviceCodes.Contains(serviceId.ToString()))
+                    return Result.Fail("Selected service is not valid for this queue.");
+
+                var contactCode = (contactType ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(contactCode))
+                {
+                    var contactCodes = ReadOptionCodes(detailsJson?["contactoptions"], "type_key");
+                    if (contactCodes.Count > 0 && !contactCodes.Contains(contactCode))
+                        return Result.Fail("Selected contact type is not valid for this queue.");
+                }
+
+                var refCode = (refValue ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(refCode))
+                {
+                    var refCodes = ReadOptionCodes(detailsJson?["refoptions"], "ref_key");
+                    if (refCodes.Count > 0 && !refCodes.Contains(refCode))
+                        return Result.Fail("Selected reference is not valid for this queue.");
+                }
+
+                if (!IsScheduledSlotAllowed(schedulesJson?["schedules"], scheduledForUtc))
+                    return Result.Fail("Selected date/time is not valid for this queue schedule.");
+            }
+            catch
+            {
+                return Result.Fail("Could not validate queue details.");
+            }
+
+            return Result.Success();
+        }
+
+        private static JObject ParseJsonObject(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return null;
+            return JObject.Parse(json);
+        }
+
+        private static HashSet<string> ReadOptionCodes(JToken listToken, string codeField)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var list = listToken as JArray;
+            if (list == null)
+                return set;
+
+            foreach (var item in list.OfType<JObject>())
+            {
+                var code = item[codeField]?.ToString();
+                if (!string.IsNullOrWhiteSpace(code))
+                    set.Add(code.Trim());
+            }
+            return set;
+        }
+
+        private static bool IsScheduledSlotAllowed(JToken schedulesToken, DateTime scheduledForUtc)
+        {
+            var schedules = schedulesToken as JArray;
+            if (schedules == null || schedules.Count == 0)
+                return false;
+
+            var local = scheduledForUtc.Kind == DateTimeKind.Utc ? scheduledForUtc.ToLocalTime() : scheduledForUtc;
+            var date = local.Date;
+            var minutes = (local.Hour * 60) + local.Minute;
+            var weekdayCode = date.DayOfWeek == DayOfWeek.Sunday ? "7" : ((int)date.DayOfWeek).ToString();
+
+            foreach (var row in schedules.OfType<JObject>())
+            {
+                var begin = ParseDateOnly(row["date_begin"]?.ToString());
+                var end = ParseDateOnly(row["date_end"]?.ToString());
+                if (begin.HasValue && date < begin.Value)
+                    continue;
+                if (end.HasValue && date > end.Value)
+                    continue;
+
+                var weekly = (row["weekly_sch"]?.ToString() ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(weekly) && !weekly.Contains(weekdayCode))
+                    continue;
+
+                var open = ParseIsoDurationMinutes(row["open_time"]?.ToString());
+                var close = ParseIsoDurationMinutes(row["close_time"]?.ToString());
+                var interval = ParseIsoDurationMinutes(row["interval_time"]?.ToString());
+                if (interval <= 0)
+                    interval = 30;
+                if (close <= open)
+                    continue;
+
+                for (var slot = open; slot < close; slot += interval)
+                {
+                    if (slot == minutes)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static DateTime? ParseDateOnly(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            if (DateTime.TryParse(value, out var parsed))
+                return parsed.Date;
+
+            return null;
+        }
+
+        private static int ParseIsoDurationMinutes(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return 0;
+            var text = value.Trim().ToUpperInvariant();
+            if (!text.StartsWith("P"))
+                return 0;
+
+            var total = 0;
+            var cursor = 1;
+            var inTime = false;
+            var number = string.Empty;
+            while (cursor < text.Length)
+            {
+                var ch = text[cursor++];
+                if (ch == 'T')
+                {
+                    inTime = true;
+                    number = string.Empty;
+                    continue;
+                }
+                if (char.IsDigit(ch))
+                {
+                    number += ch;
+                    continue;
+                }
+                if (string.IsNullOrEmpty(number))
+                    return 0;
+
+                var part = int.Parse(number);
+                number = string.Empty;
+                if (ch == 'D')
+                    total += part * 24 * 60;
+                else if (ch == 'H' && inTime)
+                    total += part * 60;
+                else if (ch == 'M' && inTime)
+                    total += part;
+                else
+                    return 0;
+            }
+            return total;
         }
     }
 }
