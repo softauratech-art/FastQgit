@@ -122,6 +122,7 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
+            string meetingUrl,
             string notes,
             string stampUser)
         {
@@ -150,6 +151,7 @@ namespace FastQ.Web.Services
                 RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
+                MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 Status = AppointmentStatus.Arrived,
                 CreatedBy = user,

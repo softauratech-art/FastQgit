@@ -692,8 +692,12 @@
                 </select>
             </div>
             <div class="route-form-row">
-                <label for="addApptCustomerName">Customer Name</label>
-                <input id="addApptCustomerName" class="route-input" type="text" />
+                <label for="addApptCustomerFirstName">First Name</label>
+                <input id="addApptCustomerFirstName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptCustomerLastName">Last Name</label>
+                <input id="addApptCustomerLastName" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
                 <label for="addApptPhone">Phone</label>
@@ -711,7 +715,7 @@
                     <option value="">Select time</option>
                 </select>
             </div>
-            <div class="route-form-row">
+            <div class="route-form-row" id="addApptMeetingUrlField" style="display:none;">
                 <label for="addApptMeetingUrl">Meeting URL</label>
                 <input id="addApptMeetingUrl" class="route-input" type="url" />
             </div>
@@ -760,12 +764,20 @@
                 </select>
             </div>
             <div class="route-form-row">
-                <label for="addWalkinCustomerName">Customer Name</label>
-                <input id="addWalkinCustomerName" class="route-input" type="text" />
+                <label for="addWalkinCustomerFirstName">First Name</label>
+                <input id="addWalkinCustomerFirstName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinCustomerLastName">Last Name</label>
+                <input id="addWalkinCustomerLastName" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
                 <label for="addWalkinPhone">Phone</label>
                 <input id="addWalkinPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row" id="addWalkinMeetingUrlField" style="display:none;">
+                <label for="addWalkinMeetingUrl">Meeting URL</label>
+                <input id="addWalkinMeetingUrl" class="route-input" type="url" />
             </div>
             <div class="route-form-row">
                 <label for="addWalkinNotes">Notes</label>
@@ -836,6 +848,24 @@
       setSelectOptions(document.getElementById(prefix + "ServiceId"), details && details.services ? details.services : [], "Select service");
       setSelectOptions(document.getElementById(prefix + "ContactType"), details && details.contactOptions ? details.contactOptions : [], "Select contact type");
       setSelectOptions(document.getElementById(prefix + "RefValue"), details && details.refOptions ? details.refOptions : [], "Select reference");
+      syncEntryModalMeetingUrl(prefix);
+    }
+
+    function syncEntryModalMeetingUrl(prefix) {
+      var contact = document.getElementById(prefix + "ContactType");
+      var meetingRow = document.getElementById(prefix + "MeetingUrlField");
+      var meetingInput = document.getElementById(prefix + "MeetingUrl");
+      if (!contact || !meetingRow || !meetingInput) {
+        return;
+      }
+
+      var val = (contact.value || "").toUpperCase();
+      var isOnline = val === "OM" || val === "VIRTUAL";
+      meetingRow.style.display = isOnline ? "" : "none";
+      meetingInput.required = isOnline;
+      if (!isOnline) {
+        meetingInput.value = "";
+      }
     }
 
     function loadEntryQueueDetails(prefix, queueCode) {
@@ -878,7 +908,7 @@
     function clearAddEntryModal(prefix) {
       var fields = [
         "QueueId", "ServiceId", "ContactType", "RefValue",
-        "CustomerName", "Phone", "MeetingUrl", "Notes"
+        "CustomerFirstName", "CustomerLastName", "Phone", "MeetingUrl", "Notes"
       ];
 
       fields.forEach(function (suffix) {
@@ -891,6 +921,7 @@
       activeEntryQueueDetails[prefix] = null;
       populateEntryModalOptions(prefix, null);
       populateEntryModalDateTime(prefix, null);
+      syncEntryModalMeetingUrl(prefix);
     }
 
     function parseIsoDurationToMinutes(text) {
@@ -2124,11 +2155,23 @@
         refreshEntryModalTimeOptions("addAppt");
       });
     }
+    var addApptContactType = document.getElementById("addApptContactType");
+    if (addApptContactType) {
+      addApptContactType.addEventListener("change", function () {
+        syncEntryModalMeetingUrl("addAppt");
+      });
+    }
 
     var addWalkinQueueId = document.getElementById("addWalkinQueueId");
     if (addWalkinQueueId) {
       addWalkinQueueId.addEventListener("change", function () {
         loadEntryQueueDetails("addWalkin", addWalkinQueueId.value || "");
+      });
+    }
+    var addWalkinContactType = document.getElementById("addWalkinContactType");
+    if (addWalkinContactType) {
+      addWalkinContactType.addEventListener("change", function () {
+        syncEntryModalMeetingUrl("addWalkin");
       });
     }
 
@@ -2140,7 +2183,8 @@
           serviceId: document.getElementById("addApptServiceId") ? document.getElementById("addApptServiceId").value : "",
           contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
           refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
-          customerName: document.getElementById("addApptCustomerName") ? document.getElementById("addApptCustomerName").value : "",
+          firstName: document.getElementById("addApptCustomerFirstName") ? document.getElementById("addApptCustomerFirstName").value : "",
+          lastName: document.getElementById("addApptCustomerLastName") ? document.getElementById("addApptCustomerLastName").value : "",
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
           startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
@@ -2148,8 +2192,8 @@
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, customer, phone, date, and time are required.", true);
+        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, first name, last name, phone, date, and time are required.", true);
           return;
         }
 
@@ -2172,13 +2216,15 @@
           serviceId: document.getElementById("addWalkinServiceId") ? document.getElementById("addWalkinServiceId").value : "",
           contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
           refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
-          customerName: document.getElementById("addWalkinCustomerName") ? document.getElementById("addWalkinCustomerName").value : "",
+          firstName: document.getElementById("addWalkinCustomerFirstName") ? document.getElementById("addWalkinCustomerFirstName").value : "",
+          lastName: document.getElementById("addWalkinCustomerLastName") ? document.getElementById("addWalkinCustomerLastName").value : "",
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
+          meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.customerName || !payload.phone) {
-          showModalFeedback("addWalkinModal", "Queue, customer, and phone are required.", true);
+        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone) {
+          showModalFeedback("addWalkinModal", "Queue, first name, last name, and phone are required.", true);
           return;
         }
 

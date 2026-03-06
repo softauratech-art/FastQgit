@@ -55,6 +55,10 @@
                         <select id="reference" name="refValue"></select>
                     </div>
                 </div>
+                <div class="field" id="meetingUrlField" style="display:none;">
+                    <label for="meetingUrl">Meeting URL *</label>
+                    <input type="url" id="meetingUrl" name="meetingUrl" placeholder="https://..." />
+                </div>
             </div>
 
             <div class="card" style="padding:16px;">
@@ -156,6 +160,7 @@ var FastQBook = {
     reference: "",
     appointmentDate: "",
     startTime: "",
+    meetingUrl: "",
     firstName: "",
     lastName: "",
     phone: "",
@@ -445,6 +450,28 @@ var FastQBook = {
     this.state.contactTypeName = contactSelect && contactSelect.selectedIndex >= 0
       ? (contactSelect.options[contactSelect.selectedIndex].text || "")
       : "";
+    this.syncMeetingField();
+  },
+
+  isOnlineContact: function () {
+    var value = (this.state.contactType || "").toUpperCase();
+    return value === "OM" || value === "VIRTUAL";
+  },
+
+  syncMeetingField: function () {
+    var field = document.getElementById("meetingUrlField");
+    var input = document.getElementById("meetingUrl");
+    if (!field || !input) {
+      return;
+    }
+
+    var isOnline = this.isOnlineContact();
+    field.style.display = isOnline ? "" : "none";
+    input.required = isOnline;
+    if (!isOnline) {
+      input.value = "";
+      this.state.meetingUrl = "";
+    }
   },
 
   syncDate: function () {
@@ -472,6 +499,7 @@ var FastQBook = {
     this.state.contactType = ($("#contactType").val() || "").trim();
     this.state.appointmentDate = ($("#dateInput").val() || "").trim();
     this.state.startTime = ($("#startTime").val() || "").trim();
+    this.state.meetingUrl = ($("#meetingUrl").val() || "").trim();
   },
 
   hydrateProfile: function () {
@@ -601,6 +629,10 @@ var FastQBook = {
       $("#msg").addClass("error").text("Queue, service, contact type, date, time, first name, last name, and mobile are required.");
       return false;
     }
+    if (this.isOnlineContact() && !this.state.meetingUrl) {
+      $("#msg").addClass("error").text("Meeting URL is required for online meeting.");
+      return false;
+    }
 
     if (!$("#terms").is(":checked")) {
       $("#msg").addClass("error").text("Please agree to Terms and Conditions.");
@@ -628,6 +660,7 @@ var FastQBook = {
       contactType: this.state.contactType,
       appointmentDate: this.state.appointmentDate,
       startTime: this.state.startTime,
+      meetingUrl: this.state.meetingUrl,
       notes: this.state.notes
     };
 
@@ -659,7 +692,7 @@ var FastQBook = {
   },
 
   clear: function () {
-    $("#firstName, #lastName, #phone, #email, #notes").val("");
+    $("#firstName, #lastName, #phone, #email, #notes, #meetingUrl").val("");
     $("#terms").prop("checked", false);
     this.hydrateProfile();
     this.loadQueues();
@@ -704,6 +737,7 @@ var FastQBook = {
     this.renderStepper();
     this.hydrateProfile();
     this.bindEvents();
+    this.syncMeetingField();
     this.loadQueues();
 
     var form = document.getElementById("bookForm");

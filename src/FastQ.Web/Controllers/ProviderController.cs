@@ -197,10 +197,12 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string firstName, string lastName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+                return Json(new { ok = false, error = "First name and last name are required." });
 
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." });
@@ -208,6 +210,7 @@ namespace FastQ.Web.Controllers
             if (!TimeSpan.TryParse((startTime ?? string.Empty).Trim(), CultureInfo.InvariantCulture, out var parsedTime))
                 return Json(new { ok = false, error = "Start time is required." });
 
+            var customerName = (firstName + " " + lastName).Trim();
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
             var res = _customerService.CreateScheduled(
                 qId,
@@ -228,11 +231,14 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string firstName, string lastName, string phone, string contactType, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+                return Json(new { ok = false, error = "First name and last name are required." });
 
+            var customerName = (firstName + " " + lastName).Trim();
             var res = _customerService.CreateWalkin(
                 qId,
                 serviceId,
@@ -240,6 +246,7 @@ namespace FastQ.Web.Controllers
                 customerName,
                 phone,
                 contactType,
+                meetingUrl,
                 notes,
                 _auth.GetLoggedInWindowsUser());
 

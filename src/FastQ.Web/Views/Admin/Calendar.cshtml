@@ -644,8 +644,13 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="customerName">Customer Name</label>
-                        <input id="customerName" name="customerName" type="text" required />
+                        <label for="firstName">First Name</label>
+                        <input id="firstName" name="firstName" type="text" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="lastName">Last Name</label>
+                        <input id="lastName" name="lastName" type="text" required />
                     </div>
 
                     <div class="calendar-field">
@@ -738,13 +743,23 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="walkinCustomerName">Customer Name</label>
-                        <input id="walkinCustomerName" name="customerName" type="text" required />
+                        <label for="walkinFirstName">First Name</label>
+                        <input id="walkinFirstName" name="firstName" type="text" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinLastName">Last Name</label>
+                        <input id="walkinLastName" name="lastName" type="text" required />
                     </div>
 
                     <div class="calendar-field">
                         <label for="walkinPhone">Phone</label>
                         <input id="walkinPhone" name="phone" type="tel" required />
+                    </div>
+
+                    <div class="calendar-field full" id="walkinMeetingUrlField" style="display:none;">
+                        <label for="walkinMeetingUrl">Meeting URL</label>
+                        <input id="walkinMeetingUrl" name="meetingUrl" type="url" />
                     </div>
 
                     <div class="calendar-field full">
@@ -1689,30 +1704,40 @@
             });
 
             var contactType = document.getElementById("contactType");
+            var walkinContactType = document.getElementById("walkinContactType");
             var queueIdSelect = document.getElementById("queueId");
             var walkinQueueIdSelect = document.getElementById("walkinQueueId");
             var appointmentDateSelect = document.getElementById("appointmentDate");
             var meetingUrlField = document.getElementById("meetingUrlField");
             var meetingUrl = document.getElementById("meetingUrl");
+            var walkinMeetingUrlField = document.getElementById("walkinMeetingUrlField");
+            var walkinMeetingUrl = document.getElementById("walkinMeetingUrl");
 
-            function syncMeetingField() {
-                if (!contactType || !meetingUrlField) {
+            function syncMeetingField(contactSelect, container, input) {
+                if (!contactSelect || !container || !input) {
                     return;
                 }
 
-                var isVirtual = contactType.value === "Virtual" || contactType.value === "OM";
-                meetingUrlField.style.display = isVirtual ? "flex" : "none";
-                if (meetingUrl) {
-                    meetingUrl.required = isVirtual;
-                    if (!isVirtual) {
-                        meetingUrl.value = "";
-                    }
+                var value = (contactSelect.value || "").toUpperCase();
+                var isVirtual = value === "VIRTUAL" || value === "OM";
+                container.style.display = isVirtual ? "flex" : "none";
+                input.required = isVirtual;
+                if (!isVirtual) {
+                    input.value = "";
                 }
             }
 
             if (contactType) {
-                contactType.addEventListener("change", syncMeetingField);
-                syncMeetingField();
+                contactType.addEventListener("change", function () {
+                    syncMeetingField(contactType, meetingUrlField, meetingUrl);
+                });
+                syncMeetingField(contactType, meetingUrlField, meetingUrl);
+            }
+            if (walkinContactType) {
+                walkinContactType.addEventListener("change", function () {
+                    syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
+                });
+                syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
             }
             if (queueIdSelect) {
                 queueIdSelect.addEventListener("change", function () {

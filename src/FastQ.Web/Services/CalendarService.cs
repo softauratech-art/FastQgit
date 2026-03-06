@@ -105,6 +105,7 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
+            string meetingUrl,
             string notes)
         {
             return _customerService.CreateWalkin(
@@ -114,6 +115,7 @@ namespace FastQ.Web.Services
                 customerName,
                 phone,
                 contactType,
+                meetingUrl,
                 notes,
                 "web");
         }
