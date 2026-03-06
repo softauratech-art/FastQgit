@@ -42,6 +42,7 @@ namespace FastQ.Web.Controllers
             string refValue,
             string firstName,
             string lastName,
+            string customerName,
             string phone,
             string contactType,
             string appointmentDate,
@@ -62,7 +63,10 @@ namespace FastQ.Web.Controllers
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
 
-            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
             {
                 if (Request.IsAjaxRequest())
                 {
@@ -98,13 +102,12 @@ namespace FastQ.Web.Controllers
                 return CalendarError(displayMonth, parsedDate, "Start time is required.");
             }
 
-            var customerName = (firstName + " " + lastName).Trim();
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
             var res = _service.CreateScheduledAppointment(
                 qId,
                 serviceId,
                 refValue,
-                customerName,
+                resolvedCustomerName,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
@@ -150,6 +153,7 @@ namespace FastQ.Web.Controllers
             string refValue,
             string firstName,
             string lastName,
+            string customerName,
             string phone,
             string contactType,
             string meetingUrl,
@@ -169,7 +173,10 @@ namespace FastQ.Web.Controllers
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
 
-            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
             {
                 if (Request.IsAjaxRequest())
                 {
@@ -178,12 +185,11 @@ namespace FastQ.Web.Controllers
                 return CalendarError(displayMonth, selected, "First name and last name are required.");
             }
 
-            var customerName = (firstName + " " + lastName).Trim();
             var res = _service.CreateWalkin(
                 qId,
                 serviceId,
                 refValue,
-                customerName,
+                resolvedCustomerName,
                 phone,
                 contactType,
                 meetingUrl,

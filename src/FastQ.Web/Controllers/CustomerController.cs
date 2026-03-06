@@ -20,7 +20,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult Book(string queueId, string serviceId, string refValue, string phone, string firstName, string lastName, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public ActionResult Book(string queueId, string serviceId, string refValue, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
             {
@@ -32,7 +32,10 @@ namespace FastQ.Web.Controllers
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(resolvedCustomerName))
             {
                 if (Request.IsAjaxRequest())
                 {
@@ -72,13 +75,12 @@ namespace FastQ.Web.Controllers
                 return View();
             }
 
-            var name = ($"{firstName} {lastName}").Trim();
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
             var res = _service.CreateScheduled(
                 qId,
                 serviceId,
                 refValue,
-                name,
+                resolvedCustomerName,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),

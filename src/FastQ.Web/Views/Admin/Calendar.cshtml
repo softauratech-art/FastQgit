@@ -1593,6 +1593,9 @@
                     appointmentForm.addEventListener("submit", function (event) {
                         event.preventDefault();
                         var formData = new FormData(appointmentForm);
+                        var apptFirstName = (formData.get("firstName") || "").toString().trim();
+                        var apptLastName = (formData.get("lastName") || "").toString().trim();
+                        formData.set("customerName", (apptFirstName + " " + apptLastName).trim());
                         fetch(appointmentForm.action, {
                             method: "POST",
                             headers: { "X-Requested-With": "XMLHttpRequest" },
@@ -1623,6 +1626,9 @@
                     walkinForm.addEventListener("submit", function (event) {
                         event.preventDefault();
                         var formData = new FormData(walkinForm);
+                        var walkinFirstName = (formData.get("firstName") || "").toString().trim();
+                        var walkinLastName = (formData.get("lastName") || "").toString().trim();
+                        formData.set("customerName", (walkinFirstName + " " + walkinLastName).trim());
                         fetch(walkinForm.action, {
                             method: "POST",
                             headers: { "X-Requested-With": "XMLHttpRequest" },

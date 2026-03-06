@@ -2191,6 +2191,7 @@
           meetingUrl: document.getElementById("addApptMeetingUrl") ? document.getElementById("addApptMeetingUrl").value : "",
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
+        payload.customerName = ((payload.firstName || "").trim() + " " + (payload.lastName || "").trim()).trim();
 
         if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
           showModalFeedback("addAppointmentModal", "Queue, first name, last name, phone, date, and time are required.", true);
@@ -2222,6 +2223,7 @@
           meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
+        payload.customerName = ((payload.firstName || "").trim() + " " + (payload.lastName || "").trim()).trim();
 
         if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone) {
           showModalFeedback("addWalkinModal", "Queue, first name, last name, and phone are required.", true);
