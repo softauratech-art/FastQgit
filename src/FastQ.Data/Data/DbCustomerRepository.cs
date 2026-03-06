@@ -200,14 +200,14 @@ namespace FastQ.Data.Db
             var trimmed = (name ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(trimmed))
             {
-                first = "Unknown";
-                last = "Customer";
+                first = string.Empty;
+                last = string.Empty;
                 return;
             }
 
             var parts = trimmed.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            first = parts.Length > 0 ? parts[0] : "Unknown";
-            last = parts.Length > 1 ? parts[1] : "Customer";
+            first = parts.Length > 0 ? parts[0] : string.Empty;
+            last = parts.Length > 1 ? parts[1] : string.Empty;
         }
 
         private static string BuildPlaceholderEmail(Customer customer, string first, string last)
