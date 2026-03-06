@@ -192,9 +192,26 @@ namespace FastQ.Web.Services
                     Phone = string.IsNullOrWhiteSpace(r.CustomerPhone) ? "-" : r.CustomerPhone,
                     Status = r.Status,
                     StatusText = GetStatusText(r.Status),
-                    ContactMethod = r.SmsOptIn ? "Online" : "In-Person"
+                    ContactMethod = GetContactMethodText(r.ContactType, r.SmsOptIn)
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
+        }
+
+        private static string GetContactMethodText(string contactType, bool smsOptIn)
+        {
+            var code = (contactType ?? string.Empty).Trim().ToUpperInvariant();
+            switch (code)
+            {
+                case "IP":
+                    return "In Person";
+                case "PC":
+                    return "Phone Call";
+                case "OM":
+                case "VIRTUAL":
+                    return "Online Meeting";
+                default:
+                    return smsOptIn ? "Online Meeting" : "In Person";
+            }
         }
 
         private static string GetStatusText(AppointmentStatus status)

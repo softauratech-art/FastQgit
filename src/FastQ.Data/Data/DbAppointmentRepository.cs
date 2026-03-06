@@ -276,6 +276,7 @@ namespace FastQ.Data.Db
                             ServiceName = ReadField(reader, "SERVICE_NAME"),
                             CustomerName = fullName,
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
+                            ContactType = ReadField(reader, "CONTACTTYPE"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });
                     }
