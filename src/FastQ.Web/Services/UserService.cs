@@ -1,19 +1,11 @@
-using FastQ.Data.Common;
 using FastQ.Data.Db;
-using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using FastQ.Web.Helpers;
 using FastQ.Web.Models;
 using FastQ.Web.Models.Admin;
-using Microsoft.Ajax.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Cache;
 using System.Web;
-using System.Web.ModelBinding;
-using System.Web.Mvc;
 
 namespace FastQ.Web.Services
 {
@@ -57,21 +49,7 @@ namespace FastQ.Web.Services
             };
         }
 
-        public Result HandleUserAction(string action, string json)
-        {
-            //action = (action ?? string.Empty).Trim().ToLowerInvariant();
-            //return action switch
-            //{
-            //    "update" => UpdateUser( json),
-            //    "delete" => DeleteUser( json),
-            //    "create" => CreateUser( json),
-            //    _ => Result.Fail("Unknown action")
-            //};
-
-            return Result.Fail("Not Implemented");
-        }
-
-        public IList<UserVM> TransformToModelList()
+        private IList<UserVM> TransformToModelList()
         {
             if (string.IsNullOrWhiteSpace(_stampuser))
             {

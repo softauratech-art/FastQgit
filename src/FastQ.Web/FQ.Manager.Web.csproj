@@ -184,7 +184,6 @@
     <Compile Include="Models\Admin\QueueVM.cs" />
     <Compile Include="Models\Admin\UserVM.cs" />
     <Compile Include="Models\DTOs\AppointmentSnapshotDto.cs" />
-    <Compile Include="Models\DTOs\QueueSnapshotDto.cs" />
     <Compile Include="Models\ProviderAppointmentRow.cs" />
     <Compile Include="Models\ProviderTodayViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

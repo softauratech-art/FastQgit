@@ -112,16 +112,6 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetQueueSnapshot(string locationId, string queueId)
-        {
-            if (!long.TryParse(locationId, out var locId) || !long.TryParse(queueId, out var qId))
-                return Json(new { ok = false, error = "locationId and queueId are required" }, JsonRequestBehavior.AllowGet);
-
-            var dto = _service.GetQueueSnapshot(locId, qId);
-            return Json(new { ok = true, data = dto }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
         public JsonResult GetTransferQueues(string locationId)
         {
             long parsedLocationId;
@@ -135,24 +125,6 @@ namespace FastQ.Web.Controllers
                 .ToList();
 
             return Json(new { ok = true, data = queues }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        public JsonResult GetTransferServices(string queueId)
-        {
-            long parsedQueueId;
-            if (!long.TryParse(queueId, out parsedQueueId) || parsedQueueId <= 0)
-                return Json(new { ok = false, error = "queueId is required" }, JsonRequestBehavior.AllowGet);
-
-            var services = _service.ListTransferServices(parsedQueueId)
-                .Select(s => new
-                {
-                    code = s.Item1.ToString(CultureInfo.InvariantCulture),
-                    name = s.Item2 ?? string.Empty
-                })
-                .ToList();
-
-            return Json(new { ok = true, data = services }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -432,12 +404,5 @@ namespace FastQ.Web.Controllers
             return Json(new { ok = true });
         }
 
-        [HttpPost]
-        public JsonResult SystemClose(int staleHours)
-        {
-            var hours = staleHours <= 0 ? 12 : staleHours;
-            var closed = _service.CloseStaleScheduledAppointments(hours);
-            return Json(new { ok = true, closed = closed });
-        }
     }
 }

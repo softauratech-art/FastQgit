@@ -8,10 +8,6 @@ namespace FastQ.Data.Db
 {
     public sealed class DbCustomerRepository : ICustomerRepository
     {
-        public DbCustomerRepository()
-        {
-        }
-
         public Customer Get(long id)
         {
             if (id <= 0) return null;

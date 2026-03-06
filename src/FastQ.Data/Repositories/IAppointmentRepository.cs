@@ -17,6 +17,5 @@ namespace FastQ.Data.Repositories
         IList<Appointment> ListAll();
         IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);
         IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);
-        void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null);
     }
 }

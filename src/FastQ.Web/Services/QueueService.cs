@@ -182,20 +182,6 @@ namespace FastQ.Web.Services
             }).OrderBy(r => r.Id).ToList();
         }
 
-        public Result HandleQueueAction(string action, string json)
-        {
-            //action = (action ?? string.Empty).Trim().ToLowerInvariant();
-            //return action switch
-            //{
-            //    "update" => UpdateQueue( json),
-            //    "delete" => DeleteQueue( json),
-            //    "create" => CreateQueue( json),
-            //    _ => Result.Fail("Unknown action")
-            //};
-
-            return Result.Fail("Not Implemented");
-        }
-
         public void AddOrUpdateQService(QueueServiceVM qsvm)
         {
             _queues.AddOrUpdateQService(new QService

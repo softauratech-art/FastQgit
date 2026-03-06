@@ -122,7 +122,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\IdMapper.cs" />
     <Compile Include="Common\Result.cs" />
     <Compile Include="Data\DataAccess.cs" />
     <Compile Include="Data\DbAppointmentRepository.cs" />

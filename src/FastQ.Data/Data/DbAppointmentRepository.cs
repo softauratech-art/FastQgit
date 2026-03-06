@@ -12,9 +12,6 @@ namespace FastQ.Data.Db
 {
     public sealed class DbAppointmentRepository : IAppointmentRepository
     {
-        public DbAppointmentRepository() {
-        }
-
         public Appointment Get(long id)
         {
             if (id <= 0) return null;
@@ -287,41 +284,6 @@ namespace FastQ.Data.Db
 
             return list;
         }
-
-        public void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null)
-        {
-            var apptId = appointmentId;
-            if (apptId <= 0)
-                throw new InvalidOperationException("Appointment Id must be a numeric ID.");
-
-            if (string.IsNullOrWhiteSpace(status))
-                throw new InvalidOperationException("Status is required.");
-
-            var user = string.IsNullOrWhiteSpace(stampUser) ? "fastq" : stampUser.Trim();
-
-            using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS.UPDATE_APPT_STATUS"))
-            {
-                DataAccess.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
-                DataAccess.AddParam(cmd, "p_status", status.Trim(), DbType.String);
-                DataAccess.AddParam(cmd, "p_stampuser", user, DbType.String);
-                DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
-
-                var outMsg = cmd.CreateParameter();
-                outMsg.ParameterName = "p_outmsg";
-                outMsg.Direction = ParameterDirection.Output;
-                outMsg.DbType = DbType.String;
-                outMsg.Size = 4000;
-                cmd.Parameters.Add(outMsg);
-
-                cmd.ExecuteNonQuery();
-
-                var message = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
-                if (!string.IsNullOrWhiteSpace(message))
-                    throw new InvalidOperationException(message);
-            }
-        }
-
 
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
         {
@@ -639,8 +601,6 @@ namespace FastQ.Data.Db
                 return AppointmentStatus.InService;
             if (trimmed.Equals("TRANSFERRED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("TRANSFERED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("TRANSFERRED OUT", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.TransferredOut;
-            if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
-                return AppointmentStatus.Cancelled;
 
             return Enum.TryParse(trimmed, true, out AppointmentStatus parsed)
                 ? parsed
