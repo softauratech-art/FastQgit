@@ -31,6 +31,7 @@
     var nextEnd = endDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
+    var currentProviderId = (ViewBag.ProviderId as string ?? string.Empty).Trim();
 }
 @section Head {
     <link href="~/Content/modal.css" rel="stylesheet" />
@@ -354,13 +355,13 @@
             <table class="table table-striped table-sm">
                 <thead>
                     <tr>
-                        <th>Start</th>
-                        <th>Queue</th>
-                        <th>Type of Service</th>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Status</th>
-                        <th>Contact</th>
+                        <th data-sort-key="time">Start</th>
+                        <th data-sort-key="text">Queue</th>
+                        <th data-sort-key="text">Type of Service</th>
+                        <th data-sort-key="text">Name</th>
+                        <th data-sort-key="text">Phone</th>
+                        <th data-sort-key="text">Status</th>
+                        <th data-sort-key="text">Contact</th>
                         <th class="text-center">Expand</th>
                     </tr>
                 </thead>
@@ -380,7 +381,13 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
+                            var ownerId = (row.StampUser ?? string.Empty).Trim();
+                            var lockedByOwner = row.Status == AppointmentStatus.InService &&
+                                !string.IsNullOrWhiteSpace(ownerId) &&
+                                !string.Equals(ownerId, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            var summaryClasses = lockedByOwner ? "accordion-toggle locked" : "accordion-toggle";
+                            var detailClasses = lockedByOwner ? "row-actions locked" : "row-actions";
+                            <tr class="@summaryClasses" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-owner="@ownerId">
                                 <td>@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -390,7 +397,7 @@
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W">
+                            <tr class="@detailClasses" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-owner="@ownerId">
                                 <td colspan="8">
                                     <div class="action-bar">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W">Check-In</button>
@@ -407,7 +414,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W">Remove</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W">Cancelled</button>
                                     </div>
                                 </td>
                             </tr>
@@ -458,13 +465,13 @@
             <table class="table table-striped table-sm">
                 <thead>
                     <tr>
-                        <th>Start</th>
-                        <th>Queue</th>
-                        <th>Type of Service</th>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Status</th>
-                        <th>Contact</th>
+                        <th data-sort-key="time">Start</th>
+                        <th data-sort-key="text">Queue</th>
+                        <th data-sort-key="text">Type of Service</th>
+                        <th data-sort-key="text">Name</th>
+                        <th data-sort-key="text">Phone</th>
+                        <th data-sort-key="text">Status</th>
+                        <th data-sort-key="text">Contact</th>
                         <th class="text-center">Expand</th>
                     </tr>
                 </thead>
@@ -484,7 +491,13 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
+                            var ownerId = (row.StampUser ?? string.Empty).Trim();
+                            var lockedByOwner = row.Status == AppointmentStatus.InService &&
+                                !string.IsNullOrWhiteSpace(ownerId) &&
+                                !string.Equals(ownerId, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            var summaryClasses = lockedByOwner ? "accordion-toggle locked" : "accordion-toggle";
+                            var detailClasses = lockedByOwner ? "row-actions locked" : "row-actions";
+                            <tr class="@summaryClasses" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-owner="@ownerId">
                                 <td>@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -494,7 +507,7 @@
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A">
+                            <tr class="@detailClasses" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-owner="@ownerId">
                                 <td colspan="8">
                                     <div class="action-bar">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A">Check-In</button>
@@ -511,7 +524,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A">Remove</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A">Cancelled</button>
                                     </div>
                                 </td>
                             </tr>
@@ -659,6 +672,28 @@
     </div>
 </div>
 
+<div id="cancelServiceModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelServiceModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="cancelServiceModalTitle">Cancel Service</h5>
+            <button class="btn small ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="cancelServiceModal"></div>
+            <div class="route-form-row">
+                <label for="cancelServiceNotes">Cancellation Notes</label>
+                <textarea id="cancelServiceNotes" rows="3"></textarea>
+            </div>
+            <input id="cancelServiceSrcId" type="hidden" value="" />
+            <input id="cancelServiceSrcType" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
+            <button class="btn primary" type="button" id="saveCancelService">Confirm Cancel</button>
+        </div>
+    </div>
+</div>
+
 <div id="addAppointmentModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addAppointmentModalTitle">
     <div class="modal route-modal">
         <div class="modal-header">
@@ -702,6 +737,10 @@
             <div class="route-form-row">
                 <label for="addApptPhone">Phone</label>
                 <input id="addApptPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptPermitNumber">Permit Number</label>
+                <input id="addApptPermitNumber" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
                 <label for="addApptDate">Date</label>
@@ -774,6 +813,10 @@
             <div class="route-form-row">
                 <label for="addWalkinPhone">Phone</label>
                 <input id="addWalkinPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinPermitNumber">Permit Number</label>
+                <input id="addWalkinPermitNumber" class="route-input" type="text" />
             </div>
             <div class="route-form-row" id="addWalkinMeetingUrlField" style="display:none;">
                 <label for="addWalkinMeetingUrl">Meeting URL</label>
@@ -908,7 +951,7 @@
     function clearAddEntryModal(prefix) {
       var fields = [
         "QueueId", "ServiceId", "ContactType", "RefValue",
-        "CustomerFirstName", "CustomerLastName", "Phone", "MeetingUrl", "Notes"
+        "CustomerFirstName", "CustomerLastName", "Phone", "PermitNumber", "MeetingUrl", "Notes"
       ];
 
       fields.forEach(function (suffix) {
@@ -1394,6 +1437,19 @@
       openModal("endServiceModal");
     }
 
+    function openCancelServiceModal(appointmentId, srcType) {
+      var srcIdInput = document.getElementById("cancelServiceSrcId");
+      var srcTypeInput = document.getElementById("cancelServiceSrcType");
+      var notesInput = document.getElementById("cancelServiceNotes");
+      if (!srcIdInput || !srcTypeInput) {
+        return;
+      }
+      srcIdInput.value = appointmentId;
+      srcTypeInput.value = srcType;
+      if (notesInput) notesInput.value = "";
+      openModal("cancelServiceModal");
+    }
+
     function submitEndOnly(appointmentId, srcType, completionNotes) {
       return postForm(endServiceUrl, {
           appointmentId: appointmentId,
@@ -1628,6 +1684,88 @@
       return true;
     }
 
+    function compareSortValues(a, b, kind, direction) {
+      var left = (a || "").toString().trim().toLowerCase();
+      var right = (b || "").toString().trim().toLowerCase();
+      if (kind === "time") {
+        var parseClock = function (text) {
+          var match = /^(\d{1,2}):(\d{2})(?:\s*([ap]m))?$/i.exec((text || "").trim());
+          if (!match) return NaN;
+          var hour = parseInt(match[1], 10);
+          var minute = parseInt(match[2], 10);
+          var meridiem = (match[3] || "").toLowerCase();
+          if (meridiem === "pm" && hour < 12) hour += 12;
+          if (meridiem === "am" && hour === 12) hour = 0;
+          return (hour * 60) + minute;
+        };
+        var leftTime = parseClock(left);
+        var rightTime = parseClock(right);
+        if (!isNaN(leftTime) && !isNaN(rightTime)) {
+          return direction * (leftTime - rightTime);
+        }
+      }
+
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return 0;
+    }
+
+    function sortProviderTable(table, columnIndex, kind, direction) {
+      if (!table || !table.tBodies || table.tBodies.length === 0) {
+        return;
+      }
+
+      var tbody = table.tBodies[0];
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr.accordion-toggle"));
+      var pairs = rows.map(function (summary) {
+        var targetId = summary.getAttribute("data-target");
+        var detail = targetId ? document.getElementById(targetId) : null;
+        return {
+          summary: summary,
+          detail: detail,
+          value: summary.children.length > columnIndex ? summary.children[columnIndex].textContent : ""
+        };
+      });
+
+      pairs.sort(function (left, right) {
+        return compareSortValues(left.value, right.value, kind, direction);
+      });
+
+      var empty = tbody.querySelector(".table-empty");
+      pairs.forEach(function (pair) {
+        tbody.appendChild(pair.summary);
+        if (pair.detail) {
+          tbody.appendChild(pair.detail);
+        }
+      });
+      if (empty) {
+        tbody.appendChild(empty);
+      }
+    }
+
+    function bindTodaySorting() {
+      document.querySelectorAll(".table-card table").forEach(function (table) {
+        var headers = table.querySelectorAll("thead th[data-sort-key]");
+        headers.forEach(function (header, index) {
+          if (header.getAttribute("data-bound-sort") === "1") {
+            return;
+          }
+          header.setAttribute("data-bound-sort", "1");
+          header.style.cursor = "pointer";
+          header.setAttribute("title", "Sort");
+          header.addEventListener("click", function () {
+            var key = (header.getAttribute("data-sort-key") || "text").toLowerCase();
+            var nextDirection = header.getAttribute("data-sort-direction") === "asc" ? -1 : 1;
+            table.querySelectorAll("thead th[data-sort-key]").forEach(function (th) {
+              th.removeAttribute("data-sort-direction");
+            });
+            header.setAttribute("data-sort-direction", nextDirection === 1 ? "asc" : "desc");
+            sortProviderTable(table, index, key, nextDirection);
+          });
+        });
+      });
+    }
+
     function bindProviderActionButtons() {
       document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
         if (btn.getAttribute("data-bound-provider-action") === "1") {
@@ -1670,6 +1808,11 @@
           return;
         }
 
+        if (action === "remove") {
+          openCancelServiceModal(appointmentId, srcType);
+          return;
+        }
+
         postForm(providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
           .then(function (res) {
             if (!res || !res.ok) {
@@ -1692,7 +1835,7 @@
       if (normalizedStatus === "arrived") return "ARRIVED";
       if (normalizedStatus === "inservice") return "IN PROGRESS";
       if (normalizedStatus === "completed") return "DONE";
-      if (normalizedStatus === "cancelled") return "REMOVED";
+      if (normalizedStatus === "cancelled") return "CANCELLED";
       if (normalizedStatus === "scheduled") return "SCHEDULED";
       if (normalizedStatus === "transferredout") return "TRANSFERRED";
       return (normalizedStatus || "").toUpperCase();
@@ -1940,6 +2083,36 @@
       });
     });
 
+    var saveCancelService = document.getElementById("saveCancelService");
+    if (saveCancelService) {
+      saveCancelService.addEventListener("click", function () {
+        var srcIdInput = document.getElementById("cancelServiceSrcId");
+        var srcTypeInput = document.getElementById("cancelServiceSrcType");
+        var notesInput = document.getElementById("cancelServiceNotes");
+        var appointmentId = srcIdInput ? srcIdInput.value : "";
+        var srcType = srcTypeInput ? srcTypeInput.value : "";
+        var notes = notesInput ? notesInput.value : "";
+        if (!appointmentId || !srcType) {
+          closeModal("cancelServiceModal");
+          return;
+        }
+
+        postForm(providerActionUrl, {
+          action: "remove",
+          appointmentId: appointmentId,
+          srcType: srcType,
+          notes: notes || ""
+        }).then(function (res) {
+          if (!res || !res.ok) {
+            showModalFeedback("cancelServiceModal", res && res.error ? res.error : "Cancel failed.", true);
+            return;
+          }
+          closeModal("cancelServiceModal");
+          queueLiveSync();
+        });
+      });
+    }
+
     function bindMeetingLinks() {
       document.querySelectorAll(".meeting-link").forEach(function (link) {
         if (link.getAttribute("data-bound-meeting-link") === "1") {
@@ -2186,6 +2359,7 @@
           firstName: document.getElementById("addApptCustomerFirstName") ? document.getElementById("addApptCustomerFirstName").value : "",
           lastName: document.getElementById("addApptCustomerLastName") ? document.getElementById("addApptCustomerLastName").value : "",
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
+          permitNumber: document.getElementById("addApptPermitNumber") ? document.getElementById("addApptPermitNumber").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
           startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
           meetingUrl: document.getElementById("addApptMeetingUrl") ? document.getElementById("addApptMeetingUrl").value : "",
@@ -2193,8 +2367,8 @@
         };
         payload.customerName = ((payload.firstName || "").trim() + " " + (payload.lastName || "").trim()).trim();
 
-        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, first name, last name, phone, date, and time are required.", true);
+        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.permitNumber || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, first name, last name, phone, permit number, date, and time are required.", true);
           return;
         }
 
@@ -2220,13 +2394,14 @@
           firstName: document.getElementById("addWalkinCustomerFirstName") ? document.getElementById("addWalkinCustomerFirstName").value : "",
           lastName: document.getElementById("addWalkinCustomerLastName") ? document.getElementById("addWalkinCustomerLastName").value : "",
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
+          permitNumber: document.getElementById("addWalkinPermitNumber") ? document.getElementById("addWalkinPermitNumber").value : "",
           meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
         payload.customerName = ((payload.firstName || "").trim() + " " + (payload.lastName || "").trim()).trim();
 
-        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone) {
-          showModalFeedback("addWalkinModal", "Queue, first name, last name, and phone are required.", true);
+        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.permitNumber) {
+          showModalFeedback("addWalkinModal", "Queue, first name, last name, phone, and permit number are required.", true);
           return;
         }
 
@@ -2242,6 +2417,7 @@
     }
 
     bindAccordionRows();
+    bindTodaySorting();
     bindProviderActionButtons();
     bindMeetingLinks();
   })();

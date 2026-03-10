@@ -173,7 +173,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType)
+        public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType, string notes)
         {
             if (string.IsNullOrWhiteSpace(action) || string.IsNullOrWhiteSpace(appointmentId))
                 return Json(new { ok = false, error = "action and appointmentId are required" });
@@ -193,11 +193,18 @@ namespace FastQ.Web.Controllers
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
+            if (action == "remove" && !string.IsNullOrWhiteSpace(notes))
+            {
+                var saveRes = _service.SaveServiceInfo(apptId, normalizedSrc[0], null, notes, resolvedUserId);
+                if (!saveRes.Ok)
+                    return Json(new { ok = true, warning = saveRes.Error });
+            }
+
             return Json(new { ok = true });
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -222,6 +229,7 @@ namespace FastQ.Web.Controllers
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
+                permitNumber,
                 notes,
                 meetingUrl,
                 _auth.GetLoggedInWindowsUser());
@@ -233,7 +241,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string firstName, string lastName, string customerName, string phone, string contactType, string meetingUrl, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string firstName, string lastName, string customerName, string phone, string contactType, string permitNumber, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -250,6 +258,7 @@ namespace FastQ.Web.Controllers
                 resolvedCustomerName,
                 phone,
                 contactType,
+                permitNumber,
                 meetingUrl,
                 notes,
                 _auth.GetLoggedInWindowsUser());

@@ -84,6 +84,10 @@
                     <span class="pill">Optional</span>
                 </div>
                 <div class="field">
+                    <label for="permitNumber">Permit Number *</label>
+                    <input type="text" id="permitNumber" name="permitNumber" placeholder="Permit number" />
+                </div>
+                <div class="field">
                     <label for="notes">Notes</label>
                     <input type="text" id="notes" name="notes" placeholder="Additional info" />
                 </div>
@@ -158,6 +162,7 @@ var FastQBook = {
     contactType: "",
     contactTypeName: "",
     reference: "",
+    permitNumber: "",
     appointmentDate: "",
     startTime: "",
     meetingUrl: "",
@@ -494,6 +499,7 @@ var FastQBook = {
     this.state.phone = ($("#phone").val() || "").trim();
     this.state.email = ($("#email").val() || "").trim();
     this.state.notes = ($("#notes").val() || "").trim();
+    this.state.permitNumber = ($("#permitNumber").val() || "").trim();
     this.state.queueId = ($("#queueId").val() || "").trim();
     this.state.serviceId = ($("#serviceId").val() || "").trim();
     this.state.contactType = ($("#contactType").val() || "").trim();
@@ -625,8 +631,8 @@ var FastQBook = {
     this.syncInfo();
     $("#msg").removeClass("ok").removeClass("error");
 
-    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.appointmentDate || !this.state.startTime || !this.state.phone || !this.state.firstName || !this.state.lastName) {
-      $("#msg").addClass("error").text("Queue, service, contact type, date, time, first name, last name, and mobile are required.");
+    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.appointmentDate || !this.state.startTime || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.permitNumber) {
+      $("#msg").addClass("error").text("Queue, service, contact type, date, time, first name, last name, mobile, and permit number are required.");
       return false;
     }
     if (this.isOnlineContact() && !this.state.meetingUrl) {
@@ -661,6 +667,7 @@ var FastQBook = {
       contactType: this.state.contactType,
       appointmentDate: this.state.appointmentDate,
       startTime: this.state.startTime,
+      permitNumber: this.state.permitNumber,
       meetingUrl: this.state.meetingUrl,
       notes: this.state.notes
     };
@@ -693,7 +700,7 @@ var FastQBook = {
   },
 
   clear: function () {
-    $("#firstName, #lastName, #phone, #email, #notes, #meetingUrl").val("");
+    $("#firstName, #lastName, #phone, #email, #permitNumber, #notes, #meetingUrl").val("");
     $("#terms").prop("checked", false);
     this.hydrateProfile();
     this.loadQueues();

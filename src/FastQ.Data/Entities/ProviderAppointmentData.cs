@@ -13,5 +13,6 @@ namespace FastQ.Data.Entities
         public string CustomerPhone { get; set; }
         public string ContactType { get; set; }
         public bool SmsOptIn { get; set; }
+        public string StampUser { get; set; }
     }
 }

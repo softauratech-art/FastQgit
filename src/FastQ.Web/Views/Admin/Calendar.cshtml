@@ -9,6 +9,7 @@
     var monthNames = System.Globalization.DateTimeFormatInfo.InvariantInfo.MonthNames.Take(12).ToList();
     var currentYear = Model.DisplayMonth.Year;
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
+    var currentProviderId = (ViewBag.ProviderId as string ?? string.Empty).Trim();
 }
 
 @section Head {
@@ -187,6 +188,14 @@
             border-radius: 16px;
             padding: 14px;
             background: #f8fafc;
+        }
+
+        .agenda-item.locked {
+            opacity: 0.45;
+        }
+
+        .agenda-item.locked .agenda-actions {
+            pointer-events: none;
         }
 
         .agenda-time {
@@ -555,7 +564,12 @@
             <div class="agenda-list">
                 @foreach (var item in Model.SelectedDayAppointments)
                 {
-                    <div class="agenda-item" data-appointment-id="@item.AppointmentId" data-status="@item.Status" data-src-type="@item.SrcType">
+                    var ownerId = (item.StampUser ?? string.Empty).Trim();
+                    var lockedByOwner = item.Status == AppointmentStatus.InService &&
+                        !string.IsNullOrWhiteSpace(ownerId) &&
+                        !string.Equals(ownerId, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                    var itemClass = lockedByOwner ? "agenda-item locked" : "agenda-item";
+                    <div class="@itemClass" data-appointment-id="@item.AppointmentId" data-status="@item.Status" data-src-type="@item.SrcType" data-owner="@ownerId">
                         <div class="agenda-time">@item.StartTimeText</div>
                         <div class="agenda-title">@item.CustomerName</div>
                         <div class="agenda-detail">@item.EntryKind</div>
@@ -581,7 +595,7 @@
                                     data-phone="@item.Phone">
                                 Info
                             </button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Remove</button>
+                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Cancelled</button>
                         </div>
                     </div>
                 }
@@ -656,6 +670,10 @@
                     <div class="calendar-field">
                         <label for="phone">Phone</label>
                         <input id="phone" name="phone" type="tel" required />
+                    </div>
+                    <div class="calendar-field">
+                        <label for="permitNumber">Permit Number</label>
+                        <input id="permitNumber" name="permitNumber" type="text" required />
                     </div>
 
                     <div class="calendar-field">
@@ -755,6 +773,10 @@
                     <div class="calendar-field">
                         <label for="walkinPhone">Phone</label>
                         <input id="walkinPhone" name="phone" type="tel" required />
+                    </div>
+                    <div class="calendar-field">
+                        <label for="walkinPermitNumber">Permit Number</label>
+                        <input id="walkinPermitNumber" name="permitNumber" type="text" required />
                     </div>
 
                     <div class="calendar-field full" id="walkinMeetingUrlField" style="display:none;">
@@ -1534,7 +1556,16 @@
                             return;
                         }
 
-                        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
+                        var payload = { action: action, appointmentId: appointmentId, srcType: srcType };
+                        if (action === "remove") {
+                            var cancelNotes = window.prompt("Cancellation notes (optional):", "");
+                            if (cancelNotes === null) {
+                                return;
+                            }
+                            payload.notes = cancelNotes;
+                        }
+
+                        postForm(providerActionUrl, payload)
                             .then(function (res) {
                                 if (!res || !res.ok) {
                                     window.alert(res && res.error ? res.error : "Action failed.");

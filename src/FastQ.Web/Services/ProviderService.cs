@@ -192,7 +192,8 @@ namespace FastQ.Web.Services
                     Phone = string.IsNullOrWhiteSpace(r.CustomerPhone) ? "-" : r.CustomerPhone,
                     Status = r.Status,
                     StatusText = GetStatusText(r.Status),
-                    ContactMethod = GetContactMethodText(r.ContactType, r.SmsOptIn)
+                    ContactMethod = GetContactMethodText(r.ContactType, r.SmsOptIn),
+                    StampUser = r.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
@@ -221,7 +222,7 @@ namespace FastQ.Web.Services
                 AppointmentStatus.Arrived => "ARRIVED",
                 AppointmentStatus.InService => "IN PROGRESS",
                 AppointmentStatus.Completed => "DONE",
-                AppointmentStatus.Cancelled => "REMOVED",
+                AppointmentStatus.Cancelled => "CANCELLED",
                 _ => status.ToString().ToUpperInvariant()
             };
         }

@@ -82,6 +82,7 @@ namespace FastQ.Web.Services
             string phone,
             string contactType,
             DateTime scheduledForUtc,
+            string permitNumber,
             string notes,
             string meetingUrl)
         {
@@ -93,6 +94,7 @@ namespace FastQ.Web.Services
                 phone,
                 contactType,
                 scheduledForUtc,
+                permitNumber,
                 notes,
                 meetingUrl,
                 "web");
@@ -105,6 +107,7 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
+            string permitNumber,
             string meetingUrl,
             string notes)
         {
@@ -115,6 +118,7 @@ namespace FastQ.Web.Services
                 customerName,
                 phone,
                 contactType,
+                permitNumber,
                 meetingUrl,
                 notes,
                 "web");
@@ -160,7 +164,8 @@ namespace FastQ.Web.Services
                 ScheduledForUtc = row.ScheduledForUtc,
                 ScheduledForLocal = row.ScheduledForUtc,
                 Notes = "Use Info to add meeting details or notes.",
-                MeetingUrl = string.Empty
+                MeetingUrl = string.Empty,
+                StampUser = row.StampUser
             };
         }
     }

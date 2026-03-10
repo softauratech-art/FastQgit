@@ -47,6 +47,7 @@ namespace FastQ.Web.Controllers
             string contactType,
             string appointmentDate,
             string startTime,
+            string permitNumber,
             string meetingUrl,
             string notes,
             string month)
@@ -111,6 +112,7 @@ namespace FastQ.Web.Controllers
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
+                permitNumber,
                 notes,
                 meetingUrl);
 
@@ -156,6 +158,7 @@ namespace FastQ.Web.Controllers
             string customerName,
             string phone,
             string contactType,
+            string permitNumber,
             string meetingUrl,
             string notes,
             string month,
@@ -192,6 +195,7 @@ namespace FastQ.Web.Controllers
                 resolvedCustomerName,
                 phone,
                 contactType,
+                permitNumber,
                 meetingUrl,
                 notes);
 

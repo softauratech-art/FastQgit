@@ -20,7 +20,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult Book(string queueId, string serviceId, string refValue, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public ActionResult Book(string queueId, string serviceId, string refValue, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
             {
@@ -84,6 +84,7 @@ namespace FastQ.Web.Controllers
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
+                permitNumber,
                 notes,
                 meetingUrl,
                 "web");

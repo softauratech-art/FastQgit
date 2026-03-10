@@ -55,6 +55,7 @@ namespace FastQ.Web.Services
             string phone,
             string contactType,
             DateTime scheduledForUtc,
+            string permitNumber,
             string notes,
             string meetingUrl,
             string stampUser)
@@ -67,9 +68,15 @@ namespace FastQ.Web.Services
                 return Result<Appointment>.Fail("Phone is required.");
             if (!long.TryParse(serviceId, out var parsedServiceId) || parsedServiceId <= 0)
                 return Result<Appointment>.Fail("Service is required.");
+            if (string.IsNullOrWhiteSpace(permitNumber))
+                return Result<Appointment>.Fail("Permit number is required.");
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
+
+            var permitValidationOk = _appts.ValidatePermitNumber(queueId, permitNumber, out var permitValidationMessage);
+            if (!permitValidationOk)
+                return Result<Appointment>.Fail(string.IsNullOrWhiteSpace(permitValidationMessage) ? "Permit number is invalid." : permitValidationMessage);
 
             var validation = ValidateScheduledInputAgainstQueueDetails(
                 queueId,
@@ -122,6 +129,7 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
+            string permitNumber,
             string meetingUrl,
             string notes,
             string stampUser)
@@ -132,9 +140,15 @@ namespace FastQ.Web.Services
                 return Result<long>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<long>.Fail("Phone is required.");
+            if (string.IsNullOrWhiteSpace(permitNumber))
+                return Result<long>.Fail("Permit number is required.");
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
+
+            var permitValidationOk = _appts.ValidatePermitNumber(queueId, permitNumber, out var permitValidationMessage);
+            if (!permitValidationOk)
+                return Result<long>.Fail(string.IsNullOrWhiteSpace(permitValidationMessage) ? "Permit number is invalid." : permitValidationMessage);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
