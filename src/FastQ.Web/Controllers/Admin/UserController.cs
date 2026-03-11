@@ -6,11 +6,12 @@ using System.Web.Mvc;
 using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers.Admin
-{     
+{
+    [FQAuthorizeUser(AllowRole = "SuperAdmin")]
     public class UserController : Controller
     {        
         // GET: User       
-        //[AuthorizeUsers]       
+             
         public ActionResult Index()        
         {
             IList<UserVM> lUsers;
@@ -27,8 +28,7 @@ namespace FastQ.Web.Controllers.Admin
             return View("../Admin/User/List", lUsers);
         }
 
-        // GET: User/Details/ocuser01
-        [AuthorizeUsers]
+        // GET: User/Details/ocuser01        
         public ActionResult Details(string id)
         {
             try 
@@ -43,8 +43,7 @@ namespace FastQ.Web.Controllers.Admin
             }            
         }
 
-        // GET: User/Create
-        [AuthorizeUsers]
+        // GET: User/Create        
         public ActionResult Create()
         {
             var oUser = new UserVM();
@@ -52,8 +51,7 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         // POST: User/Create
-        [HttpPost]
-        [AuthorizeUsers]
+        [HttpPost]        
         public ActionResult Create(FormCollection collection)
         {
             try
@@ -69,23 +67,26 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         // GET: User/Edit/ocuser01
-        [AuthorizeUsers]
+        
         public ActionResult Edit(string id)
         {
+            if (string.IsNullOrEmpty(id))
+            {               
+                return View("../Admin/User/ManageUser", new UserVM { UserId = "", IsActive=true });
+            }
+                       
             var oUser = new UserService().GetUser(id);
             return View("../Admin/User/ManageUser", oUser);
         }
 
         // POST: User/Edit/ocuser01
-        [HttpPost]
-        [AuthorizeUsers]
+        [HttpPost]        
         public ActionResult Edit(string id, FormCollection collection)
         {
             try
             {
                 // TODO: Add update logic here
-
-                return RedirectToAction("../Admin/User/Index");
+                return RedirectToAction("Index");
             }
             catch
             {
@@ -93,8 +94,7 @@ namespace FastQ.Web.Controllers.Admin
             }
         }
 
-        // GET: User/Delete/ocuser01
-        [AuthorizeUsers]
+        // GET: User/Delete/ocuser01        
         public ActionResult Delete(string id)
         {
             var oUser = new UserService().GetUser(id);
@@ -102,8 +102,7 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         // POST: User/Delete/5
-        [HttpPost]
-        [AuthorizeUsers]
+        [HttpPost]        
         public ActionResult Delete(string id, FormCollection collection)
         {
             try

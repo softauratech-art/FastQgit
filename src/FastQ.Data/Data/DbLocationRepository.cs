@@ -37,7 +37,7 @@ namespace FastQ.Data.Db
                 var locationId = location.Id;
                 if (locationId <= 0)
                 {
-                    using (var cmd = DataAccess.CreateCommand(conn, "SELECT NVL(MAX(LOCATION_ID),0) + 1 FROM VALIDLOCATIONS"))
+                    using (var cmd = DataAccess.CreateCommand(conn, "SELECT NVL(MAX(LOCATION_ID),0) + 1 FROM fqowner.VALIDLOCATIONS"))
                     {
                         locationId = Convert.ToInt64(cmd.ExecuteScalar());
                     }

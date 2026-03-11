@@ -1,0 +1,18 @@
+﻿@using FastQ.Web.Services
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">FastQ Manager</div>
+        <div class="topbar-sub">
+            FastQ keeps every queue in sync, in real time.
+            Book an appointment, watch it instantly appear for the provider, and follow every state change live.
+        </div>
+    </div>
+}
+<div class="card">    
+        <div class="card-header">
+            <h3 class="card-title">Access Denied</h3>           
+        </div>
+        <p>You do not have access to the requested feature.</p>
+        <p>@ViewBag.errmsg</p>
+</div>

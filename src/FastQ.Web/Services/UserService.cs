@@ -1,6 +1,6 @@
+using FastQ.Data.Common;
 using FastQ.Data.Db;
 using FastQ.Data.Repositories;
-using FastQ.Web.Models;
 using FastQ.Web.Models.Admin;
 using System;
 using System.Collections.Generic;
@@ -12,8 +12,8 @@ namespace FastQ.Web.Services
     public class UserService
     {
         private readonly IUserRepository _users;
-        private readonly string _stampuser = System.Security.Principal.WindowsIdentity.GetCurrent().Name.ToLower().Replace("ocgov\\", "");
-        private Int32 _stampuserentity;
+        private readonly string _stampuser = new AuthService().GetLoggedInWindowsUser();
+        private Int32 _sessionentity  = new AuthService().GetSessionEntityId();
         public UserService()
            : this(
                DbRepositoryFactory.CreateUserRepository())
@@ -26,37 +26,58 @@ namespace FastQ.Web.Services
         }
         public IList<UserVM> ListUsers()
         {
-            if (HttpContext.Current.Session["fq_this_entity"]  == null  ||
-                    !Int32.TryParse(HttpContext.Current.Session["fq_this_entity"].ToString(), out _stampuserentity))
-                throw new Exception("Entity is missing for this session"); 
+            //if (HttpContext.Current.Session["fq_this_entity"]  == null  ||
+            //        !Int32.TryParse(HttpContext.Current.Session["fq_this_entity"].ToString(), out _stampuserentity))
+            //    throw new Exception("Entity is missing for this session"); 
             
             return TransformToModelList();
         }
 
         public UserVM GetUser(string userid)
-        {           
-            var usr = _users.Get(userid, _stampuser);
-            return new UserVM
+        {
+            try
             {
-                FirstName = usr.FirstName,
-                LastName = usr.LastName,
-                UserId = usr.UserId,
-                Title = usr.Title,
-                OtherLanguage = usr.Language,
-                IsActive =  usr.ActiveFlag,
-                IsAdmin = usr.AdminFlag,
-                Email = usr.Email
-            };
+                var usr = _users.Get(userid, _stampuser);
+                return new UserVM
+                {
+                    FirstName = usr.FirstName,
+                    LastName = usr.LastName,
+                    UserId = usr.UserId,
+                    Title = usr.Title,
+                    OtherLanguage = usr.Language,
+                    IsActive = usr.ActiveFlag,
+                    //todo IsAdmin = usr.AdminFlag,
+                    Email = usr.Email
+                };
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
-        private IList<UserVM> TransformToModelList()
+        public Result HandleUserAction(string action, string json)
+        {
+            //action = (action ?? string.Empty).Trim().ToLowerInvariant();
+            //return action switch
+            //{
+            //    "update" => UpdateUser( json),
+            //    "delete" => DeleteUser( json),
+            //    "create" => CreateUser( json),
+            //    _ => Result.Fail("Unknown action")
+            //};
+
+            return Result.Fail("Not Implemented");
+        }
+
+        public IList<UserVM> TransformToModelList()
         {
             if (string.IsNullOrWhiteSpace(_stampuser))
             {
                 return new List<UserVM>();
             }
                         
-            var rows = _users.ListAll(_stampuserentity, _stampuser);
+            var rows = _users.ListAll(_sessionentity, _stampuser);
 
             return rows.Select(r =>
             {               
@@ -68,7 +89,7 @@ namespace FastQ.Web.Services
                     Title = r.Title,
                     OtherLanguage = r.Language,
                     IsActive = r.ActiveFlag,
-                    IsAdmin = r.AdminFlag,
+                    //todo IsAdmin = r.AdminFlag,
                     Email = r.Email             
                 };
             }).OrderBy(r => r.LastName).ToList();

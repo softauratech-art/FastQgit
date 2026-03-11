@@ -15,6 +15,14 @@ namespace FastQ.Web.Helpers
             Short = 0,
             Long = 1
         }
+        public enum FQRole
+        {
+            Host,       // Value 0 by default
+            Provider,   // Value 1 by default
+            QueueAdmin, // Value 2 by default
+            Reporter,   // Value 3 by default
+            SuperAdmin  // Value 4 by default
+        }
 
         public static string ParseTimestampForDB(string ts)
         {

@@ -2,6 +2,7 @@
 using FastQ.Web.Attributes;
 using FastQ.Web.Models.Admin;
 using FastQ.Web.Services;
+using FastQ.Web.Helpers;
 using Microsoft.Ajax.Utilities;
 using System;
 using System.Collections.Generic;
@@ -13,11 +14,11 @@ using System.Web.Mvc;
 
 namespace FastQ.Web.Controllers.Admin
 {
+    [FQAuthorizeUser(AllowRole = $"{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class QueueController : Controller
     {
         #region Queue-Base-Record
         // GET: User       
-        ////[AuthorizeUsers]        
         //[Route("admin")]
         public ActionResult Index()
         {
@@ -36,7 +37,6 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         // GET: Queue/Details/1
-        [AuthorizeUsers]
         //[Route("admin")]
         public ActionResult Details(long id)
         {
@@ -55,7 +55,6 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         // GET: Queue/Create
-        //[AuthorizeUsers] 
         public ActionResult Create()
         {
             //var locationid = Convert.ToInt64(Request.QueryString["locid"].ToString());
@@ -66,7 +65,6 @@ namespace FastQ.Web.Controllers.Admin
         // POST: Queue/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[AuthorizeUsers] 
         public ActionResult Create(QueueVM ovm)
         {
             try
@@ -83,7 +81,6 @@ namespace FastQ.Web.Controllers.Admin
 
         // GET: Queue/Edit(Insert)
         // GET: Queue/Edit/5(Update)
-        [AuthorizeUsers]
         public ActionResult Edit(long id = 0)
         {
             //If id=0 For-Insert
@@ -107,7 +104,7 @@ namespace FastQ.Web.Controllers.Admin
         {
             try
             {
-                //set these from Form[] since we're using custom-checkbox in View-html
+                //set these from Form[] since we're using custom-checkbox in View-cshtml
                 ovm.ActiveFlag = Request.Form["ActiveFlag"] != null ? Request.Form["ActiveFlag"].Equals("true") : false;
                 ovm.EmpOnly = Request.Form["EmpOnly"] != null ? Request.Form["EmpOnly"].Equals("true") : false;
                 ovm.HideInKiosk = Request.Form["HideInKiosk"] != null ? Request.Form["HideInKiosk"].Equals("true") : false;
@@ -155,22 +152,20 @@ namespace FastQ.Web.Controllers.Admin
             return RedirectToAction("Index");
         }
 
-        // POST: Queue/Delete/5
-        [HttpPost]
-        //[AuthorizeUsers] 
-        public ActionResult Delete(Int64 id, FormCollection collection)
-        {
-            try
-            {
-                // TODO: Add delete logic here
-
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
-            }
-        }
+        //// POST: Queue/Delete/5
+        //[HttpPost]
+        //public ActionResult Delete(Int64 id, FormCollection collection)
+        //{
+        //    try
+        //    {
+        //        // TODO: Add delete logic here
+        //        return RedirectToAction("Index");
+        //    }
+        //    catch
+        //    {
+        //        return View();
+        //    }
+        //}
 
         #endregion Queue-Base-Record
 
@@ -322,5 +317,7 @@ namespace FastQ.Web.Controllers.Admin
             //return Json(new { success = true, message = "Record deleted successfully" });
         }
         #endregion
+
+    
     }
 }

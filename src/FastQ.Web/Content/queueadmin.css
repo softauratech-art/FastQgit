@@ -92,6 +92,10 @@
     color: #FFFFFF;
 }*/
 
+
+/*#ServiceSection.table, #ScheduleSection.table {
+    font-size: 0.9em
+}*/
 /*Css for QueueAdmin */
 .weekDays-selector input {
     display: none !important;
@@ -125,9 +129,9 @@
 }
 /*end: Css for QueueAdmin */
 /* --- Main Content Layout --- */
-.section-configuration {
+/*.section-configuration {
     margin-bottom: 25px;
-}
+}*/
 
 .configuration-header {
     display: flex;
@@ -441,9 +445,11 @@ input:checked + .slider {
     justify-content: flex-end;
 }
 
-.btn-action-edit {
+
+.btn-action-edit:hover {
     color: var(--primary);
-    border: none;
+    border-color: var(--primary);
+    /*border: none;
     background: none;
     cursor: pointer;
     font-size: 14px;
@@ -451,12 +457,13 @@ input:checked + .slider {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0;
+    padding: 0;*/
 }
 
-.btn-action-delete {
+.btn-action-delete:hover {
     color: var(--delete-btn); /* Subtle red for Delete */
-    border: none;
+    border-color: var(--delete-btn);
+    /*border: none;
     background: none;
     cursor: pointer;
     font-size: 14px;
@@ -464,7 +471,7 @@ input:checked + .slider {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0;
+    padding: 0;*/
 }
 
 /* --- Unified Add Service Button below Table --- */
@@ -494,7 +501,7 @@ input:checked + .slider {
 
 .btn-cancel {
     padding: 10px 24px;
-    border-radius: 24px;
+    border-radius: 10px; /*24px;*/
     font-size: 14px;
     font-weight: 600;
     border: 1px solid var(--border);
@@ -510,11 +517,11 @@ input:checked + .slider {
 
 .btn-save {
     padding: 10px 30px;
-    border-radius: 24px;
+    border-radius: 10px; /*24px;*/
     font-size: 14px;
     font-weight: 600;
     border: none;
-    background: var(--primary); /* Final Save in Teal */
+    background: var(--accent-2); 
     color: #FFFFFF;
     cursor: pointer;
     transition: background 0.2s;
@@ -529,7 +536,7 @@ input:checked + .slider {
 
 .btn-add {
     padding: 10px 20px;
-    border-radius: 24px;
+    border-radius: 10px; /*24px;*/
     font-size: 14px;
     font-weight: 600;
     border: none;
@@ -554,6 +561,7 @@ input:checked + .slider {
     background: rgba(255, 255, 255, 0.5);
 }
 
+/*
 .accordion-toggle {
     cursor: pointer;
 }
@@ -580,7 +588,7 @@ input:checked + .slider {
 
     .row-actions td {
         padding: 0 8px 12px;
-    }
+    }*/
 
 .action-bar {
     display: flex;
@@ -592,18 +600,6 @@ input:checked + .slider {
     overflow-x: auto;
 }
 
-.date-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--font-heading);
-}
-
-    .date-nav a {
-        color: var(--accent);
-        font-weight: 700;
-    }
-
 .text-center {
     text-align: center;
 }
@@ -614,30 +610,33 @@ input:checked + .slider {
     margin-top: 1rem !important;
 }
 
-    .modal-header .btn-close  {
-        /* Sizing and Shape */
-        width: 40px; /* Equal width and height create a circle */
-        height: 40px;
-        border-radius: 50%; /* Makes the element a perfect circle */
-        /* Appearance */
-        background-color: transparent; 
-        color: #000; /* black 'X' color */
-        opacity: 0.5;
-        border: none; /* Removes default button border */
-        cursor: pointer; /* Changes cursor to a hand on hover */
-        /* Centering the 'X' */
-        display: flex; /* Use flexbox for easy centering */
-        justify-content: center; /* Center horizontally */
-        align-items: center; /* Center vertically */
-        font-size: 24px; /* Adjust 'X' size */
-        line-height: 1; /* Ensures text is aligned correctly */
-    }
+.modal-header .btn-close,
+.queue-modal-header .btn-close {
+    /* Sizing and Shape */
+    width: 40px; /* Equal width and height create a circle */
+    height: 40px;
+    border-radius: 50%; /* Makes the element a perfect circle */
+    /* Appearance */
+    background-color: transparent;
+    color: #000; /* black 'X' color */
+    opacity: 0.5;
+    border: none; /* Removes default button border */
+    cursor: pointer; /* Changes cursor to a hand on hover */
+    /* Centering the 'X' */
+    display: flex; /* Use flexbox for easy centering */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    font-size: 24px; /* Adjust 'X' size */
+    line-height: 1; /* Ensures text is aligned correctly */
+}
 
-    .modal-header .btn-close :hover {
+    .modal-header .btn-close :hover,
+    .queue-modal-header .btn-close ::after hover{
         background-color: #e60000; /* Darker red on hover for feedback */
     }
 /* --- Modal-Footer-simulation-for-PartialView*/
-.form-modal-footer {
+
+/* .form-modal-footer {
     display: flex;
     justify-content: space-between;
     gap: 10px;
@@ -657,11 +656,9 @@ input:checked + .slider {
             border-color: #15803d;
         }
 
-    .form-modal-footer .btn.ghost {
-        color: #3b82f6;
-    }
-
-
+        .form-modal-footer .btn.ghost {
+            color: #3b82f6;
+        }
 
     .modal-body input, 
     .modal-body textarea {
@@ -670,23 +667,111 @@ input:checked + .slider {
         border: 1px solid rgba(0, 0, 0, 0.15);
         font-size: 13px;
     }
-        .modal-body select {
-            padding: 2px 6px;
-        }
+   .modal-body select {
+        padding: 2px 6px;
+    }*/
 
-
-    .field-row {
-    display: grid;
-    grid-template-columns: 120px 1fr;
-    gap: 12px;
+/*start cal*/
+.queue-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    display: none;
     align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 24px;
 }
 
+    .queue-modal-backdrop.show {
+        display: flex;
+    }
+
+.queue-modal {
+    width: min(720px, 100%);
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+    overflow: hidden;
+}
+
+.queue-modal-header,
+.queue-modal-footer {
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.queue-modal-footer {
+    border-bottom: 0;
+    border-top: 1px solid #e2e8f0;
+    justify-content: flex-end;
+}
+
+.queuer-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.queue-modal-body {
+    padding: 22px;
+}
+
+.queue-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.queue-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.queue-form-field.full {
+    grid-column: 1 / -1;
+}
+
+    .queue-form-field label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .queue-form-field input,
+    .queue-form-field select,
+    .queue-form-field textarea {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 10px 12px;
+        font: inherit;
+        color: #0f172a;
+        background: #fff;
+    }
+
+    .queue-form-field textarea {
+        min-height: 88px;
+        resize: vertical;
+    }
+
+    /*end cal*/
+/*.field-row {
+display: grid;
+grid-template-columns: 120px 1fr;
+gap: 12px;
+align-items: center;
+}*/
+/*
 .helper-text {
     font-size: 12px;
     color: #5b5b5b;
-}
-
+}*/
+/*
 .table-filters {
     display: flex;
     flex-wrap: wrap;
@@ -720,7 +805,7 @@ input:checked + .slider {
     flex-wrap: nowrap;
     align-items: center;
     white-space: nowrap;
-}
+}*/
 
 .is-hidden {
     display: none;

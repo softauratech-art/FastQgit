@@ -1,11 +1,14 @@
+using FastQ.Data.Entities;
+using FastQ.Web.Attributes;
+using FastQ.Web.Helpers;
+using FastQ.Web.Services;
 using System;
 using System.Linq;
 using System.Web.Mvc;
-using FastQ.Data.Entities;
-using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
+    [FQAuthorizeUser(AllowRole = $"{nameof(Utilities.FQRole.Reporter)},{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class ReportingController : Controller
     {
         private readonly ReportingService _service;

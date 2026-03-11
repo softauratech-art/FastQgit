@@ -8,7 +8,6 @@ namespace FastQ.Data.Entities
         public long LocationId { get; set; }
         public long QueueId { get; set; }
         public long CustomerId { get; set; }
-        public string CustomerEmail { get; set; }
         public string ProviderId { get; set; }
 
         public long? ServiceId { get; set; }
@@ -51,3 +50,4 @@ namespace FastQ.Data.Entities
         }
     }
 }
+

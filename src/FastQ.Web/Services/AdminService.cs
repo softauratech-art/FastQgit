@@ -4,6 +4,7 @@ using System.Linq;
 using FastQ.Data.Entities;
 using FastQ.Data.Db;
 using FastQ.Data.Repositories;
+using FastQ.Web.Helpers;
 
 namespace FastQ.Web.Services
 {
@@ -13,13 +14,19 @@ namespace FastQ.Web.Services
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
         private readonly ILocationRepository _locations;
+        private readonly IProviderRepository _providers;
+        private readonly IClock _clock;
+        private readonly IRealtimeNotifier _rt;
 
         public AdminService()
             : this(
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
-                DbRepositoryFactory.CreateLocationRepository())
+                DbRepositoryFactory.CreateLocationRepository(),
+                DbRepositoryFactory.CreateProviderRepository(),
+                new SystemClock(),
+                new SignalRRealtimeNotifier())
         {
         }
 
@@ -27,12 +34,18 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
-            ILocationRepository locations)
+            ILocationRepository locations,
+            IProviderRepository providers,
+            IClock clock,
+            IRealtimeNotifier rt)
         {
             _appts = appts;
             _customers = customers;
             _queues = queues;
             _locations = locations;
+            _providers = providers;
+            _clock = clock;
+            _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
         public Location GetPrimaryLocation()
@@ -40,10 +53,21 @@ namespace FastQ.Web.Services
             return _locations.ListAll().FirstOrDefault();
         }
 
+        public IList<Location> ListLocations()
+        {
+            return _locations.ListAll();
+        }
+
         public IList<Queue> ListQueuesByLocation(long locationId)
         {
             //return _queues.ListByLocation(locationId);
             return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser());
+        }
+
+        public IList<Queue> ListQueues(long? locationId)
+        {
+            //return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll()
+            return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser()); 
         }
 
         public IList<Customer> ListAllCustomers()
@@ -56,5 +80,42 @@ namespace FastQ.Web.Services
             return _appts.ListByLocation(locationId);
         }
 
+        public IList<Provider> ListProviders(long? locationId)
+        {
+            return locationId.HasValue ? _providers.ListByLocation(locationId.Value) : _providers.ListAll();
+        }
+
+        public Queue GetQueue(long queueId)
+        {
+            return _queues.Get(queueId);
+        }
+
+        public void UpdateQueue(Queue queue)
+        {
+            _queues.AddOrUpdateQueue(queue, new AuthService().GetLoggedInWindowsUser());
+        }
+
+        public int CloseStaleScheduledAppointments(int staleHours)
+        {
+            var now = _clock.UtcNow;
+            var cutoff = now.AddHours(-staleHours);
+
+            var stale = _appts.ListAll()
+                .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedUtc <= cutoff)
+                .ToList();
+
+            foreach (var a in stale)
+            {
+                a.Status = AppointmentStatus.ClosedBySystem;
+                a.UpdatedUtc = now;
+                a.StampDateUtc = now;
+                _appts.Update(a);
+
+                _rt.AppointmentChanged(a);
+                _rt.QueueChanged(a.LocationId, a.QueueId);
+            }
+
+            return stale.Count;
+        }
     }
 }

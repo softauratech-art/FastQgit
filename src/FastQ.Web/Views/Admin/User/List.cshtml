@@ -7,11 +7,7 @@
 @section Head{
     <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
     <link href="~/Content/datatablesFQ.css" rel="stylesheet" />
-    <style>
-        .dt-length {
-            display: none;
-        }
-    </style>
+    <link href="~/Content/queueadmin.css" rel="stylesheet" />
 }
 
 @section PageHeader {
@@ -23,25 +19,9 @@
     <div class="top-actions">
 
     </div>
-
-    @*<div class="top-actions">
-            <div>
-                @Html.ActionLink("Create New", "Create", null, new { @class = "btn primary" })
-            </div>
-            <div class="search-wrap">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
-                    <circle cx="11" cy="11" r="7"></circle>
-                    <path d="M20 20l-3.5-3.5"></path>
-                </svg>
-                <input type="text" placeholder="Search by name" />
-            </div>
-        </div>*@
 }
 
 <div class="card">
-    
-    @Html.ActionLink("Create New", "Edit", 0, new { @class = "btn primary", @style="float:right;" })
-    
     <table id="Udata" class="table" style="font-size:0.95em">
         <thead>
             <tr>
@@ -102,15 +82,27 @@
     <script>
         $(document).ready(function () {
             $('#Udata').DataTable({
-                /*"dom": 'frtip',*/
-                "columnDefs": [
+                language: {
+                    search: '',
+                    searchPlaceholder: "Search by Name, Email or Id"
+                },
+                pageLength: 50, // Sets the default to 50 rows
+                columnDefs: [
                     { "targets": [7], "orderable": false }
                 ],
-                "layout": {
-                    topStart: 'search',
-                    topEnd: { pageLength: { text: "_MENU_ per page" } }
+                fixedColumns: true,
+                layout: {
+                    topEnd: 'search',
+                    topStart: {
+                        div: {
+                            className: 'action-btn-div'
+                        }
+                    }
                 },
-                "pageLength": 50 // Sets the default page size to 50
+                initComplete: function () {
+                    // Use initComplete to insert the actual hyperlink after the table is initialized
+                    $('.action-btn-div').wrapInner('@Html.ActionLink("Create New", "Edit", 0, new { @class = "btn-add" })');
+                }
             });
         });
     </script>

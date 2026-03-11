@@ -2,6 +2,14 @@
 @{
     Layout = null;
     var providerTodayUrl = Url.Action("Today", "Provider");
+
+
+    var authsvc = new FastQ.Web.Services.AuthService();
+    var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
+    var isProvider = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider);
+    var isReporter = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Reporter);
+    var isQueueAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin);
+    var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
 }
 <!DOCTYPE html>
 <html>
@@ -18,6 +26,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/Content/site.css">
     <style>
+
         .fastq-modal-backdrop {
             position: fixed;
             inset: 0;
@@ -66,15 +75,6 @@
             justify-content: flex-end;
         }
 
-        .user-chip {
-            margin-left: auto;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.08);
-            color: #1f2937;
-            font-size: 12px;
-            font-weight: 600;
-        }
     </style>
     @RenderSection("Head", required: false)
 </head>
@@ -83,7 +83,10 @@
         <aside class="drawer">
             <div class="brand">
                 <div class="brand-top">
-                    <div class="logo-mark"></div>
+                    <a href="/" class="logo-container">
+                        <img src="~/Content/logo-wd.png" alt="Logo" class="logo">
+                    </a>
+                    @*<div class="Xlogo-mark"></div>*@
                     <button class="nav-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M15 6l-6 6 6 6"></path>
@@ -94,84 +97,100 @@
                 <div class="brand-sub">Queue orchestration</div>
             </div>
             <nav class="drawer-nav">
-                <div class="nav-section">
-                    <div class="nav-title">Overview</div>
-                    <a class="nav-link active" href="@Url.Action("Index", "Home")" title="Dashboard" aria-label="Dashboard">
-                        <i class="bi bi-house"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
+                @if (isHost || isProvider || isSuperAdmin || isQueueAdmin)
+                {
+                    <div class="nav-section">
+                        <div class="nav-title">Overview</div>
+                        <a class="nav-link active" href="@Url.Action("Index", "Home")" title="Dashboard" aria-label="Dashboard">
+                            <i class="bi bi-house"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
 
-                    <a class="nav-link" href="@Url.Action("Today", "Provider")" title="My Queues" aria-label="My Queues">
-                        <i class="bi bi-person-lines-fill"></i>
-                        <span class="nav-text">My Queues</span>
-                    </a>
+                        <a class="nav-link" href="@Url.Action("Today", "Provider")" title="My Queues" aria-label="My Queues">
+                            <i class="bi bi-person-lines-fill"></i>
+                            <span class="nav-text">My Queues</span>
+                        </a>
 
-                    <a class="nav-link" href="@Url.Action("Index", "Calendar")">
-                        <i class="bi bi-calendar"></i>
-                        <span class="nav-text">Calendar</span>
-                    </a>
-                </div>
+                        <a class="nav-link" href="@Url.Action("Index", "Calendar")">
+                            <i class="bi bi-calendar"></i>
+                            <span class="nav-text">Calendar</span>
+                        </a>
+                    </div>
 
-                <div class="nav-section">
-                    <div class="nav-title">Customers</div>
+                    <div class="nav-section">
+                        <div class="nav-title">Customers</div>
 
-                    <a class="nav-link" href="/Customer/Book">
-                        <i class="bi bi-plus-circle"></i>
-                        <span class="nav-text">Appointment</span>
-                    </a>
+                        <a class="nav-link" href="/Customer/Book">
+                            <i class="bi bi-plus-circle"></i>
+                            <span class="nav-text">Appointment</span>
+                        </a>
 
-                    <a class="nav-link" href="/Customer/Walkin">
-                        <i class="bi bi-person-walking"></i>
-                        <span class="nav-text">Walkin</span>
-                    </a>
+                        <a class="nav-link" href="/Customer/Walkin">
+                            <i class="bi bi-person-walking"></i>
+                            <span class="nav-text">Walkin</span>
+                        </a>
+                    </div>
+                }
 
-                </div>
+                @if (isSuperAdmin || isQueueAdmin)
+                {
+                    <div class="nav-section">
+                        <div class="nav-title">Admin</div>
 
-                <div class="nav-section">
-                    <div class="nav-title">Admin</div>
-                    <a class="nav-link" href="@Url.Action("Index", "Queue")">
-                        <i class="bi bi-list-task"></i>
-                        <span class="nav-text">Queues</span>
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "User")">
-                        <i class="bi bi-people"></i>
-                        <span class="nav-text">Users</span>
-                    </a>
-                </div>
+                        <a class="nav-link" href="@Url.Action("Index", "Queue")">
+                            <i class="bi bi-list-task"></i>
+                            <span class="nav-text">Queues</span>
+                        </a>
 
+                        @if (isSuperAdmin)
+                        {
+                            <a class="nav-link" href="@Url.Action("Index", "User")">
+                                <i class="bi bi-people"></i>
+                                <span class="nav-text">Users</span>
+                            </a>
+                            <a class="nav-link" href="/">
+                                <i class="bi bi-people"></i>
+                                <span class="nav-text">Holidays</span>
+                            </a>
+                        }
+                    </div>
+                }
 
-                <div class="nav-section">
+                
+            <div class="nav-section">
+                @if (isReporter || isSuperAdmin || isQueueAdmin)
+                {
                     <div class="nav-title">Reports</div>
-
-                    <a class="nav-link" href="/">
+                    <a class="nav-link" href="@Url.Action("Overview", "Reporting")">
                         <!--/Reporting/Overview-->
                         <i class="bi bi-bar-chart-line"></i>
                         <span class="nav-text">Reports</span>
                     </a>
-
-                    <a class="nav-link" href="/">
+                }
+                    <a class="nav-link" href="~/Logout.aspx">
                         <i class="bi bi-box-arrow-right"></i>
                         <span class="nav-text">Logout</span>
                     </a>
+            </div>
+              
+                @*<div class="nav-section">
+                <a class="nav-link" href="/Admin/Dashboard">
+                    <i class="bi bi-gear"></i>
+                    <span class="nav-text">Settings</span>
+                </a>
+                <a class="nav-link" href="/">
+                    <i class="bi bi-search"></i>
+                    <span class="nav-text">Search</span>
+                </a>
+                <a class="nav-link" href="/">
+                    <i class="bi bi-question-circle"></i>
+                    <span class="nav-text">Help</span>
+                </a>
 
-                    @*<a class="nav-link" href="/Admin/Dashboard">
-                            <i class="bi bi-gear"></i>
-                            <span class="nav-text">Settings</span>
-                        </a>
-                        <a class="nav-link" href="/">
-                            <i class="bi bi-search"></i>
-                            <span class="nav-text">Search</span>
-                        </a>
-                        <a class="nav-link" href="/">
-                            <i class="bi bi-question-circle"></i>
-                            <span class="nav-text">Help</span>
-                        </a>
-
-                        <a class="nav-link" href="/Customer/Login">
-                            <i class="bi bi-person"></i>
-                            <span class="nav-text"></span>
-                        </a>*@
-                </div>
+                <a class="nav-link" href="/Customer/Login">
+                    <i class="bi bi-person"></i>
+                    <span class="nav-text"></span>
+                </a>*@
 
             </nav>
             <div class="drawer-footer">
@@ -189,6 +208,7 @@
             <header class="topbar">
                 @RenderSection("PageHeader", required: false)
                 <div class="user-chip">
+                    @*@(new FastQ.Web.Services.AuthService().GetLoggedInWindowsUser())*@
                     @User.Identity.Name
                 </div>
             </header>

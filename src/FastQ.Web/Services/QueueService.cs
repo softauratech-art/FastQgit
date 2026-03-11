@@ -14,7 +14,7 @@ namespace FastQ.Web.Services
     {
         private readonly IQueueRepository _queues;
         private readonly string _stampuser = new AuthService().GetLoggedInWindowsUser();
-        private Int32 _stampuserentity;
+        private Int64 _stampuserentity;
         public QueueService()
            : this(
                DbRepositoryFactory.CreateQueueRepository())
@@ -30,8 +30,9 @@ namespace FastQ.Web.Services
             //if (HttpContext.Current.Session["fq_this_entity"]  == null  ||
             //        !Int32.TryParse(HttpContext.Current.Session["fq_this_entity"].ToString(), out _stampuserentity))
             //    throw new Exception("Entity is missing for this session");
+            //_stampuserentity = 1;
 
-            _stampuserentity = 1;
+            _stampuserentity = new AuthService().GetSessionEntityId();
             var rows = _queues.ListByEntity(_stampuserentity, new AuthService().GetLoggedInWindowsUser());
             return BuildQueueRows(rows);
         }
@@ -180,6 +181,20 @@ namespace FastQ.Web.Services
                     ActiveFlag = r.ActiveFlag
                 };
             }).OrderBy(r => r.Id).ToList();
+        }
+
+        public Result HandleQueueAction(string action, string json)
+        {
+            //action = (action ?? string.Empty).Trim().ToLowerInvariant();
+            //return action switch
+            //{
+            //    "update" => UpdateQueue( json),
+            //    "delete" => DeleteQueue( json),
+            //    "create" => CreateQueue( json),
+            //    _ => Result.Fail("Unknown action")
+            //};
+
+            return Result.Fail("Not Implemented");
         }
 
         public void AddOrUpdateQService(QueueServiceVM qsvm)

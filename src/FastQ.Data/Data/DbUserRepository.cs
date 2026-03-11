@@ -1,8 +1,10 @@
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
+using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Security.Cryptography;
 //using Oracle.ManagedDataAccess.Client;
 
 
@@ -17,25 +19,35 @@ namespace FastQ.Data.Db
         public User Get(string uid, string stampuser)
         {
             //return new User { FirstName = "DB-First", LastName = "DB-Last", UserId = "uid" };
-            using (var conn = DataAccess.Open())
+            string sp_name =  (stampuser == "AUTHSERVICE") ? "fqowner.AUTHENTICATE_USER" : "fqowner.FQ_PROCS_GET.GET_USER";
+            try
             {
-                //var locationByQueue = LoadQueueLocations(conn);
-                using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_USER"))
+                using (var conn = DataAccess.Open())
                 {
-                    DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
-                    DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
-                    DataAccess.AddParam(cmd, "p_message", string.Empty, DbType.String).Direction = ParameterDirection.Output;
-                    cmd.Parameters["p_message"].Size = 2000;
-                    DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
-                    using (var reader = cmd.ExecuteReader())
+                    //var locationByQueue = LoadQueueLocations(conn);
+                    using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
                     {
-                        if (cmd.Parameters["p_message"].Value.ToString() != string.Empty)
+                        DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
+                        DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
+                        DataAccess.AddParam(cmd, "p_message", string.Empty, DbType.String).Direction = ParameterDirection.Output;
+                        cmd.Parameters["p_message"].Size = 2000;
+                        DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                        using (var reader = cmd.ExecuteReader())
                         {
-                            throw new Exception(cmd.Parameters["p_message"].Value.ToString());
+                            if (cmd.Parameters["p_message"]?.Value.ToString() != string.Empty)
+                            {
+                                return null;
+                                //throw new Exception(cmd.Parameters["p_message"].Value.ToString(), ex);
+                                //TODO: Log Error
+                            }
+                            return reader.Read() ? MapUser(reader, stampuser) : null;
                         }
-                        return reader.Read() ? MapUser(reader) : null;
                     }
                 }
+            }
+            catch (OracleException ex)
+            {
+                return null;
             }
         }
 
@@ -48,7 +60,7 @@ namespace FastQ.Data.Db
             var email = string.IsNullOrWhiteSpace(ouser.Email) ? $"{ouser}@placeholder.local" : ouser.Email;
             var stampUser = string.IsNullOrWhiteSpace(ouser.StampUser) ? "fastq" : ouser.StampUser;
             var activeFlag = ouser.ActiveFlag ? "Y" : "N";
-            var adminFlag = ouser.AdminFlag ? "Y" : "N";
+            var adminFlag = false; // ouser.AdminFlag ? "Y" : "N";
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
@@ -116,7 +128,7 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             {
                 //var locationByQueue = LoadQueueLocations(conn);
-                using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_USERS"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_USERS"))
                 {
                     DataAccess.AddParam(cmd, "p_entityid", entityid, DbType.Int32); 
                     DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
@@ -131,7 +143,7 @@ namespace FastQ.Data.Db
                         }
                         while (reader.Read())
                         {
-                            list.Add(MapUser(reader));
+                            list.Add(MapUser(reader, stampuser));
                         }
                     }
                 }
@@ -140,7 +152,7 @@ namespace FastQ.Data.Db
             return list;
         }
 
-        private static User MapUser(IDataRecord record)
+        private static User MapUser(IDataRecord record, string stampuser)
         {
             var userIdText = record["USER_ID"]?.ToString() ?? string.Empty;
             if (userIdText == string.Empty)
@@ -163,20 +175,97 @@ namespace FastQ.Data.Db
                 Phone = record["PHONE"]?.ToString() ?? string.Empty,
                 Language = record["LANGUAGE"]?.ToString() ?? string.Empty,
                 ActiveFlag = activeFlag,
-                AdminFlag = adminFlag,
+                //todo AdminFlag = adminFlag,
                 Title = record["TITLE"]?.ToString() ?? string.Empty,
                 StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
-                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc)
+                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
+                Queues = GetUserQueuePermissions(userIdText, stampuser),
+                BusinessEntities = GetUserEntities(userIdText, stampuser)
             };
         }
 
-        private static string ReadRawString(IDataRecord record, string field)
+        public static IList<UserQueuePermission> GetUserQueuePermissions(string uid, string stampuser)
         {
-            var ordinal = record.GetOrdinal(field);
-            if (record.IsDBNull(ordinal)) return string.Empty;
-            var bytes = (byte[])record.GetValue(ordinal);
-            return System.Text.Encoding.UTF8.GetString(bytes);
+            using (var conn = DataAccess.Open())
+            {                
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_USER_QUEUES_ROLES"))
+                {
+                    DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
+                    DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
+                    DataAccess.AddParam(cmd, "p_message", string.Empty, DbType.String).Direction = ParameterDirection.Output;
+                    cmd.Parameters["p_message"].Size = 2000;
+                    DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (cmd.Parameters["p_message"].Value.ToString() != string.Empty)
+                        {
+                            throw new Exception(cmd.Parameters["p_message"].Value.ToString());
+                            //TODO: Log Error
+                        }
+                        //return reader.Read() ? MapUserQPermissions(reader) : null;
+
+                        var list = new List<Entities.UserQueuePermission>();
+                        while (reader.Read())
+                        {
+                            list.Add(new UserQueuePermission { 
+                                    UserId = uid, 
+                                    QueueId = Convert.ToInt64(reader["QUEUE_ID"]?.ToString()),
+                                    HostFlag = (reader["HOST_FLAG"]?.ToString() ?? "Y") == "Y",
+                                    ProviderFlag = (reader["provider_flag"]?.ToString() ?? "Y") == "Y",
+                                    ReporterFlag = (reader["reporter_Flag"]?.ToString() ?? "Y") == "Y",
+                                    QueueAdminFlag = (reader["queueadmin_Flag"]?.ToString() ?? "Y") == "Y",
+                                    EntityId  =  Convert.ToInt32(reader["LOCATION_ID"]?.ToString()),
+                                    QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"
+                            });
+                        }
+                        return list;
+                    }
+                }
+            }
         }
+
+        public static IList<UserEntity> GetUserEntities(string uid, string stampuser)
+        {
+            using (var conn = DataAccess.Open())
+            {
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.GET_USER_ENTITIES"))
+                {
+                    DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
+                    DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
+                    DataAccess.AddParam(cmd, "p_message", string.Empty, DbType.String).Direction = ParameterDirection.Output;
+                    cmd.Parameters["p_message"].Size = 2000;
+                    DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (cmd.Parameters["p_message"].Value.ToString() != string.Empty)
+                        {
+                            throw new Exception(cmd.Parameters["p_message"].Value.ToString());
+                            //TODO: Log Error
+                        }
+
+                        var list = new List<Entities.UserEntity>();
+                        while (reader.Read())
+                        {
+                            list.Add(new UserEntity
+                            {                                 
+                                EntityId = Convert.ToInt32(reader["LOCATION_ID"]?.ToString()),
+                                ActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y",
+                                ConfigAdminFlag = (reader["ADMINFLAG"]?.ToString() ?? "Y") == "Y"
+                            });
+                        }
+                        return list;
+                    }
+                }
+            }
+        }
+
+        //private static string ReadRawString(IDataRecord record, string field)
+        //{
+        //    var ordinal = record.GetOrdinal(field);
+        //    if (record.IsDBNull(ordinal)) return string.Empty;
+        //    var bytes = (byte[])record.GetValue(ordinal);
+        //    return System.Text.Encoding.UTF8.GetString(bytes);
+        //}
 
 
     }

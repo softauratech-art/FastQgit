@@ -6,8 +6,19 @@
         </div>
     </div>
 }
-<div class="grid-3">
-    <div class="card">
+
+@{ 
+
+    var authsvc = new FastQ.Web.Services.AuthService();
+    //var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
+    //var isProvider = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider);
+    //var isReporter = authsvc.IsInRole(FastQ.Web..Helpers.Utilities.FQRole.Reporter);
+    var isQueueAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin);
+    var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
+}
+
+<div class="grid-3">    
+    <div class="card" style='display: @((isSuperAdmin || isQueueAdmin) ? "" : "none;")'>
         <div class="card-body">
             <h5 class="card-title">Queue Settings</h5>
             <p class="card-text">Add and manage queue configuration, schedules and services.</p>
@@ -15,7 +26,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" style='display: @((isSuperAdmin) ? "" : "none;")'>
         <div class="card-body">
             <h5 class="card-title">User Accounts</h5>
             <p class="card-text">Add, Update and Delete users and their permissions.</p>
@@ -23,7 +34,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" style='display: @((isSuperAdmin) ? "" : "none;")'>
         <div class="card-body">
             <h5 class="card-title">Holidays</h5>
             <p class="card-text">Manage official County holidays.</p>

@@ -40,15 +40,11 @@ namespace FastQ.Web.Controllers
             string queueId,
             string serviceId,
             string refValue,
-            string email,
-            string firstName,
-            string lastName,
             string customerName,
             string phone,
             string contactType,
             string appointmentDate,
             string startTime,
-            string permitNumber,
             string meetingUrl,
             string notes,
             string month)
@@ -58,57 +54,26 @@ namespace FastQ.Web.Controllers
 
             if (!long.TryParse(queueId, out var qId))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Queue is required." });
-                }
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Email is required." });
-                }
-                return CalendarError(displayMonth, selected, "Email is required.");
-            }
 
-            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
-                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
-                : customerName.Trim();
-            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
+            if (string.IsNullOrWhiteSpace(customerName))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "First name and last name are required." });
-                }
-                return CalendarError(displayMonth, selected, "First name and last name are required.");
+                return CalendarError(displayMonth, selected, "Customer name is required.");
             }
 
             if (string.IsNullOrWhiteSpace(phone))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Phone is required." });
-                }
                 return CalendarError(displayMonth, selected, "Phone is required.");
             }
 
             if (!DateTime.TryParseExact(appointmentDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Appointment date is required." });
-                }
                 return CalendarError(displayMonth, selected, "Appointment date is required.");
             }
 
             if (!TimeSpan.TryParse(startTime, CultureInfo.InvariantCulture, out var parsedTime))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Start time is required." });
-                }
                 return CalendarError(displayMonth, parsedDate, "Start time is required.");
             }
 
@@ -117,34 +82,16 @@ namespace FastQ.Web.Controllers
                 qId,
                 serviceId,
                 refValue,
-                resolvedCustomerName,
-                email,
+                customerName,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
-                permitNumber,
                 notes,
                 meetingUrl);
 
             if (!res.Ok)
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = res.Error });
-                }
                 return CalendarError(displayMonth, parsedDate, res.Error);
-            }
-
-            if (Request.IsAjaxRequest())
-            {
-                return Json(new
-                {
-                    ok = true,
-                    message = "Appointment added to the calendar.",
-                    appointmentId = res.Value.Id,
-                    month = parsedDate.ToString("yyyy-MM-01"),
-                    selectedDate = parsedDate.ToString("yyyy-MM-dd")
-                });
             }
 
             TempData["CalendarMessage"] = "Appointment added to the calendar.";
@@ -163,14 +110,9 @@ namespace FastQ.Web.Controllers
             string queueId,
             string serviceId,
             string refValue,
-            string email,
-            string firstName,
-            string lastName,
             string customerName,
             string phone,
             string contactType,
-            string permitNumber,
-            string meetingUrl,
             string notes,
             string month,
             string selectedDate)
@@ -180,64 +122,21 @@ namespace FastQ.Web.Controllers
 
             if (!long.TryParse(queueId, out var qId))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Queue is required." });
-                }
                 return CalendarError(displayMonth, selected, "Queue is required.");
-            }
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Email is required." });
-                }
-                return CalendarError(displayMonth, selected, "Email is required.");
-            }
-
-            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
-                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
-                : customerName.Trim();
-            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
-            {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "First name and last name are required." });
-                }
-                return CalendarError(displayMonth, selected, "First name and last name are required.");
             }
 
             var res = _service.CreateWalkin(
                 qId,
                 serviceId,
                 refValue,
-                resolvedCustomerName,
-                email,
+                customerName,
                 phone,
                 contactType,
-                permitNumber,
-                meetingUrl,
                 notes);
 
             if (!res.Ok)
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = res.Error });
-                }
                 return CalendarError(displayMonth, selected, res.Error);
-            }
-
-            if (Request.IsAjaxRequest())
-            {
-                return Json(new
-                {
-                    ok = true,
-                    message = "Walk-in added to the queue.",
-                    walkinId = res.Value,
-                    month = displayMonth.ToString("yyyy-MM-01"),
-                    selectedDate = selected.ToString("yyyy-MM-dd")
-                });
             }
 
             TempData["CalendarMessage"] = "Walk-in added to the queue.";

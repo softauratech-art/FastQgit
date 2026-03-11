@@ -12,3 +12,7 @@ div.dt-container select.dt-input {
     max-height: 30px;
 }
 
+.dt-input {
+    border-radius: 10px !important;
+    height: 30px;
+}

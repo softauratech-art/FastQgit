@@ -16,6 +16,5 @@ namespace FastQ.Web.Models
         public AppointmentStatus Status { get; set; }
         public string ContactMethod { get; set; }
         public DateTime ScheduledForUtc { get; set; }
-        public string StampUser { get; set; }
     }
 }

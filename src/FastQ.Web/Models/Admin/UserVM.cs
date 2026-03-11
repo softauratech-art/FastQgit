@@ -14,8 +14,10 @@ using System.ComponentModel.DataAnnotations.Schema;
         [StringLength(50)]        
         public string UserId { get; set; }
 
+        [Display(Name = "Is Admin?")]
         public bool IsAdmin { get; set; }
 
+        [Display(Name ="Is Active?")]
         public bool IsActive { get; set; }
 
         [Column("Fname")]
@@ -29,10 +31,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
         [StringLength(100)]
         public string Email { get; set; }
+        [StringLength(20)]
+        public string Phone { get; set; }
         public string OtherLanguage { get; set; }
 
-        public IList<string>Permissions { get; set; }
-
+        public IDictionary<long,string>Permissions { get; set; }
 
     }
 }

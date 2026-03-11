@@ -34,7 +34,7 @@ namespace FastQ.Data.Db
             if (id <= 0) return null;
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUE_DETAILS"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUE_DETAILS"))
             {
                 DataAccess.AddParam(cmd, "p_queueid", id, DbType.Int64);
                 DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -48,7 +48,7 @@ namespace FastQ.Data.Db
         public long AddOrUpdateQueue(Entities.Queue oqueue, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "FQ_UPSERTQUEUE";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.UPSERTQUEUE";
             //*EXAMPLE: exec FQ_UPSERTQSCHEDULE(6,10003,'01/01/2026','12/31/2026','00 13:00:00','00 15:30:00','00 01:00:00','234',1,'preddy01',:p_out );
 
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
@@ -173,7 +173,7 @@ namespace FastQ.Data.Db
         public void Delete(long id, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "FQ_PROCS_ADMIN.DELETEQUEUE";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETEQUEUE";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_scheduleid", id, DbType.Int64);
@@ -197,7 +197,7 @@ namespace FastQ.Data.Db
 
             var list = new List<Entities.Queue>();
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_MYQUEUES"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_MYQUEUES"))
             {
                 DataAccess.AddParam(cmd, "p_userid", stampuser, DbType.String);
                 DataAccess.AddParam(cmd, "p_location", entityid, DbType.Int64);
@@ -218,7 +218,7 @@ namespace FastQ.Data.Db
         //    var list = new List<Queue>();
         //    using (var conn = DataAccess.Open())
         //    {
-        //        using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUES"))
+        //        using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUES"))
         //        {
         //            DataAccess.AddParam(cmd, "p_location", null, DbType.Int64);
         //            DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -243,7 +243,7 @@ namespace FastQ.Data.Db
             }
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_SERVICES"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_SERVICES"))
             {
                 DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
                 DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -437,7 +437,7 @@ namespace FastQ.Data.Db
             if (id <= 0) return null;
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QSERVICE_DETAILS"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QSERVICE_DETAILS"))
             {
                 DataAccess.AddParam(cmd, "p_serviceid", id, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_userid", id, DbType.String);
@@ -461,7 +461,7 @@ namespace FastQ.Data.Db
         public void AddOrUpdateQService(Entities.QService qsvc, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "FQ_PROCS_ADMIN.UPSERTQSERVICE";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.UPSERTQSERVICE";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_serviceid", qsvc.Id, DbType.Int64);
@@ -481,7 +481,7 @@ namespace FastQ.Data.Db
         public void DeleteQService(long serviceid, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "FQ_PROCS_ADMIN.DELETEQSERVICE";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETEQSERVICE";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_serviceid", serviceid, DbType.Int64);
@@ -502,7 +502,7 @@ namespace FastQ.Data.Db
             if (id <= 0) return null;
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QSCHEDULE_DETAILS"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QSCHEDULE_DETAILS"))
             {
                 DataAccess.AddParam(cmd, "p_scheduleid", id, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_userid", id, DbType.String);
@@ -529,7 +529,7 @@ namespace FastQ.Data.Db
         public void AddOrUpdateQSchedule(Entities.QSchedule qsch, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "FQ_PROCS_ADMIN.UPSERTQSCHEDULE";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.UPSERTQSCHEDULE";
             //*EXAMPLE: exec FQ_UPSERTQSCHEDULE(6,10003,'01/01/2026','12/31/2026','00 13:00:00','00 15:30:00','00 01:00:00','234',1,'preddy01',:p_out );
 
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
@@ -554,7 +554,7 @@ namespace FastQ.Data.Db
         public void DeleteQSchedule(long scheduleid, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "FQ_PROCS_ADMIN.DELETEQSCHEDULE";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETEQSCHEDULE";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_scheduleid", scheduleid, DbType.Int64);

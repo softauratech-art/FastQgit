@@ -37,7 +37,6 @@ namespace FastQ.Web.Models
         public string MeetingUrl { get; set; }
         public DateTime ScheduledForUtc { get; set; }
         public DateTime ScheduledForLocal { get; set; }
-        public string StampUser { get; set; }
     }
 
     public class AdminCalendarDay

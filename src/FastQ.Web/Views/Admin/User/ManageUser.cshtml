@@ -5,6 +5,9 @@
     ViewBag.Title = "View Details";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+@section Head{
+    <link href="~/Content/queueadmin.css" rel="stylesheet"/>
+    }
 @section PageHeader {
     <div>
         <div class="topbar-title">Manage User Accounts</div>
@@ -15,10 +18,136 @@
 
     </div>
     }
-    <div class="card">
-        @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("xxxxdetails"))
+
+    @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("xxxxdetails"))
+    {
+        <h2>User Details</h2>
+        <table cellpadding="5">
+            <tr>
+                <td>User ID :</td>
+                <td>@Model.UserId</td>
+            </tr>
+            <tr>
+                <td>First Name :</td>
+                <td>@Model.FirstName</td>
+            </tr>
+            <tr>
+                <td>Last Name :</td>
+                <td>@Model.LastName</td>
+            </tr>
+            <tr>
+                <td>Email :</td>
+                <td>@Model.Email</td>
+            </tr>
+            <tr>
+                <td colspan="2" align="right">
+                    <a href="/user" class="btn btn-small">Return to List</a>
+                </td>
+            </tr>
+        </table>
+    }
+
+    @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("edit")
+        || ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("create")
+        || ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("details")
+    )
+    {
+        using (Html.BeginForm("Edit", "User", Model, FormMethod.Post ))
         {
-            <h2>User Details</h2>
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group mt-2">
+                        @Html.LabelFor(model => model.UserId)
+                        @Html.TextBoxFor(m => m.UserId)
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="FirstName">First Name</label>
+                        @Html.TextBoxFor(m => m.FirstName)
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="LastName">Last Name</label>
+                        @Html.TextBoxFor(m => m.LastName)
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="Email">Email</label>
+                        @Html.TextBoxFor(m => m.Email)
+                    </div>
+        @* TODO:  LANGUAGE*@
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group mt-2">
+                        <label for="Title">Title</label>
+                        @Html.TextBoxFor(m => m.Title)
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="Phone">Phone</label>
+                        @Html.TextBoxFor(m => m.Phone)
+                    </div>
+                    <div class="form-group mt-2">
+                        <div class="switch-group" style="display:inline; padding-right:20px;">
+                            @Html.LabelFor(model => model.IsActive, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="IsActive" id="EmpOnly" @(Model.IsActive ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="switch-group" style="display:inline; padding-left:20px;">
+                            @Html.Label("IsAdmin", "Super Admin?", new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="IsAdmin" id="IsAdmin" @(Model.IsAdmin ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>&nbsp;&nbsp;&nbsp;<small>(Queues, Users and Holidays)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer mt-3">
+                    <input type="submit" value="Save" class="btn secondary" id="save" formaction="/user/edit/@Model.UserId" />
+                    <span>&nbsp;</span>
+                    <input type="submit" value="Cancel" class="btn ghost" id="cancel" formaction="/user" />
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <td>Queue</td>
+                        <td>Host? <input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:block" /></td>
+                        <td>Provider? <input type="checkbox" name="host-checkall" onclick="selectAll(this,'provider-role');" style="display:block" /></td>
+                        <td>Reporter? <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display:block" /></td>
+                        <td>Queue Admin? <input type="checkbox" name="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display:block" /></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var qlist = new FastQ.Web.Services.QueueService().ListQueues();
+                        foreach (FastQ.Web.Models.Admin.QueueVM q in qlist)
+                        {
+                            <tr>
+                                <td>@q.Name</td>
+                                <td><input type="checkbox" name="host-@q.Id" value="true" class="host-role" /></td>
+                                <td><input type="checkbox" name="provider-@q.Id" value="true" class="provider-role" /></td>
+                                <td><input type="checkbox" name="reporter-@q.Id" value="true" class="reporter-role" /></td>
+                                <td><input type="checkbox" name="queueadmin-@q.Id" value="true" class="queueadmin-role" /></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    }
+
+    @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("delete"))
+
+    {
+        using (Html.BeginForm("Delete", "User", FormMethod.Post))
+        {
+            <h2>Delete User</h2>
             <table cellpadding="5">
                 <tr>
                     <td>User ID :</td>
@@ -37,89 +166,27 @@
                     <td>@Model.Email</td>
                 </tr>
                 <tr>
-                    <td colspan="2" align="right">
-                        <a href="/user" class="btn btn-small">Return to List</a>
+                    <td colspan="2">
+                        <h3>Are you sure you want to delete this user?</h3>
+                        <button type="submit" class="btn secondary"
+                                formaction="/user/delete/@Model.UserId">
+                            Yes
+                        </button>
+                        &nbsp;&nbsp;
+                        <button type="submit" class="btn ghost"
+                                formaction="/user">
+                            No
+                        </button>
                     </td>
                 </tr>
             </table>
         }
+    }
 
-        @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("edit")
-            || ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("create")
-            || ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("details")
-        )
-        {
-            using (Html.BeginForm("Edit", "User", FormMethod.Post))
-            {
-                <table cellpadding="5">
-                    <tr>
-                        <td>User ID *:</td>
-                        <td>@Html.TextBoxFor(m => m.UserId)</td>
-                    </tr>
-                    <tr>
-                        <td>First Name *:</td>
-                        <td>@Html.TextBoxFor(m => m.FirstName)</td>
-                    </tr>
-                    <tr>
-                        <td>Last Name *:</td>
-                        <td>@Html.TextBoxFor(m => m.LastName)</td>
-                    </tr>
-                    <tr>
-                        <td>Email *:</td>
-                        <td>@Html.TextBoxFor(m => m.Email)</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>
-                            <input type="submit" value="Save" class="btn secondary"
-                                   formaction="/user/edit/@Model.UserId" />
-                            <span>&nbsp;</span>
-                            <input type="submit" value="Cancel" class="btn ghost"
-                                   formaction="/user" />
-                        </td>
-                    </tr>
-                </table>
+    @section Scripts {
+        <script>
+            function selectAll(obj, classname) {
+                $('.' + classname).prop('checked', obj.checked);
             }
-        }
-
-        @if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("delete"))
-
-        {
-            using (Html.BeginForm("Delete", "User", FormMethod.Post))
-            {
-                <h2>Delete User</h2>
-                <table cellpadding="5">
-                    <tr>
-                        <td>User ID :</td>
-                        <td>@Model.UserId</td>
-                    </tr>
-                    <tr>
-                        <td>First Name :</td>
-                        <td>@Model.FirstName</td>
-                    </tr>
-                    <tr>
-                        <td>Last Name :</td>
-                        <td>@Model.LastName</td>
-                    </tr>
-                    <tr>
-                        <td>Email :</td>
-                        <td>@Model.Email</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <h3>Are you sure you want to delete this user?</h3>
-                            <button type="submit" class="btn secondary"
-                                    formaction="/user/delete/@Model.UserId">
-                                Yes
-                            </button>
-                            &nbsp;&nbsp;
-                            <button type="submit" class="btn ghost"
-                                    formaction="/user">
-                                No
-                            </button>
-                        </td>
-                    </tr>
-                </table>
-            }
-        }
-    </div>
+        </script>
+    }

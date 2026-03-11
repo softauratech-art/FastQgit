@@ -9,7 +9,6 @@
     var monthNames = System.Globalization.DateTimeFormatInfo.InvariantInfo.MonthNames.Take(12).ToList();
     var currentYear = Model.DisplayMonth.Year;
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
-    var currentProviderId = (ViewBag.ProviderId as string ?? string.Empty).Trim();
 }
 
 @section Head {
@@ -188,14 +187,6 @@
             border-radius: 16px;
             padding: 14px;
             background: #f8fafc;
-        }
-
-        .agenda-item.locked {
-            opacity: 0.45;
-        }
-
-        .agenda-item.locked .agenda-actions {
-            pointer-events: none;
         }
 
         .agenda-time {
@@ -564,12 +555,7 @@
             <div class="agenda-list">
                 @foreach (var item in Model.SelectedDayAppointments)
                 {
-                    var ownerId = (item.StampUser ?? string.Empty).Trim();
-                    var lockedByOwner = item.Status == AppointmentStatus.InService &&
-                        !string.IsNullOrWhiteSpace(ownerId) &&
-                        !string.Equals(ownerId, currentProviderId, StringComparison.OrdinalIgnoreCase);
-                    var itemClass = lockedByOwner ? "agenda-item locked" : "agenda-item";
-                    <div class="@itemClass" data-appointment-id="@item.AppointmentId" data-status="@item.Status" data-src-type="@item.SrcType" data-owner="@ownerId">
+                    <div class="agenda-item" data-appointment-id="@item.AppointmentId" data-status="@item.Status" data-src-type="@item.SrcType">
                         <div class="agenda-time">@item.StartTimeText</div>
                         <div class="agenda-title">@item.CustomerName</div>
                         <div class="agenda-detail">@item.EntryKind</div>
@@ -595,7 +581,7 @@
                                     data-phone="@item.Phone">
                                 Info
                             </button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Cancelled</button>
+                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Remove</button>
                         </div>
                     </div>
                 }
@@ -658,41 +644,23 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="email">Email</label>
-                        <input id="email" name="email" type="email" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="firstName">First Name</label>
-                        <input id="firstName" name="firstName" type="text" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="lastName">Last Name</label>
-                        <input id="lastName" name="lastName" type="text" required />
+                        <label for="customerName">Customer Name</label>
+                        <input id="customerName" name="customerName" type="text" required />
                     </div>
 
                     <div class="calendar-field">
                         <label for="phone">Phone</label>
                         <input id="phone" name="phone" type="tel" required />
                     </div>
-                    <div class="calendar-field">
-                        <label for="permitNumber">Permit Number</label>
-                        <input id="permitNumber" name="permitNumber" type="text" required />
-                    </div>
 
                     <div class="calendar-field">
                         <label for="appointmentDate">Date</label>
-                        <select id="appointmentDate" name="appointmentDate" required>
-                            <option value="">Select date</option>
-                        </select>
+                        <input id="appointmentDate" name="appointmentDate" type="date" value="@modalDate.ToString("yyyy-MM-dd")" required />
                     </div>
 
                     <div class="calendar-field">
                         <label for="startTime">Start Time</label>
-                        <select id="startTime" name="startTime" required>
-                            <option value="">Select time</option>
-                        </select>
+                        <input id="startTime" name="startTime" type="time" value="09:00" required />
                     </div>
 
                     <div class="calendar-field full" id="meetingUrlField" style="display:none;">
@@ -766,32 +734,13 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="walkinEmail">Email</label>
-                        <input id="walkinEmail" name="email" type="email" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinFirstName">First Name</label>
-                        <input id="walkinFirstName" name="firstName" type="text" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinLastName">Last Name</label>
-                        <input id="walkinLastName" name="lastName" type="text" required />
+                        <label for="walkinCustomerName">Customer Name</label>
+                        <input id="walkinCustomerName" name="customerName" type="text" required />
                     </div>
 
                     <div class="calendar-field">
                         <label for="walkinPhone">Phone</label>
                         <input id="walkinPhone" name="phone" type="tel" required />
-                    </div>
-                    <div class="calendar-field">
-                        <label for="walkinPermitNumber">Permit Number</label>
-                        <input id="walkinPermitNumber" name="permitNumber" type="text" required />
-                    </div>
-
-                    <div class="calendar-field full" id="walkinMeetingUrlField" style="display:none;">
-                        <label for="walkinMeetingUrl">Meeting URL</label>
-                        <input id="walkinMeetingUrl" name="meetingUrl" type="url" />
                     </div>
 
                     <div class="calendar-field full">
@@ -931,15 +880,11 @@
             var endServiceUrl = "@Url.Action("EndService", "Provider")";
             var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
+            var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
-            var getCustomerByEmailUrl = "@Url.Action("GetCustomerByEmail", "Provider")";
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
-            var activeEntryQueueDetails = {
-                "": null,
-                "walkin": null
-            };
 
             function openModal(id) {
                 var modal = document.getElementById(id);
@@ -957,47 +902,8 @@
                 modal.classList.remove("show");
             }
 
-            var liveSyncTimer = null;
-            var liveSyncInFlight = false;
-
-            function syncCalendarFromServer() {
-                if (liveSyncInFlight) {
-                    return;
-                }
-
-                liveSyncInFlight = true;
-                fetch(window.location.pathname + window.location.search, {
-                    method: "GET",
-                    credentials: "same-origin"
-                })
-                    .then(function (res) { return res.text(); })
-                    .then(function (html) {
-                        var parser = new DOMParser();
-                        var nextDoc = parser.parseFromString(html, "text/html");
-                        var currentShell = document.querySelector(".calendar-shell");
-                        var nextShell = nextDoc.querySelector(".calendar-shell");
-                        if (currentShell && nextShell) {
-                            currentShell.innerHTML = nextShell.innerHTML;
-                        }
-
-                        bindProviderActionButtons();
-                        bindMeetingLinks();
-                        liveSyncInFlight = false;
-                    })
-                    .catch(function () {
-                        liveSyncInFlight = false;
-                    });
-            }
-
             function queueLiveSync() {
-                if (liveSyncTimer) {
-                    return;
-                }
-
-                liveSyncTimer = setTimeout(function () {
-                    liveSyncTimer = null;
-                    syncCalendarFromServer();
-                }, 300);
+                window.location.reload();
             }
 
             function goToCalendar(monthDate, preferredDay) {
@@ -1021,10 +927,7 @@
             function postForm(url, data) {
                 return fetch(url, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                        "X-Requested-With": "XMLHttpRequest"
-                    },
+                    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
                     credentials: "same-origin",
                     body: new URLSearchParams(data).toString()
                 }).then(function (r) { return r.json(); });
@@ -1035,74 +938,6 @@
                     method: "GET",
                     credentials: "same-origin"
                 }).then(function (r) { return r.json(); });
-            }
-
-            function setCustomerFieldsDisabled(emailInput, firstNameInput, lastNameInput, phoneInput, disabled) {
-                [firstNameInput, lastNameInput, phoneInput].forEach(function (input) {
-                    if (input) {
-                        input.disabled = !!disabled;
-                    }
-                });
-                if (emailInput) {
-                    emailInput.setAttribute("data-customer-found", disabled ? "1" : "0");
-                }
-            }
-
-            function applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, customer) {
-                if (!emailInput || !firstNameInput || !lastNameInput || !phoneInput) {
-                    return;
-                }
-
-                var wasFound = emailInput.getAttribute("data-customer-found") === "1";
-                if (customer) {
-                    emailInput.value = customer.email || emailInput.value || "";
-                    firstNameInput.value = customer.firstName || "";
-                    lastNameInput.value = customer.lastName || "";
-                    phoneInput.value = customer.phone || "";
-                    setCustomerFieldsDisabled(emailInput, firstNameInput, lastNameInput, phoneInput, true);
-                    return;
-                }
-
-                if (wasFound) {
-                    firstNameInput.value = "";
-                    lastNameInput.value = "";
-                    phoneInput.value = "";
-                }
-                setCustomerFieldsDisabled(emailInput, firstNameInput, lastNameInput, phoneInput, false);
-            }
-
-            function bindCustomerLookup(emailId, firstNameId, lastNameId, phoneId) {
-                var emailInput = document.getElementById(emailId);
-                var firstNameInput = document.getElementById(firstNameId);
-                var lastNameInput = document.getElementById(lastNameId);
-                var phoneInput = document.getElementById(phoneId);
-                if (!emailInput || emailInput.getAttribute("data-bound-customer-lookup") === "1") {
-                    return;
-                }
-
-                emailInput.setAttribute("data-bound-customer-lookup", "1");
-                var handleLookup = function () {
-                    var email = (emailInput.value || "").trim();
-                    if (!email) {
-                        applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, null);
-                        return;
-                    }
-
-                    getJson(getCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
-                        .then(function (res) {
-                            if (!res || !res.ok || !res.found) {
-                                applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, null);
-                                return;
-                            }
-                            applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, res.data || null);
-                        })
-                        .catch(function () {
-                            applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, null);
-                        });
-                };
-
-                emailInput.addEventListener("change", handleLookup);
-                emailInput.addEventListener("blur", handleLookup);
             }
 
             function setSelectOptions(selectElement, items, placeholderText) {
@@ -1135,75 +970,22 @@
                 return (((days * 24) + hours) * 60) + minutes;
             }
 
-            function normalizeScheduleWindow(openMinutes, closeMinutes) {
-                var dayMinutes = 24 * 60;
-                if (openMinutes < 0 || closeMinutes < 0) {
-                    return null;
-                }
-                if (closeMinutes <= openMinutes) {
-                    closeMinutes += 12 * 60;
-                }
-                if (closeMinutes <= openMinutes) {
-                    closeMinutes += 12 * 60;
-                }
-                if (closeMinutes > dayMinutes) {
-                    closeMinutes = dayMinutes;
-                }
-                if (closeMinutes <= openMinutes) {
-                    return null;
-                }
-                return { open: openMinutes, close: closeMinutes };
-            }
-
             function getWeekdayCode(dateValue) {
                 var day = dateValue.getDay();
                 return day === 0 ? "7" : String(day);
-            }
-
-            function parseDateOnly(value) {
-                if (!value) {
-                    return null;
-                }
-                var raw = value.toString().trim();
-                if (!raw) {
-                    return null;
-                }
-
-                var date = new Date(raw);
-                if (!isNaN(date.getTime())) {
-                    date.setHours(0, 0, 0, 0);
-                    return date;
-                }
-
-                var iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
-                if (iso) {
-                    date = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
-                    date.setHours(0, 0, 0, 0);
-                    return date;
-                }
-
-                var mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw);
-                if (mdy) {
-                    date = new Date(parseInt(mdy[3], 10), parseInt(mdy[1], 10) - 1, parseInt(mdy[2], 10));
-                    date.setHours(0, 0, 0, 0);
-                    return date;
-                }
-
-                return null;
             }
 
             function isScheduleActiveOnDate(schedule, dateValue) {
                 if (!schedule || !dateValue) {
                     return false;
                 }
-                var day = new Date(dateValue.getTime());
-                day.setHours(0, 0, 0, 0);
-                var begin = parseDateOnly(schedule.dateBegin || "");
-                var end = parseDateOnly(schedule.dateEnd || "");
-                if (begin && day < begin) {
+                var dateText = dateValue.toISOString().slice(0, 10);
+                var begin = (schedule.dateBegin || "").slice(0, 10);
+                var end = (schedule.dateEnd || "").slice(0, 10);
+                if (begin && dateText < begin) {
                     return false;
                 }
-                if (end && day > end) {
+                if (end && dateText > end) {
                     return false;
                 }
                 var weekly = (schedule.weeklySch || "").toString();
@@ -1233,27 +1015,21 @@
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
                 if (prefix === "") {
-                    populateEntryModalDateOptions(details);
-                    populateEntryModalTimeOptions(details, document.getElementById("appointmentDate") ? document.getElementById("appointmentDate").value : "");
                     syncMeetingField();
                 }
             }
 
             function loadEntryModalQueueDetails(prefix, queueCode) {
                 if (!queueCode) {
-                    activeEntryQueueDetails[prefix] = null;
                     populateEntryModalOptions(prefix, null);
                     return Promise.resolve();
                 }
 
                 return getJson(getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode))
                     .then(function (res) {
-                        var details = res && res.ok ? res.data : null;
-                        activeEntryQueueDetails[prefix] = details;
-                        populateEntryModalOptions(prefix, details);
+                        populateEntryModalOptions(prefix, res && res.ok ? res.data : null);
                     })
                     .catch(function () {
-                        activeEntryQueueDetails[prefix] = null;
                         populateEntryModalOptions(prefix, null);
                     });
             }
@@ -1355,102 +1131,6 @@
                 return value < 10 ? "0" + value : String(value);
             }
 
-            function getScheduleDateOptions(details) {
-                var options = [];
-                var schedules = details && details.schedules ? details.schedules : [];
-                var seen = {};
-                var base = new Date();
-                base.setHours(0, 0, 0, 0);
-                for (var i = 0; i < 31; i++) {
-                    var dateValue = new Date(base.getTime());
-                    dateValue.setDate(base.getDate() + i);
-                    var active = schedules.some(function (schedule) {
-                        return isScheduleActiveOnDate(schedule, dateValue);
-                    });
-                    if (!active) {
-                        continue;
-                    }
-                    var value = dateValue.toISOString().slice(0, 10);
-                    if (seen[value]) {
-                        continue;
-                    }
-                    seen[value] = true;
-                    options.push({
-                        value: value,
-                        label: formatRouteDateLabel(dateValue)
-                    });
-                }
-                return options;
-            }
-
-            function getScheduleTimeOptions(details, selectedDateValue) {
-                if (!selectedDateValue) {
-                    return [];
-                }
-
-                var dateValue = new Date(selectedDateValue + "T00:00:00");
-                var schedules = details && details.schedules ? details.schedules : [];
-                var options = [];
-                var seen = {};
-
-                schedules.forEach(function (schedule) {
-                    if (!isScheduleActiveOnDate(schedule, dateValue)) {
-                        return;
-                    }
-
-                    var openMinutes = parseIsoDurationToMinutes(schedule.openTime);
-                    var closeMinutes = parseIsoDurationToMinutes(schedule.closeTime);
-                    var intervalMinutes = parseIsoDurationToMinutes(schedule.intervalTime) || 30;
-                    var window = normalizeScheduleWindow(openMinutes, closeMinutes);
-                    if (!window) {
-                        return;
-                    }
-
-                    for (var minutes = window.open; minutes < window.close; minutes += intervalMinutes) {
-                        var hh = toTwoDigits(Math.floor(minutes / 60) % 24);
-                        var mm = toTwoDigits(minutes % 60);
-                        var value = hh + ":" + mm;
-                        if (seen[value]) {
-                            continue;
-                        }
-                        seen[value] = true;
-                        options.push({
-                            value: value,
-                            label: value
-                        });
-                    }
-                });
-
-                options.sort(function (a, b) { return a.value.localeCompare(b.value); });
-                return options;
-            }
-
-            function populateEntryModalDateOptions(details) {
-                var dateSelect = document.getElementById("appointmentDate");
-                if (!dateSelect) {
-                    return;
-                }
-
-                var options = getScheduleDateOptions(details);
-                setSelectValues(dateSelect, options, "Select date");
-                if (options.length > 0) {
-                    dateSelect.value = options[0].value;
-                }
-            }
-
-            function populateEntryModalTimeOptions(details, selectedDateValue) {
-                var timeSelect = document.getElementById("startTime");
-                if (!timeSelect) {
-                    return;
-                }
-
-                var options = getScheduleTimeOptions(details, selectedDateValue);
-                setSelectValues(timeSelect, options, "Select time");
-                if (options.length > 0) {
-                    timeSelect.value = options[0].value;
-                }
-            }
-
             function populateRouteDateOptions(selectedDateValue) {
                 var dateSelect = document.getElementById("routeTargetDate");
                 if (!dateSelect) {
@@ -1458,7 +1138,30 @@
                 }
 
                 if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
-                    var options = getScheduleDateOptions(activeRouteQueueDetails);
+                    var options = [];
+                    var seen = {};
+                    var base = new Date();
+                    base.setHours(0, 0, 0, 0);
+                    for (var i = 0; i < 31; i++) {
+                        var dateValue = new Date(base.getTime());
+                        dateValue.setDate(base.getDate() + i);
+                        var active = activeRouteQueueDetails.schedules.some(function (schedule) {
+                            return isScheduleActiveOnDate(schedule, dateValue);
+                        });
+                        if (!active) {
+                            continue;
+                        }
+                        var value = dateValue.toISOString().slice(0, 10);
+                        if (seen[value]) {
+                            continue;
+                        }
+                        seen[value] = true;
+                        options.push({
+                            value: value,
+                            label: formatRouteDateLabel(dateValue)
+                        });
+                    }
+
                     setSelectValues(dateSelect, options, "Select date");
                     if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
                         dateSelect.value = selectedDateValue;
@@ -1466,7 +1169,25 @@
                     return;
                 }
 
-                setSelectValues(dateSelect, [], "Select date");
+                var base = new Date();
+                base.setHours(0, 0, 0, 0);
+                var options = [];
+                for (var i = 0; i < 31; i++) {
+                    var dateValue = new Date(base.getTime());
+                    dateValue.setDate(base.getDate() + i);
+                    var yyyy = String(dateValue.getFullYear());
+                    var mm = toTwoDigits(dateValue.getMonth() + 1);
+                    var dd = toTwoDigits(dateValue.getDate());
+                    options.push({
+                        value: yyyy + "-" + mm + "-" + dd,
+                        label: formatRouteDateLabel(dateValue)
+                    });
+                }
+
+                setSelectValues(dateSelect, options, "Select date");
+                if (selectedDateValue) {
+                    dateSelect.value = selectedDateValue;
+                }
             }
 
             function populateRouteTimeOptions(selectedTimeValue) {
@@ -1483,7 +1204,38 @@
                         return;
                     }
 
-                    var options = getScheduleTimeOptions(activeRouteQueueDetails, selectedDateValue);
+                    var dateValue = new Date(selectedDateValue + "T00:00:00");
+                    var options = [];
+                    var seen = {};
+
+                    activeRouteQueueDetails.schedules.forEach(function (schedule) {
+                        if (!isScheduleActiveOnDate(schedule, dateValue)) {
+                            return;
+                        }
+
+                        var openMinutes = parseIsoDurationToMinutes(schedule.openTime);
+                        var closeMinutes = parseIsoDurationToMinutes(schedule.closeTime);
+                        var intervalMinutes = parseIsoDurationToMinutes(schedule.intervalTime) || 30;
+                        if (closeMinutes <= openMinutes) {
+                            return;
+                        }
+
+                        for (var minutes = openMinutes; minutes < closeMinutes; minutes += intervalMinutes) {
+                            var hh = toTwoDigits(Math.floor(minutes / 60) % 24);
+                            var mm = toTwoDigits(minutes % 60);
+                            var value = hh + ":" + mm;
+                            if (seen[value]) {
+                                continue;
+                            }
+                            seen[value] = true;
+                            options.push({
+                                value: value,
+                                label: value
+                            });
+                        }
+                    });
+
+                    options.sort(function (a, b) { return a.value.localeCompare(b.value); });
                     setSelectValues(timeSelect, options, "Select time");
                     if (selectedTimeValue && options.some(function (o) { return o.value === selectedTimeValue; })) {
                         timeSelect.value = selectedTimeValue;
@@ -1491,7 +1243,22 @@
                     return;
                 }
 
-                setSelectValues(timeSelect, [], "Select time");
+                var options = [];
+                for (var hour = 0; hour < 24; hour++) {
+                    for (var minute = 0; minute < 60; minute += 30) {
+                        var hh = toTwoDigits(hour);
+                        var mm = toTwoDigits(minute);
+                        options.push({
+                            value: hh + ":" + mm,
+                            label: hh + ":" + mm
+                        });
+                    }
+                }
+
+                setSelectValues(timeSelect, options, "Select time");
+                if (selectedTimeValue) {
+                    timeSelect.value = selectedTimeValue;
+                }
             }
 
             function buildRouteTargetDateTime(dateValue, timeValue) {
@@ -1635,16 +1402,7 @@
                             return;
                         }
 
-                        var payload = { action: action, appointmentId: appointmentId, srcType: srcType };
-                        if (action === "remove") {
-                            var cancelNotes = window.prompt("Cancellation notes (optional):", "");
-                            if (cancelNotes === null) {
-                                return;
-                            }
-                            payload.notes = cancelNotes;
-                        }
-
-                        postForm(providerActionUrl, payload)
+                        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
                             .then(function (res) {
                                 if (!res || !res.ok) {
                                     window.alert(res && res.error ? res.error : "Action failed.");
@@ -1694,76 +1452,6 @@
                         openModal("meetingModal");
                     });
                 });
-            }
-
-            function bindCalendarCreateForms() {
-                var appointmentForm = document.querySelector("#addAppointmentModal form");
-                if (appointmentForm && appointmentForm.getAttribute("data-bound-ajax-submit") !== "1") {
-                    appointmentForm.setAttribute("data-bound-ajax-submit", "1");
-                    bindCustomerLookup("email", "firstName", "lastName", "phone");
-                    appointmentForm.addEventListener("submit", function (event) {
-                        event.preventDefault();
-                        var formData = new FormData(appointmentForm);
-                        var apptFirstName = (formData.get("firstName") || "").toString().trim();
-                        var apptLastName = (formData.get("lastName") || "").toString().trim();
-                        formData.set("customerName", (apptFirstName + " " + apptLastName).trim());
-                        fetch(appointmentForm.action, {
-                            method: "POST",
-                            headers: { "X-Requested-With": "XMLHttpRequest" },
-                            credentials: "same-origin",
-                            body: new URLSearchParams(formData)
-                        })
-                            .then(function (res) { return res.json(); })
-                            .then(function (res) {
-                                if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "Could not add appointment.");
-                                    return;
-                                }
-                                closeModal("addAppointmentModal");
-                                if (window.FastQLive && window.FastQLive.toast) {
-                                    window.FastQLive.toast(res.message || "Appointment added.");
-                                }
-                                queueLiveSync();
-                            })
-                            .catch(function () {
-                                window.alert("Could not add appointment.");
-                            });
-                    });
-                }
-
-                var walkinForm = document.querySelector("#addWalkinModal form");
-                if (walkinForm && walkinForm.getAttribute("data-bound-ajax-submit") !== "1") {
-                    walkinForm.setAttribute("data-bound-ajax-submit", "1");
-                    bindCustomerLookup("walkinEmail", "walkinFirstName", "walkinLastName", "walkinPhone");
-                    walkinForm.addEventListener("submit", function (event) {
-                        event.preventDefault();
-                        var formData = new FormData(walkinForm);
-                        var walkinFirstName = (formData.get("firstName") || "").toString().trim();
-                        var walkinLastName = (formData.get("lastName") || "").toString().trim();
-                        formData.set("customerName", (walkinFirstName + " " + walkinLastName).trim());
-                        fetch(walkinForm.action, {
-                            method: "POST",
-                            headers: { "X-Requested-With": "XMLHttpRequest" },
-                            credentials: "same-origin",
-                            body: new URLSearchParams(formData)
-                        })
-                            .then(function (res) { return res.json(); })
-                            .then(function (res) {
-                                if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "Could not add walk-in.");
-                                    return;
-                                }
-                                closeModal("addWalkinModal");
-                                if (window.FastQLive && window.FastQLive.toast) {
-                                    window.FastQLive.toast(res.message || "Walk-in added.");
-                                }
-                                queueLiveSync();
-                            })
-                            .catch(function () {
-                                window.alert("Could not add walk-in.");
-                            });
-                    });
-                }
             }
 
             document.querySelectorAll("[data-modal-open]").forEach(function (btn) {
@@ -1822,40 +1510,29 @@
             });
 
             var contactType = document.getElementById("contactType");
-            var walkinContactType = document.getElementById("walkinContactType");
             var queueIdSelect = document.getElementById("queueId");
             var walkinQueueIdSelect = document.getElementById("walkinQueueId");
-            var appointmentDateSelect = document.getElementById("appointmentDate");
             var meetingUrlField = document.getElementById("meetingUrlField");
             var meetingUrl = document.getElementById("meetingUrl");
-            var walkinMeetingUrlField = document.getElementById("walkinMeetingUrlField");
-            var walkinMeetingUrl = document.getElementById("walkinMeetingUrl");
 
-            function syncMeetingField(contactSelect, container, input) {
-                if (!contactSelect || !container || !input) {
+            function syncMeetingField() {
+                if (!contactType || !meetingUrlField) {
                     return;
                 }
 
-                var value = (contactSelect.value || "").toUpperCase();
-                var isVirtual = value === "VIRTUAL" || value === "OM";
-                container.style.display = isVirtual ? "flex" : "none";
-                input.required = isVirtual;
-                if (!isVirtual) {
-                    input.value = "";
+                var isVirtual = contactType.value === "Virtual" || contactType.value === "OM";
+                meetingUrlField.style.display = isVirtual ? "flex" : "none";
+                if (meetingUrl) {
+                    meetingUrl.required = isVirtual;
+                    if (!isVirtual) {
+                        meetingUrl.value = "";
+                    }
                 }
             }
 
             if (contactType) {
-                contactType.addEventListener("change", function () {
-                    syncMeetingField(contactType, meetingUrlField, meetingUrl);
-                });
-                syncMeetingField(contactType, meetingUrlField, meetingUrl);
-            }
-            if (walkinContactType) {
-                walkinContactType.addEventListener("change", function () {
-                    syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
-                });
-                syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
+                contactType.addEventListener("change", syncMeetingField);
+                syncMeetingField();
             }
             if (queueIdSelect) {
                 queueIdSelect.addEventListener("change", function () {
@@ -1876,11 +1553,6 @@
                 } else {
                     populateEntryModalOptions("walkin", null);
                 }
-            }
-            if (appointmentDateSelect) {
-                appointmentDateSelect.addEventListener("change", function () {
-                    populateEntryModalTimeOptions(activeEntryQueueDetails[""], appointmentDateSelect.value || "");
-                });
             }
 
             document.querySelectorAll("[data-end-choice]").forEach(function (btn) {
@@ -2048,15 +1720,6 @@
                 });
             }
 
-            window.onFastQQueueUpdated = function () {
-                queueLiveSync();
-            };
-
-            window.onFastQAppointmentUpdated = function () {
-                queueLiveSync();
-            };
-
-            bindCalendarCreateForms();
             bindProviderActionButtons();
             bindMeetingLinks();
 

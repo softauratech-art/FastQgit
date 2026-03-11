@@ -13,6 +13,8 @@ namespace FastQ.Web.Controllers
             _service = new CustomerService();
         }
 
+        private const long DefaultLocationId = 0;
+
         [HttpGet]
         public ActionResult Book()
         {
@@ -20,93 +22,26 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult Book(string queueId, string serviceId, string refValue, string email, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
+        public ActionResult Book(string queueId, string phone, string firstName, string lastName)
         {
             if (!long.TryParse(queueId, out var qId))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Queue is required." });
-                }
                 ViewBag.Error = "Queue is required.";
                 return View();
             }
 
-            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
-                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
-                : customerName.Trim();
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(resolvedCustomerName))
+            if (string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Email, first name, last name, and mobile number are required." });
-                }
-                ViewBag.Error = "Email, first name, last name, and mobile number are required.";
+                ViewBag.Error = "First name, last name, and mobile number are required.";
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(serviceId))
-            {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Service is required." });
-                }
-                ViewBag.Error = "Service is required.";
-                return View();
-            }
-
-            if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
-            {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Appointment date is required." });
-                }
-                ViewBag.Error = "Appointment date is required.";
-                return View();
-            }
-
-            if (!TimeSpan.TryParse((startTime ?? string.Empty).Trim(), out var parsedTime))
-            {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = "Start time is required." });
-                }
-                ViewBag.Error = "Start time is required.";
-                return View();
-            }
-
-            var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
-            var res = _service.CreateScheduled(
-                qId,
-                serviceId,
-                refValue,
-                resolvedCustomerName,
-                email,
-                phone,
-                contactType,
-                localStart.ToUniversalTime(),
-                permitNumber,
-                notes,
-                meetingUrl,
-                "web");
+            var name = ($"{firstName} {lastName}").Trim();
+            var res = _service.BookFirstAvailable(DefaultLocationId, qId, phone, true, name);
             if (!res.Ok)
             {
-                if (Request.IsAjaxRequest())
-                {
-                    return Json(new { ok = false, error = res.Error });
-                }
                 ViewBag.Error = res.Error;
                 return View();
-            }
-
-            if (Request.IsAjaxRequest())
-            {
-                return Json(new
-                {
-                    ok = true,
-                    appointmentId = res.Value.Id,
-                    redirectUrl = $"/Customer/Home?appointmentId={Uri.EscapeDataString(res.Value.Id.ToString())}"
-                });
             }
 
             return Redirect($"/Customer/Home?appointmentId={Uri.EscapeDataString(res.Value.Id.ToString())}");

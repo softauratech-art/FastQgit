@@ -10,9 +10,11 @@
     {
     <!-- Latest compiled and minified CSS -->
     @*<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">*@
-    <link rel="stylesheet" href="~/Content/queueadmin.css" />
     <link rel="stylesheet" href="~/Content/modal.css" />
+    <link rel="stylesheet" href="~/Content/queueadmin.css" />
+
     <style>
+        /*
         .section-configuration {
             margin-bottom: 5px;
         }
@@ -37,7 +39,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             border: 1px solid var(--border);
             overflow: hidden;
-        }
+        }*/
     </style>
 }
 
@@ -82,10 +84,10 @@
             @Html.ValidationSummary(false, "", new { @class = "text-danger" })
 
 
-        <div class="primary-actions">
-            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn small ghost" })<span style="margin-left:16px;"></span>
-            <input type="submit" value="Save Config" class="btn small secondary" />
-        </div>
+            <div class="primary-actions">
+                <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "Queue")"/>
+                <input type="submit" value="Save Config" class="btn-save" />
+            </div>
         </div>
 
         <div class="grid-3">
@@ -98,21 +100,20 @@
                         @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
                         @Html.DisplayFor(model => model.Id)
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mt-2">
                         @Html.LabelFor(model => model.Name, "Name (Primary English)", new { @class = "form-label control-label" })
                         @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
                         @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mt-2">
                         @Html.Label("NameES", "Spanish", htmlAttributes: new { @class = "form-label control-label" })
                         @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
                         @Html.EditorFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control" } })
                     </div>
-                    <div class="form-group">
+                    <div class="form-group mt-2">
                         @Html.Label("NameCP", "Creole", htmlAttributes: new { @class = "form-label control-label" })
                         @Html.ValidationMessageFor(model => model.NameCP, "", new { @class = "text-danger" })
                         @Html.EditorFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control" } })
-
                     </div>
                 </div>
             </div>
@@ -165,10 +166,6 @@
                                 <span class="slider"></span>
                             </label>
                         </div>
-                        @*<div class="form-check form-switch">
-                                @Html.CheckBoxFor(model => model.HasGuidelines, new { @class = "form-check-input", @role = "switch" })
-                                @Html.Label("HasGuidelines", "Has Guidelines?", new { @class = "form-check-label" })
-                            </div>*@
                     </div>
                     <div class="form-group">
                         <div class="switch-group">
@@ -188,23 +185,19 @@
 
             <div class="card">
                 <div class="card-body">
-                    <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>
-                    <div class="range-container">
-                        <div class="range-display">
-                            @Html.LabelFor(model => model.LeadTimeMin, "Min. Lead Time", htmlAttributes: new { @class = "control-label" })
-                        </div>
+                    <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>                    
+                    <div class="form-group mt-2">
+                        @Html.LabelFor(model => model.LeadTimeMin, "Min. Lead Time", htmlAttributes: new { @class = "control-label" })
                         @Html.DropDownListFor(model => model.LeadTimeMin, Model.GetLeadTimes("LeadTimeMin"), "- Select-", new { @style = "font-size:0.9em" })
                         @Html.ValidationMessageFor(model => model.LeadTimeMin, "", new { @class = "text-danger" })
                     </div>
 
-                    <div class="range-container" style="margin-top: 20px;">
-                        <div class="range-display">
-                            @Html.LabelFor(model => model.LeadTimeMax, "Max. Lead Time", htmlAttributes: new { @class = "control-label" })
-                        </div>
+                    <div class="form-group mt-2">
+                        @Html.LabelFor(model => model.LeadTimeMax, "Max. Lead Time", htmlAttributes: new { @class = "control-label" })
                         @Html.DropDownListFor(model => model.LeadTimeMax, Model.GetLeadTimes("LeadTimeMax"), "- Select-", new { @style = "font-size:0.9em" })
                         @Html.ValidationMessageFor(model => model.LeadTimeMax, "", new { @class = "text-danger" })
                     </div>
-                    <div class="form-group pt-3">
+                    <div class="form-group mt-3">
                         @Html.Label("SelectedRefCiriterias", "Reference Data", htmlAttributes: new { @class = "control-label" })
                         <div class="tag-group">
                             @foreach (var item in Model.AvailableRefCriterias)
@@ -220,7 +213,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group pt-3">
+                    <div class="form-group mt-3">
                         @Html.Label("SelectedContactMethods", "Appointment Types", htmlAttributes: new { @class = "control-label" })
                         <div class="tag-group">
                             @foreach (var item in Model.AvailableContactMethods)
@@ -247,7 +240,10 @@
 <div class="card">
     <div class="card-title" style="display:block;">
         Services
-        <a onclick="showInPopup('@Url.Action("AddService","Queue", Model.Id)','New Service')" class="btn small primary btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#form-modal" style="float:right" role="button">Add Service</a>
+        <button onclick="showInPopup('@Url.Action("AddService","Queue", Model.Id)','New Service')"
+                class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
+            Add Service
+        </button>
     </div>
     <div class="table-card">
         @if (Model.Services != null)
@@ -264,7 +260,10 @@
 <div class="card">
     <div class="card-title" style="display:block;">
         Schedules
-        <a onclick="showInPopup('@Url.Action("AddSchedule","Queue", Model.Id)','New Schedule')" class="btn small primary btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#form-modal" style="float:right" role="button">Add Schedule</a>
+        <button onclick="showInPopup('@Url.Action("AddSchedule","Queue", Model.Id)','New Schedule')"
+                class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
+            Add Schedule
+        </button>
     </div>
 
     <div class="table-card">
@@ -282,13 +281,13 @@
 
 
 
-<div id="form-modal" class="modal-backdrop"  role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
-    <div class="modal">
-        <div class="modal-header">
+<div id="form-modal" class="queue-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
+    <div class="queue-modal">
+        <div class="queue-modal-header">
             <h5 class="modal-title"></h5>
             <button type="button" class="btn-close" onclick="closeModal('form-modal')" aria-label="Close">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body queue-modal-body">
             <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
             <!--Content from Partial-View-Editors-->
         </div>

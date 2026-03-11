@@ -48,7 +48,7 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"INSERT INTO FQUSERS
+                @"INSERT INTO fqowner.FQ_USERS
                     (USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, PASSWORD, TITLE, STAMPDATE, STAMPUSER)
                   VALUES
                     (:userId, :fname, :lname, :email, :phone, :language, :activeFlag, :adminFlag, :password, :title, SYSDATE, :stampUser)"))
@@ -76,8 +76,8 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
                 @"SELECT DISTINCT u.USER_ID, u.FNAME, u.LNAME, u.EMAIL, u.PHONE, u.LANGUAGE, u.ACTIVEFLAG, u.ADMINFLAG, u.TITLE, u.STAMPDATE, u.STAMPUSER
-                  FROM FQUSERS u
-                  JOIN USER_PERMISSIONS p ON p.USER_ID = u.USER_ID
+                  FROM fqowner.FQ_USERS u
+                  JOIN fqowner.USER_PERMISSIONS p ON p.USER_ID = u.USER_ID
                   JOIN VALIDQUEUES q ON q.QUEUE_ID = p.QUEUE_ID
                   WHERE q.LOCATION_ID = :locationId"))
             {
@@ -101,7 +101,7 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
                 @"SELECT USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, TITLE, STAMPDATE, STAMPUSER
-                  FROM FQUSERS
+                  FROM fqowner.FQ_USERS
                   WHERE NVL(ACTIVEFLAG, 'Y') = 'Y'"))
             using (var reader = cmd.ExecuteReader())
             {

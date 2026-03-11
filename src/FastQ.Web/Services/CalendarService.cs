@@ -79,11 +79,9 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string customerName,
-            string email,
             string phone,
             string contactType,
             DateTime scheduledForUtc,
-            string permitNumber,
             string notes,
             string meetingUrl)
         {
@@ -92,11 +90,9 @@ namespace FastQ.Web.Services
                 serviceId,
                 refValue,
                 customerName,
-                email,
                 phone,
                 contactType,
                 scheduledForUtc,
-                permitNumber,
                 notes,
                 meetingUrl,
                 "web");
@@ -107,11 +103,8 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string customerName,
-            string email,
             string phone,
             string contactType,
-            string permitNumber,
-            string meetingUrl,
             string notes)
         {
             return _customerService.CreateWalkin(
@@ -119,11 +112,8 @@ namespace FastQ.Web.Services
                 serviceId,
                 refValue,
                 customerName,
-                email,
                 phone,
                 contactType,
-                permitNumber,
-                meetingUrl,
                 notes,
                 "web");
         }
@@ -168,8 +158,7 @@ namespace FastQ.Web.Services
                 ScheduledForUtc = row.ScheduledForUtc,
                 ScheduledForLocal = row.ScheduledForUtc,
                 Notes = "Use Info to add meeting details or notes.",
-                MeetingUrl = string.Empty,
-                StampUser = row.StampUser
+                MeetingUrl = string.Empty
             };
         }
     }

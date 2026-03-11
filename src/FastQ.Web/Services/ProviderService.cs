@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
@@ -15,7 +14,9 @@ namespace FastQ.Web.Services
     public class ProviderService
     {
         private readonly IAppointmentRepository _appts;
+        private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
+        private readonly ILocationRepository _locations;
         private readonly IServiceTransactionRepository _serviceTransactions;
         private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
@@ -23,7 +24,9 @@ namespace FastQ.Web.Services
         public ProviderService()
             : this(
                 DbRepositoryFactory.CreateAppointmentRepository(),
+                DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
+                DbRepositoryFactory.CreateLocationRepository(),
                 DbRepositoryFactory.CreateServiceTransactionRepository(),
                 new SystemClock(),
                 new SignalRRealtimeNotifier())
@@ -32,13 +35,17 @@ namespace FastQ.Web.Services
 
         public ProviderService(
             IAppointmentRepository appts,
+            ICustomerRepository customers,
             IQueueRepository queues,
+            ILocationRepository locations,
             IServiceTransactionRepository serviceTransactions,
             IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
+            _customers = customers;
             _queues = queues;
+            _locations = locations;
             _serviceTransactions = serviceTransactions;
             _clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
@@ -69,6 +76,11 @@ namespace FastQ.Web.Services
             return _queues.ListByEntity(null, new AuthService().GetLoggedInWindowsUser());
         }
 
+        public IList<Tuple<long, string>> ListTransferServices(long queueId)
+        {
+            return _queues.ListServicesByQueue(queueId);
+        }
+
         public QueueDetailOptions GetQueueDetailOptions(long queueId)
         {
             if (queueId <= 0)
@@ -79,7 +91,6 @@ namespace FastQ.Web.Services
             var jsonParts = _queues.GetQueueDetailsJson(queueId);
             if (jsonParts == null)
             {
-                Trace.TraceWarning("GetQueueDetailOptions queueId={0}: GetQueueDetailsJson returned null tuple.", queueId);
                 return null;
             }
 
@@ -88,7 +99,8 @@ namespace FastQ.Web.Services
                 var servicesJson = ParseJsonObject(jsonParts.Item1);
                 var schedulesJson = ParseJsonObject(jsonParts.Item2);
                 var detailsJson = ParseJsonObject(jsonParts.Item3);
-                var options = new QueueDetailOptions
+
+                return new QueueDetailOptions
                 {
                     QueueId = queueId,
                     Services = ReadOptions(servicesJson?["services"], "service_id", "service_name"),
@@ -96,52 +108,53 @@ namespace FastQ.Web.Services
                     RefOptions = ReadOptions(detailsJson?["refoptions"], "ref_key", "ref_val"),
                     Schedules = ReadSchedules(schedulesJson?["schedules"])
                 };
-
-                Trace.TraceInformation(
-                    "GetQueueDetailOptions queueId={0}: services={1}, contacts={2}, refs={3}, schedules={4}. RawJsonLength services={5}, schedules={6}, details={7}.",
-                    queueId,
-                    options.Services.Count,
-                    options.ContactOptions.Count,
-                    options.RefOptions.Count,
-                    options.Schedules.Count,
-                    SafeLength(jsonParts.Item1),
-                    SafeLength(jsonParts.Item2),
-                    SafeLength(jsonParts.Item3));
-
-                if (options.Schedules.Count == 0)
-                {
-                    Trace.TraceWarning("GetQueueDetailOptions queueId={0}: schedules parsed as empty/null from VW_QUEUE_DETAILS_JSON.", queueId);
-                }
-                else
-                {
-                    foreach (var schedule in options.Schedules)
-                    {
-                        Trace.TraceInformation(
-                            "GetQueueDetailOptions queueId={0}: scheduleId={1}, dateBegin='{2}', dateEnd='{3}', weeklySch='{4}', open='{5}', close='{6}', interval='{7}', resources={8}.",
-                            queueId,
-                            schedule.ScheduleId,
-                            schedule.DateBegin ?? string.Empty,
-                            schedule.DateEnd ?? string.Empty,
-                            schedule.WeeklySchedule ?? string.Empty,
-                            schedule.OpenTime ?? string.Empty,
-                            schedule.CloseTime ?? string.Empty,
-                            schedule.IntervalTime ?? string.Empty,
-                            schedule.AvailableResources);
-                    }
-                }
-
-                return options;
             }
-            catch (Exception ex)
+            catch
             {
-                Trace.TraceError("GetQueueDetailOptions queueId={0} failed: {1}", queueId, ex);
                 return null;
             }
         }
 
-        private static int SafeLength(string value)
+        public IList<Customer> ListCustomers()
         {
-            return string.IsNullOrEmpty(value) ? 0 : value.Length;
+            return _customers.ListAll();
+        }
+
+        public IList<Appointment> ListAppointmentsForDate(DateTime utcDate)
+        {
+            var date = utcDate.Date;
+            return _appts.ListAll()
+                .Where(a => a.ScheduledForUtc.Date == date)
+                .ToList();
+        }
+
+        public IList<ProviderAppointmentRow> BuildRows(
+            IList<Appointment> appointments,
+            IDictionary<long, Queue> queueMap,
+            IDictionary<long, Customer> customerMap)
+        {
+            return appointments.Select(a =>
+            {
+                queueMap.TryGetValue(a.QueueId, out var queue);
+                customerMap.TryGetValue(a.CustomerId, out var customer);
+
+                var contact = customer != null && customer.SmsOptIn ? "Online" : "In-Person";
+
+                return new ProviderAppointmentRow
+                {
+                    AppointmentId = a.Id,
+                    ScheduledForUtc = a.ScheduledForUtc,
+                    StartTimeText = a.ScheduledForUtc.ToString("h:mm tt"),
+                    StartDateText = a.ScheduledForUtc.ToString("MMM dd, yyyy"),
+                    QueueName = queue?.Name ?? "Unknown Queue",
+                    ServiceType = queue?.Name != null ? $"Questions: {queue.Name}" : "Questions: General",
+                    CustomerName = customer?.Name ?? "Unknown",
+                    Phone = customer?.Phone ?? "-",
+                    Status = a.Status,
+                    StatusText = GetStatusText(a.Status),
+                    ContactMethod = contact
+                };
+            }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
 
         public IList<ProviderAppointmentRow> BuildRowsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
@@ -192,27 +205,9 @@ namespace FastQ.Web.Services
                     Phone = string.IsNullOrWhiteSpace(r.CustomerPhone) ? "-" : r.CustomerPhone,
                     Status = r.Status,
                     StatusText = GetStatusText(r.Status),
-                    ContactMethod = GetContactMethodText(r.ContactType, r.SmsOptIn),
-                    StampUser = r.StampUser
+                    ContactMethod = r.SmsOptIn ? "Online" : "In-Person"
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
-        }
-
-        private static string GetContactMethodText(string contactType, bool smsOptIn)
-        {
-            var code = (contactType ?? string.Empty).Trim().ToUpperInvariant();
-            switch (code)
-            {
-                case "IP":
-                    return "In Person";
-                case "PC":
-                    return "Phone Call";
-                case "OM":
-                case "VIRTUAL":
-                    return "Online Meeting";
-                default:
-                    return smsOptIn ? "Online Meeting" : "In Person";
-            }
         }
 
         private static string GetStatusText(AppointmentStatus status)
@@ -222,9 +217,83 @@ namespace FastQ.Web.Services
                 AppointmentStatus.Arrived => "ARRIVED",
                 AppointmentStatus.InService => "IN PROGRESS",
                 AppointmentStatus.Completed => "DONE",
-                AppointmentStatus.Cancelled => "CANCELLED",
+                AppointmentStatus.Cancelled => "REMOVED",
                 _ => status.ToString().ToUpperInvariant()
             };
+        }
+
+        public QueueSnapshotDto GetQueueSnapshot(long locationId, long queueId)
+        {
+            var location = _locations.Get(locationId);
+            var queue = _queues.Get(queueId);
+
+            var all = _appts.ListByQueue(queueId)
+                .OrderBy(a => a.Status)
+                .ThenBy(a => a.CreatedUtc)
+                .ToList();
+
+            bool IsWaiting(Appointment a) => a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived;
+            bool IsInService(Appointment a) => a.Status == AppointmentStatus.InService;
+            bool IsDone(Appointment a) => a.Status == AppointmentStatus.Completed || a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem || a.Status == AppointmentStatus.TransferredOut;
+
+            var waiting = all.Where(IsWaiting).OrderBy(a => a.CreatedUtc).ToList();
+            var inService = all.Where(IsInService).OrderBy(a => a.UpdatedUtc).ToList();
+            var done = all.Where(IsDone).OrderByDescending(a => a.UpdatedUtc).Take(50).ToList();
+
+            var dto = new QueueSnapshotDto
+            {
+                LocationId = locationId,
+                QueueId = queueId,
+                LocationName = location?.Name ?? "Unknown",
+                QueueName = queue?.Name ?? "Unknown",
+                WaitingCount = waiting.Count,
+                InServiceCount = inService.Count,
+                CompletedCount = done.Count
+            };
+
+            foreach (var a in waiting)
+            {
+                var c = _customers.Get(a.CustomerId);
+                dto.Waiting.Add(new AppointmentRowDto
+                {
+                    AppointmentId = a.Id,
+                    CustomerId = a.CustomerId,
+                    CustomerPhone = c?.Phone ?? "",
+                    Status = a.Status.ToString(),
+                    ScheduledForUtc = a.ScheduledForUtc.ToString("u"),
+                    UpdatedUtc = a.UpdatedUtc.ToString("u")
+                });
+            }
+
+            foreach (var a in inService)
+            {
+                var c = _customers.Get(a.CustomerId);
+                dto.InService.Add(new AppointmentRowDto
+                {
+                    AppointmentId = a.Id,
+                    CustomerId = a.CustomerId,
+                    CustomerPhone = c?.Phone ?? "",
+                    Status = a.Status.ToString(),
+                    ScheduledForUtc = a.ScheduledForUtc.ToString("u"),
+                    UpdatedUtc = a.UpdatedUtc.ToString("u")
+                });
+            }
+
+            foreach (var a in done)
+            {
+                var c = _customers.Get(a.CustomerId);
+                dto.Done.Add(new AppointmentRowDto
+                {
+                    AppointmentId = a.Id,
+                    CustomerId = a.CustomerId,
+                    CustomerPhone = c?.Phone ?? "",
+                    Status = a.Status.ToString(),
+                    ScheduledForUtc = a.ScheduledForUtc.ToString("u"),
+                    UpdatedUtc = a.UpdatedUtc.ToString("u")
+                });
+            }
+
+            return dto;
         }
 
         public Result HandleProviderAction(string action, char srcType, long appointmentId, string providerId)
@@ -309,26 +378,13 @@ namespace FastQ.Web.Services
             if (sourceAppt != null)
             {
                 sourceAppt.Status = AppointmentStatus.TransferredOut;
-                sourceAppt.ProviderId = stampUser;
-                sourceAppt.StampUser = stampUser;
                 sourceAppt.UpdatedUtc = _clock.UtcNow;
                 sourceAppt.StampDateUtc = _clock.UtcNow;
-                _rt.AppointmentChanged(sourceAppt, stampUser);
-                _rt.QueueChanged(sourceAppt.LocationId, sourceAppt.QueueId, stampUser);
+                _rt.AppointmentChanged(sourceAppt);
+                _rt.QueueChanged(sourceAppt.LocationId, sourceAppt.QueueId);
             }
 
-            if (targetKind == 'A' && newSrcId > 0)
-            {
-                var targetAppt = _appts.Get(newSrcId);
-                if (targetAppt != null)
-                {
-                    targetAppt.ProviderId = stampUser;
-                    targetAppt.StampUser = stampUser;
-                    _rt.AppointmentChanged(targetAppt, stampUser);
-                }
-            }
-
-            _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id, stampUser);
+            _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
             return Result<long>.Success(newSrcId);
         }
 
@@ -373,36 +429,47 @@ namespace FastQ.Web.Services
                 if (appt != null)
                 {
                     appt.Status = AppointmentStatus.Completed;
-                    appt.ProviderId = stampUser;
-                    appt.StampUser = stampUser;
+                    appt.ProviderId = request.StampUser;
                     appt.UpdatedUtc = _clock.UtcNow;
                     appt.StampDateUtc = _clock.UtcNow;
-                    _rt.AppointmentChanged(appt, stampUser);
-                    _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
+                    _rt.AppointmentChanged(appt);
+                    _rt.QueueChanged(appt.LocationId, appt.QueueId);
                 }
             }
 
             if (request.TargetQueueId.HasValue && request.TargetQueueId.Value > 0)
             {
-                if (request.AdditionalService && request.TargetKind.HasValue && char.ToUpperInvariant(request.TargetKind.Value) == 'A' && newSrcId > 0)
-                {
-                    var targetAppt = _appts.Get(newSrcId);
-                    if (targetAppt != null)
-                    {
-                        targetAppt.ProviderId = stampUser;
-                        targetAppt.StampUser = stampUser;
-                        _rt.AppointmentChanged(targetAppt, stampUser);
-                    }
-                }
-
                 var targetQueue = _queues.Get(request.TargetQueueId.Value);
                 if (targetQueue != null)
                 {
-                    _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id, stampUser);
+                    _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
                 }
             }
 
             return Result<long>.Success(newSrcId);
+        }
+
+        public int CloseStaleScheduledAppointments(int staleHours)
+        {
+            var now = _clock.UtcNow;
+            var cutoff = now.AddHours(-staleHours);
+
+            var stale = _appts.ListAll()
+                .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedUtc <= cutoff)
+                .ToList();
+
+            foreach (var a in stale)
+            {
+                a.Status = AppointmentStatus.ClosedBySystem;
+                a.UpdatedUtc = now;
+                a.StampDateUtc = now;
+                _appts.Update(a);
+
+                _rt.AppointmentChanged(a);
+                _rt.QueueChanged(a.LocationId, a.QueueId);
+            }
+
+            return stale.Count;
         }
 
         private Result QueueCustomer(char srcType, long appointmentId, string providerId)
@@ -429,8 +496,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt, stampUser);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
 
             return Result.Success();
@@ -460,8 +527,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt, stampUser);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
 
             return Result.Success();
@@ -490,8 +557,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt, stampUser);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
 
             return Result.Success();
@@ -521,8 +588,8 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
-                _rt.AppointmentChanged(appt, stampUser);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId, stampUser);
+                _rt.AppointmentChanged(appt);
+                _rt.QueueChanged(appt.LocationId, appt.QueueId);
             }
 
             return Result.Success();

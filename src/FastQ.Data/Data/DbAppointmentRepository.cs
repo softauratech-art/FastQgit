@@ -6,12 +6,14 @@ using System.Globalization;
 using System.Linq;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using Newtonsoft.Json.Linq;
 
 namespace FastQ.Data.Db
 {
     public sealed class DbAppointmentRepository : IAppointmentRepository
     {
+        public DbAppointmentRepository() {
+        }
+
         public Appointment Get(long id)
         {
             if (id <= 0) return null;
@@ -19,7 +21,7 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             {
                 var locationByQueue = LoadQueueLocations(conn);
-                using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_APPT_DETAILS"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPT_DETAILS"))
                 {
                     DataAccess.AddParam(cmd, "p_apptid", id, DbType.Int64);
                     DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -35,36 +37,50 @@ namespace FastQ.Data.Db
         {
             using (var conn = DataAccess.Open())
             {
+                var newId = DataAccess.NextVal(conn, "APPTSEQ");
+                appointment.Id = newId;
+
+                var customerId = appointment.CustomerId;
+                if (customerId <= 0)
+                    throw new InvalidOperationException("CustomerId must be a numeric ID.");
                 var queueId = appointment.QueueId;
                 if (queueId <= 0)
                     throw new InvalidOperationException("QueueId must be a numeric ID.");
-                var customerEmail = (appointment.CustomerEmail ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(customerEmail))
-                    throw new InvalidOperationException("CustomerEmail is required for FQ_EXTERNAL.INSERT_APPT.");
 
-                using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_EXTERNAL.INSERT_APPT"))
+                var apptDate = ResolveApptDate(appointment);
+                var startInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
+                var endInterval = OracleInterval(appointment.EndTime);
+                var createdBy = string.IsNullOrWhiteSpace(appointment.CreatedBy) ? "fastq" : appointment.CreatedBy;
+                var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
+
+                using (var cmd = DataAccess.CreateCommand(conn,
+                    @"INSERT INTO APPOINTMENTS
+                        (APPOINTMENT_ID, CUSTOMER_ID, QUEUE_ID, SERVICE_ID, REF_CRITERIA, REF_VALUE, CONTACTTYPE, MOREINFO,
+                         APPT_DATE, START_TIME, END_TIME, STATUS, CONFCODE, MEETINGURL, LANGUAGE_PREF,
+                         CREATEDBY, CREATEDON, STAMPUSER, STAMPDATE)
+                      VALUES
+                        (:apptId, :customerId, :queueId, :serviceId, :refCriteria, :refValue, :contactType, :moreInfo,
+                         :apptDate, TO_DSINTERVAL(:startTime), TO_DSINTERVAL(:endTime), :status, :confCode, :meetingUrl, :languagePref,
+                         :createdBy, SYSDATE, :stampUser, SYSDATE)"))
                 {
-                    DataAccess.AddParam(cmd, "p_email", customerEmail, DbType.String);
-                    DataAccess.AddParam(cmd, "p_json", BuildInsertApptPayload(appointment), DbType.String);
-
-                    var confCode = DataAccess.AddParam(cmd, "p_confcode", null, DbType.String);
-                    confCode.Direction = ParameterDirection.Output;
-                    confCode.Size = 32;
-
-                    var outMsg = DataAccess.AddParam(cmd, "p_out", null, DbType.String);
-                    outMsg.Direction = ParameterDirection.Output;
-                    outMsg.Size = 4000;
-
+                    DataAccess.AddParam(cmd, "apptId", newId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "serviceId", ToNullableLong(appointment.ServiceId), DbType.Int64);
+                    DataAccess.AddParam(cmd, "refCriteria", appointment.RefCriteria, DbType.String);
+                    DataAccess.AddParam(cmd, "refValue", appointment.RefValue, DbType.String);
+                    DataAccess.AddParam(cmd, "contactType", appointment.ContactType, DbType.String);
+                    DataAccess.AddParam(cmd, "moreInfo", appointment.MoreInfo, DbType.String);
+                    DataAccess.AddParam(cmd, "status", appointment.Status.ToString(), DbType.String);
+                    DataAccess.AddParam(cmd, "apptDate", apptDate, DbType.DateTime);
+                    DataAccess.AddParam(cmd, "startTime", startInterval, DbType.String);
+                    DataAccess.AddParam(cmd, "endTime", endInterval, DbType.String);
+                    DataAccess.AddParam(cmd, "confCode", appointment.ConfirmationCode, DbType.String);
+                    DataAccess.AddParam(cmd, "meetingUrl", appointment.MeetingUrl, DbType.String);
+                    DataAccess.AddParam(cmd, "languagePref", appointment.LanguagePreference, DbType.String);
+                    DataAccess.AddParam(cmd, "createdBy", createdBy, DbType.String);
+                    DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
                     cmd.ExecuteNonQuery();
-
-                    var error = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
-                    if (!string.IsNullOrWhiteSpace(error))
-                        throw new InvalidOperationException(error);
-
-                    appointment.ConfirmationCode = confCode.Value == DBNull.Value ? null : confCode.Value?.ToString();
-                    appointment.Id = LookupAppointmentIdByConfirmationCode(conn, appointment.ConfirmationCode);
-                    if (appointment.Id <= 0)
-                        throw new InvalidOperationException("FQ_EXTERNAL.INSERT_APPT did not return a resolvable appointment id.");
                 }
             }
         }
@@ -201,69 +217,12 @@ namespace FastQ.Data.Db
 
         public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
         {
-            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "FQ_PROCS_GET.GET_MYAPPOINTMENTS");
+            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
         }
 
         public IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
         {
-            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "FQ_PROCS_GET.GET_MYWALKINS");
-        }
-
-        public bool ValidatePermitNumber(long queueId, string permitNumber, out string message)
-        {
-            message = string.Empty;
-
-            if (queueId <= 0)
-            {
-                message = "Queue is required.";
-                return false;
-            }
-
-            var normalizedPermit = (permitNumber ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(normalizedPermit))
-            {
-                message = "Permit number is required.";
-                return false;
-            }
-
-            try
-            {
-                using (var conn = DataAccess.Open())
-                using (var cmd = DataAccess.CreateCommand(conn,
-                    "BEGIN FQ_PROCS.VALIDATE_PERMIT(:p_queueid, :p_permit_number, :p_is_valid, :p_outmsg); END;"))
-                {
-                    DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "p_permit_number", normalizedPermit, DbType.String);
-
-                    var validParam = DataAccess.AddParam(cmd, "p_is_valid", null, DbType.Int32);
-                    validParam.Direction = ParameterDirection.Output;
-
-                    var outMsg = DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String);
-                    outMsg.Direction = ParameterDirection.Output;
-                    outMsg.Size = 4000;
-
-                    cmd.ExecuteNonQuery();
-
-                    var isValid = ToOracleBool(validParam.Value);
-                    var dbMessage = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
-                    if (!string.IsNullOrWhiteSpace(dbMessage))
-                    {
-                        message = dbMessage.Trim();
-                    }
-
-                    if (!isValid && string.IsNullOrWhiteSpace(message))
-                    {
-                        message = "Permit number is invalid.";
-                    }
-
-                    return isValid;
-                }
-            }
-            catch (Exception ex)
-            {
-                message = "Permit validation failed: " + ex.Message;
-                return false;
-            }
+            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
         }
 
         private IList<ProviderAppointmentData> ListForUserProc(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc, string procName)
@@ -333,9 +292,7 @@ namespace FastQ.Data.Db
                             ServiceName = ReadField(reader, "SERVICE_NAME"),
                             CustomerName = fullName,
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
-                            ContactType = ReadField(reader, "CONTACTTYPE"),
-                            SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase),
-                            StampUser = ReadField(reader, "STAMPUSER")
+                            SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });
                     }
                 }
@@ -344,12 +301,47 @@ namespace FastQ.Data.Db
             return list;
         }
 
+        public void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null)
+        {
+            var apptId = appointmentId;
+            if (apptId <= 0)
+                throw new InvalidOperationException("Appointment Id must be a numeric ID.");
+
+            if (string.IsNullOrWhiteSpace(status))
+                throw new InvalidOperationException("Status is required.");
+
+            var user = string.IsNullOrWhiteSpace(stampUser) ? "fastq" : stampUser.Trim();
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.UPDATE_APPT_STATUS"))
+            {
+                DataAccess.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_status", status.Trim(), DbType.String);
+                DataAccess.AddParam(cmd, "p_stampuser", user, DbType.String);
+                DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
+
+                var outMsg = cmd.CreateParameter();
+                outMsg.ParameterName = "p_outmsg";
+                outMsg.Direction = ParameterDirection.Output;
+                outMsg.DbType = DbType.String;
+                outMsg.Size = 4000;
+                cmd.Parameters.Add(outMsg);
+
+                cmd.ExecuteNonQuery();
+
+                var message = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(message))
+                    throw new InvalidOperationException(message);
+            }
+        }
+
+
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
         {
             var list = new List<Appointment>();
             var sql = @"SELECT a.*, q.LOCATION_ID
-                        FROM APPOINTMENTS a
-                        JOIN VALIDQUEUES q ON q.QUEUE_ID = a.QUEUE_ID";
+                        FROM fqowner.APPOINTMENTS a
+                        JOIN fqowner.VALIDQUEUES q ON q.QUEUE_ID = a.QUEUE_ID";
             if (!string.IsNullOrWhiteSpace(whereClause))
             {
                 sql += " WHERE " + whereClause;
@@ -579,53 +571,6 @@ namespace FastQ.Data.Db
             return negative ? -result : result;
         }
 
-        private static string BuildInsertApptPayload(Appointment appointment)
-        {
-            var payload = new JArray(
-                new JObject
-                {
-                    ["REF_CRITERIA"] = appointment.RefCriteria,
-                    ["REF_VALUE"] = appointment.RefValue,
-                    ["QUEUE_ID"] = appointment.QueueId,
-                    ["SERVICE_ID"] = appointment.ServiceId.HasValue && appointment.ServiceId.Value > 0
-                        ? (JToken)new JValue(appointment.ServiceId.Value)
-                        : JValue.CreateNull(),
-                    ["CONTACTTYPE"] = appointment.ContactType,
-                    ["MOREINFO"] = appointment.MoreInfo,
-                    // INSERT_APPT stores START_TIME/END_TIME separately; sending date-only avoids NLS-dependent ORA-01830 on implicit DATE conversion.
-                    ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy", CultureInfo.InvariantCulture).ToUpperInvariant(),
-                    ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay),
-                    ["END_TIME"] = OracleInterval(appointment.EndTime),
-                    ["STATUS"] = appointment.Status.ToString().ToUpperInvariant(),
-                    ["LANGUAGE_PREF"] = appointment.LanguagePreference
-                });
-
-            return payload.ToString();
-        }
-
-        private static long LookupAppointmentIdByConfirmationCode(DbConnection conn, string confirmationCode)
-        {
-            if (string.IsNullOrWhiteSpace(confirmationCode))
-            {
-                return 0;
-            }
-
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT APPOINTMENT_ID
-                    FROM APPOINTMENTS
-                   WHERE CONFCODE = :confCode"))
-            {
-                DataAccess.AddParam(cmd, "confCode", confirmationCode.Trim(), DbType.String);
-                var value = cmd.ExecuteScalar();
-                if (value == null || value == DBNull.Value)
-                {
-                    return 0;
-                }
-
-                return Convert.ToInt64(value, CultureInfo.InvariantCulture);
-            }
-        }
-
         private static DateTime ResolveApptDate(Appointment appointment)
         {
             if (appointment.ApptDateUtc != default)
@@ -658,8 +603,10 @@ namespace FastQ.Data.Db
                 return AppointmentStatus.Arrived;
             if (trimmed.Equals("STARTED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.InService;
-            if (trimmed.Equals("TRANSFERRED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("TRANSFERED", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("TRANSFERRED OUT", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.TransferredOut;
+            if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
+                return AppointmentStatus.Cancelled;
 
             return Enum.TryParse(trimmed, true, out AppointmentStatus parsed)
                 ? parsed
@@ -693,7 +640,7 @@ namespace FastQ.Data.Db
         private static Dictionary<long, long> LoadQueueLocations(DbConnection conn)
         {
             var map = new Dictionary<long, long>();
-            using (var cmd = DataAccess.CreateStoredProc(conn, "FQ_PROCS_GET.GET_QUEUES"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUES"))
             {
                 DataAccess.AddParam(cmd, "p_location", null, DbType.Int64);
                 DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
@@ -710,36 +657,5 @@ namespace FastQ.Data.Db
 
             return map;
         }
-
-        private static bool ToOracleBool(object value)
-        {
-            if (value == null || value == DBNull.Value)
-            {
-                return false;
-            }
-
-            var text = value.ToString();
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return false;
-            }
-
-            text = text.Trim();
-            if (string.Equals(text, "Y", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(text, "YES", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(text, "TRUE", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
-            {
-                return number != 0;
-            }
-
-            return false;
-        }
     }
 }
-
-
