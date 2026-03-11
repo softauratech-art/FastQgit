@@ -62,6 +62,10 @@ namespace FastQ.Web.Controllers
 
             if (!long.TryParse(queueId, out var qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Queue is required." });
+                }
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
             if (!_auth.CanAddEntries(qId))
@@ -180,6 +184,10 @@ namespace FastQ.Web.Controllers
 
             if (!long.TryParse(queueId, out var qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Queue is required." });
+                }
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
             if (!_auth.CanAddEntries(qId))

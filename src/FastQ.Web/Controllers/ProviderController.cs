@@ -4,6 +4,7 @@ using FastQ.Web.Models;
 using FastQ.Web.Services;
 using FastQ.Web.Helpers;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Web.Mvc;
@@ -166,7 +167,18 @@ namespace FastQ.Web.Controllers
 
             var details = _service.GetQueueDetailOptions(parsedQueueId);
             if (details == null)
+            {
+                Trace.TraceWarning("GetQueueDetails queueId={0}: service returned null details.", parsedQueueId);
                 return Json(new { ok = false, error = "Queue details not found" }, JsonRequestBehavior.AllowGet);
+            }
+
+            Trace.TraceInformation(
+                "GetQueueDetails queueId={0}: returning services={1}, contacts={2}, refs={3}, schedules={4}.",
+                parsedQueueId,
+                details.Services.Count,
+                details.ContactOptions.Count,
+                details.RefOptions.Count,
+                details.Schedules.Count);
 
             return Json(new
             {
@@ -311,6 +323,9 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public JsonResult LookupCustomerByEmail(string email)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                return Json(new { ok = false, error = "email is required" }, JsonRequestBehavior.AllowGet);
+
             var customer = _customerService.GetCustomerByEmail(email);
             if (customer == null)
                 return Json(new { ok = true, found = false }, JsonRequestBehavior.AllowGet);
@@ -321,6 +336,7 @@ namespace FastQ.Web.Controllers
                 found = true,
                 data = new
                 {
+                    id = customer.Id,
                     firstName = customer.FirstName ?? string.Empty,
                     lastName = customer.LastName ?? string.Empty,
                     phone = customer.Phone ?? string.Empty,
