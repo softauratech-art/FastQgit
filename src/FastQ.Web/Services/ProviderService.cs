@@ -143,6 +143,7 @@ namespace FastQ.Web.Services
                 return new ProviderAppointmentRow
                 {
                     AppointmentId = a.Id,
+                    QueueId = a.QueueId,
                     ScheduledForUtc = a.ScheduledForUtc,
                     StartTimeText = a.ScheduledForUtc.ToString("h:mm tt"),
                     StartDateText = a.ScheduledForUtc.ToString("MMM dd, yyyy"),
@@ -196,6 +197,7 @@ namespace FastQ.Web.Services
                 return new ProviderAppointmentRow
                 {
                     AppointmentId = r.AppointmentId,
+                    QueueId = r.QueueId,
                     ScheduledForUtc = r.ScheduledForUtc,
                     StartTimeText = r.ScheduledForUtc.ToString("h:mm tt"),
                     StartDateText = r.ScheduledForUtc.ToString("MMM dd, yyyy"),
@@ -208,6 +210,11 @@ namespace FastQ.Web.Services
                     ContactMethod = r.SmsOptIn ? "Online" : "In-Person"
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
+        }
+
+        public long? GetSourceQueueId(char srcType, long sourceId)
+        {
+            return _appts.GetQueueIdForSource(srcType, sourceId);
         }
 
         private static string GetStatusText(AppointmentStatus status)

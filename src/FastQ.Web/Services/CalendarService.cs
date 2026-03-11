@@ -144,6 +144,7 @@ namespace FastQ.Web.Services
             return new AdminAppointmentRow
             {
                 AppointmentId = row.AppointmentId,
+                QueueId = row.QueueId,
                 SrcType = srcType,
                 StartTimeText = row.StartTimeText,
                 StartDateText = row.StartDateText,

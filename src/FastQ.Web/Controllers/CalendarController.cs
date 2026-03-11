@@ -1,10 +1,13 @@
 using System;
 using System.Globalization;
 using System.Web.Mvc;
+using FastQ.Web.Attributes;
+using FastQ.Web.Helpers;
 using FastQ.Web.Services;
 
 namespace FastQ.Web.Controllers
 {
+    [FQAuthorizeUser(AllowRole = $"{nameof(Utilities.FQRole.Host)},{nameof(Utilities.FQRole.Provider)},{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class CalendarController : Controller
     {
         private readonly CalendarService _service;
@@ -31,6 +34,7 @@ namespace FastQ.Web.Controllers
             model.FeedbackMessage = TempData["CalendarMessage"] as string;
             model.FeedbackIsError = string.Equals(TempData["CalendarMessageIsError"] as string, "true", StringComparison.OrdinalIgnoreCase);
             ViewBag.ProviderId = userId ?? string.Empty;
+            ViewBag.ServiceAccess = _auth.GetServicePageAccess();
             return View("~/Views/Admin/Calendar.cshtml", model);
         }
 
@@ -55,6 +59,10 @@ namespace FastQ.Web.Controllers
             if (!long.TryParse(queueId, out var qId))
             {
                 return CalendarError(displayMonth, selected, "Queue is required.");
+            }
+            if (!_auth.CanAddEntries(qId))
+            {
+                return CalendarError(displayMonth, selected, "You do not have permission to add appointments.");
             }
 
             if (string.IsNullOrWhiteSpace(customerName))
@@ -124,6 +132,10 @@ namespace FastQ.Web.Controllers
             {
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
+            if (!_auth.CanAddEntries(qId))
+            {
+                return CalendarError(displayMonth, selected, "You do not have permission to add walk-ins.");
+            }
 
             var res = _service.CreateWalkin(
                 qId,
@@ -156,6 +168,7 @@ namespace FastQ.Web.Controllers
             model.FeedbackMessage = message;
             model.FeedbackIsError = true;
             ViewBag.ProviderId = userId ?? string.Empty;
+            ViewBag.ServiceAccess = _auth.GetServicePageAccess();
             return View("~/Views/Admin/Calendar.cshtml", model);
         }
 

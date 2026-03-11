@@ -6,6 +6,7 @@ namespace FastQ.Web.Models
     public class ProviderAppointmentRow
     {
         public long AppointmentId { get; set; }
+        public long QueueId { get; set; }
         public string StartTimeText { get; set; }
         public string StartDateText { get; set; }
         public string QueueName { get; set; }

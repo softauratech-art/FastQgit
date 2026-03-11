@@ -1,9 +1,12 @@
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Web;
+using FastQ.Data.Entities;
+using FastQ.Web.Models;
 
 namespace FastQ.Web.Services
 {
@@ -105,6 +108,105 @@ namespace FastQ.Web.Services
 
             FastQ.Data.Entities.User ousr = (FastQ.Data.Entities.User)httpContext.Session["fq_user"];
             return (ousr.Queues.FirstOrDefault(l => l.QueueId == qid && l.QueueAdminFlag == true) != null);
+        }
+
+        public ServicePageAccess GetServicePageAccess()
+        {
+            var user = GetCurrentUser();
+            var access = new ServicePageAccess();
+            if (user == null)
+            {
+                return access;
+            }
+
+            var currentEntityId = GetSessionEntityId();
+            var queuePermissions = (user.Queues ?? new List<UserQueuePermission>())
+                .Where(q => q.QueueActiveFlag && (currentEntityId <= 0 || q.EntityId == currentEntityId))
+                .ToList();
+
+            var hasActiveEntity = (user.BusinessEntities ?? new List<UserEntity>())
+                .Any(e => e.ActiveFlag && (currentEntityId <= 0 || e.EntityId == currentEntityId));
+            var isSuperAdmin = (user.BusinessEntities ?? new List<UserEntity>())
+                .Any(e => e.ActiveFlag && e.ConfigAdminFlag && (currentEntityId <= 0 || e.EntityId == currentEntityId));
+
+            access.IsHost = hasActiveEntity && queuePermissions.Any(q => q.HostFlag);
+            access.IsProvider = hasActiveEntity && queuePermissions.Any(q => q.ProviderFlag);
+            access.IsReporter = hasActiveEntity && queuePermissions.Any(q => q.ReporterFlag);
+            access.IsQueueAdmin = hasActiveEntity && queuePermissions.Any(q => q.QueueAdminFlag);
+            access.IsAdmin = isSuperAdmin;
+
+            access.CanCheckIn = access.IsHost || access.IsProvider || access.IsQueueAdmin || access.IsAdmin;
+            access.CanTransfer = access.CanCheckIn;
+            access.CanCancel = access.CanCheckIn;
+            access.CanUpdateInfo = access.CanCheckIn;
+            access.CanAddEntries = access.CanCheckIn;
+            access.CanViewReports = access.IsAdmin || access.IsReporter;
+            access.CanAccessAdmin = access.IsAdmin || access.IsQueueAdmin;
+            access.ProviderQueueIds = queuePermissions
+                .Where(q => q.ProviderFlag)
+                .Select(q => q.QueueId)
+                .Distinct()
+                .ToList();
+            access.QueueAdminQueueIds = queuePermissions
+                .Where(q => q.QueueAdminFlag)
+                .Select(q => q.QueueId)
+                .Distinct()
+                .ToList();
+
+            return access;
+        }
+
+        public bool CanCheckIn(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanCheckIn;
+        }
+
+        public bool CanTransfer(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanTransfer;
+        }
+
+        public bool CanCancel(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanCancel;
+        }
+
+        public bool CanUpdateInfo(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanUpdateInfo;
+        }
+
+        public bool CanAddEntries(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanAddEntries;
+        }
+
+        public bool CanStartService(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
+        }
+
+        public bool CanEndService(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
+        }
+
+        private User GetCurrentUser()
+        {
+            var httpContext = HttpContext.Current;
+            if (httpContext?.Session?["fq_user"] is User user)
+            {
+                return user;
+            }
+
+            return null;
         }
 
         #region OBSOLETE

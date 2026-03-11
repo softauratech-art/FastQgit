@@ -286,6 +286,7 @@ namespace FastQ.Data.Db
                         list.Add(new ProviderAppointmentData
                         {
                             AppointmentId = apptId,
+                            QueueId = TryGetLong(reader, "QUEUE_ID", out var queueId) ? queueId : 0,
                             ScheduledForUtc = scheduled,
                             Status = status,
                             QueueName = ReadField(reader, "NAME"),
@@ -299,6 +300,31 @@ namespace FastQ.Data.Db
             }
 
             return list;
+        }
+
+        public long? GetQueueIdForSource(char srcType, long sourceId)
+        {
+            if (sourceId <= 0)
+            {
+                return null;
+            }
+
+            var normalizedSrcType = char.ToUpperInvariant(srcType);
+            var tableName = normalizedSrcType == 'W' ? "fqowner.WALKINS" : "fqowner.APPOINTMENTS";
+            var idColumn = normalizedSrcType == 'W' ? "WALKIN_ID" : "APPOINTMENT_ID";
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn, $"SELECT QUEUE_ID FROM {tableName} WHERE {idColumn} = :sourceId"))
+            {
+                DataAccess.AddParam(cmd, "sourceId", sourceId, DbType.Int64);
+                var value = cmd.ExecuteScalar();
+                if (value == null || value == DBNull.Value)
+                {
+                    return null;
+                }
+
+                return Convert.ToInt64(value);
+            }
         }
 
         public void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null)

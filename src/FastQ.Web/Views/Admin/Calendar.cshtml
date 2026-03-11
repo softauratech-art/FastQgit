@@ -1,4 +1,5 @@
 @using System.Globalization
+@using Newtonsoft.Json
 @model FastQ.Web.Models.AdminDashboardViewModel
 
 @{
@@ -9,6 +10,7 @@
     var monthNames = System.Globalization.DateTimeFormatInfo.InvariantInfo.MonthNames.Take(12).ToList();
     var currentYear = Model.DisplayMonth.Year;
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
+    var serviceAccess = ViewBag.ServiceAccess as FastQ.Web.Models.ServicePageAccess ?? new FastQ.Web.Models.ServicePageAccess();
 }
 
 @section Head {
@@ -486,10 +488,13 @@
             <button class="btn small ghost" type="button" id="calendarTodayBtn">Today</button>
         </div>
     </div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn secondary" data-modal-open="addAppointmentModal">Add Appointment</button>
-        <button type="button" class="btn ghost" data-modal-open="addWalkinModal">Add Walk-In</button>
-    </div>
+    @if (serviceAccess.CanAddEntries)
+    {
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn secondary" data-modal-open="addAppointmentModal">Add Appointment</button>
+            <button type="button" class="btn ghost" data-modal-open="addWalkinModal">Add Walk-In</button>
+        </div>
+    }
 </div>
 
 <div class="calendar-shell">
@@ -555,7 +560,7 @@
             <div class="agenda-list">
                 @foreach (var item in Model.SelectedDayAppointments)
                 {
-                    <div class="agenda-item" data-appointment-id="@item.AppointmentId" data-status="@item.Status" data-src-type="@item.SrcType">
+                    <div class="agenda-item" data-appointment-id="@item.AppointmentId" data-queue-id="@item.QueueId" data-status="@item.Status" data-src-type="@item.SrcType">
                         <div class="agenda-time">@item.StartTimeText</div>
                         <div class="agenda-title">@item.CustomerName</div>
                         <div class="agenda-detail">@item.EntryKind</div>
@@ -567,10 +572,10 @@
                         }
                         <div class="agenda-notes">@item.Notes</div>
                         <div class="agenda-actions">
-                            <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Check-In</button>
-                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Start</button>
-                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">End</button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Transfer</button>
+                            <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Check-In</button>
+                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Start</button>
+                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">End</button>
+                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Transfer</button>
                             <button class="btn small ghost meeting-link" type="button"
                                     data-appointment-id="@item.AppointmentId"
                                     data-src-type="@item.SrcType"
@@ -581,7 +586,7 @@
                                     data-phone="@item.Phone">
                                 Info
                             </button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType">Remove</button>
+                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Remove</button>
                         </div>
                     </div>
                 }
@@ -882,6 +887,7 @@
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+            var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
@@ -1349,7 +1355,39 @@
                 return card ? normalizeStatus(card.getAttribute("data-status")) : "";
             }
 
-            function canAction(status, actionName) {
+            function hasQueuePermission(actionName, queueId) {
+                var access = serviceAccess || {};
+                var numericQueueId = parseInt(queueId || "0", 10);
+                var providerQueueIds = Array.isArray(access.ProviderQueueIds) ? access.ProviderQueueIds : [];
+                var queueAdminQueueIds = Array.isArray(access.QueueAdminQueueIds) ? access.QueueAdminQueueIds : [];
+                var providerHasQueue = providerQueueIds.indexOf(numericQueueId) >= 0;
+                var queueAdminHasQueue = queueAdminQueueIds.indexOf(numericQueueId) >= 0;
+
+                if (access.IsAdmin) {
+                    return true;
+                }
+                if (actionName === "arrive") {
+                    return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+                }
+                if (actionName === "transfer") {
+                    return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+                }
+                if (actionName === "remove") {
+                    return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+                }
+                if (actionName === "info") {
+                    return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+                }
+                if (actionName === "begin" || actionName === "end") {
+                    return providerHasQueue || queueAdminHasQueue;
+                }
+                return false;
+            }
+
+            function canAction(status, actionName, queueId) {
+                if (!hasQueuePermission(actionName, queueId)) {
+                    return false;
+                }
                 var finished = status === "completed" || status === "cancelled" || status === "closedbysystem" || status === "transferredout";
                 if (finished) {
                     return false;
@@ -1371,6 +1409,12 @@
 
             function bindProviderActionButtons() {
                 document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
+                    var action = (btn.getAttribute("data-action") || "").toLowerCase();
+                    var appointmentId = btn.getAttribute("data-appointment-id");
+                    var queueId = btn.getAttribute("data-queue-id");
+                    var status = appointmentId ? getStatusForAppointment(appointmentId) : "";
+                    btn.disabled = !canAction(status, action, queueId);
+
                     if (btn.getAttribute("data-bound-provider-action") === "1") {
                         return;
                     }
@@ -1382,12 +1426,13 @@
                         var appointmentId = btn.getAttribute("data-appointment-id");
                         var action = (btn.getAttribute("data-action") || "").toLowerCase();
                         var srcType = (btn.getAttribute("data-src-type") || "A").toUpperCase();
+                        var queueId = btn.getAttribute("data-queue-id");
                         if (!appointmentId || !action) {
                             return;
                         }
 
                         var status = getStatusForAppointment(appointmentId);
-                        if (!canAction(status, action)) {
+                        if (!canAction(status, action, queueId)) {
                             window.alert("Action not allowed for the current status.");
                             return;
                         }

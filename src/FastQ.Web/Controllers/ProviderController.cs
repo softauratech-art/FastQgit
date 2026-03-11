@@ -10,7 +10,7 @@ using System.Web.Mvc;
 
 namespace FastQ.Web.Controllers
 {
-    [FQAuthorizeUser(AllowRole =  $"{nameof(Utilities.FQRole.Host)},{nameof(Utilities.FQRole.Provider)},{nameof(Utilities.FQRole.SuperAdmin)}")]
+    [FQAuthorizeUser(AllowRole =  $"{nameof(Utilities.FQRole.Host)},{nameof(Utilities.FQRole.Provider)},{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class ProviderController : BaseController
     {
         private readonly ProviderService _service;
@@ -80,6 +80,7 @@ namespace FastQ.Web.Controllers
             ViewBag.EndDate = rangeEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             ViewBag.ShowWalkins = showWalkins;
             ViewBag.ShowAppointments = showAppointments;
+            ViewBag.ServiceAccess = _auth.GetServicePageAccess();
             return View("Today", model);
         }
 
@@ -205,6 +206,11 @@ namespace FastQ.Web.Controllers
             if (normalizedSrc != "A" && normalizedSrc != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
 
+            var sourceQueueId = _service.GetSourceQueueId(normalizedSrc[0], apptId);
+            var permissionError = ValidateActionPermission(action, sourceQueueId);
+            if (!string.IsNullOrWhiteSpace(permissionError))
+                return Json(new { ok = false, error = permissionError });
+
             var resolvedUserId = _auth.GetLoggedInWindowsUser();
 
             var res = _service.HandleProviderAction(action, normalizedSrc[0], apptId, resolvedUserId);
@@ -220,6 +226,8 @@ namespace FastQ.Web.Controllers
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
+            if (!_auth.CanAddEntries(qId))
+                return Json(new { ok = false, error = "You do not have permission to add appointments." });
 
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." });
@@ -251,6 +259,8 @@ namespace FastQ.Web.Controllers
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
+            if (!_auth.CanAddEntries(qId))
+                return Json(new { ok = false, error = "You do not have permission to add walk-ins." });
 
             var res = _customerService.CreateWalkin(
                 qId,
@@ -277,6 +287,10 @@ namespace FastQ.Web.Controllers
             var normalizedSrc = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
             if (normalizedSrc != "A" && normalizedSrc != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
+            var sourceQueueId = _service.GetSourceQueueId(normalizedSrc[0], srcId);
+            var transferPermissionError = ValidateActionPermission("transfer", sourceQueueId);
+            if (!string.IsNullOrWhiteSpace(transferPermissionError))
+                return Json(new { ok = false, error = transferPermissionError });
 
             var normalizedTarget = string.IsNullOrWhiteSpace(targetKind) ? normalizedSrc : targetKind.Trim().ToUpperInvariant();
             if (normalizedTarget != "A" && normalizedTarget != "W")
@@ -339,6 +353,10 @@ namespace FastQ.Web.Controllers
             var normalizedSrc = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
             if (normalizedSrc != "A" && normalizedSrc != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
+            var sourceQueueId = _service.GetSourceQueueId(normalizedSrc[0], srcId);
+            var endPermissionError = ValidateActionPermission("end", sourceQueueId);
+            if (!string.IsNullOrWhiteSpace(endPermissionError))
+                return Json(new { ok = false, error = endPermissionError });
 
             var wantsAdditional = string.Equals((additionalService ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase);
 
@@ -405,6 +423,10 @@ namespace FastQ.Web.Controllers
             var normalized = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
             if (normalized != "A" && normalized != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
+            var sourceQueueId = _service.GetSourceQueueId(normalized[0], apptId);
+            var updatePermissionError = ValidateActionPermission("info", sourceQueueId);
+            if (!string.IsNullOrWhiteSpace(updatePermissionError))
+                return Json(new { ok = false, error = updatePermissionError });
 
             var resolvedUserId = _auth.GetLoggedInWindowsUser();
             var res = _service.SaveServiceInfo(apptId, normalized[0], webexUrl, notes, resolvedUserId);
@@ -420,6 +442,26 @@ namespace FastQ.Web.Controllers
             var hours = staleHours <= 0 ? 12 : staleHours;
             var closed = _service.CloseStaleScheduledAppointments(hours);
             return Json(new { ok = true, closed = closed });
+        }
+
+        private string ValidateActionPermission(string action, long? queueId)
+        {
+            if (!queueId.HasValue || queueId.Value <= 0)
+                return "Queue information could not be resolved for this item.";
+
+            var normalizedAction = (action ?? string.Empty).Trim().ToLowerInvariant();
+            var allowed = normalizedAction switch
+            {
+                "arrive" => _auth.CanCheckIn(queueId.Value),
+                "transfer" => _auth.CanTransfer(queueId.Value),
+                "remove" => _auth.CanCancel(queueId.Value),
+                "info" => _auth.CanUpdateInfo(queueId.Value),
+                "begin" => _auth.CanStartService(queueId.Value),
+                "end" => _auth.CanEndService(queueId.Value),
+                _ => false
+            };
+
+            return allowed ? null : "You do not have permission for this action.";
         }
     }
 }

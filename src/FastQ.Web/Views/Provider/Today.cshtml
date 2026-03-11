@@ -3,6 +3,7 @@
 @using System.Globalization
 @using FastQ.Data.Entities
 @using FastQ.Web.Models
+@using Newtonsoft.Json
 @model ProviderTodayViewModel
 @{
     ViewBag.Title = "Provider Today";
@@ -31,6 +32,7 @@
     var nextEnd = endDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
+    var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
 }
 @section Head {
     <link href="~/Content/modal.css" rel="stylesheet" />
@@ -390,13 +392,13 @@
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W">
+                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">
                                 <td colspan="8">
                                     <div class="action-bar">
-                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W">Check-In</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W">Start</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W">End</button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W">Transfer</button>
+                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Check-In</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Start</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">End</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Transfer</button>
                                         <button class="btn small ghost meeting-link" type="button"
                                                 data-appointment-id="@row.AppointmentId"
                                                 data-src-type="W"
@@ -407,7 +409,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W">Remove</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Remove</button>
                                     </div>
                                 </td>
                             </tr>
@@ -420,7 +422,10 @@
             </table>
         </div>
 
-        <button class="btn primary" type="button" data-modal-open="addWalkinModal">Add Customer to Queue</button>
+        @if (serviceAccess.CanAddEntries)
+        {
+            <button class="btn primary" type="button" data-modal-open="addWalkinModal">Add Customer to Queue</button>
+        }
     </div>
 }
 
@@ -494,13 +499,13 @@
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A">
+                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">
                                 <td colspan="8">
                                     <div class="action-bar">
-                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A">Check-In</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A">Start</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A">End</button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A">Transfer</button>
+                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Check-In</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Start</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">End</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Transfer</button>
                                         <button class="btn small ghost meeting-link" type="button"
                                                 data-appointment-id="@row.AppointmentId"
                                                 data-src-type="A"
@@ -511,7 +516,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A">Remove</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Remove</button>
                                     </div>
                                 </td>
                             </tr>
@@ -524,7 +529,10 @@
             </table>
         </div>
 
-        <button class="btn primary" type="button" data-modal-open="addAppointmentModal">Add New Appointment</button>
+        @if (serviceAccess.CanAddEntries)
+        {
+            <button class="btn primary" type="button" data-modal-open="addAppointmentModal">Add New Appointment</button>
+        }
     </div>
 }
 
@@ -783,6 +791,7 @@
     var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
+    var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
     var activeRouteQueueDetails = null;
 
     function postForm(url, data) {
@@ -1491,7 +1500,39 @@
       return row ? normalizeStatus(row.getAttribute("data-status")) : "";
     }
 
-    function canAction(status, actionName) {
+    function hasQueuePermission(actionName, queueId) {
+      var access = serviceAccess || {};
+      var numericQueueId = parseInt(queueId || "0", 10);
+      var providerQueueIds = Array.isArray(access.ProviderQueueIds) ? access.ProviderQueueIds : [];
+      var queueAdminQueueIds = Array.isArray(access.QueueAdminQueueIds) ? access.QueueAdminQueueIds : [];
+      var providerHasQueue = providerQueueIds.indexOf(numericQueueId) >= 0;
+      var queueAdminHasQueue = queueAdminQueueIds.indexOf(numericQueueId) >= 0;
+
+      if (access.IsAdmin) {
+        return true;
+      }
+      if (actionName === "arrive") {
+        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+      }
+      if (actionName === "transfer") {
+        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+      }
+      if (actionName === "remove") {
+        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+      }
+      if (actionName === "info") {
+        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
+      }
+      if (actionName === "begin" || actionName === "end") {
+        return providerHasQueue || queueAdminHasQueue;
+      }
+      return false;
+    }
+
+    function canAction(status, actionName, queueId) {
+      if (!hasQueuePermission(actionName, queueId)) {
+        return false;
+      }
       var finished = status === "completed" || status === "cancelled" || status === "closedbysystem" || status === "transferredout";
       if (finished) {
         return false;
@@ -1513,6 +1554,12 @@
 
     function bindProviderActionButtons() {
       document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
+        var action = (btn.getAttribute("data-action") || "").toLowerCase();
+        var appointmentId = btn.getAttribute("data-appointment-id");
+        var queueId = btn.getAttribute("data-queue-id");
+        var status = appointmentId ? getStatusForAppointment(appointmentId) : "";
+        btn.disabled = !canAction(status, action, queueId);
+
         if (btn.getAttribute("data-bound-provider-action") === "1") {
           return;
         }
@@ -1524,6 +1571,7 @@
         var appointmentId = btn.getAttribute("data-appointment-id");
         var action = (btn.getAttribute("data-action") || "").toLowerCase();
         var srcType = (btn.getAttribute("data-src-type") || "").toUpperCase();
+        var queueId = btn.getAttribute("data-queue-id");
         if (!appointmentId || !action) {
           return;
         }
@@ -1538,7 +1586,7 @@
         }
 
         var status = getStatusForAppointment(appointmentId);
-        if (!canAction(status, action)) {
+        if (!canAction(status, action, queueId)) {
           window.alert("Action not allowed for the current status.");
           return;
         }
