@@ -264,7 +264,7 @@
             <circle cx="11" cy="11" r="7"></circle>
             <path d="M20 20l-3.5-3.5"></path>
         </svg>
-        <input type="text" placeholder="Search queues, names, or status" />
+        <input id="todayGlobalSearch" type="search" placeholder="Search queues, names, or status" />
     </div>
 </div>
 }
@@ -727,6 +727,10 @@
                 </select>
             </div>
             <div class="route-form-row">
+                <label for="addApptEmail">Email</label>
+                <input id="addApptEmail" class="route-input" type="email" />
+            </div>
+            <div class="route-form-row">
                 <label for="addApptCustomerFirstName">First Name</label>
                 <input id="addApptCustomerFirstName" class="route-input" type="text" />
             </div>
@@ -803,6 +807,10 @@
                 </select>
             </div>
             <div class="route-form-row">
+                <label for="addWalkinEmail">Email</label>
+                <input id="addWalkinEmail" class="route-input" type="email" />
+            </div>
+            <div class="route-form-row">
                 <label for="addWalkinCustomerFirstName">First Name</label>
                 <input id="addWalkinCustomerFirstName" class="route-input" type="text" />
             </div>
@@ -845,6 +853,7 @@
     var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
     var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+    var getCustomerByEmailUrl = "@Url.Action("GetCustomerByEmail", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var activeRouteQueueDetails = null;
     var activeEntryQueueDetails = {
@@ -866,6 +875,71 @@
         method: "GET",
         credentials: "same-origin"
       }).then(function (r) { return r.json(); });
+    }
+
+    function setEntryCustomerFieldsDisabled(prefix, disabled) {
+      ["CustomerFirstName", "CustomerLastName", "Phone"].forEach(function (suffix) {
+        var input = document.getElementById(prefix + suffix);
+        if (input) {
+          input.disabled = !!disabled;
+        }
+      });
+      var emailInput = document.getElementById(prefix + "Email");
+      if (emailInput) {
+        emailInput.setAttribute("data-customer-found", disabled ? "1" : "0");
+      }
+    }
+
+    function applyEntryCustomerLookup(prefix, customer) {
+      var emailInput = document.getElementById(prefix + "Email");
+      var firstNameInput = document.getElementById(prefix + "CustomerFirstName");
+      var lastNameInput = document.getElementById(prefix + "CustomerLastName");
+      var phoneInput = document.getElementById(prefix + "Phone");
+      if (!emailInput || !firstNameInput || !lastNameInput || !phoneInput) {
+        return;
+      }
+
+      var wasFound = emailInput.getAttribute("data-customer-found") === "1";
+      if (customer) {
+        emailInput.value = customer.email || emailInput.value || "";
+        firstNameInput.value = customer.firstName || "";
+        lastNameInput.value = customer.lastName || "";
+        phoneInput.value = customer.phone || "";
+        setEntryCustomerFieldsDisabled(prefix, true);
+        return;
+      }
+
+      if (wasFound) {
+        firstNameInput.value = "";
+        lastNameInput.value = "";
+        phoneInput.value = "";
+      }
+      setEntryCustomerFieldsDisabled(prefix, false);
+    }
+
+    function lookupEntryCustomerByEmail(prefix) {
+      var emailInput = document.getElementById(prefix + "Email");
+      if (!emailInput) {
+        return Promise.resolve();
+      }
+
+      var email = (emailInput.value || "").trim();
+      if (!email) {
+        applyEntryCustomerLookup(prefix, null);
+        return Promise.resolve();
+      }
+
+      return getJson(getCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
+        .then(function (res) {
+          if (!res || !res.ok || !res.found) {
+            applyEntryCustomerLookup(prefix, null);
+            return;
+          }
+          applyEntryCustomerLookup(prefix, res.data || null);
+        })
+        .catch(function () {
+          applyEntryCustomerLookup(prefix, null);
+        });
     }
 
     function setSelectOptions(selectElement, items, placeholderText) {
@@ -950,7 +1024,7 @@
 
     function clearAddEntryModal(prefix) {
       var fields = [
-        "QueueId", "ServiceId", "ContactType", "RefValue",
+        "QueueId", "ServiceId", "ContactType", "RefValue", "Email",
         "CustomerFirstName", "CustomerLastName", "Phone", "PermitNumber", "MeetingUrl", "Notes"
       ];
 
@@ -962,6 +1036,7 @@
       });
 
       activeEntryQueueDetails[prefix] = null;
+      setEntryCustomerFieldsDisabled(prefix, false);
       populateEntryModalOptions(prefix, null);
       populateEntryModalDateTime(prefix, null);
       syncEntryModalMeetingUrl(prefix);
@@ -1490,10 +1565,12 @@
         return;
       }
 
+      var globalSearchInput = document.getElementById("todayGlobalSearch");
       var customerInput = container.querySelector('[data-filter="customer"]');
       var statusInput = container.querySelector('[data-filter="status"]');
       var startInput = container.querySelector('[data-filter="start"]');
       var endInput = container.querySelector('[data-filter="end"]');
+      var globalSearchValue = (globalSearchInput && globalSearchInput.value ? globalSearchInput.value : "").toLowerCase().trim();
       var customerValue = (customerInput && customerInput.value ? customerInput.value : "").toLowerCase().trim();
       var statusValue = (statusInput && statusInput.value ? statusInput.value : "").toLowerCase();
       var startValue = startInput && startInput.value ? startInput.value : "";
@@ -1517,8 +1594,12 @@
           var rowStatus = (row.getAttribute("data-status") || "").toLowerCase();
           var rowDate = row.getAttribute("data-date") || "";
           var rowCustomer = (row.getAttribute("data-customer") || "").toLowerCase();
+          var rowSearchText = (row.textContent || "").toLowerCase();
           var match = true;
 
+          if (globalSearchValue && rowSearchText.indexOf(globalSearchValue) === -1) {
+            match = false;
+          }
           if (customerValue && rowCustomer.indexOf(customerValue) === -1) {
             match = false;
           }
@@ -1654,6 +1735,18 @@
 
       applyTableFilters(container);
     });
+
+    var todayGlobalSearch = document.getElementById("todayGlobalSearch");
+    if (todayGlobalSearch) {
+      var applyAllTableFilters = function () {
+        document.querySelectorAll(".table-filters").forEach(function (container) {
+          applyTableFilters(container);
+        });
+      };
+
+      todayGlobalSearch.addEventListener("input", applyAllTableFilters);
+      todayGlobalSearch.addEventListener("change", applyAllTableFilters);
+    }
 
     function normalizeStatus(text) {
       return (text || "").toString().trim().toLowerCase();
@@ -2334,6 +2427,15 @@
         syncEntryModalMeetingUrl("addAppt");
       });
     }
+    var addApptEmail = document.getElementById("addApptEmail");
+    if (addApptEmail) {
+      addApptEmail.addEventListener("change", function () {
+        lookupEntryCustomerByEmail("addAppt");
+      });
+      addApptEmail.addEventListener("blur", function () {
+        lookupEntryCustomerByEmail("addAppt");
+      });
+    }
 
     var addWalkinQueueId = document.getElementById("addWalkinQueueId");
     if (addWalkinQueueId) {
@@ -2347,6 +2449,15 @@
         syncEntryModalMeetingUrl("addWalkin");
       });
     }
+    var addWalkinEmail = document.getElementById("addWalkinEmail");
+    if (addWalkinEmail) {
+      addWalkinEmail.addEventListener("change", function () {
+        lookupEntryCustomerByEmail("addWalkin");
+      });
+      addWalkinEmail.addEventListener("blur", function () {
+        lookupEntryCustomerByEmail("addWalkin");
+      });
+    }
 
     var saveAddAppointment = document.getElementById("saveAddAppointment");
     if (saveAddAppointment) {
@@ -2356,6 +2467,7 @@
           serviceId: document.getElementById("addApptServiceId") ? document.getElementById("addApptServiceId").value : "",
           contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
           refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
+          email: document.getElementById("addApptEmail") ? document.getElementById("addApptEmail").value : "",
           firstName: document.getElementById("addApptCustomerFirstName") ? document.getElementById("addApptCustomerFirstName").value : "",
           lastName: document.getElementById("addApptCustomerLastName") ? document.getElementById("addApptCustomerLastName").value : "",
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
@@ -2367,8 +2479,8 @@
         };
         payload.customerName = ((payload.firstName || "").trim() + " " + (payload.lastName || "").trim()).trim();
 
-        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.permitNumber || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, first name, last name, phone, permit number, date, and time are required.", true);
+        if (!payload.queueId || !payload.email || !payload.firstName || !payload.lastName || !payload.phone || !payload.permitNumber || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, email, first name, last name, phone, permit number, date, and time are required.", true);
           return;
         }
 
@@ -2391,6 +2503,7 @@
           serviceId: document.getElementById("addWalkinServiceId") ? document.getElementById("addWalkinServiceId").value : "",
           contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
           refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
+          email: document.getElementById("addWalkinEmail") ? document.getElementById("addWalkinEmail").value : "",
           firstName: document.getElementById("addWalkinCustomerFirstName") ? document.getElementById("addWalkinCustomerFirstName").value : "",
           lastName: document.getElementById("addWalkinCustomerLastName") ? document.getElementById("addWalkinCustomerLastName").value : "",
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
@@ -2400,8 +2513,8 @@
         };
         payload.customerName = ((payload.firstName || "").trim() + " " + (payload.lastName || "").trim()).trim();
 
-        if (!payload.queueId || !payload.firstName || !payload.lastName || !payload.phone || !payload.permitNumber) {
-          showModalFeedback("addWalkinModal", "Queue, first name, last name, phone, and permit number are required.", true);
+        if (!payload.queueId || !payload.email || !payload.firstName || !payload.lastName || !payload.phone || !payload.permitNumber) {
+          showModalFeedback("addWalkinModal", "Queue, email, first name, last name, phone, and permit number are required.", true);
           return;
         }
 

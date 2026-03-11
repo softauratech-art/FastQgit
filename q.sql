@@ -365,6 +365,25 @@ END FQ_EXTERNAL;
     --
     PROCEDURE GET_APPTS4STAFF (p_userid IN VARCHAR2, p_range_startdate IN DATE, p_range_enddate IN DATE, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor);
     PROCEDURE GET_APPT_DETAILS (p_apptid IN Appointments.appointment_id%type, p_ref_cursor OUT Ref_Cursor_Types.ref_cursor); 
+    PROCEDURE VALIDATE_PERMIT (p_queueid IN NUMBER, p_permit_number IN VARCHAR2, p_is_valid OUT NUMBER, p_outmsg OUT VARCHAR2);
+    PROCEDURE INSERT_WALKIN (
+        p_customer_id IN NUMBER,
+        p_queue_id IN NUMBER,
+        p_service_id IN NUMBER,
+        p_ref_criteria IN VARCHAR2,
+        p_ref_value IN VARCHAR2,
+        p_contacttype IN VARCHAR2,
+        p_moreinfo IN VARCHAR2,
+        p_join_time IN VARCHAR2,
+        p_end_time IN VARCHAR2,
+        p_status IN VARCHAR2,
+        p_meetingurl IN VARCHAR2,
+        p_language_pref IN VARCHAR2,
+        p_createdby IN VARCHAR2,
+        p_stampuser IN VARCHAR2,
+        p_walkin_id OUT NUMBER,
+        p_outmsg OUT VARCHAR2
+    );
     
     --TODO:
     --Pass stampuser to ALL procs from internal calls

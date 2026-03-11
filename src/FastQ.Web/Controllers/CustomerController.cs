@@ -20,7 +20,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult Book(string queueId, string serviceId, string refValue, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
+        public ActionResult Book(string queueId, string serviceId, string refValue, string email, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
             {
@@ -35,13 +35,13 @@ namespace FastQ.Web.Controllers
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
                 ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
                 : customerName.Trim();
-            if (string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(resolvedCustomerName))
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(resolvedCustomerName))
             {
                 if (Request.IsAjaxRequest())
                 {
-                    return Json(new { ok = false, error = "First name, last name, and mobile number are required." });
+                    return Json(new { ok = false, error = "Email, first name, last name, and mobile number are required." });
                 }
-                ViewBag.Error = "First name, last name, and mobile number are required.";
+                ViewBag.Error = "Email, first name, last name, and mobile number are required.";
                 return View();
             }
 
@@ -81,6 +81,7 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 resolvedCustomerName,
+                email,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),

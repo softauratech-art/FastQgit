@@ -52,6 +52,7 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string customerName,
+            string email,
             string phone,
             string contactType,
             DateTime scheduledForUtc,
@@ -89,7 +90,7 @@ namespace FastQ.Web.Services
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
-            var customer = GetOrCreateCustomer(customerName, phone, !string.IsNullOrWhiteSpace(meetingUrl), user, now);
+            var customer = GetOrCreateCustomer(customerName, email, phone, !string.IsNullOrWhiteSpace(meetingUrl), user, now);
 
             var appt = new Appointment
             {
@@ -127,6 +128,7 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string customerName,
+            string email,
             string phone,
             string contactType,
             string permitNumber,
@@ -152,7 +154,7 @@ namespace FastQ.Web.Services
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
-            var customer = GetOrCreateCustomer(customerName, phone, false, user, now);
+            var customer = GetOrCreateCustomer(customerName, email, phone, false, user, now);
 
             var walkin = new Appointment
             {
@@ -203,6 +205,16 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
+        public Customer GetCustomerByEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return null;
+            }
+
+            return _customers.GetByEmail(email.Trim());
+        }
+
         public AppointmentSnapshotDto GetAppointmentSnapshot(long appointmentId)
         {
             var appt = _appts.Get(appointmentId);
@@ -238,16 +250,25 @@ namespace FastQ.Web.Services
             return snapshot;
         }
 
-        private Customer GetOrCreateCustomer(string name, string phone, bool smsOptIn, string stampUser, DateTime now)
+        private Customer GetOrCreateCustomer(string name, string email, string phone, bool smsOptIn, string stampUser, DateTime now)
         {
-            var customer = _customers.GetByPhone(phone);
+            var normalizedEmail = (email ?? string.Empty).Trim();
+            var normalizedPhone = (phone ?? string.Empty).Trim();
+            var customer = !string.IsNullOrWhiteSpace(normalizedEmail)
+                ? _customers.GetByEmail(normalizedEmail)
+                : null;
+            if (customer == null)
+            {
+                customer = _customers.GetByPhone(normalizedPhone);
+            }
             if (customer == null)
             {
                 customer = new Customer
                 {
                     Id = 0,
-                    Phone = phone.Trim(),
+                    Phone = normalizedPhone,
                     Name = (name ?? string.Empty).Trim(),
+                    Email = normalizedEmail,
                     SmsOptIn = smsOptIn,
                     ActiveFlag = true,
                     CreatedUtc = now,
@@ -265,11 +286,15 @@ namespace FastQ.Web.Services
             {
                 customer.Name = name.Trim();
             }
+            if (!string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                customer.Email = normalizedEmail;
+            }
             if (string.IsNullOrWhiteSpace(customer.Email))
             {
                 customer.Email = BuildPlaceholderEmail(customer);
             }
-            customer.Phone = phone.Trim();
+            customer.Phone = normalizedPhone;
             customer.UpdatedUtc = now;
             customer.StampDateUtc = now;
             customer.StampUser = stampUser;

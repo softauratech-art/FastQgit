@@ -100,6 +100,10 @@
                 </div>
                 <div class="form-grid">
                     <div class="field">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" placeholder="you@example.com" />
+                    </div>
+                    <div class="field">
                         <label for="firstName">First Name *</label>
                         <input type="text" id="firstName" name="firstName" />
                     </div>
@@ -110,10 +114,6 @@
                     <div class="field">
                         <label for="phone">Mobile Number *</label>
                         <input type="text" id="phone" name="phone" placeholder="+8801..." />
-                    </div>
-                    <div class="field">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" placeholder="you@example.com" />
                     </div>
                 </div>
                 <div class="row" style="margin-top:10px;">
@@ -154,6 +154,7 @@ window.FASTQ_CONTEXT = { };
 var FastQBook = {
   getQueuesUrl: "/Provider/GetTransferQueues",
   getQueueDetailsUrl: "/Provider/GetQueueDetails",
+  getCustomerByEmailUrl: "/Provider/GetCustomerByEmail",
   state: {
     queueId: "",
     queueName: "",
@@ -508,6 +509,50 @@ var FastQBook = {
     this.state.meetingUrl = ($("#meetingUrl").val() || "").trim();
   },
 
+  setCustomerFieldsDisabled: function (disabled) {
+    $("#firstName, #lastName, #phone").prop("disabled", !!disabled);
+    $("#email").attr("data-customer-found", disabled ? "1" : "0");
+  },
+
+  applyCustomerLookup: function (customer) {
+    var wasFound = $("#email").attr("data-customer-found") === "1";
+    if (customer) {
+      if (customer.email) {
+        $("#email").val(customer.email);
+      }
+      $("#firstName").val(customer.firstName || "");
+      $("#lastName").val(customer.lastName || "");
+      $("#phone").val(customer.phone || "");
+      this.setCustomerFieldsDisabled(true);
+      return;
+    }
+
+    if (wasFound) {
+      $("#firstName, #lastName, #phone").val("");
+    }
+    this.setCustomerFieldsDisabled(false);
+  },
+
+  lookupCustomerByEmail: function () {
+    var email = ($("#email").val() || "").trim();
+    if (!email) {
+      this.applyCustomerLookup(null);
+      return Promise.resolve();
+    }
+
+    return this.getJson(this.getCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
+      .then(function (res) {
+        if (!res || !res.ok || !res.found) {
+          FastQBook.applyCustomerLookup(null);
+          return;
+        }
+        FastQBook.applyCustomerLookup(res.data || null);
+      })
+      .catch(function () {
+        FastQBook.applyCustomerLookup(null);
+      });
+  },
+
   hydrateProfile: function () {
     var raw = localStorage.getItem("fastq_customer_profile");
     if (!raw) {
@@ -531,6 +576,7 @@ var FastQBook = {
         }
       }
     } catch (e) { }
+    this.setCustomerFieldsDisabled(false);
   },
 
   saveProfile: function () {
@@ -631,8 +677,8 @@ var FastQBook = {
     this.syncInfo();
     $("#msg").removeClass("ok").removeClass("error");
 
-    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.appointmentDate || !this.state.startTime || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.permitNumber) {
-      $("#msg").addClass("error").text("Queue, service, contact type, date, time, first name, last name, mobile, and permit number are required.");
+    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.appointmentDate || !this.state.startTime || !this.state.email || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.permitNumber) {
+      $("#msg").addClass("error").text("Queue, service, contact type, date, time, email, first name, last name, mobile, and permit number are required.");
       return false;
     }
     if (this.isOnlineContact() && !this.state.meetingUrl) {
@@ -660,6 +706,7 @@ var FastQBook = {
       queueId: this.state.queueId,
       serviceId: this.state.serviceId,
       refValue: this.state.reference,
+      email: this.state.email,
       phone: this.state.phone,
       firstName: this.state.firstName,
       lastName: this.state.lastName,
@@ -702,6 +749,7 @@ var FastQBook = {
   clear: function () {
     $("#firstName, #lastName, #phone, #email, #permitNumber, #notes, #meetingUrl").val("");
     $("#terms").prop("checked", false);
+    this.setCustomerFieldsDisabled(false);
     this.hydrateProfile();
     this.loadQueues();
     $("#msg").removeClass("ok").removeClass("error").text("");
@@ -739,6 +787,9 @@ var FastQBook = {
         FastQBook.syncTime();
       });
     }
+    $("#email").on("change blur", function () {
+      FastQBook.lookupCustomerByEmail();
+    });
   },
 
   init: function () {
@@ -746,6 +797,7 @@ var FastQBook = {
     this.hydrateProfile();
     this.bindEvents();
     this.syncMeetingField();
+    this.lookupCustomerByEmail();
     this.loadQueues();
 
     var form = document.getElementById("bookForm");

@@ -40,6 +40,7 @@ namespace FastQ.Web.Controllers
             string queueId,
             string serviceId,
             string refValue,
+            string email,
             string firstName,
             string lastName,
             string customerName,
@@ -62,6 +63,14 @@ namespace FastQ.Web.Controllers
                     return Json(new { ok = false, error = "Queue is required." });
                 }
                 return CalendarError(displayMonth, selected, "Queue is required.");
+            }
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Email is required." });
+                }
+                return CalendarError(displayMonth, selected, "Email is required.");
             }
 
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
@@ -109,6 +118,7 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 resolvedCustomerName,
+                email,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
@@ -153,6 +163,7 @@ namespace FastQ.Web.Controllers
             string queueId,
             string serviceId,
             string refValue,
+            string email,
             string firstName,
             string lastName,
             string customerName,
@@ -175,6 +186,14 @@ namespace FastQ.Web.Controllers
                 }
                 return CalendarError(displayMonth, selected, "Queue is required.");
             }
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Email is required." });
+                }
+                return CalendarError(displayMonth, selected, "Email is required.");
+            }
 
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
                 ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
@@ -193,6 +212,7 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 resolvedCustomerName,
+                email,
                 phone,
                 contactType,
                 permitNumber,

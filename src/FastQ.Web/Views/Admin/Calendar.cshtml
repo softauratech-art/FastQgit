@@ -658,6 +658,11 @@
                     </div>
 
                     <div class="calendar-field">
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email" required />
+                    </div>
+
+                    <div class="calendar-field">
                         <label for="firstName">First Name</label>
                         <input id="firstName" name="firstName" type="text" required />
                     </div>
@@ -758,6 +763,11 @@
                         <select id="walkinRefValue" name="refValue">
                             <option value="">Select reference</option>
                         </select>
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinEmail">Email</label>
+                        <input id="walkinEmail" name="email" type="email" required />
                     </div>
 
                     <div class="calendar-field">
@@ -922,6 +932,7 @@
             var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+            var getCustomerByEmailUrl = "@Url.Action("GetCustomerByEmail", "Provider")";
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
@@ -1024,6 +1035,74 @@
                     method: "GET",
                     credentials: "same-origin"
                 }).then(function (r) { return r.json(); });
+            }
+
+            function setCustomerFieldsDisabled(emailInput, firstNameInput, lastNameInput, phoneInput, disabled) {
+                [firstNameInput, lastNameInput, phoneInput].forEach(function (input) {
+                    if (input) {
+                        input.disabled = !!disabled;
+                    }
+                });
+                if (emailInput) {
+                    emailInput.setAttribute("data-customer-found", disabled ? "1" : "0");
+                }
+            }
+
+            function applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, customer) {
+                if (!emailInput || !firstNameInput || !lastNameInput || !phoneInput) {
+                    return;
+                }
+
+                var wasFound = emailInput.getAttribute("data-customer-found") === "1";
+                if (customer) {
+                    emailInput.value = customer.email || emailInput.value || "";
+                    firstNameInput.value = customer.firstName || "";
+                    lastNameInput.value = customer.lastName || "";
+                    phoneInput.value = customer.phone || "";
+                    setCustomerFieldsDisabled(emailInput, firstNameInput, lastNameInput, phoneInput, true);
+                    return;
+                }
+
+                if (wasFound) {
+                    firstNameInput.value = "";
+                    lastNameInput.value = "";
+                    phoneInput.value = "";
+                }
+                setCustomerFieldsDisabled(emailInput, firstNameInput, lastNameInput, phoneInput, false);
+            }
+
+            function bindCustomerLookup(emailId, firstNameId, lastNameId, phoneId) {
+                var emailInput = document.getElementById(emailId);
+                var firstNameInput = document.getElementById(firstNameId);
+                var lastNameInput = document.getElementById(lastNameId);
+                var phoneInput = document.getElementById(phoneId);
+                if (!emailInput || emailInput.getAttribute("data-bound-customer-lookup") === "1") {
+                    return;
+                }
+
+                emailInput.setAttribute("data-bound-customer-lookup", "1");
+                var handleLookup = function () {
+                    var email = (emailInput.value || "").trim();
+                    if (!email) {
+                        applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, null);
+                        return;
+                    }
+
+                    getJson(getCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
+                        .then(function (res) {
+                            if (!res || !res.ok || !res.found) {
+                                applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, null);
+                                return;
+                            }
+                            applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, res.data || null);
+                        })
+                        .catch(function () {
+                            applyCustomerLookup(emailInput, firstNameInput, lastNameInput, phoneInput, null);
+                        });
+                };
+
+                emailInput.addEventListener("change", handleLookup);
+                emailInput.addEventListener("blur", handleLookup);
             }
 
             function setSelectOptions(selectElement, items, placeholderText) {
@@ -1621,6 +1700,7 @@
                 var appointmentForm = document.querySelector("#addAppointmentModal form");
                 if (appointmentForm && appointmentForm.getAttribute("data-bound-ajax-submit") !== "1") {
                     appointmentForm.setAttribute("data-bound-ajax-submit", "1");
+                    bindCustomerLookup("email", "firstName", "lastName", "phone");
                     appointmentForm.addEventListener("submit", function (event) {
                         event.preventDefault();
                         var formData = new FormData(appointmentForm);
@@ -1654,6 +1734,7 @@
                 var walkinForm = document.querySelector("#addWalkinModal form");
                 if (walkinForm && walkinForm.getAttribute("data-bound-ajax-submit") !== "1") {
                     walkinForm.setAttribute("data-bound-ajax-submit", "1");
+                    bindCustomerLookup("walkinEmail", "walkinFirstName", "walkinLastName", "walkinPhone");
                     walkinForm.addEventListener("submit", function (event) {
                         event.preventDefault();
                         var formData = new FormData(walkinForm);

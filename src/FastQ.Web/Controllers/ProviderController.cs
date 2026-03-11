@@ -172,6 +172,33 @@ namespace FastQ.Web.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult GetCustomerByEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return Json(new { ok = false, error = "email is required" }, JsonRequestBehavior.AllowGet);
+
+            var customer = _customerService.GetCustomerByEmail(email);
+            if (customer == null)
+            {
+                return Json(new { ok = true, found = false }, JsonRequestBehavior.AllowGet);
+            }
+
+            return Json(new
+            {
+                ok = true,
+                found = true,
+                data = new
+                {
+                    id = customer.Id,
+                    email = customer.Email ?? string.Empty,
+                    firstName = customer.FirstName ?? string.Empty,
+                    lastName = customer.LastName ?? string.Empty,
+                    phone = customer.Phone ?? string.Empty
+                }
+            }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType, string notes)
         {
@@ -204,10 +231,12 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
+            if (string.IsNullOrWhiteSpace(email))
+                return Json(new { ok = false, error = "Email is required." });
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
                 ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
                 : customerName.Trim();
@@ -226,6 +255,7 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 resolvedCustomerName,
+                email,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
@@ -241,10 +271,12 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string firstName, string lastName, string customerName, string phone, string contactType, string permitNumber, string meetingUrl, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string email, string firstName, string lastName, string customerName, string phone, string contactType, string permitNumber, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
+            if (string.IsNullOrWhiteSpace(email))
+                return Json(new { ok = false, error = "Email is required." });
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
                 ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
                 : customerName.Trim();
@@ -256,6 +288,7 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 resolvedCustomerName,
+                email,
                 phone,
                 contactType,
                 permitNumber,

@@ -1,4 +1,106 @@
 CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
+  PROCEDURE VALIDATE_PERMIT (
+    p_queueid        IN NUMBER,
+    p_permit_number  IN VARCHAR2,
+    p_is_valid       OUT NUMBER,
+    p_outmsg         OUT VARCHAR2
+  )
+  AS
+    v_permit VARCHAR2(100);
+    v_count  NUMBER := 0;
+  BEGIN
+    p_is_valid := 0;
+    p_outmsg := NULL;
+    v_permit := TRIM(p_permit_number);
+
+    IF p_queueid IS NULL OR p_queueid <= 0 THEN
+      p_outmsg := 'Queue is required.';
+      RETURN;
+    END IF;
+
+    IF v_permit IS NULL THEN
+      p_outmsg := 'Permit number is required.';
+      RETURN;
+    END IF;
+
+    SELECT COUNT(1)
+      INTO v_count
+      FROM Folder@LDMSDEV_LINK f
+     WHERE TRIM(UPPER(f.ReferrenceFile)) = TRIM(UPPER(v_permit));
+
+    IF v_count > 0 THEN
+      p_is_valid := 1;
+    ELSE
+      p_outmsg := 'Permit number not found.';
+    END IF;
+  EXCEPTION
+    WHEN OTHERS THEN
+      p_is_valid := 0;
+      p_outmsg := SQLERRM;
+  END VALIDATE_PERMIT;
+
+  PROCEDURE INSERT_WALKIN (
+    p_customer_id    IN NUMBER,
+    p_queue_id       IN NUMBER,
+    p_service_id     IN NUMBER,
+    p_ref_criteria   IN VARCHAR2,
+    p_ref_value      IN VARCHAR2,
+    p_contacttype    IN VARCHAR2,
+    p_moreinfo       IN VARCHAR2,
+    p_join_time      IN VARCHAR2,
+    p_end_time       IN VARCHAR2,
+    p_status         IN VARCHAR2,
+    p_meetingurl     IN VARCHAR2,
+    p_language_pref  IN VARCHAR2,
+    p_createdby      IN VARCHAR2,
+    p_stampuser      IN VARCHAR2,
+    p_walkin_id      OUT NUMBER,
+    p_outmsg         OUT VARCHAR2
+  )
+  AS
+  BEGIN
+    p_outmsg := NULL;
+    p_walkin_id := NULL;
+
+    IF p_customer_id IS NULL OR p_customer_id <= 0 THEN
+      p_outmsg := 'CustomerId is required.';
+      RETURN;
+    END IF;
+
+    IF p_queue_id IS NULL OR p_queue_id <= 0 THEN
+      p_outmsg := 'QueueId is required.';
+      RETURN;
+    END IF;
+
+    p_walkin_id := WALKINSEQ.NEXTVAL;
+
+    INSERT INTO WALKINS
+      (WALKIN_ID, CUSTOMER_ID, QUEUE_ID, SERVICE_ID, REF_CRITERIA, REF_VALUE, CONTACTTYPE, MOREINFO,
+       JOIN_TIME, END_TIME, STATUS, MEETINGURL, LANGUAGE_PREF, CREATEDBY, CREATEDON, STAMPUSER, STAMPDATE)
+    VALUES
+      (p_walkin_id,
+       p_customer_id,
+       p_queue_id,
+       p_service_id,
+       p_ref_criteria,
+       p_ref_value,
+       p_contacttype,
+       p_moreinfo,
+       CASE WHEN p_join_time IS NULL THEN NULL ELSE TO_DSINTERVAL(p_join_time) END,
+       CASE WHEN p_end_time IS NULL THEN NULL ELSE TO_DSINTERVAL(p_end_time) END,
+       p_status,
+       p_meetingurl,
+       p_language_pref,
+       NVL(p_createdby, 'fastq'),
+       SYSDATE,
+       NVL(p_stampuser, 'fastq'),
+       SYSDATE);
+  EXCEPTION
+    WHEN OTHERS THEN
+      p_walkin_id := NULL;
+      p_outmsg := SQLERRM;
+  END INSERT_WALKIN;
+
   PROCEDURE UPDATE_APPT_STATUS (
     p_apptid    IN APPOINTMENTS.APPOINTMENT_ID%TYPE,
     p_action    IN VARCHAR2,
