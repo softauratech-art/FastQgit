@@ -158,7 +158,7 @@
 
                 
             <div class="nav-section">
-                @if (isReporter || isSuperAdmin || isQueueAdmin)
+                @if (isReporter || isSuperAdmin)
                 {
                     <div class="nav-title">Reports</div>
                     <a class="nav-link" href="@Url.Action("Overview", "Reporting")">

@@ -79,6 +79,7 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string permitNumber,
+            string email,
             string customerName,
             string phone,
             string contactType,
@@ -91,6 +92,7 @@ namespace FastQ.Web.Services
                 serviceId,
                 refValue,
                 permitNumber,
+                email,
                 customerName,
                 phone,
                 contactType,
@@ -105,9 +107,11 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string permitNumber,
+            string email,
             string customerName,
             string phone,
             string contactType,
+            string meetingUrl,
             string notes)
         {
             return _customerService.CreateWalkin(
@@ -115,9 +119,11 @@ namespace FastQ.Web.Services
                 serviceId,
                 refValue,
                 permitNumber,
+                email,
                 customerName,
                 phone,
                 contactType,
+                meetingUrl,
                 notes,
                 "web");
         }
@@ -159,6 +165,7 @@ namespace FastQ.Web.Services
                 StatusText = row.StatusText,
                 Status = row.Status,
                 ContactMethod = row.ContactMethod,
+                StampUser = row.StampUser,
                 EntryKind = entryKind,
                 ScheduledForUtc = row.ScheduledForUtc,
                 ScheduledForLocal = row.ScheduledForUtc,

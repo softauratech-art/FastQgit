@@ -7,6 +7,7 @@ namespace FastQ.Data.Repositories
     public interface ICustomerRepository
     {
         Customer Get(long id);
+        Customer GetByEmail(string email);
         Customer GetByPhone(string phone);
         void Add(Customer customer);
         void Update(Customer customer);

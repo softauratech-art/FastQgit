@@ -11,6 +11,7 @@
     var currentYear = Model.DisplayMonth.Year;
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
     var serviceAccess = ViewBag.ServiceAccess as FastQ.Web.Models.ServicePageAccess ?? new FastQ.Web.Models.ServicePageAccess();
+    var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
 }
 
 @section Head {
@@ -189,6 +190,14 @@
             border-radius: 16px;
             padding: 14px;
             background: #f8fafc;
+        }
+
+        .agenda-item.locked {
+            opacity: 0.45;
+        }
+
+        .agenda-item.locked .agenda-actions {
+            pointer-events: none;
         }
 
         .agenda-time {
@@ -560,7 +569,8 @@
             <div class="agenda-list">
                 @foreach (var item in Model.SelectedDayAppointments)
                 {
-                    <div class="agenda-item" data-appointment-id="@item.AppointmentId" data-queue-id="@item.QueueId" data-status="@item.Status" data-src-type="@item.SrcType">
+                    var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
+                    <div class="agenda-item @(isLocked ? "locked" : null)" data-appointment-id="@item.AppointmentId" data-queue-id="@item.QueueId" data-status="@item.Status" data-src-type="@item.SrcType">
                         <div class="agenda-time">@item.StartTimeText</div>
                         <div class="agenda-title">@item.CustomerName</div>
                         <div class="agenda-detail">@item.EntryKind</div>
@@ -586,7 +596,7 @@
                                     data-phone="@item.Phone">
                                 Info
                             </button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Remove</button>
+                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancelled</button>
                         </div>
                     </div>
                 }
@@ -614,6 +624,7 @@
             @Html.AntiForgeryToken()
             <div class="calendar-modal-body">
                 <input type="hidden" name="month" value="@Model.DisplayMonth.ToString("yyyy-MM-01")" />
+                <input type="hidden" id="customerNameValue" name="customerName" value="" />
 
                 <div class="calendar-form-grid">
                     <div class="calendar-field">
@@ -654,8 +665,18 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="customerName">Customer Name</label>
-                        <input id="customerName" name="customerName" type="text" required />
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="firstName">First Name</label>
+                        <input id="firstName" name="firstName" type="text" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="lastName">Last Name</label>
+                        <input id="lastName" name="lastName" type="text" required />
                     </div>
 
                     <div class="calendar-field">
@@ -709,6 +730,7 @@
             <div class="calendar-modal-body">
                 <input type="hidden" name="month" value="@Model.DisplayMonth.ToString("yyyy-MM-01")" />
                 <input type="hidden" name="selectedDate" value="@modalDate.ToString("yyyy-MM-dd")" />
+                <input type="hidden" id="walkinCustomerNameValue" name="customerName" value="" />
 
                 <div class="calendar-form-grid">
                     <div class="calendar-field">
@@ -749,13 +771,28 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="walkinCustomerName">Customer Name</label>
-                        <input id="walkinCustomerName" name="customerName" type="text" required />
+                        <label for="walkinEmail">Email</label>
+                        <input id="walkinEmail" name="email" type="email" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinFirstName">First Name</label>
+                        <input id="walkinFirstName" name="firstName" type="text" required />
+                    </div>
+
+                    <div class="calendar-field">
+                        <label for="walkinLastName">Last Name</label>
+                        <input id="walkinLastName" name="lastName" type="text" required />
                     </div>
 
                     <div class="calendar-field">
                         <label for="walkinPhone">Phone</label>
                         <input id="walkinPhone" name="phone" type="tel" required />
+                    </div>
+
+                    <div class="calendar-field full" id="walkinMeetingUrlField" style="display:none;">
+                        <label for="walkinMeetingUrl">Meeting URL</label>
+                        <input id="walkinMeetingUrl" name="meetingUrl" type="url" />
                     </div>
 
                     <div class="calendar-field full">
@@ -897,6 +934,7 @@
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+            var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
@@ -1394,6 +1432,54 @@
                 return false;
             }
 
+            function buildCustomerName(firstName, lastName) {
+                return [firstName || "", lastName || ""].join(" ").trim();
+            }
+
+            function setFieldDisabled(id, disabled) {
+                var input = document.getElementById(id);
+                if (input) {
+                    input.readOnly = !!disabled;
+                }
+            }
+
+            function setCustomerLookupState(prefix, found, data) {
+                var firstName = document.getElementById(prefix + "FirstName");
+                var lastName = document.getElementById(prefix + "LastName");
+                var phone = document.getElementById(prefix + "Phone");
+                if (found && data) {
+                    if (firstName) firstName.value = data.firstName || "";
+                    if (lastName) lastName.value = data.lastName || "";
+                    if (phone) phone.value = data.phone || "";
+                }
+                setFieldDisabled(prefix + "FirstName", found);
+                setFieldDisabled(prefix + "LastName", found);
+                setFieldDisabled(prefix + "Phone", found);
+            }
+
+            function lookupCustomerByEmail(prefix) {
+                var emailInput = document.getElementById(prefix + "Email");
+                if (!emailInput) {
+                    return;
+                }
+                var email = (emailInput.value || "").trim();
+                if (!email) {
+                    setCustomerLookupState(prefix, false, null);
+                    return;
+                }
+                getJson(lookupCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
+                    .then(function (res) {
+                        if (!res || !res.ok || !res.found) {
+                            setCustomerLookupState(prefix, false, null);
+                            return;
+                        }
+                        setCustomerLookupState(prefix, true, res.data || {});
+                    })
+                    .catch(function () {
+                        setCustomerLookupState(prefix, false, null);
+                    });
+            }
+
             function canAction(status, actionName, queueId) {
                 if (!hasQueuePermission(actionName, queueId)) {
                     return false;
@@ -1565,29 +1651,47 @@
             });
 
             var contactType = document.getElementById("contactType");
+            var walkinContactType = document.getElementById("walkinContactType");
             var queueIdSelect = document.getElementById("queueId");
             var walkinQueueIdSelect = document.getElementById("walkinQueueId");
             var meetingUrlField = document.getElementById("meetingUrlField");
             var meetingUrl = document.getElementById("meetingUrl");
+            var walkinMeetingUrlField = document.getElementById("walkinMeetingUrlField");
+            var walkinMeetingUrl = document.getElementById("walkinMeetingUrl");
+            var addAppointmentForm = document.querySelector('#addAppointmentModal form');
+            var addWalkinForm = document.querySelector('#addWalkinModal form');
 
-            function syncMeetingField() {
-                if (!contactType || !meetingUrlField) {
+            function syncMeetingField(contactSelect, field, input) {
+                if (!contactSelect || !field) {
                     return;
                 }
 
-                var isVirtual = contactType.value === "Virtual" || contactType.value === "OM";
-                meetingUrlField.style.display = isVirtual ? "flex" : "none";
-                if (meetingUrl) {
-                    meetingUrl.required = isVirtual;
+                var isVirtual = contactSelect.value === "Virtual" || contactSelect.value === "OM";
+                field.style.display = isVirtual ? "flex" : "none";
+                if (input) {
+                    input.required = isVirtual;
                     if (!isVirtual) {
-                        meetingUrl.value = "";
+                        input.value = "";
                     }
                 }
             }
 
             if (contactType) {
-                contactType.addEventListener("change", syncMeetingField);
-                syncMeetingField();
+                contactType.addEventListener("change", function () {
+                    syncMeetingField(contactType, meetingUrlField, meetingUrl);
+                });
+                syncMeetingField(contactType, meetingUrlField, meetingUrl);
+            }
+            if (walkinContactType) {
+                walkinContactType.addEventListener("change", function () {
+                    syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
+                });
+                syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
+            }
+            var emailInput = document.getElementById("email");
+            if (emailInput) {
+                emailInput.addEventListener("change", function () { lookupCustomerByEmail(""); });
+                emailInput.addEventListener("blur", function () { lookupCustomerByEmail(""); });
             }
             if (queueIdSelect) {
                 queueIdSelect.addEventListener("change", function () {
@@ -1608,6 +1712,71 @@
                 } else {
                     populateEntryModalOptions("walkin", null);
                 }
+            }
+            var walkinEmailInput = document.getElementById("walkinEmail");
+            if (walkinEmailInput) {
+                walkinEmailInput.addEventListener("change", function () { lookupCustomerByEmail("walkin"); });
+                walkinEmailInput.addEventListener("blur", function () { lookupCustomerByEmail("walkin"); });
+            }
+            if (addAppointmentForm) {
+                addAppointmentForm.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    var hiddenCustomerName = document.getElementById("customerNameValue");
+                    if (hiddenCustomerName) {
+                        hiddenCustomerName.value = buildCustomerName(
+                            document.getElementById("firstName") ? document.getElementById("firstName").value : "",
+                            document.getElementById("lastName") ? document.getElementById("lastName").value : "");
+                    }
+                    var formData = new FormData(addAppointmentForm);
+                    fetch(addAppointmentForm.action, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        credentials: "same-origin",
+                        body: new URLSearchParams(formData)
+                    })
+                        .then(function (res) { return res.json(); })
+                        .then(function (res) {
+                            if (!res || !res.ok) {
+                                window.alert(res && res.error ? res.error : "Could not add appointment.");
+                                return;
+                            }
+                            closeModal("addAppointmentModal");
+                            queueLiveSync();
+                        })
+                        .catch(function () {
+                            window.alert("Could not add appointment.");
+                        });
+                });
+            }
+            if (addWalkinForm) {
+                addWalkinForm.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    var hiddenCustomerName = document.getElementById("walkinCustomerNameValue");
+                    if (hiddenCustomerName) {
+                        hiddenCustomerName.value = buildCustomerName(
+                            document.getElementById("walkinFirstName") ? document.getElementById("walkinFirstName").value : "",
+                            document.getElementById("walkinLastName") ? document.getElementById("walkinLastName").value : "");
+                    }
+                    var formData = new FormData(addWalkinForm);
+                    fetch(addWalkinForm.action, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        credentials: "same-origin",
+                        body: new URLSearchParams(formData)
+                    })
+                        .then(function (res) { return res.json(); })
+                        .then(function (res) {
+                            if (!res || !res.ok) {
+                                window.alert(res && res.error ? res.error : "Could not add walk-in.");
+                                return;
+                            }
+                            closeModal("addWalkinModal");
+                            queueLiveSync();
+                        })
+                        .catch(function () {
+                            window.alert("Could not add walk-in.");
+                        });
+                });
             }
 
             document.querySelectorAll("[data-end-choice]").forEach(function (btn) {

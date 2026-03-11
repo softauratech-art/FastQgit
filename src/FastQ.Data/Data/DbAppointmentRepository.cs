@@ -293,6 +293,8 @@ namespace FastQ.Data.Db
                             ServiceName = ReadField(reader, "SERVICE_NAME"),
                             CustomerName = fullName,
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
+                            ContactType = ReadField(reader, "CONTACTTYPE"),
+                            StampUser = ReadField(reader, "STAMPUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });
                     }
@@ -629,7 +631,7 @@ namespace FastQ.Data.Db
                 return AppointmentStatus.Arrived;
             if (trimmed.Equals("STARTED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.InService;
-            if (trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("Transferred", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.TransferredOut;
             if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.Cancelled;

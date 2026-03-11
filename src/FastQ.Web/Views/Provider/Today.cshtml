@@ -33,6 +33,7 @@
     var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
     var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
+    var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
 }
 @section Head {
     <link href="~/Content/modal.css" rel="stylesheet" />
@@ -265,7 +266,7 @@
             <circle cx="11" cy="11" r="7"></circle>
             <path d="M20 20l-3.5-3.5"></path>
         </svg>
-        <input type="text" placeholder="Search queues, names, or status" />
+        <input type="text" id="todayGlobalSearch" placeholder="Search queues, names, or status" />
     </div>
 </div>
 }
@@ -382,7 +383,8 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
+                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
                                 <td>@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -392,7 +394,7 @@
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">
+                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">
                                 <td colspan="8">
                                     <div class="action-bar">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Check-In</button>
@@ -409,7 +411,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Remove</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancelled</button>
                                     </div>
                                 </td>
                             </tr>
@@ -489,7 +491,8 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            <tr class="accordion-toggle" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
+                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
                                 <td>@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -499,7 +502,7 @@
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">
+                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">
                                 <td colspan="8">
                                     <div class="action-bar">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Check-In</button>
@@ -516,7 +519,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Remove</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancelled</button>
                                     </div>
                                 </td>
                             </tr>
@@ -699,8 +702,16 @@
                 <input id="addApptPermitNumber" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
-                <label for="addApptCustomerName">Customer Name</label>
-                <input id="addApptCustomerName" class="route-input" type="text" />
+                <label for="addApptEmail">Email</label>
+                <input id="addApptEmail" class="route-input" type="email" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptFirstName">First Name</label>
+                <input id="addApptFirstName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptLastName">Last Name</label>
+                <input id="addApptLastName" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
                 <label for="addApptPhone">Phone</label>
@@ -714,7 +725,7 @@
                 <label for="addApptTime">Start Time</label>
                 <input id="addApptTime" class="route-input" type="time" value="09:00" />
             </div>
-            <div class="route-form-row">
+            <div class="route-form-row" id="addApptMeetingUrlRow" style="display:none;">
                 <label for="addApptMeetingUrl">Meeting URL</label>
                 <input id="addApptMeetingUrl" class="route-input" type="url" />
             </div>
@@ -767,12 +778,24 @@
                 <input id="addWalkinPermitNumber" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
-                <label for="addWalkinCustomerName">Customer Name</label>
-                <input id="addWalkinCustomerName" class="route-input" type="text" />
+                <label for="addWalkinEmail">Email</label>
+                <input id="addWalkinEmail" class="route-input" type="email" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinFirstName">First Name</label>
+                <input id="addWalkinFirstName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinLastName">Last Name</label>
+                <input id="addWalkinLastName" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
                 <label for="addWalkinPhone">Phone</label>
                 <input id="addWalkinPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row" id="addWalkinMeetingUrlRow" style="display:none;">
+                <label for="addWalkinMeetingUrl">Meeting URL</label>
+                <input id="addWalkinMeetingUrl" class="route-input" type="url" />
             </div>
             <div class="route-form-row">
                 <label for="addWalkinNotes">Notes</label>
@@ -798,6 +821,7 @@
     var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
     var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+    var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
     var activeRouteQueueDetails = null;
@@ -852,9 +876,11 @@
       return getJson(getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode))
         .then(function (res) {
           populateEntryModalOptions(prefix, res && res.ok ? res.data : null);
+          syncMeetingUrlField(prefix);
         })
         .catch(function () {
           populateEntryModalOptions(prefix, null);
+          syncMeetingUrlField(prefix);
         });
     }
 
@@ -876,7 +902,7 @@
     function clearAddEntryModal(prefix) {
       var fields = [
         "QueueId", "ServiceId", "ContactType", "RefValue", "PermitNumber",
-        "CustomerName", "Phone", "MeetingUrl", "Notes"
+        "Email", "FirstName", "LastName", "Phone", "MeetingUrl", "Notes"
       ];
 
       fields.forEach(function (suffix) {
@@ -897,6 +923,72 @@
       }
 
       populateEntryModalOptions(prefix, null);
+      setCustomerLookupState(prefix, false, null);
+      syncMeetingUrlField(prefix);
+    }
+
+    function buildCustomerName(firstName, lastName) {
+      return [firstName || "", lastName || ""].join(" ").trim();
+    }
+
+    function setFieldDisabled(id, disabled) {
+      var input = document.getElementById(id);
+      if (input) {
+        input.readOnly = !!disabled;
+      }
+    }
+
+    function setCustomerLookupState(prefix, found, data) {
+      var firstName = document.getElementById(prefix + "FirstName");
+      var lastName = document.getElementById(prefix + "LastName");
+      var phone = document.getElementById(prefix + "Phone");
+      if (found && data) {
+        if (firstName) firstName.value = data.firstName || "";
+        if (lastName) lastName.value = data.lastName || "";
+        if (phone) phone.value = data.phone || "";
+      }
+      setFieldDisabled(prefix + "FirstName", found);
+      setFieldDisabled(prefix + "LastName", found);
+      setFieldDisabled(prefix + "Phone", found);
+    }
+
+    function lookupCustomerByEmail(prefix) {
+      var emailInput = document.getElementById(prefix + "Email");
+      if (!emailInput) {
+        return;
+      }
+      var email = (emailInput.value || "").trim();
+      if (!email) {
+        setCustomerLookupState(prefix, false, null);
+        return;
+      }
+
+      getJson(lookupCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
+        .then(function (res) {
+          if (!res || !res.ok || !res.found) {
+            setCustomerLookupState(prefix, false, null);
+            return;
+          }
+          setCustomerLookupState(prefix, true, res.data || {});
+        })
+        .catch(function () {
+          setCustomerLookupState(prefix, false, null);
+        });
+    }
+
+    function syncMeetingUrlField(prefix) {
+      var contactType = document.getElementById(prefix + "ContactType");
+      var meetingRow = document.getElementById(prefix + "MeetingUrlRow");
+      var meetingUrl = document.getElementById(prefix + "MeetingUrl");
+      if (!contactType || !meetingRow || !meetingUrl) {
+        return;
+      }
+      var isVirtual = contactType.value === "OM";
+      meetingRow.style.display = isVirtual ? "grid" : "none";
+      meetingUrl.required = isVirtual;
+      if (!isVirtual) {
+        meetingUrl.value = "";
+      }
     }
 
     function parseIsoDurationToMinutes(text) {
@@ -1631,7 +1723,7 @@
       if (normalizedStatus === "arrived") return "ARRIVED";
       if (normalizedStatus === "inservice") return "IN PROGRESS";
       if (normalizedStatus === "completed") return "DONE";
-      if (normalizedStatus === "cancelled") return "REMOVED";
+      if (normalizedStatus === "cancelled") return "CANCELLED";
       if (normalizedStatus === "scheduled") return "SCHEDULED";
       if (normalizedStatus === "transferredout") return "TRANSFERRED";
       return (normalizedStatus || "").toUpperCase();
@@ -1796,6 +1888,10 @@
           document.querySelectorAll(".table-filters").forEach(function (container) {
             applyTableFilters(container);
           });
+          var globalSearch = document.getElementById("todayGlobalSearch");
+          if (globalSearch && globalSearch.value) {
+            globalSearch.dispatchEvent(new Event("input"));
+          }
           liveSyncInFlight = false;
         })
         .catch(function () {
@@ -2076,11 +2172,39 @@
       });
     }
 
+    var addApptContactType = document.getElementById("addApptContactType");
+    if (addApptContactType) {
+      addApptContactType.addEventListener("change", function () {
+        syncMeetingUrlField("addAppt");
+      });
+      syncMeetingUrlField("addAppt");
+    }
+
+    var addApptEmail = document.getElementById("addApptEmail");
+    if (addApptEmail) {
+      addApptEmail.addEventListener("change", function () { lookupCustomerByEmail("addAppt"); });
+      addApptEmail.addEventListener("blur", function () { lookupCustomerByEmail("addAppt"); });
+    }
+
     var addWalkinQueueId = document.getElementById("addWalkinQueueId");
     if (addWalkinQueueId) {
       addWalkinQueueId.addEventListener("change", function () {
         loadEntryQueueDetails("addWalkin", addWalkinQueueId.value || "");
       });
+    }
+
+    var addWalkinContactType = document.getElementById("addWalkinContactType");
+    if (addWalkinContactType) {
+      addWalkinContactType.addEventListener("change", function () {
+        syncMeetingUrlField("addWalkin");
+      });
+      syncMeetingUrlField("addWalkin");
+    }
+
+    var addWalkinEmail = document.getElementById("addWalkinEmail");
+    if (addWalkinEmail) {
+      addWalkinEmail.addEventListener("change", function () { lookupCustomerByEmail("addWalkin"); });
+      addWalkinEmail.addEventListener("blur", function () { lookupCustomerByEmail("addWalkin"); });
     }
 
     var saveAddAppointment = document.getElementById("saveAddAppointment");
@@ -2092,7 +2216,10 @@
           contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
           refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
           permitNumber: document.getElementById("addApptPermitNumber") ? document.getElementById("addApptPermitNumber").value : "",
-          customerName: document.getElementById("addApptCustomerName") ? document.getElementById("addApptCustomerName").value : "",
+          email: document.getElementById("addApptEmail") ? document.getElementById("addApptEmail").value : "",
+          customerName: buildCustomerName(
+            document.getElementById("addApptFirstName") ? document.getElementById("addApptFirstName").value : "",
+            document.getElementById("addApptLastName") ? document.getElementById("addApptLastName").value : ""),
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
           startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
@@ -2100,8 +2227,8 @@
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.permitNumber || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, permit number, customer, phone, date, and time are required.", true);
+        if (!payload.queueId || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, permit number, email, first name, last name, phone, date, and time are required.", true);
           return;
         }
 
@@ -2125,13 +2252,17 @@
           contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
           refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
           permitNumber: document.getElementById("addWalkinPermitNumber") ? document.getElementById("addWalkinPermitNumber").value : "",
-          customerName: document.getElementById("addWalkinCustomerName") ? document.getElementById("addWalkinCustomerName").value : "",
+          email: document.getElementById("addWalkinEmail") ? document.getElementById("addWalkinEmail").value : "",
+          customerName: buildCustomerName(
+            document.getElementById("addWalkinFirstName") ? document.getElementById("addWalkinFirstName").value : "",
+            document.getElementById("addWalkinLastName") ? document.getElementById("addWalkinLastName").value : ""),
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
+          meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.permitNumber || !payload.customerName || !payload.phone) {
-          showModalFeedback("addWalkinModal", "Queue, permit number, customer, and phone are required.", true);
+        if (!payload.queueId || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone) {
+          showModalFeedback("addWalkinModal", "Queue, permit number, email, first name, last name, and phone are required.", true);
           return;
         }
 
@@ -2149,6 +2280,22 @@
     bindAccordionRows();
     bindProviderActionButtons();
     bindMeetingLinks();
+
+    var todayGlobalSearch = document.getElementById("todayGlobalSearch");
+    if (todayGlobalSearch) {
+      todayGlobalSearch.addEventListener("input", function () {
+        var query = (todayGlobalSearch.value || "").trim().toLowerCase();
+        document.querySelectorAll(".table-card table tbody tr.accordion-toggle").forEach(function (row) {
+          var detail = findDetailRowByTarget(row.parentNode, row.getAttribute("data-target") || "");
+          var haystack = (row.textContent || "").toLowerCase();
+          var match = !query || haystack.indexOf(query) >= 0;
+          row.classList.toggle("is-hidden", !match);
+          if (detail) {
+            detail.classList.toggle("is-hidden", !match);
+          }
+        });
+      });
+    }
   })();
     </script>
 }

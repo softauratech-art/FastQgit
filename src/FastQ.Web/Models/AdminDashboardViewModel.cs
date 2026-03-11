@@ -33,6 +33,7 @@ namespace FastQ.Web.Models
         public string StatusText { get; set; }
         public AppointmentStatus Status { get; set; }
         public string ContactMethod { get; set; }
+        public string StampUser { get; set; }
         public string EntryKind { get; set; }
         public string Notes { get; set; }
         public string MeetingUrl { get; set; }

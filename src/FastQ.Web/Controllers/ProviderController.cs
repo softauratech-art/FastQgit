@@ -193,7 +193,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType)
+        public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType, string notes)
         {
             if (string.IsNullOrWhiteSpace(action) || string.IsNullOrWhiteSpace(appointmentId))
                 return Json(new { ok = false, error = "action and appointmentId are required" });
@@ -218,16 +218,29 @@ namespace FastQ.Web.Controllers
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
+            if (action == "remove" && !string.IsNullOrWhiteSpace(notes))
+            {
+                var saveRes = _service.SaveServiceInfo(apptId, normalizedSrc[0], null, notes, resolvedUserId);
+                if (!saveRes.Ok)
+                    return Json(new { ok = true, warning = saveRes.Error });
+            }
+
             return Json(new { ok = true });
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
             if (!_auth.CanAddEntries(qId))
                 return Json(new { ok = false, error = "You do not have permission to add appointments." });
+
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
+                return Json(new { ok = false, error = "First name and last name are required." });
 
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." });
@@ -241,7 +254,8 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 permitNumber,
-                customerName,
+                email,
+                resolvedCustomerName,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
@@ -256,21 +270,29 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string customerName, string phone, string contactType, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string email, string firstName, string lastName, string customerName, string phone, string contactType, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
             if (!_auth.CanAddEntries(qId))
                 return Json(new { ok = false, error = "You do not have permission to add walk-ins." });
 
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
+                return Json(new { ok = false, error = "First name and last name are required." });
+
             var res = _customerService.CreateWalkin(
                 qId,
                 serviceId,
                 refValue,
                 permitNumber,
-                customerName,
+                email,
+                resolvedCustomerName,
                 phone,
                 contactType,
+                meetingUrl,
                 notes,
                 _auth.GetLoggedInWindowsUser());
 
@@ -278,6 +300,33 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = res.Error });
 
             return Json(new { ok = true, id = res.Value });
+        }
+
+        [HttpGet]
+        public JsonResult GetCustomerByEmail(string email)
+        {
+            return LookupCustomerByEmail(email);
+        }
+
+        [HttpGet]
+        public JsonResult LookupCustomerByEmail(string email)
+        {
+            var customer = _customerService.GetCustomerByEmail(email);
+            if (customer == null)
+                return Json(new { ok = true, found = false }, JsonRequestBehavior.AllowGet);
+
+            return Json(new
+            {
+                ok = true,
+                found = true,
+                data = new
+                {
+                    firstName = customer.FirstName ?? string.Empty,
+                    lastName = customer.LastName ?? string.Empty,
+                    phone = customer.Phone ?? string.Empty,
+                    email = customer.Email ?? string.Empty
+                }
+            }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
@@ -346,7 +395,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string refValue, string notes)
+        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string refValue, string notes, string completionNotes)
         {
             long srcId;
             if (!long.TryParse(appointmentId, out srcId))
@@ -412,6 +461,13 @@ namespace FastQ.Web.Controllers
             var res = _service.EndServiceAndOptionallyAdd(req);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
+
+            if (!string.IsNullOrWhiteSpace(completionNotes))
+            {
+                var saveRes = _service.SaveServiceInfo(srcId, normalizedSrc[0], null, completionNotes, _auth.GetLoggedInWindowsUser());
+                if (!saveRes.Ok)
+                    return Json(new { ok = true, newSrcId = res.Value, warning = saveRes.Error });
+            }
 
             return Json(new { ok = true, newSrcId = res.Value });
         }

@@ -138,7 +138,7 @@ namespace FastQ.Web.Services
                 queueMap.TryGetValue(a.QueueId, out var queue);
                 customerMap.TryGetValue(a.CustomerId, out var customer);
 
-                var contact = customer != null && customer.SmsOptIn ? "Online" : "In-Person";
+                var contact = GetContactMethodText(a.ContactType);
 
                 return new ProviderAppointmentRow
                 {
@@ -153,7 +153,8 @@ namespace FastQ.Web.Services
                     Phone = customer?.Phone ?? "-",
                     Status = a.Status,
                     StatusText = GetStatusText(a.Status),
-                    ContactMethod = contact
+                    ContactMethod = contact,
+                    StampUser = a.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
@@ -207,7 +208,8 @@ namespace FastQ.Web.Services
                     Phone = string.IsNullOrWhiteSpace(r.CustomerPhone) ? "-" : r.CustomerPhone,
                     Status = r.Status,
                     StatusText = GetStatusText(r.Status),
-                    ContactMethod = r.SmsOptIn ? "Online" : "In-Person"
+                    ContactMethod = GetContactMethodText(r.ContactType),
+                    StampUser = r.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
         }
@@ -224,8 +226,20 @@ namespace FastQ.Web.Services
                 AppointmentStatus.Arrived => "ARRIVED",
                 AppointmentStatus.InService => "IN PROGRESS",
                 AppointmentStatus.Completed => "DONE",
-                AppointmentStatus.Cancelled => "REMOVED",
+                AppointmentStatus.Cancelled => "CANCELLED",
                 _ => status.ToString().ToUpperInvariant()
+            };
+        }
+
+        private static string GetContactMethodText(string contactType)
+        {
+            var normalized = (contactType ?? string.Empty).Trim().ToUpperInvariant();
+            return normalized switch
+            {
+                "PC" => "Phone Call",
+                "OM" => "Online Meeting",
+                "IP" => "In Person",
+                _ => string.IsNullOrWhiteSpace(normalized) ? "In Person" : normalized
             };
         }
 

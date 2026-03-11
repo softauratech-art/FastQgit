@@ -50,6 +50,25 @@ namespace FastQ.Data.Db
             }
         }
 
+        public Customer GetByEmail(string email)
+        {
+            email = email?.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(email)) return null;
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn,
+                @"SELECT CUSTOMER_ID, FNAME, LNAME, EMAIL, PHONE, SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+                  FROM CUSTOMERS
+                  WHERE EMAIL = :email"))
+            {
+                DataAccess.AddParam(cmd, "email", Encoding.UTF8.GetBytes(email), DbType.Binary);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    return reader.Read() ? MapCustomer(reader) : null;
+                }
+            }
+        }
+
         public void Add(Customer customer)
         {
             using (var conn = DataAccess.Open())

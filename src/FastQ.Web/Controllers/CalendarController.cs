@@ -45,6 +45,9 @@ namespace FastQ.Web.Controllers
             string serviceId,
             string refValue,
             string permitNumber,
+            string email,
+            string firstName,
+            string lastName,
             string customerName,
             string phone,
             string contactType,
@@ -63,26 +66,49 @@ namespace FastQ.Web.Controllers
             }
             if (!_auth.CanAddEntries(qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "You do not have permission to add appointments." });
+                }
                 return CalendarError(displayMonth, selected, "You do not have permission to add appointments.");
             }
 
-            if (string.IsNullOrWhiteSpace(customerName))
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "First name and last name are required." });
+                }
                 return CalendarError(displayMonth, selected, "Customer name is required.");
             }
 
             if (string.IsNullOrWhiteSpace(phone))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Phone is required." });
+                }
                 return CalendarError(displayMonth, selected, "Phone is required.");
             }
 
             if (!DateTime.TryParseExact(appointmentDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Appointment date is required." });
+                }
                 return CalendarError(displayMonth, selected, "Appointment date is required.");
             }
 
             if (!TimeSpan.TryParse(startTime, CultureInfo.InvariantCulture, out var parsedTime))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Start time is required." });
+                }
                 return CalendarError(displayMonth, parsedDate, "Start time is required.");
             }
 
@@ -92,7 +118,8 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 permitNumber,
-                customerName,
+                email,
+                resolvedCustomerName,
                 phone,
                 contactType,
                 localStart.ToUniversalTime(),
@@ -101,7 +128,23 @@ namespace FastQ.Web.Controllers
 
             if (!res.Ok)
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = res.Error });
+                }
                 return CalendarError(displayMonth, parsedDate, res.Error);
+            }
+
+            if (Request.IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    ok = true,
+                    message = "Appointment added to the calendar.",
+                    appointmentId = res.Value.Id,
+                    month = parsedDate.ToString("yyyy-MM-01"),
+                    selectedDate = parsedDate.ToString("yyyy-MM-dd")
+                });
             }
 
             TempData["CalendarMessage"] = "Appointment added to the calendar.";
@@ -121,9 +164,13 @@ namespace FastQ.Web.Controllers
             string serviceId,
             string refValue,
             string permitNumber,
+            string email,
+            string firstName,
+            string lastName,
             string customerName,
             string phone,
             string contactType,
+            string meetingUrl,
             string notes,
             string month,
             string selectedDate)
@@ -137,7 +184,23 @@ namespace FastQ.Web.Controllers
             }
             if (!_auth.CanAddEntries(qId))
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "You do not have permission to add walk-ins." });
+                }
                 return CalendarError(displayMonth, selected, "You do not have permission to add walk-ins.");
+            }
+
+            var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
+                ? ((firstName ?? string.Empty).Trim() + " " + (lastName ?? string.Empty).Trim()).Trim()
+                : customerName.Trim();
+            if (string.IsNullOrWhiteSpace(resolvedCustomerName))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "First name and last name are required." });
+                }
+                return CalendarError(displayMonth, selected, "Customer name is required.");
             }
 
             var res = _service.CreateWalkin(
@@ -145,14 +208,32 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 permitNumber,
-                customerName,
+                email,
+                resolvedCustomerName,
                 phone,
                 contactType,
+                meetingUrl,
                 notes);
 
             if (!res.Ok)
             {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = res.Error });
+                }
                 return CalendarError(displayMonth, selected, res.Error);
+            }
+
+            if (Request.IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    ok = true,
+                    message = "Walk-in added to the queue.",
+                    walkinId = res.Value,
+                    month = displayMonth.ToString("yyyy-MM-01"),
+                    selectedDate = selected.ToString("yyyy-MM-dd")
+                });
             }
 
             TempData["CalendarMessage"] = "Walk-in added to the queue.";
