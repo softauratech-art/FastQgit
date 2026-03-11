@@ -695,6 +695,10 @@
                 </select>
             </div>
             <div class="route-form-row">
+                <label for="addApptPermitNumber">Permit Number</label>
+                <input id="addApptPermitNumber" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
                 <label for="addApptCustomerName">Customer Name</label>
                 <input id="addApptCustomerName" class="route-input" type="text" />
             </div>
@@ -757,6 +761,10 @@
                 <select id="addWalkinRefValue" class="route-input">
                     <option value="">Select reference</option>
                 </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinPermitNumber">Permit Number</label>
+                <input id="addWalkinPermitNumber" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
                 <label for="addWalkinCustomerName">Customer Name</label>
@@ -867,7 +875,7 @@
 
     function clearAddEntryModal(prefix) {
       var fields = [
-        "QueueId", "ServiceId", "ContactType", "RefValue",
+        "QueueId", "ServiceId", "ContactType", "RefValue", "PermitNumber",
         "CustomerName", "Phone", "MeetingUrl", "Notes"
       ];
 
@@ -2083,6 +2091,7 @@
           serviceId: document.getElementById("addApptServiceId") ? document.getElementById("addApptServiceId").value : "",
           contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
           refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
+          permitNumber: document.getElementById("addApptPermitNumber") ? document.getElementById("addApptPermitNumber").value : "",
           customerName: document.getElementById("addApptCustomerName") ? document.getElementById("addApptCustomerName").value : "",
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
@@ -2091,8 +2100,8 @@
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, customer, phone, date, and time are required.", true);
+        if (!payload.queueId || !payload.permitNumber || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, permit number, customer, phone, date, and time are required.", true);
           return;
         }
 
@@ -2115,13 +2124,14 @@
           serviceId: document.getElementById("addWalkinServiceId") ? document.getElementById("addWalkinServiceId").value : "",
           contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
           refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
+          permitNumber: document.getElementById("addWalkinPermitNumber") ? document.getElementById("addWalkinPermitNumber").value : "",
           customerName: document.getElementById("addWalkinCustomerName") ? document.getElementById("addWalkinCustomerName").value : "",
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.customerName || !payload.phone) {
-          showModalFeedback("addWalkinModal", "Queue, customer, and phone are required.", true);
+        if (!payload.queueId || !payload.permitNumber || !payload.customerName || !payload.phone) {
+          showModalFeedback("addWalkinModal", "Queue, permit number, customer, and phone are required.", true);
           return;
         }
 

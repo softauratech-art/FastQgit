@@ -1,5 +1,8 @@
 using System;
+using System.Configuration;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
 using FastQ.Data.Db;
@@ -132,6 +135,7 @@ namespace FastQ.Web.Services
             long queueId,
             string serviceId,
             string refValue,
+            string permitNumber,
             string customerName,
             string phone,
             string contactType,
@@ -142,6 +146,8 @@ namespace FastQ.Web.Services
         {
             if (queueId <= 0)
                 return Result<Appointment>.Fail("Queue is required.");
+            if (string.IsNullOrWhiteSpace(permitNumber))
+                return Result<Appointment>.Fail("Permit number is required.");
             if (string.IsNullOrWhiteSpace(customerName))
                 return Result<Appointment>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
@@ -149,6 +155,9 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
+            var permitValidation = ValidatePermitNumber(permitNumber);
+            if (!permitValidation.Ok)
+                return Result<Appointment>.Fail(permitValidation.Error);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -187,6 +196,7 @@ namespace FastQ.Web.Services
             long queueId,
             string serviceId,
             string refValue,
+            string permitNumber,
             string customerName,
             string phone,
             string contactType,
@@ -195,6 +205,8 @@ namespace FastQ.Web.Services
         {
             if (queueId <= 0)
                 return Result<long>.Fail("Queue is required.");
+            if (string.IsNullOrWhiteSpace(permitNumber))
+                return Result<long>.Fail("Permit number is required.");
             if (string.IsNullOrWhiteSpace(customerName))
                 return Result<long>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
@@ -202,6 +214,9 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
+            var permitValidation = ValidatePermitNumber(permitNumber);
+            if (!permitValidation.Ok)
+                return Result<long>.Fail(permitValidation.Error);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -339,6 +354,62 @@ namespace FastQ.Web.Services
             var first = customer.FirstName ?? "customer";
             var last = customer.LastName ?? "unknown";
             return $"{first}.{last}@placeholder.local".Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        private static Result ValidatePermitNumber(string permitNumber)
+        {
+            var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
+            if (string.IsNullOrWhiteSpace(apiBaseUrl))
+            {
+                return Result.Fail("Permit validation service is not configured.");
+            }
+
+            var apiKey = ConfigurationManager.AppSettings["FTApiKeyPolymorphic"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return Result.Fail("Permit validation API key is not configured.");
+            }
+
+            var normalizedPermit = (permitNumber ?? string.Empty).Trim();
+            if (normalizedPermit.Length == 0)
+            {
+                return Result.Fail("Permit number is required.");
+            }
+
+            var requestUrl = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "{0}/{1}",
+                apiBaseUrl.TrimEnd('/'),
+                Uri.EscapeDataString(normalizedPermit));
+
+            try
+            {
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.Timeout = TimeSpan.FromSeconds(30);
+                    httpClient.DefaultRequestHeaders.Add("FTApiKeyPolymorphic", apiKey);
+
+                    var response = httpClient.GetAsync(requestUrl).GetAwaiter().GetResult();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return Result.Success();
+                    }
+
+                    return Result.Fail("Permit number is invalid.");
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                return Result.Fail("Permit validation request timed out.");
+            }
+            catch (HttpRequestException)
+            {
+                return Result.Fail("Error connecting to permit validation service.");
+            }
+            catch (Exception)
+            {
+                return Result.Fail("An error occurred during permit validation.");
+            }
         }
     }
 }

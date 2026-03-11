@@ -222,7 +222,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -240,6 +240,7 @@ namespace FastQ.Web.Controllers
                 qId,
                 serviceId,
                 refValue,
+                permitNumber,
                 customerName,
                 phone,
                 contactType,
@@ -255,7 +256,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string customerName, string phone, string contactType, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -266,6 +267,7 @@ namespace FastQ.Web.Controllers
                 qId,
                 serviceId,
                 refValue,
+                permitNumber,
                 customerName,
                 phone,
                 contactType,
