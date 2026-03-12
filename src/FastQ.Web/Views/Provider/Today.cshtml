@@ -233,6 +233,42 @@
             text-transform: uppercase;
             color: #1f2937;
         }
+
+        .autofilled-lock {
+            background: #f3f4f6 !important;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .lookup-input-wrap {
+            position: relative;
+        }
+
+        .lookup-spinner {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            margin-top: -7px;
+            border: 2px solid #cbd5e1;
+            border-top-color: #0f766e;
+            border-radius: 50%;
+            animation: lookup-spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .lookup-input-wrap.is-loading .lookup-spinner {
+            display: block;
+        }
+
+        .lookup-input-wrap.is-loading input {
+            padding-right: 34px;
+        }
+
+        @@keyframes lookup-spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 }
 
@@ -734,7 +770,10 @@
             <div class="route-form-row">
                 <label for="addApptEmail">Email</label>
                 <div>
-                    <input id="addApptEmail" class="route-input" type="email" />
+                    <div class="lookup-input-wrap" id="addApptEmailWrap">
+                        <input id="addApptEmail" class="route-input" type="email" />
+                        <span class="lookup-spinner" aria-hidden="true"></span>
+                    </div>
                     <div id="addApptEmailStatus" class="helper-text"></div>
                 </div>
             </div>
@@ -820,7 +859,10 @@
             <div class="route-form-row">
                 <label for="addWalkinEmail">Email</label>
                 <div>
-                    <input id="addWalkinEmail" class="route-input" type="email" />
+                    <div class="lookup-input-wrap" id="addWalkinEmailWrap">
+                        <input id="addWalkinEmail" class="route-input" type="email" />
+                        <span class="lookup-spinner" aria-hidden="true"></span>
+                    </div>
                     <div id="addWalkinEmailStatus" class="helper-text"></div>
                 </div>
             </div>
@@ -878,6 +920,8 @@
       addWalkin: { seq: 0, pending: false, valid: false, message: "" }
     };
     var permitValidationTimers = {};
+    var customerLookupTimers = {};
+    var customerLookupRequestSeq = {};
 
     function postForm(url, data) {
       return fetch(url, {
@@ -1077,6 +1121,8 @@
       var input = document.getElementById(id);
       if (input) {
         input.readOnly = !!disabled;
+        input.classList.toggle("autofilled-lock", !!disabled);
+        input.setAttribute("aria-disabled", disabled ? "true" : "false");
       }
     }
 
@@ -1089,7 +1135,20 @@
       status.style.color = found ? "#15803d" : "#6b7280";
     }
 
+    function setCustomerLookupLoading(prefix, loading) {
+      var wrap = document.getElementById(prefix + "EmailWrap");
+      var status = document.getElementById(prefix + "EmailStatus");
+      if (wrap) {
+        wrap.classList.toggle("is-loading", !!loading);
+      }
+      if (status && loading) {
+        status.textContent = "Looking up customer...";
+        status.style.color = "#6b7280";
+      }
+    }
+
     function setCustomerLookupState(prefix, found, data) {
+      setCustomerLookupLoading(prefix, false);
       var firstName = document.getElementById(prefix + "FirstName");
       var lastName = document.getElementById(prefix + "LastName");
       var phone = document.getElementById(prefix + "Phone");
@@ -1105,6 +1164,11 @@
     }
 
     function lookupCustomerByEmail(prefix) {
+      var timerKey = prefix || "_default";
+      if (customerLookupTimers[timerKey]) {
+        clearTimeout(customerLookupTimers[timerKey]);
+        customerLookupTimers[timerKey] = 0;
+      }
       var emailInput = document.getElementById(prefix + "Email");
       if (!emailInput) {
         return;
@@ -1115,8 +1179,14 @@
         return;
       }
 
+      customerLookupRequestSeq[timerKey] = (customerLookupRequestSeq[timerKey] || 0) + 1;
+      var requestSeq = customerLookupRequestSeq[timerKey];
+      setCustomerLookupLoading(prefix, true);
       getJson(lookupCustomerByEmailUrl + "?email=" + encodeURIComponent(email))
         .then(function (res) {
+          if (customerLookupRequestSeq[timerKey] !== requestSeq) {
+            return;
+          }
           if (!res || !res.ok || !res.found) {
             setCustomerLookupState(prefix, false, null);
             return;
@@ -1124,8 +1194,23 @@
           setCustomerLookupState(prefix, true, res.data || {});
         })
         .catch(function () {
+          if (customerLookupRequestSeq[timerKey] !== requestSeq) {
+            return;
+          }
           setCustomerLookupState(prefix, false, null);
         });
+    }
+
+    function queueCustomerLookupByEmail(prefix) {
+      var timerKey = prefix || "_default";
+      if (customerLookupTimers[timerKey]) {
+        clearTimeout(customerLookupTimers[timerKey]);
+      }
+      setCustomerLookupLoading(prefix, false);
+      customerLookupTimers[timerKey] = setTimeout(function () {
+        customerLookupTimers[timerKey] = 0;
+        lookupCustomerByEmail(prefix);
+      }, 300);
     }
 
     function syncMeetingUrlField(prefix) {
@@ -2641,6 +2726,7 @@
 
     var addApptEmail = document.getElementById("addApptEmail");
     if (addApptEmail) {
+      addApptEmail.addEventListener("input", function () { queueCustomerLookupByEmail("addAppt"); });
       addApptEmail.addEventListener("change", function () { lookupCustomerByEmail("addAppt"); });
       addApptEmail.addEventListener("blur", function () { lookupCustomerByEmail("addAppt"); });
     }
@@ -2667,6 +2753,7 @@
 
     var addWalkinEmail = document.getElementById("addWalkinEmail");
     if (addWalkinEmail) {
+      addWalkinEmail.addEventListener("input", function () { queueCustomerLookupByEmail("addWalkin"); });
       addWalkinEmail.addEventListener("change", function () { lookupCustomerByEmail("addWalkin"); });
       addWalkinEmail.addEventListener("blur", function () { lookupCustomerByEmail("addWalkin"); });
     }
