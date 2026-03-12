@@ -12,9 +12,6 @@ namespace FastQ.Data.Db
 {
     public sealed class DbAppointmentRepository : IAppointmentRepository
     {
-        public DbAppointmentRepository() {
-        }
-
         public Appointment Get(long id)
         {
             if (id <= 0) return null;
@@ -212,6 +209,63 @@ namespace FastQ.Data.Db
             return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
         }
 
+        public bool ValidatePermitNumber(long queueId, string permitNumber, out string message)
+        {
+            message = string.Empty;
+
+            if (queueId <= 0)
+            {
+                message = "Queue is required.";
+                return false;
+            }
+
+            var normalizedPermit = (permitNumber ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedPermit))
+            {
+                message = "Permit number is required.";
+                return false;
+            }
+
+            try
+            {
+                using (var conn = DataAccess.Open())
+                using (var cmd = DataAccess.CreateCommand(conn,
+                    "BEGIN fqowner.FQ_PROCS.VALIDATE_PERMIT(:p_queueid, :p_permit_number, :p_is_valid, :p_outmsg); END;"))
+                {
+                    DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "p_permit_number", normalizedPermit, DbType.String);
+
+                    var validParam = DataAccess.AddParam(cmd, "p_is_valid", null, DbType.Int32);
+                    validParam.Direction = ParameterDirection.Output;
+
+                    var outMsg = DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String);
+                    outMsg.Direction = ParameterDirection.Output;
+                    outMsg.Size = 4000;
+
+                    cmd.ExecuteNonQuery();
+
+                    var isValid = ToOracleBool(validParam.Value);
+                    var dbMessage = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(dbMessage))
+                    {
+                        message = dbMessage.Trim();
+                    }
+
+                    if (!isValid && string.IsNullOrWhiteSpace(message))
+                    {
+                        message = "Permit number is invalid.";
+                    }
+
+                    return isValid;
+                }
+            }
+            catch (Exception ex)
+            {
+                message = "Permit validation failed: " + ex.Message;
+                return false;
+            }
+        }
+
         private IList<ProviderAppointmentData> ListForUserProc(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc, string procName)
         {
             var list = new List<ProviderAppointmentData>();
@@ -313,40 +367,6 @@ namespace FastQ.Data.Db
                 }
 
                 return Convert.ToInt64(value);
-            }
-        }
-
-        public void UpdateStatus(long appointmentId, string status, string stampUser, string notes = null)
-        {
-            var apptId = appointmentId;
-            if (apptId <= 0)
-                throw new InvalidOperationException("Appointment Id must be a numeric ID.");
-
-            if (string.IsNullOrWhiteSpace(status))
-                throw new InvalidOperationException("Status is required.");
-
-            var user = string.IsNullOrWhiteSpace(stampUser) ? "fastq" : stampUser.Trim();
-
-            using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.UPDATE_APPT_STATUS"))
-            {
-                DataAccess.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
-                DataAccess.AddParam(cmd, "p_status", status.Trim(), DbType.String);
-                DataAccess.AddParam(cmd, "p_stampuser", user, DbType.String);
-                DataAccess.AddParam(cmd, "p_notes", notes, DbType.String);
-
-                var outMsg = cmd.CreateParameter();
-                outMsg.ParameterName = "p_outmsg";
-                outMsg.Direction = ParameterDirection.Output;
-                outMsg.DbType = DbType.String;
-                outMsg.Size = 4000;
-                cmd.Parameters.Add(outMsg);
-
-                cmd.ExecuteNonQuery();
-
-                var message = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
-                if (!string.IsNullOrWhiteSpace(message))
-                    throw new InvalidOperationException(message);
             }
         }
 
@@ -664,7 +684,11 @@ namespace FastQ.Data.Db
                 return AppointmentStatus.Arrived;
             if (trimmed.Equals("STARTED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.InService;
-            if (trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("Transferred", StringComparison.OrdinalIgnoreCase))
+            if (trimmed.Equals("TRANSFERRED", StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("TRANSFERED", StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("TRANSFERRED OUT", StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("Transfered", StringComparison.OrdinalIgnoreCase)
+                || trimmed.Equals("Transferred", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.TransferredOut;
             if (trimmed.Equals("REMOVED", StringComparison.OrdinalIgnoreCase))
                 return AppointmentStatus.Cancelled;
@@ -713,10 +737,38 @@ namespace FastQ.Data.Db
                         var locationId = Convert.ToInt64(reader["LOCATION_ID"]);
                         map[queueId] = locationId;
                     }
-                }
+    }
+}
+            return map;
+        }
+
+        private static bool ToOracleBool(object value)
+        {
+            if (value == null || value == DBNull.Value)
+            {
+                return false;
             }
 
-            return map;
+            var text = value.ToString();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            text = text.Trim();
+            if (string.Equals(text, "Y", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(text, "YES", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(text, "TRUE", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+            {
+                return number != 0;
+            }
+
+            return false;
         }
     }
 }

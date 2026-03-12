@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
@@ -91,6 +92,7 @@ namespace FastQ.Web.Services
             var jsonParts = _queues.GetQueueDetailsJson(queueId);
             if (jsonParts == null)
             {
+                Trace.TraceWarning("GetQueueDetailOptions queueId={0}: GetQueueDetailsJson returned null tuple.", queueId);
                 return null;
             }
 
@@ -99,8 +101,7 @@ namespace FastQ.Web.Services
                 var servicesJson = ParseJsonObject(jsonParts.Item1);
                 var schedulesJson = ParseJsonObject(jsonParts.Item2);
                 var detailsJson = ParseJsonObject(jsonParts.Item3);
-
-                return new QueueDetailOptions
+                var options = new QueueDetailOptions
                 {
                     QueueId = queueId,
                     Services = ReadOptions(servicesJson?["services"], "service_id", "service_name"),
@@ -108,11 +109,52 @@ namespace FastQ.Web.Services
                     RefOptions = ReadOptions(detailsJson?["refoptions"], "ref_key", "ref_val"),
                     Schedules = ReadSchedules(schedulesJson?["schedules"])
                 };
+
+                Trace.TraceInformation(
+                    "GetQueueDetailOptions queueId={0}: services={1}, contacts={2}, refs={3}, schedules={4}. RawJsonLength services={5}, schedules={6}, details={7}.",
+                    queueId,
+                    options.Services.Count,
+                    options.ContactOptions.Count,
+                    options.RefOptions.Count,
+                    options.Schedules.Count,
+                    SafeLength(jsonParts.Item1),
+                    SafeLength(jsonParts.Item2),
+                    SafeLength(jsonParts.Item3));
+
+                if (options.Schedules.Count == 0)
+                {
+                    Trace.TraceWarning("GetQueueDetailOptions queueId={0}: schedules parsed as empty/null from VW_QUEUE_DETAILS_JSON.", queueId);
+                }
+                else
+                {
+                    foreach (var schedule in options.Schedules)
+                    {
+                        Trace.TraceInformation(
+                            "GetQueueDetailOptions queueId={0}: scheduleId={1}, dateBegin='{2}', dateEnd='{3}', weeklySch='{4}', open='{5}', close='{6}', interval='{7}', resources={8}.",
+                            queueId,
+                            schedule.ScheduleId,
+                            schedule.DateBegin ?? string.Empty,
+                            schedule.DateEnd ?? string.Empty,
+                            schedule.WeeklySchedule ?? string.Empty,
+                            schedule.OpenTime ?? string.Empty,
+                            schedule.CloseTime ?? string.Empty,
+                            schedule.IntervalTime ?? string.Empty,
+                            schedule.AvailableResources);
+                    }
+                }
+
+                return options;
             }
-            catch
+            catch (Exception ex)
             {
+                Trace.TraceError("GetQueueDetailOptions queueId={0} failed: {1}", queueId, ex);
                 return null;
             }
+        }
+
+        private static int SafeLength(string value)
+        {
+            return string.IsNullOrEmpty(value) ? 0 : value.Length;
         }
 
         public IList<Customer> ListCustomers()

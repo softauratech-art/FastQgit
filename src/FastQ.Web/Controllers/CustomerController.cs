@@ -13,8 +13,6 @@ namespace FastQ.Web.Controllers
             _service = new CustomerService();
         }
 
-        private const long DefaultLocationId = 0;
-
         [HttpGet]
         public ActionResult Book()
         {
