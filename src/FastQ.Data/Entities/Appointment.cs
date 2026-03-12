@@ -9,6 +9,10 @@ namespace FastQ.Data.Entities
         public long QueueId { get; set; }
         public long CustomerId { get; set; }
         public string CustomerEmail { get; set; }
+        public string CustomerFirstName { get; set; }
+        public string CustomerLastName { get; set; }
+        public string CustomerPhone { get; set; }
+        public bool CustomerSmsOptIn { get; set; }
         public string ProviderId { get; set; }
 
         public long? ServiceId { get; set; }

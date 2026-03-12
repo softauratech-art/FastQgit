@@ -668,6 +668,7 @@
                     <div class="calendar-field">
                         <label for="email">Email</label>
                         <input id="email" name="email" type="email" required />
+                        <div id="emailStatus" class="helper-text"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -779,6 +780,7 @@
                     <div class="calendar-field">
                         <label for="walkinEmail">Email</label>
                         <input id="walkinEmail" name="email" type="email" required />
+                        <div id="walkinEmailStatus" class="helper-text"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -1527,6 +1529,15 @@
                 }
             }
 
+            function setCustomerLookupMessage(prefix, found, message) {
+                var status = document.getElementById(prefix + "EmailStatus");
+                if (!status) {
+                    return;
+                }
+                status.textContent = message || "";
+                status.style.color = found ? "#15803d" : "#6b7280";
+            }
+
             function setCustomerLookupState(prefix, found, data) {
                 var firstName = document.getElementById(prefix + "FirstName");
                 var lastName = document.getElementById(prefix + "LastName");
@@ -1539,6 +1550,7 @@
                 setFieldDisabled(prefix + "FirstName", found);
                 setFieldDisabled(prefix + "LastName", found);
                 setFieldDisabled(prefix + "Phone", found);
+                setCustomerLookupMessage(prefix, found, found ? "Customer found." : "");
             }
 
             function lookupCustomerByEmail(prefix) {

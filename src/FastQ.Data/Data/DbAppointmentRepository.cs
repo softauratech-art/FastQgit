@@ -608,6 +608,11 @@ namespace FastQ.Data.Db
 
         private static string BuildInsertApptPayload(Appointment appointment)
         {
+            var firstName = (appointment.CustomerFirstName ?? string.Empty).Trim();
+            var lastName = (appointment.CustomerLastName ?? string.Empty).Trim();
+            var customerEmail = (appointment.CustomerEmail ?? string.Empty).Trim().ToLowerInvariant();
+            var customerPhone = (appointment.CustomerPhone ?? string.Empty).Trim();
+
             var payload = new JArray(
                 new JObject
                 {
@@ -623,7 +628,12 @@ namespace FastQ.Data.Db
                     ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay),
                     ["END_TIME"] = OracleInterval(appointment.EndTime),
                     ["STATUS"] = appointment.Status.ToString().ToUpperInvariant(),
-                    ["LANGUAGE_PREF"] = appointment.LanguagePreference
+                    ["LANGUAGE_PREF"] = appointment.LanguagePreference,
+                    ["FNAME"] = firstName,
+                    ["LNAME"] = lastName,
+                    ["EMAIL"] = customerEmail,
+                    ["PHONE"] = customerPhone,
+                    ["SMSOPTIN"] = appointment.CustomerSmsOptIn ? "Y" : "N"
                 });
 
             return payload.ToString();
@@ -737,8 +747,8 @@ namespace FastQ.Data.Db
                         var locationId = Convert.ToInt64(reader["LOCATION_ID"]);
                         map[queueId] = locationId;
                     }
-    }
-}
+                }
+            }
             return map;
         }
 
