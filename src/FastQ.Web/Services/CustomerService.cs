@@ -370,6 +370,11 @@ namespace FastQ.Web.Services
             return $"{first}.{last}@placeholder.local".Replace(" ", string.Empty).ToLowerInvariant();
         }
 
+        public Result ValidatePermit(string permitNumber)
+        {
+            return ValidatePermitNumber(permitNumber);
+        }
+
         private static Result ValidatePermitNumber(string permitNumber)
         {
             var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];

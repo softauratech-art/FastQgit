@@ -345,6 +345,19 @@ namespace FastQ.Web.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult ValidatePermit(string permitNumber)
+        {
+            var res = _customerService.ValidatePermit(permitNumber);
+            return Json(
+                new
+                {
+                    ok = res.Ok,
+                    error = res.Ok ? null : res.Error
+                },
+                JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string refValue, string notes)
         {

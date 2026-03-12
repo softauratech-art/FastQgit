@@ -139,6 +139,19 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
+        public JsonResult ValidatePermit(string permitNumber)
+        {
+            var res = _service.ValidatePermit(permitNumber);
+            return Json(
+                new
+                {
+                    ok = res.Ok,
+                    error = res.Ok ? null : res.Error
+                },
+                JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
         public ActionResult Home()
         {
             return View();

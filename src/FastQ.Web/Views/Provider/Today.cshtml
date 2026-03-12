@@ -726,7 +726,10 @@
             </div>
             <div class="route-form-row">
                 <label for="addApptPermitNumber">Permit Number</label>
-                <input id="addApptPermitNumber" class="route-input" type="text" />
+                <div>
+                    <input id="addApptPermitNumber" class="route-input" type="text" />
+                    <div id="addApptPermitStatus" class="helper-text"></div>
+                </div>
             </div>
             <div class="route-form-row">
                 <label for="addApptEmail">Email</label>
@@ -802,7 +805,10 @@
             </div>
             <div class="route-form-row">
                 <label for="addWalkinPermitNumber">Permit Number</label>
-                <input id="addWalkinPermitNumber" class="route-input" type="text" />
+                <div>
+                    <input id="addWalkinPermitNumber" class="route-input" type="text" />
+                    <div id="addWalkinPermitStatus" class="helper-text"></div>
+                </div>
             </div>
             <div class="route-form-row">
                 <label for="addWalkinEmail">Email</label>
@@ -849,9 +855,15 @@
     var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
     var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
+    var validatePermitUrl = "@Url.Action("ValidatePermit", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
     var activeRouteQueueDetails = null;
+    var permitValidationState = {
+      addAppt: { seq: 0, pending: false, valid: false, message: "" },
+      addWalkin: { seq: 0, pending: false, valid: false, message: "" }
+    };
+    var permitValidationTimers = {};
 
     function postForm(url, data) {
       return fetch(url, {
@@ -951,7 +963,98 @@
 
       populateEntryModalOptions(prefix, null);
       setCustomerLookupState(prefix, false, null);
+      resetPermitValidation(prefix);
       syncMeetingUrlField(prefix);
+    }
+
+    function getPermitValidationIds(prefix) {
+      return {
+        inputId: prefix + "PermitNumber",
+        statusId: prefix + "PermitStatus"
+      };
+    }
+
+    function setPermitValidationState(prefix, pending, valid, message) {
+      permitValidationState[prefix] = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
+      permitValidationState[prefix].pending = !!pending;
+      permitValidationState[prefix].valid = !!valid;
+      permitValidationState[prefix].message = message || "";
+
+      var ids = getPermitValidationIds(prefix);
+      var status = document.getElementById(ids.statusId);
+      var input = document.getElementById(ids.inputId);
+      if (status) {
+        status.textContent = message || "";
+        status.style.color = pending ? "#6b7280" : (valid ? "#15803d" : "#b91c1c");
+      }
+      if (input) {
+        input.setAttribute("aria-invalid", pending || valid ? "false" : (message ? "true" : "false"));
+      }
+    }
+
+    function resetPermitValidation(prefix) {
+      permitValidationState[prefix] = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
+      permitValidationState[prefix].seq += 1;
+      setPermitValidationState(prefix, false, false, "");
+      if (permitValidationTimers[prefix]) {
+        clearTimeout(permitValidationTimers[prefix]);
+        permitValidationTimers[prefix] = 0;
+      }
+    }
+
+    function validatePermitNumber(prefix, immediate) {
+      var ids = getPermitValidationIds(prefix);
+      var input = document.getElementById(ids.inputId);
+      if (!input) {
+        return Promise.resolve(true);
+      }
+
+      var permitNumber = (input.value || "").trim();
+      if (!permitNumber) {
+        setPermitValidationState(prefix, false, false, "Permit number is required.");
+        return Promise.resolve(false);
+      }
+
+      var state = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
+      state.seq += 1;
+      permitValidationState[prefix] = state;
+      var requestSeq = state.seq;
+      setPermitValidationState(prefix, true, false, "Validating permit number...");
+
+      var run = function () {
+        return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(permitNumber))
+          .then(function (res) {
+            if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
+              return false;
+            }
+            if (res && res.ok) {
+              setPermitValidationState(prefix, false, true, "Permit number validated.");
+              return true;
+            }
+            setPermitValidationState(prefix, false, false, res && res.error ? res.error : "Permit number is invalid.");
+            return false;
+          })
+          .catch(function () {
+            if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
+              return false;
+            }
+            setPermitValidationState(prefix, false, false, "Could not validate permit number.");
+            return false;
+          });
+      };
+
+      if (immediate) {
+        return run();
+      }
+
+      return new Promise(function (resolve) {
+        if (permitValidationTimers[prefix]) {
+          clearTimeout(permitValidationTimers[prefix]);
+        }
+        permitValidationTimers[prefix] = setTimeout(function () {
+          run().then(resolve);
+        }, 350);
+      });
     }
 
     function buildCustomerName(firstName, lastName) {
@@ -2358,6 +2461,11 @@
       addApptEmail.addEventListener("change", function () { lookupCustomerByEmail("addAppt"); });
       addApptEmail.addEventListener("blur", function () { lookupCustomerByEmail("addAppt"); });
     }
+    var addApptPermitNumber = document.getElementById("addApptPermitNumber");
+    if (addApptPermitNumber) {
+      addApptPermitNumber.addEventListener("input", function () { validatePermitNumber("addAppt", false); });
+      addApptPermitNumber.addEventListener("blur", function () { validatePermitNumber("addAppt", true); });
+    }
 
     var addWalkinQueueId = document.getElementById("addWalkinQueueId");
     if (addWalkinQueueId) {
@@ -2378,6 +2486,11 @@
     if (addWalkinEmail) {
       addWalkinEmail.addEventListener("change", function () { lookupCustomerByEmail("addWalkin"); });
       addWalkinEmail.addEventListener("blur", function () { lookupCustomerByEmail("addWalkin"); });
+    }
+    var addWalkinPermitNumber = document.getElementById("addWalkinPermitNumber");
+    if (addWalkinPermitNumber) {
+      addWalkinPermitNumber.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
+      addWalkinPermitNumber.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
     }
 
     var saveAddAppointment = document.getElementById("saveAddAppointment");
@@ -2405,13 +2518,19 @@
           return;
         }
 
-        postForm(addAppointmentUrl, payload).then(function (res) {
-          if (!res || !res.ok) {
-            showModalFeedback("addAppointmentModal", res && res.error ? res.error : "Could not add appointment.", true);
+        validatePermitNumber("addAppt", true).then(function (isValid) {
+          if (!isValid) {
+            showModalFeedback("addAppointmentModal", permitValidationState.addAppt.message || "Permit number is invalid.", true);
             return;
           }
-          closeModal("addAppointmentModal");
-          queueLiveSync();
+          postForm(addAppointmentUrl, payload).then(function (res) {
+            if (!res || !res.ok) {
+              showModalFeedback("addAppointmentModal", res && res.error ? res.error : "Could not add appointment.", true);
+              return;
+            }
+            closeModal("addAppointmentModal");
+            queueLiveSync();
+          });
         });
       });
     }
@@ -2439,13 +2558,19 @@
           return;
         }
 
-        postForm(addWalkinUrl, payload).then(function (res) {
-          if (!res || !res.ok) {
-            showModalFeedback("addWalkinModal", res && res.error ? res.error : "Could not add walk-in.", true);
+        validatePermitNumber("addWalkin", true).then(function (isValid) {
+          if (!isValid) {
+            showModalFeedback("addWalkinModal", permitValidationState.addWalkin.message || "Permit number is invalid.", true);
             return;
           }
-          closeModal("addWalkinModal");
-          queueLiveSync();
+          postForm(addWalkinUrl, payload).then(function (res) {
+            if (!res || !res.ok) {
+              showModalFeedback("addWalkinModal", res && res.error ? res.error : "Could not add walk-in.", true);
+              return;
+            }
+            closeModal("addWalkinModal");
+            queueLiveSync();
+          });
         });
       });
     }

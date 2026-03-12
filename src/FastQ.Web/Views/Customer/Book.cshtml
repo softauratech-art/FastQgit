@@ -86,6 +86,7 @@
                 <div class="field">
                     <label for="permitNumber">Permit Number *</label>
                     <input type="text" id="permitNumber" name="permitNumber" placeholder="Permit number" />
+                    <div id="permitStatus" class="muted"></div>
                 </div>
                 <div class="field">
                     <label for="notes">Notes</label>
@@ -155,6 +156,7 @@ var FastQBook = {
   getQueuesUrl: "/Provider/GetTransferQueues",
   getQueueDetailsUrl: "/Provider/GetQueueDetails",
   getCustomerByEmailUrl: "/Provider/GetCustomerByEmail",
+  validatePermitUrl: "/Customer/ValidatePermit",
   state: {
     queueId: "",
     queueName: "",
@@ -173,6 +175,13 @@ var FastQBook = {
     email: "",
     notes: ""
   },
+  permitValidation: {
+    seq: 0,
+    pending: false,
+    valid: false,
+    message: ""
+  },
+  permitValidationTimer: 0,
   activeQueueDetails: null,
   steps: [
     { key: "queue", name: "Select Queue & Service" },
@@ -553,6 +562,78 @@ var FastQBook = {
       });
   },
 
+  setPermitValidationState: function (pending, valid, message) {
+    this.permitValidation.pending = !!pending;
+    this.permitValidation.valid = !!valid;
+    this.permitValidation.message = message || "";
+
+    var status = document.getElementById("permitStatus");
+    var input = document.getElementById("permitNumber");
+    if (status) {
+      status.textContent = message || "";
+      status.className = pending ? "muted" : (valid ? "muted ok" : "muted error");
+    }
+    if (input) {
+      input.setAttribute("aria-invalid", pending || valid ? "false" : (message ? "true" : "false"));
+    }
+  },
+
+  resetPermitValidation: function () {
+    this.permitValidation.seq += 1;
+    this.setPermitValidationState(false, false, "");
+    if (this.permitValidationTimer) {
+      clearTimeout(this.permitValidationTimer);
+      this.permitValidationTimer = 0;
+    }
+  },
+
+  validatePermitNumber: function (immediate) {
+    var permitNumber = ($("#permitNumber").val() || "").trim();
+    if (!permitNumber) {
+      this.setPermitValidationState(false, false, "Permit number is required.");
+      return Promise.resolve(false);
+    }
+
+    this.permitValidation.seq += 1;
+    var requestSeq = this.permitValidation.seq;
+    this.setPermitValidationState(true, false, "Validating permit number...");
+
+    var run = function () {
+      return FastQBook.getJson(FastQBook.validatePermitUrl + "?permitNumber=" + encodeURIComponent(permitNumber))
+        .then(function (res) {
+          if (FastQBook.permitValidation.seq !== requestSeq) {
+            return false;
+          }
+          if (res && res.ok) {
+            FastQBook.setPermitValidationState(false, true, "Permit number validated.");
+            return true;
+          }
+          FastQBook.setPermitValidationState(false, false, res && res.error ? res.error : "Permit number is invalid.");
+          return false;
+        })
+        .catch(function () {
+          if (FastQBook.permitValidation.seq !== requestSeq) {
+            return false;
+          }
+          FastQBook.setPermitValidationState(false, false, "Could not validate permit number.");
+          return false;
+        });
+    };
+
+    if (immediate) {
+      return run();
+    }
+
+    return new Promise(function (resolve) {
+      if (FastQBook.permitValidationTimer) {
+        clearTimeout(FastQBook.permitValidationTimer);
+      }
+      FastQBook.permitValidationTimer = setTimeout(function () {
+        run().then(resolve);
+      }, 350);
+    });
+  },
+
   hydrateProfile: function () {
     var raw = localStorage.getItem("fastq_customer_profile");
     if (!raw) {
@@ -691,57 +772,70 @@ var FastQBook = {
       return false;
     }
 
+    if (this.permitValidation.pending) {
+      $("#msg").addClass("error").text("Permit validation is still in progress.");
+      return false;
+    }
+
+    if (!this.permitValidation.valid) {
+      $("#msg").addClass("error").text(this.permitValidation.message || "Permit number is invalid.");
+      return false;
+    }
+
     return true;
   },
 
   submit: function () {
-    if (!this.validate()) {
-      return false;
-    }
+    var self = this;
+    this.validatePermitNumber(true).then(function (isValid) {
+      if (!isValid || !self.validate()) {
+        return;
+      }
 
-    this.saveProfile();
-    $("#msg").removeClass("ok").removeClass("error").text("Creating appointment...");
+      self.saveProfile();
+      $("#msg").removeClass("ok").removeClass("error").text("Creating appointment...");
 
-    var payload = {
-      queueId: this.state.queueId,
-      serviceId: this.state.serviceId,
-      refValue: this.state.reference,
-      email: this.state.email,
-      phone: this.state.phone,
-      firstName: this.state.firstName,
-      lastName: this.state.lastName,
-      customerName: (this.state.firstName + " " + this.state.lastName).trim(),
-      contactType: this.state.contactType,
-      appointmentDate: this.state.appointmentDate,
-      startTime: this.state.startTime,
-      permitNumber: this.state.permitNumber,
-      meetingUrl: this.state.meetingUrl,
-      notes: this.state.notes
-    };
+      var payload = {
+        queueId: self.state.queueId,
+        serviceId: self.state.serviceId,
+        refValue: self.state.reference,
+        email: self.state.email,
+        phone: self.state.phone,
+        firstName: self.state.firstName,
+        lastName: self.state.lastName,
+        customerName: (self.state.firstName + " " + self.state.lastName).trim(),
+        contactType: self.state.contactType,
+        appointmentDate: self.state.appointmentDate,
+        startTime: self.state.startTime,
+        permitNumber: self.state.permitNumber,
+        meetingUrl: self.state.meetingUrl,
+        notes: self.state.notes
+      };
 
-    fetch("/Customer/Book", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      credentials: "same-origin",
-      body: new URLSearchParams(payload).toString()
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (res) {
-        if (!res || !res.ok) {
-          $("#msg").addClass("error").text(res && res.error ? res.error : "Could not create appointment.");
-          return;
-        }
-
-        $("#msg").addClass("ok").text("Appointment created.");
-        var redirectUrl = res.redirectUrl || ("/Customer/Home?appointmentId=" + encodeURIComponent(res.appointmentId || ""));
-        window.location.assign(redirectUrl);
+      fetch("/Customer/Book", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "same-origin",
+        body: new URLSearchParams(payload).toString()
       })
-      .catch(function () {
-        $("#msg").addClass("error").text("Could not create appointment.");
-      });
+        .then(function (res) { return res.json(); })
+        .then(function (res) {
+          if (!res || !res.ok) {
+            $("#msg").addClass("error").text(res && res.error ? res.error : "Could not create appointment.");
+            return;
+          }
+
+          $("#msg").addClass("ok").text("Appointment created.");
+          var redirectUrl = res.redirectUrl || ("/Customer/Home?appointmentId=" + encodeURIComponent(res.appointmentId || ""));
+          window.location.assign(redirectUrl);
+        })
+        .catch(function () {
+          $("#msg").addClass("error").text("Could not create appointment.");
+        });
+    });
 
     return false;
   },
@@ -753,6 +847,7 @@ var FastQBook = {
     this.hydrateProfile();
     this.loadQueues();
     $("#msg").removeClass("ok").removeClass("error").text("");
+    this.resetPermitValidation();
   },
 
   bindEvents: function () {
@@ -789,6 +884,12 @@ var FastQBook = {
     }
     $("#email").on("change blur", function () {
       FastQBook.lookupCustomerByEmail();
+    });
+    $("#permitNumber").on("input", function () {
+      FastQBook.validatePermitNumber(false);
+    });
+    $("#permitNumber").on("blur", function () {
+      FastQBook.validatePermitNumber(true);
     });
   },
 

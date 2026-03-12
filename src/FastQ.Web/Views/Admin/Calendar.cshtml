@@ -662,6 +662,7 @@
                     <div class="calendar-field">
                         <label for="permitNumber">Permit Number</label>
                         <input id="permitNumber" name="permitNumber" type="text" required />
+                        <div id="permitNumberStatus" class="helper-text"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -768,6 +769,7 @@
                     <div class="calendar-field">
                         <label for="walkinPermitNumber">Permit Number</label>
                         <input id="walkinPermitNumber" name="permitNumber" type="text" required />
+                        <div id="walkinPermitNumberStatus" class="helper-text"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -935,10 +937,16 @@
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
             var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
+            var validatePermitUrl = "@Url.Action("ValidatePermit", "Provider")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
+            var permitValidationState = {
+                appointment: { seq: 0, pending: false, valid: false, message: "" },
+                walkin: { seq: 0, pending: false, valid: false, message: "" }
+            };
+            var permitValidationTimers = {};
 
             function openModal(id) {
                 var modal = document.getElementById(id);
@@ -1480,6 +1488,85 @@
                     });
             }
 
+            function getPermitFieldConfig(kind) {
+                return kind === "walkin"
+                    ? { inputId: "walkinPermitNumber", statusId: "walkinPermitNumberStatus" }
+                    : { inputId: "permitNumber", statusId: "permitNumberStatus" };
+            }
+
+            function setPermitValidationState(kind, pending, valid, message) {
+                permitValidationState[kind] = permitValidationState[kind] || { seq: 0, pending: false, valid: false, message: "" };
+                permitValidationState[kind].pending = !!pending;
+                permitValidationState[kind].valid = !!valid;
+                permitValidationState[kind].message = message || "";
+
+                var cfg = getPermitFieldConfig(kind);
+                var status = document.getElementById(cfg.statusId);
+                var input = document.getElementById(cfg.inputId);
+                if (status) {
+                    status.textContent = message || "";
+                    status.style.color = pending ? "#6b7280" : (valid ? "#15803d" : "#b91c1c");
+                }
+                if (input) {
+                    input.setAttribute("aria-invalid", pending || valid ? "false" : (message ? "true" : "false"));
+                }
+            }
+
+            function validatePermitNumber(kind, immediate) {
+                var cfg = getPermitFieldConfig(kind);
+                var input = document.getElementById(cfg.inputId);
+                if (!input) {
+                    return Promise.resolve(true);
+                }
+
+                var permitNumber = (input.value || "").trim();
+                if (!permitNumber) {
+                    setPermitValidationState(kind, false, false, "Permit number is required.");
+                    return Promise.resolve(false);
+                }
+
+                var state = permitValidationState[kind] || { seq: 0, pending: false, valid: false, message: "" };
+                state.seq += 1;
+                permitValidationState[kind] = state;
+                var requestSeq = state.seq;
+                setPermitValidationState(kind, true, false, "Validating permit number...");
+
+                var run = function () {
+                    return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(permitNumber))
+                        .then(function (res) {
+                            if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
+                                return false;
+                            }
+                            if (res && res.ok) {
+                                setPermitValidationState(kind, false, true, "Permit number validated.");
+                                return true;
+                            }
+                            setPermitValidationState(kind, false, false, res && res.error ? res.error : "Permit number is invalid.");
+                            return false;
+                        })
+                        .catch(function () {
+                            if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
+                                return false;
+                            }
+                            setPermitValidationState(kind, false, false, "Could not validate permit number.");
+                            return false;
+                        });
+                };
+
+                if (immediate) {
+                    return run();
+                }
+
+                return new Promise(function (resolve) {
+                    if (permitValidationTimers[kind]) {
+                        clearTimeout(permitValidationTimers[kind]);
+                    }
+                    permitValidationTimers[kind] = setTimeout(function () {
+                        run().then(resolve);
+                    }, 350);
+                });
+            }
+
             function canAction(status, actionName, queueId) {
                 if (!hasQueuePermission(actionName, queueId)) {
                     return false;
@@ -1718,6 +1805,16 @@
                 walkinEmailInput.addEventListener("change", function () { lookupCustomerByEmail("walkin"); });
                 walkinEmailInput.addEventListener("blur", function () { lookupCustomerByEmail("walkin"); });
             }
+            var permitNumberInput = document.getElementById("permitNumber");
+            if (permitNumberInput) {
+                permitNumberInput.addEventListener("input", function () { validatePermitNumber("appointment", false); });
+                permitNumberInput.addEventListener("blur", function () { validatePermitNumber("appointment", true); });
+            }
+            var walkinPermitNumberInput = document.getElementById("walkinPermitNumber");
+            if (walkinPermitNumberInput) {
+                walkinPermitNumberInput.addEventListener("input", function () { validatePermitNumber("walkin", false); });
+                walkinPermitNumberInput.addEventListener("blur", function () { validatePermitNumber("walkin", true); });
+            }
             if (addAppointmentForm) {
                 addAppointmentForm.addEventListener("submit", function (event) {
                     event.preventDefault();
@@ -1727,25 +1824,32 @@
                             document.getElementById("firstName") ? document.getElementById("firstName").value : "",
                             document.getElementById("lastName") ? document.getElementById("lastName").value : "");
                     }
-                    var formData = new FormData(addAppointmentForm);
-                    fetch(addAppointmentForm.action, {
-                        method: "POST",
-                        headers: { "X-Requested-With": "XMLHttpRequest" },
-                        credentials: "same-origin",
-                        body: new URLSearchParams(formData)
-                    })
-                        .then(function (res) { return res.json(); })
-                        .then(function (res) {
-                            if (!res || !res.ok) {
-                                window.alert(res && res.error ? res.error : "Could not add appointment.");
-                                return;
-                            }
-                            closeModal("addAppointmentModal");
-                            queueLiveSync();
+                    validatePermitNumber("appointment", true).then(function (isValid) {
+                        if (!isValid) {
+                            window.alert(permitValidationState.appointment.message || "Permit number is invalid.");
+                            return;
+                        }
+
+                        var formData = new FormData(addAppointmentForm);
+                        fetch(addAppointmentForm.action, {
+                            method: "POST",
+                            headers: { "X-Requested-With": "XMLHttpRequest" },
+                            credentials: "same-origin",
+                            body: new URLSearchParams(formData)
                         })
-                        .catch(function () {
-                            window.alert("Could not add appointment.");
-                        });
+                            .then(function (res) { return res.json(); })
+                            .then(function (res) {
+                                if (!res || !res.ok) {
+                                    window.alert(res && res.error ? res.error : "Could not add appointment.");
+                                    return;
+                                }
+                                closeModal("addAppointmentModal");
+                                queueLiveSync();
+                            })
+                            .catch(function () {
+                                window.alert("Could not add appointment.");
+                            });
+                    });
                 });
             }
             if (addWalkinForm) {
@@ -1757,25 +1861,32 @@
                             document.getElementById("walkinFirstName") ? document.getElementById("walkinFirstName").value : "",
                             document.getElementById("walkinLastName") ? document.getElementById("walkinLastName").value : "");
                     }
-                    var formData = new FormData(addWalkinForm);
-                    fetch(addWalkinForm.action, {
-                        method: "POST",
-                        headers: { "X-Requested-With": "XMLHttpRequest" },
-                        credentials: "same-origin",
-                        body: new URLSearchParams(formData)
-                    })
-                        .then(function (res) { return res.json(); })
-                        .then(function (res) {
-                            if (!res || !res.ok) {
-                                window.alert(res && res.error ? res.error : "Could not add walk-in.");
-                                return;
-                            }
-                            closeModal("addWalkinModal");
-                            queueLiveSync();
+                    validatePermitNumber("walkin", true).then(function (isValid) {
+                        if (!isValid) {
+                            window.alert(permitValidationState.walkin.message || "Permit number is invalid.");
+                            return;
+                        }
+
+                        var formData = new FormData(addWalkinForm);
+                        fetch(addWalkinForm.action, {
+                            method: "POST",
+                            headers: { "X-Requested-With": "XMLHttpRequest" },
+                            credentials: "same-origin",
+                            body: new URLSearchParams(formData)
                         })
-                        .catch(function () {
-                            window.alert("Could not add walk-in.");
-                        });
+                            .then(function (res) { return res.json(); })
+                            .then(function (res) {
+                                if (!res || !res.ok) {
+                                    window.alert(res && res.error ? res.error : "Could not add walk-in.");
+                                    return;
+                                }
+                                closeModal("addWalkinModal");
+                                queueLiveSync();
+                            })
+                            .catch(function () {
+                                window.alert("Could not add walk-in.");
+                            });
+                    });
                 });
             }
 
