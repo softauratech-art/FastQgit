@@ -749,11 +749,15 @@
             </div>
             <div class="route-form-row">
                 <label for="addApptDate">Date</label>
-                <input id="addApptDate" class="route-input" type="date" value="@defaultDate" />
+                <select id="addApptDate" class="route-input">
+                    <option value="">Select date</option>
+                </select>
             </div>
             <div class="route-form-row">
                 <label for="addApptTime">Start Time</label>
-                <input id="addApptTime" class="route-input" type="time" value="09:00" />
+                <select id="addApptTime" class="route-input">
+                    <option value="">Select time</option>
+                </select>
             </div>
             <div class="route-form-row" id="addApptMeetingUrlRow" style="display:none;">
                 <label for="addApptMeetingUrl">Meeting URL</label>
@@ -859,6 +863,10 @@
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
     var activeRouteQueueDetails = null;
+    var activeEntryQueueDetails = {
+      addAppt: null,
+      addWalkin: null
+    };
     var permitValidationState = {
       addAppt: { seq: 0, pending: false, valid: false, message: "" },
       addWalkin: { seq: 0, pending: false, valid: false, message: "" }
@@ -904,22 +912,28 @@
       setSelectOptions(document.getElementById(prefix + "ServiceId"), details && details.services ? details.services : [], "Select service");
       setSelectOptions(document.getElementById(prefix + "ContactType"), details && details.contactOptions ? details.contactOptions : [], "Select contact type");
       setSelectOptions(document.getElementById(prefix + "RefValue"), details && details.refOptions ? details.refOptions : [], "Select reference");
+      syncMeetingUrlField(prefix);
     }
 
     function loadEntryQueueDetails(prefix, queueCode) {
       if (!queueCode) {
+        activeEntryQueueDetails[prefix] = null;
         populateEntryModalOptions(prefix, null);
+        populateEntryModalDateTime(prefix, null);
         return Promise.resolve();
       }
 
       return getJson(getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode))
         .then(function (res) {
-          populateEntryModalOptions(prefix, res && res.ok ? res.data : null);
-          syncMeetingUrlField(prefix);
+          var details = res && res.ok ? res.data : null;
+          activeEntryQueueDetails[prefix] = details;
+          populateEntryModalOptions(prefix, details);
+          populateEntryModalDateTime(prefix, details);
         })
         .catch(function () {
+          activeEntryQueueDetails[prefix] = null;
           populateEntryModalOptions(prefix, null);
-          syncMeetingUrlField(prefix);
+          populateEntryModalDateTime(prefix, null);
         });
     }
 
@@ -951,17 +965,9 @@
         }
       });
 
-      var dateInput = document.getElementById(prefix + "Date");
-      if (dateInput) {
-        dateInput.value = "@defaultDate";
-      }
-
-      var timeInput = document.getElementById(prefix + "Time");
-      if (timeInput) {
-        timeInput.value = "09:00";
-      }
-
+      activeEntryQueueDetails[prefix] = null;
       populateEntryModalOptions(prefix, null);
+      populateEntryModalDateTime(prefix, null);
       setCustomerLookupState(prefix, false, null);
       resetPermitValidation(prefix);
       syncMeetingUrlField(prefix);
@@ -1132,22 +1138,75 @@
       return (((days * 24) + hours) * 60) + minutes;
     }
 
+    function normalizeScheduleWindow(openMinutes, closeMinutes) {
+      var dayMinutes = 24 * 60;
+      if (openMinutes < 0 || closeMinutes < 0) {
+        return null;
+      }
+      if (closeMinutes <= openMinutes) {
+        closeMinutes += 12 * 60;
+      }
+      if (closeMinutes <= openMinutes) {
+        closeMinutes += 12 * 60;
+      }
+      if (closeMinutes > dayMinutes) {
+        closeMinutes = dayMinutes;
+      }
+      if (closeMinutes <= openMinutes) {
+        return null;
+      }
+      return { open: openMinutes, close: closeMinutes };
+    }
+
     function getWeekdayCode(dateValue) {
       var day = dateValue.getDay();
       return day === 0 ? "7" : String(day);
+    }
+
+    function parseDateOnly(value) {
+      if (!value) {
+        return null;
+      }
+      var raw = value.toString().trim();
+      if (!raw) {
+        return null;
+      }
+
+      var date = new Date(raw);
+      if (!isNaN(date.getTime())) {
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      var iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+      if (iso) {
+        date = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      var mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw);
+      if (mdy) {
+        date = new Date(parseInt(mdy[3], 10), parseInt(mdy[1], 10) - 1, parseInt(mdy[2], 10));
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      return null;
     }
 
     function isScheduleActiveOnDate(schedule, dateValue) {
       if (!schedule || !dateValue) {
         return false;
       }
-      var dateText = dateValue.toISOString().slice(0, 10);
-      var begin = (schedule.dateBegin || "").slice(0, 10);
-      var end = (schedule.dateEnd || "").slice(0, 10);
-      if (begin && dateText < begin) {
+      var day = new Date(dateValue.getTime());
+      day.setHours(0, 0, 0, 0);
+      var begin = parseDateOnly(schedule.dateBegin || "");
+      var end = parseDateOnly(schedule.dateEnd || "");
+      if (begin && day < begin) {
         return false;
       }
-      if (end && dateText > end) {
+      if (end && day > end) {
         return false;
       }
       var weekly = (schedule.weeklySch || "").toString();
@@ -1158,6 +1217,34 @@
     }
 
     function buildScheduleDateOptions(details, selectedDateValue) {
+      var options = getScheduleDateOptions(details);
+      var select = document.getElementById("routeTargetDate");
+      setSelectValues(select, options, "Select date");
+      if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
+        select.value = selectedDateValue;
+      }
+      return options;
+    }
+
+    function buildScheduleTimeOptions(details, selectedTimeValue, selectedDateValue) {
+      var select = document.getElementById("routeTargetTime");
+      if (!select) {
+        return;
+      }
+
+      if (!selectedDateValue) {
+        setSelectValues(select, [], "Select time");
+        return;
+      }
+
+      var times = getScheduleTimeOptions(details, selectedDateValue);
+      setSelectValues(select, times, "Select time");
+      if (selectedTimeValue && times.some(function (o) { return o.value === selectedTimeValue; })) {
+        select.value = selectedTimeValue;
+      }
+    }
+
+    function getScheduleDateOptions(details) {
       var options = [];
       var schedules = details && details.schedules ? details.schedules : [];
       var seen = {};
@@ -1183,12 +1270,86 @@
         });
       }
 
-      var select = document.getElementById("routeTargetDate");
-      setSelectValues(select, options, "Select date");
-      if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
-        select.value = selectedDateValue;
-      }
       return options;
+    }
+
+    function getScheduleTimeOptions(details, selectedDateValue) {
+      if (!selectedDateValue) {
+        return [];
+      }
+
+      var dateValue = new Date(selectedDateValue + "T00:00:00");
+      var schedules = details && details.schedules ? details.schedules : [];
+      var options = [];
+      var seen = {};
+
+      schedules.forEach(function (schedule) {
+        if (!isScheduleActiveOnDate(schedule, dateValue)) {
+          return;
+        }
+        var openMinutes = parseIsoDurationToMinutes(schedule.openTime);
+        var closeMinutes = parseIsoDurationToMinutes(schedule.closeTime);
+        var intervalMinutes = parseIsoDurationToMinutes(schedule.intervalTime) || 30;
+        var window = normalizeScheduleWindow(openMinutes, closeMinutes);
+        if (!window) {
+          return;
+        }
+
+        for (var minutes = window.open; minutes < window.close; minutes += intervalMinutes) {
+          var hh = toTwoDigits(Math.floor(minutes / 60) % 24);
+          var mm = toTwoDigits(minutes % 60);
+          var value = hh + ":" + mm;
+          if (seen[value]) {
+            continue;
+          }
+          seen[value] = true;
+          options.push({
+            value: value,
+            label: value
+          });
+        }
+      });
+
+      options.sort(function (a, b) { return a.value.localeCompare(b.value); });
+      return options;
+    }
+
+    function populateEntryModalDateTime(prefix, details) {
+      var dateSelect = document.getElementById(prefix + "Date");
+      var timeSelect = document.getElementById(prefix + "Time");
+      if (!dateSelect || !timeSelect) {
+        return;
+      }
+
+      var dateOptions = getScheduleDateOptions(details);
+      setSelectValues(dateSelect, dateOptions, "Select date");
+
+      var selectedDate = "";
+      if (dateOptions.length > 0) {
+        selectedDate = dateOptions[0].value;
+        dateSelect.value = selectedDate;
+      }
+
+      var timeOptions = getScheduleTimeOptions(details, selectedDate);
+      setSelectValues(timeSelect, timeOptions, "Select time");
+      if (timeOptions.length > 0) {
+        timeSelect.value = timeOptions[0].value;
+      }
+    }
+
+    function refreshEntryModalTimeOptions(prefix) {
+      var details = activeEntryQueueDetails[prefix];
+      var dateSelect = document.getElementById(prefix + "Date");
+      var timeSelect = document.getElementById(prefix + "Time");
+      if (!dateSelect || !timeSelect) {
+        return;
+      }
+      var selectedDate = dateSelect.value || "";
+      var timeOptions = getScheduleTimeOptions(details, selectedDate);
+      setSelectValues(timeSelect, timeOptions, "Select time");
+      if (timeOptions.length > 0) {
+        timeSelect.value = timeOptions[0].value;
+      }
     }
 
     function buildScheduleTimeOptions(details, selectedTimeValue, selectedDateValue) {
@@ -2445,6 +2606,12 @@
     if (addApptQueueId) {
       addApptQueueId.addEventListener("change", function () {
         loadEntryQueueDetails("addAppt", addApptQueueId.value || "");
+      });
+    }
+    var addApptDate = document.getElementById("addApptDate");
+    if (addApptDate) {
+      addApptDate.addEventListener("change", function () {
+        refreshEntryModalTimeOptions("addAppt");
       });
     }
 
