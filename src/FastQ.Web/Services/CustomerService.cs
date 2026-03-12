@@ -155,6 +155,7 @@ namespace FastQ.Web.Services
                 LocationId = queue.LocationId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
+                CustomerEmail = customer.Email,
                 ServiceId = parsedServiceId,
                 RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
                 RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
@@ -172,10 +173,11 @@ namespace FastQ.Web.Services
             appt.ScheduledForUtc = scheduledForUtc;
 
             _appts.Add(appt);
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+            var insertedAppt = _appts.Get(appt.Id) ?? appt;
+            _rt.AppointmentChanged(insertedAppt);
+            _rt.QueueChanged(insertedAppt.LocationId, insertedAppt.QueueId);
 
-            return Result<Appointment>.Success(appt);
+            return Result<Appointment>.Success(insertedAppt);
         }
 
         public Result<long> CreateWalkin(

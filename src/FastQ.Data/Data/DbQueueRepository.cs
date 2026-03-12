@@ -22,7 +22,7 @@ namespace FastQ.Data.Db
             using var conn = DataAccess.Open();
             using var cmd = DataAccess.CreateCommand(conn,
                 @"SELECT QUEUE_ID, NAME, NAME_ES, NAME_CP, LOCATION_ID, ACTIVEFLAG, EMP_ONLY, HIDE_IN_KIOSK, HIDE_IN_MONITOR, LEAD_TIME_MIN, LEAD_TIME_MAX, HAS_GUIDELINES, HAS_UPLOADS
-                  FROM VALIDQUEUES
+                  FROM fqowner.VALIDQUEUES
                   WHERE QUEUE_ID = :queueId");
             DataAccess.AddParam(cmd, "queueId", id, DbType.Int64);
             using var reader = cmd.ExecuteReader();
@@ -273,7 +273,7 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
                 @"SELECT Q_SERVICES, Q_SCHEDULES, Q_DETAILS
-                  FROM VW_QUEUE_DETAILS_JSON
+                  FROM fqowner.VW_QUEUE_DETAILS_JSON
                   WHERE QUEUE_ID = :queueId"))
             {
                 DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
