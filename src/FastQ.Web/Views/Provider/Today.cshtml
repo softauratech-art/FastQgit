@@ -266,6 +266,98 @@
             padding-right: 34px;
         }
 
+        .notif-wrap {
+            position: relative;
+        }
+
+        .notif-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 18px;
+            text-align: center;
+            display: none;
+        }
+
+        .notif-count.show {
+            display: inline-block;
+        }
+
+        .notif-panel {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: min(380px, 88vw);
+            background: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 14px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+            display: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        .notif-panel.show {
+            display: block;
+        }
+
+        .notif-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+        .notif-panel-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .notif-panel-body {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+
+        .notif-empty {
+            padding: 16px 14px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .notif-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(241, 245, 249, 0.95);
+        }
+
+        .notif-item:last-child {
+            border-bottom: 0;
+        }
+
+        .notif-message {
+            margin: 0;
+            color: #111827;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .notif-time {
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 11px;
+        }
+
         @@keyframes lookup-spin {
             to { transform: rotate(360deg); }
         }
@@ -278,12 +370,24 @@
     <div class="topbar-sub">Appointments and walk-in customers</div>
 </div>
 <div class="top-actions">
-    <button class="icon-btn" type="button" aria-label="Notifications">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 17h5l-1.4-1.4A4 4 0 0 1 17 12.8V10a5 5 0 0 0-10 0v2.8a4 4 0 0 1-1.6 3.2L4 17h5"></path>
-            <path d="M9 17a3 3 0 0 0 6 0"></path>
-        </svg>
-    </button>
+    <div class="notif-wrap">
+        <button class="icon-btn" id="todayNotificationsButton" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="todayNotificationsPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 17h5l-1.4-1.4A4 4 0 0 1 17 12.8V10a5 5 0 0 0-10 0v2.8a4 4 0 0 1-1.6 3.2L4 17h5"></path>
+                <path d="M9 17a3 3 0 0 0 6 0"></path>
+            </svg>
+            <span id="todayNotificationsCount" class="notif-count" aria-hidden="true">0</span>
+        </button>
+        <div id="todayNotificationsPanel" class="notif-panel" role="dialog" aria-label="Notifications">
+            <div class="notif-panel-header">
+                <div class="notif-panel-title">Notifications</div>
+                <button class="btn small ghost" id="todayNotificationsClear" type="button">Clear</button>
+            </div>
+            <div id="todayNotificationsBody" class="notif-panel-body">
+                <div class="notif-empty">No notifications yet.</div>
+            </div>
+        </div>
+    </div>
     <button class="icon-btn" type="button" aria-label="Support">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 11a8 8 0 0 1 16 0v5"></path>
@@ -922,6 +1026,9 @@
     var permitValidationTimers = {};
     var customerLookupTimers = {};
     var customerLookupRequestSeq = {};
+    var todayNotifications = [];
+    var todayNotificationUnreadCount = 0;
+    var maxNotificationItems = 25;
 
     function postForm(url, data) {
       return fetch(url, {
@@ -2406,6 +2513,86 @@
       }, 300);
     }
 
+    function formatNotificationTime(date) {
+      if (!date) {
+        return "";
+      }
+      return date.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
+    }
+
+    function escapeHtml(text) {
+      return (text || "").toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderNotifications() {
+      var body = document.getElementById("todayNotificationsBody");
+      var count = document.getElementById("todayNotificationsCount");
+      if (count) {
+        count.textContent = String(todayNotificationUnreadCount);
+        count.classList.toggle("show", todayNotificationUnreadCount > 0);
+      }
+      if (!body) {
+        return;
+      }
+      if (!todayNotifications.length) {
+        body.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+        return;
+      }
+      body.innerHTML = todayNotifications.map(function (item) {
+        return '<div class="notif-item">'
+          + '<p class="notif-message">' + escapeHtml(item.message || "") + '</p>'
+          + '<div class="notif-time">' + escapeHtml(item.timeText || "") + '</div>'
+          + '</div>';
+      }).join("");
+    }
+
+    function markNotificationsRead() {
+      todayNotificationUnreadCount = 0;
+      renderNotifications();
+    }
+
+    function toggleNotifications(forceOpen) {
+      var panel = document.getElementById("todayNotificationsPanel");
+      var button = document.getElementById("todayNotificationsButton");
+      if (!panel || !button) {
+        return;
+      }
+      var nextOpen = typeof forceOpen === "boolean" ? forceOpen : !panel.classList.contains("show");
+      panel.classList.toggle("show", nextOpen);
+      button.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+      if (nextOpen) {
+        markNotificationsRead();
+      }
+    }
+
+    function addNotification(message) {
+      if (!message) {
+        return;
+      }
+      todayNotifications.unshift({
+        message: message,
+        timeText: formatNotificationTime(new Date())
+      });
+      if (todayNotifications.length > maxNotificationItems) {
+        todayNotifications.length = maxNotificationItems;
+      }
+      var panel = document.getElementById("todayNotificationsPanel");
+      if (!panel || !panel.classList.contains("show")) {
+        todayNotificationUnreadCount += 1;
+      }
+      renderNotifications();
+    }
+
     window.onFastQQueueUpdated = function () {
       queueLiveSync();
     };
@@ -2429,6 +2616,40 @@
         queueLiveSync();
       }
     };
+
+    window.onFastQNotify = function (message) {
+      addNotification(message);
+    };
+
+    var todayNotificationsButton = document.getElementById("todayNotificationsButton");
+    if (todayNotificationsButton) {
+      todayNotificationsButton.addEventListener("click", function (event) {
+        event.stopPropagation();
+        toggleNotifications();
+      });
+    }
+
+    var todayNotificationsClear = document.getElementById("todayNotificationsClear");
+    if (todayNotificationsClear) {
+      todayNotificationsClear.addEventListener("click", function (event) {
+        event.preventDefault();
+        todayNotifications = [];
+        todayNotificationUnreadCount = 0;
+        renderNotifications();
+      });
+    }
+
+    document.addEventListener("click", function (event) {
+      var panel = document.getElementById("todayNotificationsPanel");
+      var button = document.getElementById("todayNotificationsButton");
+      if (!panel || !button) {
+        return;
+      }
+      if (panel.contains(event.target) || button.contains(event.target)) {
+        return;
+      }
+      toggleNotifications(false);
+    });
 
     document.querySelectorAll("[data-modal-close]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -2849,6 +3070,7 @@
     bindTodaySorting();
     bindProviderActionButtons();
     bindMeetingLinks();
+    renderNotifications();
 
     var todayGlobalSearch = document.getElementById("todayGlobalSearch");
     if (todayGlobalSearch) {
