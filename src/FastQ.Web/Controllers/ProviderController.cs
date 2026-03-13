@@ -241,7 +241,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -266,6 +266,9 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 permitNumber,
+                streetNumber,
+                streetName,
+                streetType,
                 email,
                 resolvedCustomerName,
                 phone,
@@ -282,7 +285,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string email, string firstName, string lastName, string customerName, string phone, string contactType, string meetingUrl, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -300,6 +303,9 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 permitNumber,
+                streetNumber,
+                streetName,
+                streetType,
                 email,
                 resolvedCustomerName,
                 phone,
@@ -349,6 +355,19 @@ namespace FastQ.Web.Controllers
         public JsonResult ValidatePermit(string permitNumber)
         {
             var res = _customerService.ValidatePermit(permitNumber);
+            return Json(
+                new
+                {
+                    ok = res.Ok,
+                    error = res.Ok ? null : res.Error
+                },
+                JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var res = _customerService.ValidateReference(referenceType, enterValue, streetNumber, streetName, streetType);
             return Json(
                 new
                 {

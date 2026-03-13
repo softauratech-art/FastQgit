@@ -866,9 +866,20 @@
             </div>
             <div class="route-form-row">
                 <label id="addApptPermitNumberLabel" for="addApptPermitNumber">Reference Value</label>
-                <div>
+                <div id="addApptReferenceValueWrap">
                     <input id="addApptPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
                     <div id="addApptPermitStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row is-hidden" id="addApptAddressRow">
+                <label>Address</label>
+                <div>
+                    <div class="action-bar">
+                        <input id="addApptStreetNumber" class="route-input" type="text" placeholder="Street number" />
+                        <input id="addApptStreetName" class="route-input" type="text" placeholder="Street name" />
+                        <input id="addApptStreetType" class="route-input" type="text" placeholder="Street type" />
+                    </div>
+                    <div id="addApptAddressStatus" class="helper-text"></div>
                 </div>
             </div>
             <div class="route-form-row">
@@ -955,9 +966,20 @@
             </div>
             <div class="route-form-row">
                 <label id="addWalkinPermitNumberLabel" for="addWalkinPermitNumber">Reference Value</label>
-                <div>
+                <div id="addWalkinReferenceValueWrap">
                     <input id="addWalkinPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
                     <div id="addWalkinPermitStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row is-hidden" id="addWalkinAddressRow">
+                <label>Address</label>
+                <div>
+                    <div class="action-bar">
+                        <input id="addWalkinStreetNumber" class="route-input" type="text" placeholder="Street number" />
+                        <input id="addWalkinStreetName" class="route-input" type="text" placeholder="Street name" />
+                        <input id="addWalkinStreetType" class="route-input" type="text" placeholder="Street type" />
+                    </div>
+                    <div id="addWalkinAddressStatus" class="helper-text"></div>
                 </div>
             </div>
             <div class="route-form-row">
@@ -1012,6 +1034,7 @@
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
     var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
     var validatePermitUrl = "@Url.Action("ValidatePermit", "Provider")";
+    var validateReferenceUrl = "@Url.Action("ValidateReference", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
     var activeRouteQueueDetails = null;
@@ -1113,6 +1136,7 @@
     function clearAddEntryModal(prefix) {
       var fields = [
         "QueueId", "ServiceId", "ContactType", "RefValue", "PermitNumber",
+        "StreetNumber", "StreetName", "StreetType",
         "Email", "FirstName", "LastName", "Phone", "MeetingUrl", "Notes"
       ];
 
@@ -1135,15 +1159,15 @@
     function getReferenceFieldMeta(code) {
       switch ((code || "").toUpperCase()) {
         case "A":
-          return { label: "Address", placeholder: "Enter address", validatePermit: false };
+          return { label: "Address", placeholder: "Enter address", validatePermit: false, useAddressFields: true };
         case "C":
-          return { label: "Case", placeholder: "Enter case", validatePermit: false };
+          return { label: "Case", placeholder: "Enter case", validatePermit: false, useAddressFields: false };
         case "G":
-          return { label: "General", placeholder: "Enter general reference", validatePermit: false };
+          return { label: "General", placeholder: "Enter general reference", validatePermit: false, useAddressFields: false };
         case "P":
-          return { label: "Permit", placeholder: "Enter permit number", validatePermit: true };
+          return { label: "Permit", placeholder: "Enter permit number", validatePermit: true, useAddressFields: false };
         default:
-          return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false };
+          return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false, useAddressFields: false };
       }
     }
 
@@ -1155,6 +1179,8 @@
     function syncReferenceInputMeta(prefix) {
       var input = document.getElementById(prefix + "PermitNumber");
       var label = document.getElementById(prefix + "PermitNumberLabel");
+      var addressRow = document.getElementById(prefix + "AddressRow");
+      var referenceWrap = document.getElementById(prefix + "ReferenceValueWrap");
       if (!input) {
         return;
       }
@@ -1163,7 +1189,22 @@
         label.textContent = meta.label;
       }
       input.placeholder = meta.placeholder;
+      if (addressRow) {
+        addressRow.classList.toggle("is-hidden", !meta.useAddressFields);
+      }
+      if (referenceWrap) {
+        referenceWrap.classList.toggle("is-hidden", !!meta.useAddressFields);
+      }
       resetPermitValidation(prefix);
+    }
+
+    function getAddressFieldIds(prefix) {
+      return {
+        streetNumberId: prefix + "StreetNumber",
+        streetNameId: prefix + "StreetName",
+        streetTypeId: prefix + "StreetType",
+        statusId: prefix + "AddressStatus"
+      };
     }
 
     function getPermitValidationIds(prefix) {
@@ -1208,14 +1249,30 @@
         return Promise.resolve(true);
       }
 
-      var referenceValue = (input.value || "").trim();
       var refCode = getSelectedReferenceCode(prefix);
       var meta = getReferenceFieldMeta(refCode);
-      if (!referenceValue) {
+      var referenceValue = (input.value || "").trim();
+      var addressIds = getAddressFieldIds(prefix);
+      var streetNumberInput = document.getElementById(addressIds.streetNumberId);
+      var streetNameInput = document.getElementById(addressIds.streetNameId);
+      var streetTypeInput = document.getElementById(addressIds.streetTypeId);
+      var streetNumber = streetNumberInput ? (streetNumberInput.value || "").trim() : "";
+      var streetName = streetNameInput ? (streetNameInput.value || "").trim() : "";
+      var streetType = streetTypeInput ? (streetTypeInput.value || "").trim() : "";
+      if (meta.useAddressFields) {
+        if (!streetNumber) {
+          setPermitValidationState(prefix, false, false, "Street number is required.");
+          return Promise.resolve(false);
+        }
+        if (!streetName) {
+          setPermitValidationState(prefix, false, false, "Street name is required.");
+          return Promise.resolve(false);
+        }
+      } else if (!referenceValue) {
         setPermitValidationState(prefix, false, false, meta.label + " is required.");
         return Promise.resolve(false);
       }
-      if (!meta.validatePermit) {
+      if (!meta.validatePermit && !meta.useAddressFields) {
         setPermitValidationState(prefix, false, true, "");
         return Promise.resolve(true);
       }
@@ -1224,26 +1281,31 @@
       state.seq += 1;
       permitValidationState[prefix] = state;
       var requestSeq = state.seq;
-      setPermitValidationState(prefix, true, false, "Validating permit number...");
+      setPermitValidationState(prefix, true, false, meta.useAddressFields ? "Validating address..." : "Validating permit number...");
 
       var run = function () {
-        return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(referenceValue))
+        return getJson(validateReferenceUrl
+          + "?referenceType=" + encodeURIComponent(refCode)
+          + "&enterValue=" + encodeURIComponent(referenceValue)
+          + "&streetNumber=" + encodeURIComponent(streetNumber)
+          + "&streetName=" + encodeURIComponent(streetName)
+          + "&streetType=" + encodeURIComponent(streetType))
           .then(function (res) {
             if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
               return false;
             }
             if (res && res.ok) {
-              setPermitValidationState(prefix, false, true, "Permit number validated.");
+              setPermitValidationState(prefix, false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
               return true;
             }
-            setPermitValidationState(prefix, false, false, res && res.error ? res.error : "Permit number is invalid.");
+            setPermitValidationState(prefix, false, false, res && res.error ? res.error : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
             return false;
           })
           .catch(function () {
             if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
               return false;
             }
-            setPermitValidationState(prefix, false, false, "Could not validate permit number.");
+            setPermitValidationState(prefix, false, false, meta.useAddressFields ? "Could not validate address." : "Could not validate permit number.");
             return false;
           });
       };
@@ -2993,6 +3055,12 @@
         if (input) {
           input.value = "";
         }
+        ["addApptStreetNumber", "addApptStreetName", "addApptStreetType"].forEach(function (id) {
+          var field = document.getElementById(id);
+          if (field) {
+            field.value = "";
+          }
+        });
         syncReferenceInputMeta("addAppt");
       });
       syncReferenceInputMeta("addAppt");
@@ -3009,6 +3077,14 @@
       addApptPermitNumber.addEventListener("input", function () { validatePermitNumber("addAppt", false); });
       addApptPermitNumber.addEventListener("blur", function () { validatePermitNumber("addAppt", true); });
     }
+    ["addApptStreetNumber", "addApptStreetName", "addApptStreetType"].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (!input) {
+        return;
+      }
+      input.addEventListener("input", function () { validatePermitNumber("addAppt", false); });
+      input.addEventListener("blur", function () { validatePermitNumber("addAppt", true); });
+    });
 
     var addWalkinQueueId = document.getElementById("addWalkinQueueId");
     if (addWalkinQueueId) {
@@ -3031,6 +3107,12 @@
         if (input) {
           input.value = "";
         }
+        ["addWalkinStreetNumber", "addWalkinStreetName", "addWalkinStreetType"].forEach(function (id) {
+          var field = document.getElementById(id);
+          if (field) {
+            field.value = "";
+          }
+        });
         syncReferenceInputMeta("addWalkin");
       });
       syncReferenceInputMeta("addWalkin");
@@ -3047,6 +3129,14 @@
       addWalkinPermitNumber.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
       addWalkinPermitNumber.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
     }
+    ["addWalkinStreetNumber", "addWalkinStreetName", "addWalkinStreetType"].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (!input) {
+        return;
+      }
+      input.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
+      input.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
+    });
 
     var saveAddAppointment = document.getElementById("saveAddAppointment");
     if (saveAddAppointment) {
@@ -3057,6 +3147,9 @@
           contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
           refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
           permitNumber: document.getElementById("addApptPermitNumber") ? document.getElementById("addApptPermitNumber").value : "",
+          streetNumber: document.getElementById("addApptStreetNumber") ? document.getElementById("addApptStreetNumber").value : "",
+          streetName: document.getElementById("addApptStreetName") ? document.getElementById("addApptStreetName").value : "",
+          streetType: document.getElementById("addApptStreetType") ? document.getElementById("addApptStreetType").value : "",
           email: document.getElementById("addApptEmail") ? document.getElementById("addApptEmail").value : "",
           customerName: buildCustomerName(
             document.getElementById("addApptFirstName") ? document.getElementById("addApptFirstName").value : "",
@@ -3068,7 +3161,11 @@
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.refValue || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+        var apptRefMeta = getReferenceFieldMeta(payload.refValue);
+        var apptHasReferenceValue = apptRefMeta.useAddressFields
+          ? !!(payload.streetNumber && payload.streetName)
+          : !!payload.permitNumber;
+        if (!payload.queueId || !payload.refValue || !apptHasReferenceValue || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
           showModalFeedback("addAppointmentModal", "Queue, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
           return;
         }
@@ -3099,6 +3196,9 @@
           contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
           refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
           permitNumber: document.getElementById("addWalkinPermitNumber") ? document.getElementById("addWalkinPermitNumber").value : "",
+          streetNumber: document.getElementById("addWalkinStreetNumber") ? document.getElementById("addWalkinStreetNumber").value : "",
+          streetName: document.getElementById("addWalkinStreetName") ? document.getElementById("addWalkinStreetName").value : "",
+          streetType: document.getElementById("addWalkinStreetType") ? document.getElementById("addWalkinStreetType").value : "",
           email: document.getElementById("addWalkinEmail") ? document.getElementById("addWalkinEmail").value : "",
           customerName: buildCustomerName(
             document.getElementById("addWalkinFirstName") ? document.getElementById("addWalkinFirstName").value : "",
@@ -3108,7 +3208,11 @@
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.refValue || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone) {
+        var walkinRefMeta = getReferenceFieldMeta(payload.refValue);
+        var walkinHasReferenceValue = walkinRefMeta.useAddressFields
+          ? !!(payload.streetNumber && payload.streetName)
+          : !!payload.permitNumber;
+        if (!payload.queueId || !payload.refValue || !walkinHasReferenceValue || !payload.email || !payload.customerName || !payload.phone) {
           showModalFeedback("addWalkinModal", "Queue, reference, reference value, email, first name, last name, and phone are required.", true);
           return;
         }

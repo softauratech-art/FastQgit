@@ -700,6 +700,23 @@
                         <input id="permitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
                         <div id="permitNumberStatus" class="helper-text"></div>
                     </div>
+                    <div class="calendar-field full is-hidden" id="addressFieldRow">
+                        <label>Address</label>
+                        <div class="calendar-form-grid">
+                            <div class="calendar-field">
+                                <label for="streetNumber">Street Number</label>
+                                <input id="streetNumber" name="streetNumber" type="text" />
+                            </div>
+                            <div class="calendar-field">
+                                <label for="streetName">Street Name</label>
+                                <input id="streetName" name="streetName" type="text" />
+                            </div>
+                            <div class="calendar-field">
+                                <label for="streetType">Street Type</label>
+                                <input id="streetType" name="streetType" type="text" />
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="calendar-field">
                         <label for="email">Email</label>
@@ -814,6 +831,23 @@
                         <label id="walkinPermitNumberLabel" for="walkinPermitNumber">Reference Value</label>
                         <input id="walkinPermitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
                         <div id="walkinPermitNumberStatus" class="helper-text"></div>
+                    </div>
+                    <div class="calendar-field full is-hidden" id="walkinAddressFieldRow">
+                        <label>Address</label>
+                        <div class="calendar-form-grid">
+                            <div class="calendar-field">
+                                <label for="walkinStreetNumber">Street Number</label>
+                                <input id="walkinStreetNumber" name="streetNumber" type="text" />
+                            </div>
+                            <div class="calendar-field">
+                                <label for="walkinStreetName">Street Name</label>
+                                <input id="walkinStreetName" name="streetName" type="text" />
+                            </div>
+                            <div class="calendar-field">
+                                <label for="walkinStreetType">Street Type</label>
+                                <input id="walkinStreetType" name="streetType" type="text" />
+                            </div>
+                        </div>
                     </div>
 
                     <div class="calendar-field">
@@ -986,6 +1020,7 @@
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
             var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
             var validatePermitUrl = "@Url.Action("ValidatePermit", "Provider")";
+            var validateReferenceUrl = "@Url.Action("ValidateReference", "Provider")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
@@ -1684,22 +1719,22 @@
 
             function getPermitFieldConfig(kind) {
                 return kind === "walkin"
-                    ? { inputId: "walkinPermitNumber", statusId: "walkinPermitNumberStatus", labelId: "walkinPermitNumberLabel", refId: "walkinRefValue" }
-                    : { inputId: "permitNumber", statusId: "permitNumberStatus", labelId: "permitNumberLabel", refId: "refValue" };
+                    ? { inputId: "walkinPermitNumber", statusId: "walkinPermitNumberStatus", labelId: "walkinPermitNumberLabel", refId: "walkinRefValue", addressRowId: "walkinAddressFieldRow", streetNumberId: "walkinStreetNumber", streetNameId: "walkinStreetName", streetTypeId: "walkinStreetType" }
+                    : { inputId: "permitNumber", statusId: "permitNumberStatus", labelId: "permitNumberLabel", refId: "refValue", addressRowId: "addressFieldRow", streetNumberId: "streetNumber", streetNameId: "streetName", streetTypeId: "streetType" };
             }
 
             function getReferenceFieldMeta(code) {
                 switch ((code || "").toUpperCase()) {
                     case "A":
-                        return { label: "Address", placeholder: "Enter address", validatePermit: false };
+                        return { label: "Address", placeholder: "Enter address", validatePermit: false, useAddressFields: true };
                     case "C":
-                        return { label: "Case", placeholder: "Enter case", validatePermit: false };
+                        return { label: "Case", placeholder: "Enter case", validatePermit: false, useAddressFields: false };
                     case "G":
-                        return { label: "General", placeholder: "Enter general reference", validatePermit: false };
+                        return { label: "General", placeholder: "Enter general reference", validatePermit: false, useAddressFields: false };
                     case "P":
-                        return { label: "Permit", placeholder: "Enter permit number", validatePermit: true };
+                        return { label: "Permit", placeholder: "Enter permit number", validatePermit: true, useAddressFields: false };
                     default:
-                        return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false };
+                        return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false, useAddressFields: false };
                 }
             }
 
@@ -1713,6 +1748,7 @@
                 var cfg = getPermitFieldConfig(kind);
                 var input = document.getElementById(cfg.inputId);
                 var label = document.getElementById(cfg.labelId);
+                var addressRow = document.getElementById(cfg.addressRowId);
                 if (!input) {
                     return;
                 }
@@ -1721,6 +1757,10 @@
                     label.textContent = meta.label;
                 }
                 input.placeholder = meta.placeholder;
+                input.parentNode.classList.toggle("is-hidden", !!meta.useAddressFields);
+                if (addressRow) {
+                    addressRow.classList.toggle("is-hidden", !meta.useAddressFields);
+                }
                 setPermitValidationState(kind, false, false, "");
             }
 
@@ -1750,12 +1790,27 @@
                 }
 
                 var referenceValue = (input.value || "").trim();
+                var streetNumberInput = document.getElementById(cfg.streetNumberId);
+                var streetNameInput = document.getElementById(cfg.streetNameId);
+                var streetTypeInput = document.getElementById(cfg.streetTypeId);
+                var streetNumber = streetNumberInput ? (streetNumberInput.value || "").trim() : "";
+                var streetName = streetNameInput ? (streetNameInput.value || "").trim() : "";
+                var streetType = streetTypeInput ? (streetTypeInput.value || "").trim() : "";
                 var meta = getReferenceFieldMeta(getSelectedReferenceCode(kind));
-                if (!referenceValue) {
+                if (meta.useAddressFields) {
+                    if (!streetNumber) {
+                        setPermitValidationState(kind, false, false, "Street number is required.");
+                        return Promise.resolve(false);
+                    }
+                    if (!streetName) {
+                        setPermitValidationState(kind, false, false, "Street name is required.");
+                        return Promise.resolve(false);
+                    }
+                } else if (!referenceValue) {
                     setPermitValidationState(kind, false, false, meta.label + " is required.");
                     return Promise.resolve(false);
                 }
-                if (!meta.validatePermit) {
+                if (!meta.validatePermit && !meta.useAddressFields) {
                     setPermitValidationState(kind, false, true, "");
                     return Promise.resolve(true);
                 }
@@ -1764,26 +1819,31 @@
                 state.seq += 1;
                 permitValidationState[kind] = state;
                 var requestSeq = state.seq;
-                setPermitValidationState(kind, true, false, "Validating permit number...");
+                setPermitValidationState(kind, true, false, meta.useAddressFields ? "Validating address..." : "Validating permit number...");
 
                 var run = function () {
-                    return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(referenceValue))
+                    return getJson(validateReferenceUrl
+                        + "?referenceType=" + encodeURIComponent(getSelectedReferenceCode(kind))
+                        + "&enterValue=" + encodeURIComponent(referenceValue)
+                        + "&streetNumber=" + encodeURIComponent(streetNumber)
+                        + "&streetName=" + encodeURIComponent(streetName)
+                        + "&streetType=" + encodeURIComponent(streetType))
                         .then(function (res) {
                             if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
                                 return false;
                             }
                             if (res && res.ok) {
-                                setPermitValidationState(kind, false, true, "Permit number validated.");
+                                setPermitValidationState(kind, false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
                                 return true;
                             }
-                            setPermitValidationState(kind, false, false, res && res.error ? res.error : "Permit number is invalid.");
+                            setPermitValidationState(kind, false, false, res && res.error ? res.error : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
                             return false;
                         })
                         .catch(function () {
                             if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
                                 return false;
                             }
-                            setPermitValidationState(kind, false, false, "Could not validate permit number.");
+                            setPermitValidationState(kind, false, false, meta.useAddressFields ? "Could not validate address." : "Could not validate permit number.");
                             return false;
                         });
                 };
@@ -2039,6 +2099,12 @@
                     if (input) {
                         input.value = "";
                     }
+                    ["streetNumber", "streetName", "streetType"].forEach(function (id) {
+                        var field = document.getElementById(id);
+                        if (field) {
+                            field.value = "";
+                        }
+                    });
                     syncReferenceInputMeta("appointment");
                 });
                 syncReferenceInputMeta("appointment");
@@ -2066,6 +2132,12 @@
                     if (input) {
                         input.value = "";
                     }
+                    ["walkinStreetNumber", "walkinStreetName", "walkinStreetType"].forEach(function (id) {
+                        var field = document.getElementById(id);
+                        if (field) {
+                            field.value = "";
+                        }
+                    });
                     syncReferenceInputMeta("walkin");
                 });
                 syncReferenceInputMeta("walkin");
@@ -2075,11 +2147,27 @@
                 permitNumberInput.addEventListener("input", function () { validatePermitNumber("appointment", false); });
                 permitNumberInput.addEventListener("blur", function () { validatePermitNumber("appointment", true); });
             }
+            ["streetNumber", "streetName", "streetType"].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (!input) {
+                    return;
+                }
+                input.addEventListener("input", function () { validatePermitNumber("appointment", false); });
+                input.addEventListener("blur", function () { validatePermitNumber("appointment", true); });
+            });
             var walkinPermitNumberInput = document.getElementById("walkinPermitNumber");
             if (walkinPermitNumberInput) {
                 walkinPermitNumberInput.addEventListener("input", function () { validatePermitNumber("walkin", false); });
                 walkinPermitNumberInput.addEventListener("blur", function () { validatePermitNumber("walkin", true); });
             }
+            ["walkinStreetNumber", "walkinStreetName", "walkinStreetType"].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (!input) {
+                    return;
+                }
+                input.addEventListener("input", function () { validatePermitNumber("walkin", false); });
+                input.addEventListener("blur", function () { validatePermitNumber("walkin", true); });
+            });
             if (addAppointmentForm) {
                 addAppointmentForm.addEventListener("submit", function (event) {
                     event.preventDefault();

@@ -114,6 +114,9 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string permitNumber,
+            string streetNumber,
+            string streetName,
+            string streetType,
             string email,
             string customerName,
             string phone,
@@ -124,7 +127,7 @@ namespace FastQ.Web.Services
             string stampUser)
         {
             var refCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim();
-            var referenceValue = string.IsNullOrWhiteSpace(permitNumber) ? null : permitNumber.Trim();
+            var referenceValue = BuildReferenceValue(refCriteria, permitNumber, streetNumber, streetName, streetType);
 
             if (queueId <= 0)
                 return Result<Appointment>.Fail("Queue is required.");
@@ -139,12 +142,9 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
-            if (string.Equals(refCriteria, "P", StringComparison.OrdinalIgnoreCase))
-            {
-                var permitValidation = ValidatePermitNumber(referenceValue);
-                if (!permitValidation.Ok)
-                    return Result<Appointment>.Fail(permitValidation.Error);
-            }
+            var referenceValidation = ValidateReference(refCriteria, referenceValue, streetNumber, streetName, streetType);
+            if (!referenceValidation.Ok)
+                return Result<Appointment>.Fail(referenceValidation.Error);
             if (!long.TryParse(serviceId, out var parsedServiceId) || parsedServiceId <= 0)
                 return Result<Appointment>.Fail("Service is required.");
             var queueValidation = ValidateScheduledInputAgainstQueueDetails(queueId, parsedServiceId, contactType, refCriteria, scheduledForUtc);
@@ -195,6 +195,9 @@ namespace FastQ.Web.Services
             string serviceId,
             string refValue,
             string permitNumber,
+            string streetNumber,
+            string streetName,
+            string streetType,
             string email,
             string customerName,
             string phone,
@@ -204,7 +207,7 @@ namespace FastQ.Web.Services
             string stampUser)
         {
             var refCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim();
-            var referenceValue = string.IsNullOrWhiteSpace(permitNumber) ? null : permitNumber.Trim();
+            var referenceValue = BuildReferenceValue(refCriteria, permitNumber, streetNumber, streetName, streetType);
 
             if (queueId <= 0)
                 return Result<long>.Fail("Queue is required.");
@@ -219,12 +222,9 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
-            if (string.Equals(refCriteria, "P", StringComparison.OrdinalIgnoreCase))
-            {
-                var permitValidation = ValidatePermitNumber(referenceValue);
-                if (!permitValidation.Ok)
-                    return Result<long>.Fail(permitValidation.Error);
-            }
+            var referenceValidation = ValidateReference(refCriteria, referenceValue, streetNumber, streetName, streetType);
+            if (!referenceValidation.Ok)
+                return Result<long>.Fail(referenceValidation.Error);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -393,6 +393,29 @@ namespace FastQ.Web.Services
             return ValidatePermitNumber(permitNumber);
         }
 
+        public Result ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var normalizedType = (referenceType ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedType))
+            {
+                return Result.Fail("Reference type is required.");
+            }
+
+            if (string.Equals(normalizedType, "P", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedType, "Permit", StringComparison.OrdinalIgnoreCase))
+            {
+                return ValidatePermitNumber(enterValue);
+            }
+
+            if (string.Equals(normalizedType, "A", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedType, "Address", StringComparison.OrdinalIgnoreCase))
+            {
+                return ValidateAddress(streetNumber, streetName, streetType);
+            }
+
+            return Result.Success();
+        }
+
         private static Result ValidatePermitNumber(string permitNumber)
         {
             var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
@@ -419,6 +442,52 @@ namespace FastQ.Web.Services
                 apiBaseUrl.TrimEnd('/'),
                 Uri.EscapeDataString(normalizedPermit));
 
+            return ExecuteReferenceValidation(requestUrl, apiKey, "Permit number is invalid.");
+        }
+
+        private static Result ValidateAddress(string streetNumber, string streetName, string streetType)
+        {
+            var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
+            if (string.IsNullOrWhiteSpace(apiBaseUrl))
+            {
+                return Result.Fail("Reference validation service is not configured.");
+            }
+
+            var apiKey = ConfigurationManager.AppSettings["FTApiKeyPolymorphic"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return Result.Fail("Reference validation API key is not configured.");
+            }
+
+            var normalizedStreetNumber = (streetNumber ?? string.Empty).Trim();
+            var normalizedStreetName = (streetName ?? string.Empty).Trim();
+            var normalizedStreetType = (streetType ?? string.Empty).Trim();
+
+            if (normalizedStreetNumber.Length == 0)
+            {
+                return Result.Fail("Street number is required.");
+            }
+            if (normalizedStreetName.Length == 0)
+            {
+                return Result.Fail("Street name is required.");
+            }
+
+            var query = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "StreetNumber={0}&StreetName={1}",
+                Uri.EscapeDataString(normalizedStreetNumber),
+                Uri.EscapeDataString(normalizedStreetName));
+            if (!string.IsNullOrWhiteSpace(normalizedStreetType))
+            {
+                query += "&StreetType=" + Uri.EscapeDataString(normalizedStreetType);
+            }
+
+            var requestUrl = apiBaseUrl.TrimEnd('/') + "/search?" + query;
+            return ExecuteReferenceValidation(requestUrl, apiKey, "Address is invalid.");
+        }
+
+        private static Result ExecuteReferenceValidation(string requestUrl, string apiKey, string invalidMessage)
+        {
             try
             {
                 using (var httpClient = new HttpClient())
@@ -432,20 +501,20 @@ namespace FastQ.Web.Services
                         return Result.Success();
                     }
 
-                    return Result.Fail("Permit number is invalid.");
+                    return Result.Fail(invalidMessage);
                 }
             }
             catch (TaskCanceledException)
             {
-                return Result.Fail("Permit validation request timed out.");
+                return Result.Fail("Validation request timed out.");
             }
             catch (HttpRequestException)
             {
-                return Result.Fail("Error connecting to permit validation service.");
+                return Result.Fail("Error connecting to validation service.");
             }
             catch (Exception)
             {
-                return Result.Fail("An error occurred during permit validation.");
+                return Result.Fail("An error occurred during validation.");
             }
         }
 
@@ -630,6 +699,22 @@ namespace FastQ.Web.Services
                 return null;
 
             return new ScheduleWindow { Open = open, Close = close };
+        }
+
+        private static string BuildReferenceValue(string refCriteria, string enteredValue, string streetNumber, string streetName, string streetType)
+        {
+            if (string.Equals((refCriteria ?? string.Empty).Trim(), "A", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = new[]
+                {
+                    (streetNumber ?? string.Empty).Trim(),
+                    (streetName ?? string.Empty).Trim(),
+                    (streetType ?? string.Empty).Trim()
+                }.Where(v => !string.IsNullOrWhiteSpace(v));
+                return string.Join(" ", parts);
+            }
+
+            return string.IsNullOrWhiteSpace(enteredValue) ? null : enteredValue.Trim();
         }
 
         private struct ScheduleWindow

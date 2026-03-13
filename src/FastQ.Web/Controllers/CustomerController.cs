@@ -20,7 +20,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public ActionResult Book(string queueId, string serviceId, string refValue, string email, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string permitNumber, string meetingUrl, string notes)
+        public ActionResult Book(string queueId, string serviceId, string refValue, string email, string phone, string firstName, string lastName, string customerName, string contactType, string appointmentDate, string startTime, string permitNumber, string streetNumber, string streetName, string streetType, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
             {
@@ -82,6 +82,9 @@ namespace FastQ.Web.Controllers
                 serviceId,
                 refValue,
                 permitNumber,
+                streetNumber,
+                streetName,
+                streetType,
                 email,
                 resolvedCustomerName,
                 phone,
@@ -140,6 +143,19 @@ namespace FastQ.Web.Controllers
         public JsonResult ValidatePermit(string permitNumber)
         {
             var res = _service.ValidatePermit(permitNumber);
+            return Json(
+                new
+                {
+                    ok = res.Ok,
+                    error = res.Ok ? null : res.Error
+                },
+                JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var res = _service.ValidateReference(referenceType, enterValue, streetNumber, streetName, streetType);
             return Json(
                 new
                 {

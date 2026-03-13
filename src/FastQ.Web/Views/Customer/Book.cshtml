@@ -125,6 +125,20 @@
                     <input type="text" id="permitNumber" name="permitNumber" placeholder="Enter reference value" />
                     <div id="permitStatus" class="muted"></div>
                 </div>
+                <div class="grid-3 is-hidden" id="addressFields">
+                    <div class="field">
+                        <label for="streetNumber">Street Number *</label>
+                        <input type="text" id="streetNumber" name="streetNumber" placeholder="Street number" />
+                    </div>
+                    <div class="field">
+                        <label for="streetName">Street Name *</label>
+                        <input type="text" id="streetName" name="streetName" placeholder="Street name" />
+                    </div>
+                    <div class="field">
+                        <label for="streetType">Street Type</label>
+                        <input type="text" id="streetType" name="streetType" placeholder="Street type" />
+                    </div>
+                </div>
                 <div class="field">
                     <label for="notes">Notes</label>
                     <input type="text" id="notes" name="notes" placeholder="Additional info" />
@@ -198,6 +212,7 @@ var FastQBook = {
   getQueueDetailsUrl: "/Provider/GetQueueDetails",
   getCustomerByEmailUrl: "/Customer/LookupCustomerByEmail",
   validatePermitUrl: "/Customer/ValidatePermit",
+  validateReferenceUrl: "/Customer/ValidateReference",
   state: {
     queueId: "",
     queueName: "",
@@ -562,15 +577,15 @@ var FastQBook = {
   getReferenceFieldMeta: function (code) {
     switch ((code || "").toUpperCase()) {
       case "A":
-        return { label: "Address", placeholder: "Enter address", validatePermit: false };
+        return { label: "Address", placeholder: "Enter address", validatePermit: false, useAddressFields: true };
       case "C":
-        return { label: "Case", placeholder: "Enter case", validatePermit: false };
+        return { label: "Case", placeholder: "Enter case", validatePermit: false, useAddressFields: false };
       case "G":
-        return { label: "General", placeholder: "Enter general reference", validatePermit: false };
+        return { label: "General", placeholder: "Enter general reference", validatePermit: false, useAddressFields: false };
       case "P":
-        return { label: "Permit", placeholder: "Enter permit number", validatePermit: true };
+        return { label: "Permit", placeholder: "Enter permit number", validatePermit: true, useAddressFields: false };
       default:
-        return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false };
+        return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false, useAddressFields: false };
     }
   },
 
@@ -578,11 +593,16 @@ var FastQBook = {
     var meta = this.getReferenceFieldMeta(($("#reference").val() || "").trim());
     var label = document.getElementById("referenceValueLabel");
     var input = document.getElementById("permitNumber");
+    var addressFields = document.getElementById("addressFields");
     if (label) {
       label.textContent = meta.label + " *";
     }
     if (input) {
       input.placeholder = meta.placeholder;
+      input.parentNode.classList.toggle("is-hidden", !!meta.useAddressFields);
+    }
+    if (addressFields) {
+      addressFields.classList.toggle("is-hidden", !meta.useAddressFields);
     }
     this.resetPermitValidation();
   },
@@ -698,37 +718,54 @@ var FastQBook = {
   validatePermitNumber: function (immediate) {
     var referenceValue = ($("#permitNumber").val() || "").trim();
     var meta = this.getReferenceFieldMeta(($("#reference").val() || "").trim());
-    if (!referenceValue) {
+    var streetNumber = ($("#streetNumber").val() || "").trim();
+    var streetName = ($("#streetName").val() || "").trim();
+    var streetType = ($("#streetType").val() || "").trim();
+    if (meta.useAddressFields) {
+      if (!streetNumber) {
+        this.setPermitValidationState(false, false, "Street number is required.");
+        return Promise.resolve(false);
+      }
+      if (!streetName) {
+        this.setPermitValidationState(false, false, "Street name is required.");
+        return Promise.resolve(false);
+      }
+    } else if (!referenceValue) {
       this.setPermitValidationState(false, false, meta.label + " is required.");
       return Promise.resolve(false);
     }
-    if (!meta.validatePermit) {
+    if (!meta.validatePermit && !meta.useAddressFields) {
       this.setPermitValidationState(false, true, "");
       return Promise.resolve(true);
     }
 
     this.permitValidation.seq += 1;
     var requestSeq = this.permitValidation.seq;
-    this.setPermitValidationState(true, false, "Validating permit number...");
+    this.setPermitValidationState(true, false, meta.useAddressFields ? "Validating address..." : "Validating permit number...");
 
     var run = function () {
-      return FastQBook.getJson(FastQBook.validatePermitUrl + "?permitNumber=" + encodeURIComponent(referenceValue))
+      return FastQBook.getJson(FastQBook.validateReferenceUrl
+        + "?referenceType=" + encodeURIComponent($("#reference").val() || "")
+        + "&enterValue=" + encodeURIComponent(referenceValue)
+        + "&streetNumber=" + encodeURIComponent(streetNumber)
+        + "&streetName=" + encodeURIComponent(streetName)
+        + "&streetType=" + encodeURIComponent(streetType))
         .then(function (res) {
           if (FastQBook.permitValidation.seq !== requestSeq) {
             return false;
           }
           if (res && res.ok) {
-            FastQBook.setPermitValidationState(false, true, "Permit number validated.");
+            FastQBook.setPermitValidationState(false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
             return true;
           }
-          FastQBook.setPermitValidationState(false, false, res && res.error ? res.error : "Permit number is invalid.");
+          FastQBook.setPermitValidationState(false, false, res && res.error ? res.error : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
           return false;
         })
         .catch(function () {
           if (FastQBook.permitValidation.seq !== requestSeq) {
             return false;
           }
-          FastQBook.setPermitValidationState(false, false, "Could not validate permit number.");
+          FastQBook.setPermitValidationState(false, false, meta.useAddressFields ? "Could not validate address." : "Could not validate permit number.");
           return false;
         });
     };
@@ -873,7 +910,11 @@ var FastQBook = {
     this.syncInfo();
     $("#msg").removeClass("ok").removeClass("error");
 
-    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.reference || !this.state.appointmentDate || !this.state.startTime || !this.state.email || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.permitNumber) {
+    var referenceMeta = this.getReferenceFieldMeta(this.state.reference);
+    var hasReferenceValue = referenceMeta.useAddressFields
+      ? !!(($("#streetNumber").val() || "").trim() && ($("#streetName").val() || "").trim())
+      : !!this.state.permitNumber;
+    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.reference || !hasReferenceValue || !this.state.appointmentDate || !this.state.startTime || !this.state.email || !this.state.phone || !this.state.firstName || !this.state.lastName) {
       $("#msg").addClass("error").text("Queue, service, contact type, reference, reference value, date, time, email, first name, last name, and mobile are required.");
       return false;
     }
@@ -923,6 +964,9 @@ var FastQBook = {
         appointmentDate: self.state.appointmentDate,
         startTime: self.state.startTime,
         permitNumber: self.state.permitNumber,
+        streetNumber: ($("#streetNumber").val() || "").trim(),
+        streetName: ($("#streetName").val() || "").trim(),
+        streetType: ($("#streetType").val() || "").trim(),
         meetingUrl: self.state.meetingUrl,
         notes: self.state.notes
       };
@@ -956,7 +1000,7 @@ var FastQBook = {
   },
 
   clear: function () {
-    $("#firstName, #lastName, #phone, #email, #permitNumber, #notes, #meetingUrl").val("");
+    $("#firstName, #lastName, #phone, #email, #permitNumber, #streetNumber, #streetName, #streetType, #notes, #meetingUrl").val("");
     $("#terms").prop("checked", false);
     this.setCustomerFieldsDisabled(false);
     this.hydrateProfile();
@@ -989,6 +1033,7 @@ var FastQBook = {
     }
     $("#reference").on("change", function () {
       $("#permitNumber").val("");
+      $("#streetNumber, #streetName, #streetType").val("");
       FastQBook.syncReferenceField();
     });
     if (date) {
@@ -1018,6 +1063,12 @@ var FastQBook = {
       FastQBook.validatePermitNumber(false);
     });
     $("#permitNumber").on("blur", function () {
+      FastQBook.validatePermitNumber(true);
+    });
+    $("#streetNumber, #streetName, #streetType").on("input", function () {
+      FastQBook.validatePermitNumber(false);
+    });
+    $("#streetNumber, #streetName, #streetType").on("blur", function () {
       FastQBook.validatePermitNumber(true);
     });
   },
