@@ -696,8 +696,8 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="permitNumber">Permit Number</label>
-                        <input id="permitNumber" name="permitNumber" type="text" required />
+                        <label id="permitNumberLabel" for="permitNumber">Reference Value</label>
+                        <input id="permitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
                         <div id="permitNumberStatus" class="helper-text"></div>
                     </div>
 
@@ -811,8 +811,8 @@
                     </div>
 
                     <div class="calendar-field">
-                        <label for="walkinPermitNumber">Permit Number</label>
-                        <input id="walkinPermitNumber" name="permitNumber" type="text" required />
+                        <label id="walkinPermitNumberLabel" for="walkinPermitNumber">Reference Value</label>
+                        <input id="walkinPermitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
                         <div id="walkinPermitNumberStatus" class="helper-text"></div>
                     </div>
 
@@ -1183,6 +1183,7 @@
                 setSelectOptions(serviceSelect, details && details.services ? details.services : [], "Select service");
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
+                syncReferenceInputMeta(prefix);
                 if (prefix === "") {
                     populateEntryModalDateOptions(details);
                     populateEntryModalTimeOptions(details, document.getElementById("appointmentDate") ? document.getElementById("appointmentDate").value : "");
@@ -1683,8 +1684,44 @@
 
             function getPermitFieldConfig(kind) {
                 return kind === "walkin"
-                    ? { inputId: "walkinPermitNumber", statusId: "walkinPermitNumberStatus" }
-                    : { inputId: "permitNumber", statusId: "permitNumberStatus" };
+                    ? { inputId: "walkinPermitNumber", statusId: "walkinPermitNumberStatus", labelId: "walkinPermitNumberLabel", refId: "walkinRefValue" }
+                    : { inputId: "permitNumber", statusId: "permitNumberStatus", labelId: "permitNumberLabel", refId: "refValue" };
+            }
+
+            function getReferenceFieldMeta(code) {
+                switch ((code || "").toUpperCase()) {
+                    case "A":
+                        return { label: "Address", placeholder: "Enter address", validatePermit: false };
+                    case "C":
+                        return { label: "Case", placeholder: "Enter case", validatePermit: false };
+                    case "G":
+                        return { label: "General", placeholder: "Enter general reference", validatePermit: false };
+                    case "P":
+                        return { label: "Permit", placeholder: "Enter permit number", validatePermit: true };
+                    default:
+                        return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false };
+                }
+            }
+
+            function getSelectedReferenceCode(kind) {
+                var cfg = getPermitFieldConfig(kind);
+                var refSelect = document.getElementById(cfg.refId);
+                return refSelect ? (refSelect.value || "").trim() : "";
+            }
+
+            function syncReferenceInputMeta(kind) {
+                var cfg = getPermitFieldConfig(kind);
+                var input = document.getElementById(cfg.inputId);
+                var label = document.getElementById(cfg.labelId);
+                if (!input) {
+                    return;
+                }
+                var meta = getReferenceFieldMeta(getSelectedReferenceCode(kind));
+                if (label) {
+                    label.textContent = meta.label;
+                }
+                input.placeholder = meta.placeholder;
+                setPermitValidationState(kind, false, false, "");
             }
 
             function setPermitValidationState(kind, pending, valid, message) {
@@ -1712,10 +1749,15 @@
                     return Promise.resolve(true);
                 }
 
-                var permitNumber = (input.value || "").trim();
-                if (!permitNumber) {
-                    setPermitValidationState(kind, false, false, "Permit number is required.");
+                var referenceValue = (input.value || "").trim();
+                var meta = getReferenceFieldMeta(getSelectedReferenceCode(kind));
+                if (!referenceValue) {
+                    setPermitValidationState(kind, false, false, meta.label + " is required.");
                     return Promise.resolve(false);
+                }
+                if (!meta.validatePermit) {
+                    setPermitValidationState(kind, false, true, "");
+                    return Promise.resolve(true);
                 }
 
                 var state = permitValidationState[kind] || { seq: 0, pending: false, valid: false, message: "" };
@@ -1725,7 +1767,7 @@
                 setPermitValidationState(kind, true, false, "Validating permit number...");
 
                 var run = function () {
-                    return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(permitNumber))
+                    return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(referenceValue))
                         .then(function (res) {
                             if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
                                 return false;
@@ -1990,6 +2032,17 @@
                     populateEntryModalTimeOptions(activeEntryQueueDetails[""], appointmentDateSelect.value || "");
                 });
             }
+            var refValueSelect = document.getElementById("refValue");
+            if (refValueSelect) {
+                refValueSelect.addEventListener("change", function () {
+                    var input = document.getElementById("permitNumber");
+                    if (input) {
+                        input.value = "";
+                    }
+                    syncReferenceInputMeta("appointment");
+                });
+                syncReferenceInputMeta("appointment");
+            }
             if (walkinQueueIdSelect) {
                 walkinQueueIdSelect.addEventListener("change", function () {
                     loadEntryModalQueueDetails("walkin", walkinQueueIdSelect.value || "");
@@ -2005,6 +2058,17 @@
                 walkinEmailInput.addEventListener("input", function () { queueCustomerLookupByEmail("walkin"); });
                 walkinEmailInput.addEventListener("change", function () { lookupCustomerByEmail("walkin"); });
                 walkinEmailInput.addEventListener("blur", function () { lookupCustomerByEmail("walkin"); });
+            }
+            var walkinRefValueSelect = document.getElementById("walkinRefValue");
+            if (walkinRefValueSelect) {
+                walkinRefValueSelect.addEventListener("change", function () {
+                    var input = document.getElementById("walkinPermitNumber");
+                    if (input) {
+                        input.value = "";
+                    }
+                    syncReferenceInputMeta("walkin");
+                });
+                syncReferenceInputMeta("walkin");
             }
             var permitNumberInput = document.getElementById("permitNumber");
             if (permitNumberInput) {
@@ -2027,7 +2091,7 @@
                     }
                     validatePermitNumber("appointment", true).then(function (isValid) {
                         if (!isValid) {
-                            window.alert(permitValidationState.appointment.message || "Permit number is invalid.");
+                            window.alert(permitValidationState.appointment.message || "Reference value is invalid.");
                             return;
                         }
 
@@ -2064,7 +2128,7 @@
                     }
                     validatePermitNumber("walkin", true).then(function (isValid) {
                         if (!isValid) {
-                            window.alert(permitValidationState.walkin.message || "Permit number is invalid.");
+                            window.alert(permitValidationState.walkin.message || "Reference value is invalid.");
                             return;
                         }
 

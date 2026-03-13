@@ -121,8 +121,8 @@
                     <span class="pill">Optional</span>
                 </div>
                 <div class="field">
-                    <label for="permitNumber">Permit Number *</label>
-                    <input type="text" id="permitNumber" name="permitNumber" placeholder="Permit number" />
+                    <label id="referenceValueLabel" for="permitNumber">Reference Value *</label>
+                    <input type="text" id="permitNumber" name="permitNumber" placeholder="Enter reference value" />
                     <div id="permitStatus" class="muted"></div>
                 </div>
                 <div class="field">
@@ -559,6 +559,34 @@ var FastQBook = {
     this.state.meetingUrl = ($("#meetingUrl").val() || "").trim();
   },
 
+  getReferenceFieldMeta: function (code) {
+    switch ((code || "").toUpperCase()) {
+      case "A":
+        return { label: "Address", placeholder: "Enter address", validatePermit: false };
+      case "C":
+        return { label: "Case", placeholder: "Enter case", validatePermit: false };
+      case "G":
+        return { label: "General", placeholder: "Enter general reference", validatePermit: false };
+      case "P":
+        return { label: "Permit", placeholder: "Enter permit number", validatePermit: true };
+      default:
+        return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false };
+    }
+  },
+
+  syncReferenceField: function () {
+    var meta = this.getReferenceFieldMeta(($("#reference").val() || "").trim());
+    var label = document.getElementById("referenceValueLabel");
+    var input = document.getElementById("permitNumber");
+    if (label) {
+      label.textContent = meta.label + " *";
+    }
+    if (input) {
+      input.placeholder = meta.placeholder;
+    }
+    this.resetPermitValidation();
+  },
+
   setCustomerFieldsDisabled: function (disabled) {
     $("#firstName, #lastName, #phone").prop("readonly", !!disabled);
     $("#firstName, #lastName, #phone").toggleClass("autofilled-lock", !!disabled);
@@ -668,10 +696,15 @@ var FastQBook = {
   },
 
   validatePermitNumber: function (immediate) {
-    var permitNumber = ($("#permitNumber").val() || "").trim();
-    if (!permitNumber) {
-      this.setPermitValidationState(false, false, "Permit number is required.");
+    var referenceValue = ($("#permitNumber").val() || "").trim();
+    var meta = this.getReferenceFieldMeta(($("#reference").val() || "").trim());
+    if (!referenceValue) {
+      this.setPermitValidationState(false, false, meta.label + " is required.");
       return Promise.resolve(false);
+    }
+    if (!meta.validatePermit) {
+      this.setPermitValidationState(false, true, "");
+      return Promise.resolve(true);
     }
 
     this.permitValidation.seq += 1;
@@ -679,7 +712,7 @@ var FastQBook = {
     this.setPermitValidationState(true, false, "Validating permit number...");
 
     var run = function () {
-      return FastQBook.getJson(FastQBook.validatePermitUrl + "?permitNumber=" + encodeURIComponent(permitNumber))
+      return FastQBook.getJson(FastQBook.validatePermitUrl + "?permitNumber=" + encodeURIComponent(referenceValue))
         .then(function (res) {
           if (FastQBook.permitValidation.seq !== requestSeq) {
             return false;
@@ -794,6 +827,7 @@ var FastQBook = {
         FastQBook.setSelectOptions(document.getElementById("serviceId"), data && data.services ? data.services : [], "Select service");
         FastQBook.setSelectOptions(document.getElementById("contactType"), data && data.contactOptions ? data.contactOptions : [], "Select contact type");
         FastQBook.setSelectOptions(document.getElementById("reference"), data && data.refOptions ? data.refOptions : [], "Select reference");
+        FastQBook.syncReferenceField();
 
         var serviceSelect = document.getElementById("serviceId");
         if (serviceSelect && serviceSelect.options.length > 1) {
@@ -822,6 +856,7 @@ var FastQBook = {
         FastQBook.setSelectOptions(document.getElementById("serviceId"), [], "Select service");
         FastQBook.setSelectOptions(document.getElementById("contactType"), [], "Select contact type");
         FastQBook.setSelectOptions(document.getElementById("reference"), [], "Select reference");
+        FastQBook.syncReferenceField();
         FastQBook.setSelectValues(document.getElementById("dateInput"), [], "Select date");
         FastQBook.setSelectValues(document.getElementById("startTime"), [], "Select time");
         FastQBook.state.serviceId = "";
@@ -838,8 +873,8 @@ var FastQBook = {
     this.syncInfo();
     $("#msg").removeClass("ok").removeClass("error");
 
-    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.appointmentDate || !this.state.startTime || !this.state.email || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.permitNumber) {
-      $("#msg").addClass("error").text("Queue, service, contact type, date, time, email, first name, last name, mobile, and permit number are required.");
+    if (!this.state.queueId || !this.state.serviceId || !this.state.contactType || !this.state.reference || !this.state.appointmentDate || !this.state.startTime || !this.state.email || !this.state.phone || !this.state.firstName || !this.state.lastName || !this.state.permitNumber) {
+      $("#msg").addClass("error").text("Queue, service, contact type, reference, reference value, date, time, email, first name, last name, and mobile are required.");
       return false;
     }
     if (this.isOnlineContact() && !this.state.meetingUrl) {
@@ -858,7 +893,7 @@ var FastQBook = {
     }
 
     if (!this.permitValidation.valid) {
-      $("#msg").addClass("error").text(this.permitValidation.message || "Permit number is invalid.");
+      $("#msg").addClass("error").text(this.permitValidation.message || "Reference value is invalid.");
       return false;
     }
 
@@ -952,6 +987,10 @@ var FastQBook = {
         FastQBook.syncContactType();
       });
     }
+    $("#reference").on("change", function () {
+      $("#permitNumber").val("");
+      FastQBook.syncReferenceField();
+    });
     if (date) {
       date.addEventListener("change", function () {
         FastQBook.syncDate();
@@ -988,6 +1027,7 @@ var FastQBook = {
     this.hydrateProfile();
     this.bindEvents();
     this.syncMeetingField();
+    this.syncReferenceField();
     this.lookupCustomerByEmail();
     this.loadQueues();
 

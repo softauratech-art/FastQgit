@@ -865,9 +865,9 @@
                 </select>
             </div>
             <div class="route-form-row">
-                <label for="addApptPermitNumber">Permit Number</label>
+                <label id="addApptPermitNumberLabel" for="addApptPermitNumber">Reference Value</label>
                 <div>
-                    <input id="addApptPermitNumber" class="route-input" type="text" />
+                    <input id="addApptPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
                     <div id="addApptPermitStatus" class="helper-text"></div>
                 </div>
             </div>
@@ -954,9 +954,9 @@
                 </select>
             </div>
             <div class="route-form-row">
-                <label for="addWalkinPermitNumber">Permit Number</label>
+                <label id="addWalkinPermitNumberLabel" for="addWalkinPermitNumber">Reference Value</label>
                 <div>
-                    <input id="addWalkinPermitNumber" class="route-input" type="text" />
+                    <input id="addWalkinPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
                     <div id="addWalkinPermitStatus" class="helper-text"></div>
                 </div>
             </div>
@@ -1069,6 +1069,7 @@
       setSelectOptions(document.getElementById(prefix + "ServiceId"), details && details.services ? details.services : [], "Select service");
       setSelectOptions(document.getElementById(prefix + "ContactType"), details && details.contactOptions ? details.contactOptions : [], "Select contact type");
       setSelectOptions(document.getElementById(prefix + "RefValue"), details && details.refOptions ? details.refOptions : [], "Select reference");
+      syncReferenceInputMeta(prefix);
       syncMeetingUrlField(prefix);
     }
 
@@ -1127,7 +1128,42 @@
       populateEntryModalDateTime(prefix, null);
       setCustomerLookupState(prefix, false, null);
       resetPermitValidation(prefix);
+      syncReferenceInputMeta(prefix);
       syncMeetingUrlField(prefix);
+    }
+
+    function getReferenceFieldMeta(code) {
+      switch ((code || "").toUpperCase()) {
+        case "A":
+          return { label: "Address", placeholder: "Enter address", validatePermit: false };
+        case "C":
+          return { label: "Case", placeholder: "Enter case", validatePermit: false };
+        case "G":
+          return { label: "General", placeholder: "Enter general reference", validatePermit: false };
+        case "P":
+          return { label: "Permit", placeholder: "Enter permit number", validatePermit: true };
+        default:
+          return { label: "Reference Value", placeholder: "Enter reference value", validatePermit: false };
+      }
+    }
+
+    function getSelectedReferenceCode(prefix) {
+      var refSelect = document.getElementById(prefix + "RefValue");
+      return refSelect ? (refSelect.value || "").trim() : "";
+    }
+
+    function syncReferenceInputMeta(prefix) {
+      var input = document.getElementById(prefix + "PermitNumber");
+      var label = document.getElementById(prefix + "PermitNumberLabel");
+      if (!input) {
+        return;
+      }
+      var meta = getReferenceFieldMeta(getSelectedReferenceCode(prefix));
+      if (label) {
+        label.textContent = meta.label;
+      }
+      input.placeholder = meta.placeholder;
+      resetPermitValidation(prefix);
     }
 
     function getPermitValidationIds(prefix) {
@@ -1172,10 +1208,16 @@
         return Promise.resolve(true);
       }
 
-      var permitNumber = (input.value || "").trim();
-      if (!permitNumber) {
-        setPermitValidationState(prefix, false, false, "Permit number is required.");
+      var referenceValue = (input.value || "").trim();
+      var refCode = getSelectedReferenceCode(prefix);
+      var meta = getReferenceFieldMeta(refCode);
+      if (!referenceValue) {
+        setPermitValidationState(prefix, false, false, meta.label + " is required.");
         return Promise.resolve(false);
+      }
+      if (!meta.validatePermit) {
+        setPermitValidationState(prefix, false, true, "");
+        return Promise.resolve(true);
       }
 
       var state = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
@@ -1185,7 +1227,7 @@
       setPermitValidationState(prefix, true, false, "Validating permit number...");
 
       var run = function () {
-        return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(permitNumber))
+        return getJson(validatePermitUrl + "?permitNumber=" + encodeURIComponent(referenceValue))
           .then(function (res) {
             if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
               return false;
@@ -2944,6 +2986,17 @@
       });
       syncMeetingUrlField("addAppt");
     }
+    var addApptRefValue = document.getElementById("addApptRefValue");
+    if (addApptRefValue) {
+      addApptRefValue.addEventListener("change", function () {
+        var input = document.getElementById("addApptPermitNumber");
+        if (input) {
+          input.value = "";
+        }
+        syncReferenceInputMeta("addAppt");
+      });
+      syncReferenceInputMeta("addAppt");
+    }
 
     var addApptEmail = document.getElementById("addApptEmail");
     if (addApptEmail) {
@@ -2970,6 +3023,17 @@
         syncMeetingUrlField("addWalkin");
       });
       syncMeetingUrlField("addWalkin");
+    }
+    var addWalkinRefValue = document.getElementById("addWalkinRefValue");
+    if (addWalkinRefValue) {
+      addWalkinRefValue.addEventListener("change", function () {
+        var input = document.getElementById("addWalkinPermitNumber");
+        if (input) {
+          input.value = "";
+        }
+        syncReferenceInputMeta("addWalkin");
+      });
+      syncReferenceInputMeta("addWalkin");
     }
 
     var addWalkinEmail = document.getElementById("addWalkinEmail");
@@ -3004,14 +3068,14 @@
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, permit number, email, first name, last name, phone, date, and time are required.", true);
+        if (!payload.queueId || !payload.refValue || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
           return;
         }
 
         validatePermitNumber("addAppt", true).then(function (isValid) {
           if (!isValid) {
-            showModalFeedback("addAppointmentModal", permitValidationState.addAppt.message || "Permit number is invalid.", true);
+            showModalFeedback("addAppointmentModal", permitValidationState.addAppt.message || "Reference value is invalid.", true);
             return;
           }
           postForm(addAppointmentUrl, payload).then(function (res) {
@@ -3044,14 +3108,14 @@
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
 
-        if (!payload.queueId || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone) {
-          showModalFeedback("addWalkinModal", "Queue, permit number, email, first name, last name, and phone are required.", true);
+        if (!payload.queueId || !payload.refValue || !payload.permitNumber || !payload.email || !payload.customerName || !payload.phone) {
+          showModalFeedback("addWalkinModal", "Queue, reference, reference value, email, first name, last name, and phone are required.", true);
           return;
         }
 
         validatePermitNumber("addWalkin", true).then(function (isValid) {
           if (!isValid) {
-            showModalFeedback("addWalkinModal", permitValidationState.addWalkin.message || "Permit number is invalid.", true);
+            showModalFeedback("addWalkinModal", permitValidationState.addWalkin.message || "Reference value is invalid.", true);
             return;
           }
           postForm(addWalkinUrl, payload).then(function (res) {

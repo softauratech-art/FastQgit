@@ -123,10 +123,13 @@ namespace FastQ.Web.Services
             string meetingUrl,
             string stampUser)
         {
+            var refCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim();
+            var referenceValue = string.IsNullOrWhiteSpace(permitNumber) ? null : permitNumber.Trim();
+
             if (queueId <= 0)
                 return Result<Appointment>.Fail("Queue is required.");
-            if (string.IsNullOrWhiteSpace(permitNumber))
-                return Result<Appointment>.Fail("Permit number is required.");
+            if (string.IsNullOrWhiteSpace(referenceValue))
+                return Result<Appointment>.Fail("Reference value is required.");
             if (string.IsNullOrWhiteSpace(email))
                 return Result<Appointment>.Fail("Email is required.");
             if (string.IsNullOrWhiteSpace(customerName))
@@ -136,12 +139,15 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
-            var permitValidation = ValidatePermitNumber(permitNumber);
-            if (!permitValidation.Ok)
-                return Result<Appointment>.Fail(permitValidation.Error);
+            if (string.Equals(refCriteria, "P", StringComparison.OrdinalIgnoreCase))
+            {
+                var permitValidation = ValidatePermitNumber(referenceValue);
+                if (!permitValidation.Ok)
+                    return Result<Appointment>.Fail(permitValidation.Error);
+            }
             if (!long.TryParse(serviceId, out var parsedServiceId) || parsedServiceId <= 0)
                 return Result<Appointment>.Fail("Service is required.");
-            var queueValidation = ValidateScheduledInputAgainstQueueDetails(queueId, parsedServiceId, contactType, refValue, scheduledForUtc);
+            var queueValidation = ValidateScheduledInputAgainstQueueDetails(queueId, parsedServiceId, contactType, refCriteria, scheduledForUtc);
             if (!queueValidation.Ok)
                 return Result<Appointment>.Fail(queueValidation.Error);
 
@@ -161,8 +167,8 @@ namespace FastQ.Web.Services
                 CustomerPhone = customer.Phone ?? string.Empty,
                 CustomerSmsOptIn = customer.SmsOptIn,
                 ServiceId = parsedServiceId,
-                RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
-                RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                RefCriteria = refCriteria,
+                RefValue = referenceValue,
                 ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
@@ -197,10 +203,13 @@ namespace FastQ.Web.Services
             string notes,
             string stampUser)
         {
+            var refCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim();
+            var referenceValue = string.IsNullOrWhiteSpace(permitNumber) ? null : permitNumber.Trim();
+
             if (queueId <= 0)
                 return Result<long>.Fail("Queue is required.");
-            if (string.IsNullOrWhiteSpace(permitNumber))
-                return Result<long>.Fail("Permit number is required.");
+            if (string.IsNullOrWhiteSpace(referenceValue))
+                return Result<long>.Fail("Reference value is required.");
             if (string.IsNullOrWhiteSpace(email))
                 return Result<long>.Fail("Email is required.");
             if (string.IsNullOrWhiteSpace(customerName))
@@ -210,9 +219,12 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
-            var permitValidation = ValidatePermitNumber(permitNumber);
-            if (!permitValidation.Ok)
-                return Result<long>.Fail(permitValidation.Error);
+            if (string.Equals(refCriteria, "P", StringComparison.OrdinalIgnoreCase))
+            {
+                var permitValidation = ValidatePermitNumber(referenceValue);
+                if (!permitValidation.Ok)
+                    return Result<long>.Fail(permitValidation.Error);
+            }
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -225,8 +237,8 @@ namespace FastQ.Web.Services
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
-                RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
-                RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                RefCriteria = refCriteria,
+                RefValue = referenceValue,
                 ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
