@@ -695,7 +695,8 @@ var FastQBook = {
     this.permitValidation.valid = !!valid;
     this.permitValidation.message = message || "";
 
-    var status = document.getElementById("permitStatus");
+    var meta = this.getReferenceFieldMeta(($("#reference").val() || "").trim());
+    var status = document.getElementById(meta.useAddressFields ? "addressStatus" : "permitStatus");
     var input = document.getElementById("permitNumber");
     if (status) {
       status.textContent = message || "";

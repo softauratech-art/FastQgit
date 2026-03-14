@@ -1718,9 +1718,30 @@
             }
 
             function getPermitFieldConfig(kind) {
-                return kind === "walkin"
-                    ? { inputId: "walkinPermitNumber", statusId: "walkinPermitNumberStatus", labelId: "walkinPermitNumberLabel", refId: "walkinRefValue", addressRowId: "walkinAddressFieldRow", streetNumberId: "walkinStreetNumber", streetNameId: "walkinStreetName", streetTypeId: "walkinStreetType" }
-                    : { inputId: "permitNumber", statusId: "permitNumberStatus", labelId: "permitNumberLabel", refId: "refValue", addressRowId: "addressFieldRow", streetNumberId: "streetNumber", streetNameId: "streetName", streetTypeId: "streetType" };
+                var isWalkin = kind === "walkin";
+                var refId = isWalkin ? "walkinRefValue" : "refValue";
+                var meta = getReferenceFieldMeta((document.getElementById(refId) && document.getElementById(refId).value) || "");
+                return isWalkin
+                    ? {
+                        inputId: "walkinPermitNumber",
+                        statusId: meta.useAddressFields ? "walkinAddressStatus" : "walkinPermitNumberStatus",
+                        labelId: "walkinPermitNumberLabel",
+                        refId: "walkinRefValue",
+                        addressRowId: "walkinAddressFieldRow",
+                        streetNumberId: "walkinStreetNumber",
+                        streetNameId: "walkinStreetName",
+                        streetTypeId: "walkinStreetType"
+                    }
+                    : {
+                        inputId: "permitNumber",
+                        statusId: meta.useAddressFields ? "addressStatus" : "permitNumberStatus",
+                        labelId: "permitNumberLabel",
+                        refId: "refValue",
+                        addressRowId: "addressFieldRow",
+                        streetNumberId: "streetNumber",
+                        streetNameId: "streetName",
+                        streetTypeId: "streetType"
+                    };
             }
 
             function getReferenceFieldMeta(code) {

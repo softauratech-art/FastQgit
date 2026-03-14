@@ -1208,9 +1208,10 @@
     }
 
     function getPermitValidationIds(prefix) {
+      var meta = getReferenceFieldMeta(getSelectedReferenceCode(prefix));
       return {
         inputId: prefix + "PermitNumber",
-        statusId: prefix + "PermitStatus"
+        statusId: prefix + (meta.useAddressFields ? "AddressStatus" : "PermitStatus")
       };
     }
 
