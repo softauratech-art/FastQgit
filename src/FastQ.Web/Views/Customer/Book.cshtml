@@ -1,4 +1,4 @@
-@{
+ï»¿@{
     ViewBag.Title = "Customer Booking";
     var error = ViewBag.Error as string;
     var msgClass = string.IsNullOrWhiteSpace(error) ? "muted" : "muted error";
@@ -15,7 +15,7 @@
             <div>
                 <div class="eyebrow">Stepper</div>
                 <h3 class="card-title">1. Select Queue &amp; Service</h3>
-                <p class="card-subtitle">2. Select Contact method · 3. Select Date and Time · 4. Provide reference · 5. Contact Details</p>
+                <p class="card-subtitle">2. Select Contact method ï¿½ 3. Select Date and Time ï¿½ 4. Provide reference ï¿½ 5. Contact Details</p>
             </div>
             <span class="badge accent">Required</span>
         </div>
@@ -84,8 +84,30 @@
                     <span class="pill">Optional</span>
                 </div>
                 <div class="field">
-                    <label for="reference">Reference</label>
-                    <input type="text" id="reference" placeholder="Reference for this appointment" />
+                    <label for="referenceType">Reference</label>
+                    <select id="referenceType" name="referenceType">
+                        <option value="">Select reference</option>
+                        <option value="A">Address</option>
+                        <option value="C">Case</option>
+                        <option value="G">General</option>
+                        <option value="P">Permit</option>
+                    </select>
+                </div>
+                <div class="field" id="referenceValueRow">
+                    <label for="reference">Reference Value</label>
+                    <input type="text" id="reference" name="reference" placeholder="Reference for this appointment" />
+                    <div id="referenceStatus" class="muted" style="font-size:12px;"></div>
+                </div>
+                <div class="field is-hidden" id="addressRow">
+                    <label>Address</label>
+                    <div class="grid-2">
+                        <input type="text" id="streetNumber" name="streetNumber" placeholder="Street number" />
+                        <input type="text" id="streetName" name="streetName" placeholder="Street name" />
+                    </div>
+                    <div class="field" style="margin-top:8px;">
+                        <input type="text" id="streetType" name="streetType" placeholder="Street type" />
+                    </div>
+                    <div id="addressStatus" class="muted" style="font-size:12px;"></div>
                 </div>
             </div>
 
@@ -150,7 +172,9 @@
 
 @section Scripts {
 <script>
-window.FASTQ_CONTEXT = { };
+window.FASTQ_CONTEXT = {
+  validateReferenceUrl: "@Url.Action("ValidateReference", "Customer")"
+};
 var FastQBook = {
   steps: [
     { key: "queue", name: "Select Queue & Service" },
@@ -166,6 +190,7 @@ var FastQBook = {
     method: "online",
     date: null,
     slot: null,
+    referenceType: "",
     reference: "",
     firstName: "",
     lastName: "",
@@ -205,12 +230,85 @@ var FastQBook = {
   },
 
   syncInfo: function() {
+    this.state.referenceType = $("#referenceType").val().trim();
     this.state.reference = $("#reference").val().trim();
     this.state.firstName = $("#firstName").val().trim();
     this.state.lastName = $("#lastName").val().trim();
     this.state.phone = $("#phone").val().trim();
     this.state.email = $("#email").val().trim();
     this.state.notes = $("#notes").val().trim();
+  },
+
+  syncReferenceMode: function() {
+    var code = ($("#referenceType").val() || "").trim().toUpperCase();
+    $("#referenceValueRow").toggleClass("is-hidden", code === "A");
+    $("#addressRow").toggleClass("is-hidden", code !== "A");
+    if (code === "P") {
+      $("#reference").attr("placeholder", "Enter permit number");
+    } else if (code === "C") {
+      $("#reference").attr("placeholder", "Enter case");
+    } else if (code === "G") {
+      $("#reference").attr("placeholder", "Enter general reference");
+    } else {
+      $("#reference").attr("placeholder", "Reference for this appointment");
+    }
+    $("#referenceStatus").text("").removeClass("error").removeClass("success");
+    $("#addressStatus").text("").removeClass("error").removeClass("success");
+  },
+
+  validateReference: function() {
+    var code = ($("#referenceType").val() || "").trim().toUpperCase();
+    var reference = ($("#reference").val() || "").trim();
+    var streetNumber = ($("#streetNumber").val() || "").trim();
+    var streetName = ($("#streetName").val() || "").trim();
+    var streetType = ($("#streetType").val() || "").trim();
+
+    function setStatus(target, ok, message) {
+      $(target).text(message || "").removeClass("error").removeClass("success");
+      if (message) {
+        $(target).addClass(ok ? "success" : "error");
+      }
+    }
+
+    if (!code) {
+      setStatus("#referenceStatus", false, "");
+      setStatus("#addressStatus", false, "");
+      return $.Deferred().resolve(true).promise();
+    }
+
+    if (code === "A") {
+      if (!streetNumber || !streetName) {
+        setStatus("#addressStatus", false, "Street number and street name are required.");
+        return $.Deferred().resolve(false).promise();
+      }
+    } else if (!reference) {
+      setStatus("#referenceStatus", false, "Reference value is required.");
+      return $.Deferred().resolve(false).promise();
+    }
+
+    if (code !== "A" && code !== "P") {
+      setStatus("#referenceStatus", true, "Reference value is ready.");
+      return $.Deferred().resolve(true).promise();
+    }
+
+    setStatus(code === "A" ? "#addressStatus" : "#referenceStatus", true, code === "A" ? "Validating address..." : "Validating permit...");
+    return $.getJSON(window.FASTQ_CONTEXT.validateReferenceUrl, {
+      referenceType: code,
+      enterValue: reference,
+      streetNumber: streetNumber,
+      streetName: streetName,
+      streetType: streetType
+    }).then(function(res) {
+      if (res && res.ok) {
+        setStatus(code === "A" ? "#addressStatus" : "#referenceStatus", true, code === "A" ? "Address validated." : "Permit validated.");
+        return true;
+      }
+      setStatus(code === "A" ? "#addressStatus" : "#referenceStatus", false, res && res.error ? res.error : (code === "A" ? "Address is invalid." : "Permit is invalid."));
+      return false;
+    }, function() {
+      setStatus(code === "A" ? "#addressStatus" : "#referenceStatus", false, code === "A" ? "Could not validate address." : "Could not validate permit.");
+      return false;
+    });
   },
 
   renderStepper: function() {
@@ -223,7 +321,7 @@ var FastQBook = {
 
   renderSummary: function() {
     $("#summaryQueue").text(this.state.queueName || "Queue");
-    var timeText = (this.state.date || "Select date") + " · " + (this.state.slot || "Select time");
+    var timeText = (this.state.date || "Select date") + " ï¿½ " + (this.state.slot || "Select time");
     $("#summaryTime").text(timeText);
   },
 
@@ -276,7 +374,7 @@ var FastQBook = {
       $("#msg").addClass("error").text("Please agree to Terms and Conditions.");
       return false;
     }
-    return true;
+    return false;
   },
 
   clear: function() {
@@ -307,6 +405,28 @@ var FastQBook = {
     this.renderSlots();
     this.hydrateProfile();
     this.syncQueue();
+    this.syncReferenceMode();
+    $("#referenceType").on("change", this.syncReferenceMode.bind(this));
+    $("#reference, #streetNumber, #streetName, #streetType").on("blur", this.validateReference.bind(this));
+    $("form[action='/Customer/Book']").on("submit", function(evt) {
+      evt.preventDefault();
+      FastQBook.syncInfo();
+      if (!FastQBook.state.queueId || !FastQBook.state.phone || !FastQBook.state.firstName || !FastQBook.state.lastName || !FastQBook.state.email) {
+        $("#msg").addClass("error").text("First name, Last name, Mobile, Email, and Queue are required.");
+        return;
+      }
+      if (!$("#terms").is(":checked")) {
+        $("#msg").addClass("error").text("Please agree to Terms and Conditions.");
+        return;
+      }
+      FastQBook.validateReference().then(function(valid) {
+        if (valid) {
+          evt.target.submit();
+        } else {
+          $("#msg").addClass("error").text("Reference is invalid.");
+        }
+      });
+    });
   }
 };
 
