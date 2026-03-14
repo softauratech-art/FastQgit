@@ -91,5 +91,12 @@ namespace FastQ.Web.Controllers
 
             return Json(new { ok = true });
         }
+
+        [HttpGet]
+        public JsonResult ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var result = _service.ValidateReference(referenceType, enterValue, streetNumber, streetName, streetType);
+            return Json(new { ok = result.Ok, error = result.Error ?? string.Empty }, JsonRequestBehavior.AllowGet);
+        }
     }
 }

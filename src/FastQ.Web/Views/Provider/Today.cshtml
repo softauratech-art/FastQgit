@@ -222,6 +222,26 @@
             display: none;
         }
 
+        .validation-status {
+            grid-column: 2 / span 1;
+            font-size: 12px;
+            margin-top: -6px;
+        }
+
+        .validation-status.success {
+            color: #15803d;
+        }
+
+        .validation-status.error {
+            color: #b91c1c;
+        }
+
+        .address-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
         .table-name-label {
             margin: 0 0 8px;
             font-size: 18px;
@@ -686,6 +706,19 @@
                     <option value="">Select reference</option>
                 </select>
             </div>
+            <div class="route-form-row" id="addApptReferenceValueRow">
+                <label for="addApptReferenceInput">Reference Value</label>
+                <input id="addApptReferenceInput" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row is-hidden" id="addApptAddressRow">
+                <label>Address</label>
+                <div class="address-grid">
+                    <input id="addApptStreetNumber" class="route-input" type="text" placeholder="Street number" />
+                    <input id="addApptStreetName" class="route-input" type="text" placeholder="Street name" />
+                    <input id="addApptStreetType" class="route-input" type="text" placeholder="Street type" />
+                </div>
+            </div>
+            <div class="validation-status is-hidden" id="addApptReferenceStatus"></div>
             <div class="route-form-row">
                 <label for="addApptCustomerName">Customer Name</label>
                 <input id="addApptCustomerName" class="route-input" type="text" />
@@ -750,6 +783,19 @@
                     <option value="">Select reference</option>
                 </select>
             </div>
+            <div class="route-form-row" id="addWalkinReferenceValueRow">
+                <label for="addWalkinReferenceInput">Reference Value</label>
+                <input id="addWalkinReferenceInput" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row is-hidden" id="addWalkinAddressRow">
+                <label>Address</label>
+                <div class="address-grid">
+                    <input id="addWalkinStreetNumber" class="route-input" type="text" placeholder="Street number" />
+                    <input id="addWalkinStreetName" class="route-input" type="text" placeholder="Street name" />
+                    <input id="addWalkinStreetType" class="route-input" type="text" placeholder="Street type" />
+                </div>
+            </div>
+            <div class="validation-status is-hidden" id="addWalkinReferenceStatus"></div>
             <div class="route-form-row">
                 <label for="addWalkinCustomerName">Customer Name</label>
                 <input id="addWalkinCustomerName" class="route-input" type="text" />
@@ -782,8 +828,10 @@
     var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
     var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
     var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+    var validateReferenceUrl = "@Url.Action("ValidateReference", "Provider")";
     var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
     var activeRouteQueueDetails = null;
+    var referenceValidationState = {};
 
     function postForm(url, data) {
       return fetch(url, {
@@ -824,6 +872,7 @@
       setSelectOptions(document.getElementById(prefix + "ServiceId"), details && details.services ? details.services : [], "Select service");
       setSelectOptions(document.getElementById(prefix + "ContactType"), details && details.contactOptions ? details.contactOptions : [], "Select contact type");
       setSelectOptions(document.getElementById(prefix + "RefValue"), details && details.refOptions ? details.refOptions : [], "Select reference");
+      syncReferenceMode(prefix);
     }
 
     function loadEntryQueueDetails(prefix, queueCode) {
@@ -859,7 +908,8 @@
     function clearAddEntryModal(prefix) {
       var fields = [
         "QueueId", "ServiceId", "ContactType", "RefValue",
-        "CustomerName", "Phone", "MeetingUrl", "Notes"
+        "CustomerName", "Phone", "MeetingUrl", "Notes",
+        "ReferenceInput", "StreetNumber", "StreetName", "StreetType"
       ];
 
       fields.forEach(function (suffix) {
@@ -880,6 +930,104 @@
       }
 
       populateEntryModalOptions(prefix, null);
+      setReferenceValidationState(prefix, "", "");
+    }
+
+    function getSelectedReferenceCode(prefix) {
+      var select = document.getElementById(prefix + "RefValue");
+      return select ? (select.value || "").trim().toUpperCase() : "";
+    }
+
+    function setReferenceValidationState(prefix, state, message) {
+      referenceValidationState[prefix] = state || "";
+      var status = document.getElementById(prefix + "ReferenceStatus");
+      if (!status) {
+        return;
+      }
+      status.textContent = message || "";
+      status.className = "validation-status";
+      if (!message) {
+        status.classList.add("is-hidden");
+        return;
+      }
+      status.classList.add(state === "success" ? "success" : "error");
+    }
+
+    function syncReferenceMode(prefix) {
+      var code = getSelectedReferenceCode(prefix);
+      var valueRow = document.getElementById(prefix + "ReferenceValueRow");
+      var addressRow = document.getElementById(prefix + "AddressRow");
+      var input = document.getElementById(prefix + "ReferenceInput");
+      if (valueRow) {
+        valueRow.classList.toggle("is-hidden", code === "A");
+      }
+      if (addressRow) {
+        addressRow.classList.toggle("is-hidden", code !== "A");
+      }
+      if (input) {
+        input.placeholder = code === "P" ? "Enter permit number" : code === "C" ? "Enter case" : code === "G" ? "Enter general reference" : "Enter reference value";
+      }
+      setReferenceValidationState(prefix, "", "");
+    }
+
+    function buildReferenceValue(prefix) {
+      var code = getSelectedReferenceCode(prefix);
+      if (code === "A") {
+        var parts = [
+          document.getElementById(prefix + "StreetNumber") ? document.getElementById(prefix + "StreetNumber").value : "",
+          document.getElementById(prefix + "StreetName") ? document.getElementById(prefix + "StreetName").value : "",
+          document.getElementById(prefix + "StreetType") ? document.getElementById(prefix + "StreetType").value : ""
+        ].filter(function (part) { return (part || "").trim(); });
+        return parts.join(" ").trim();
+      }
+      var input = document.getElementById(prefix + "ReferenceInput");
+      return input ? (input.value || "").trim() : "";
+    }
+
+    function validateReferenceInput(prefix) {
+      var code = getSelectedReferenceCode(prefix);
+      if (!code) {
+        setReferenceValidationState(prefix, "", "");
+        return Promise.resolve(true);
+      }
+
+      var enterValue = document.getElementById(prefix + "ReferenceInput") ? document.getElementById(prefix + "ReferenceInput").value : "";
+      var streetNumber = document.getElementById(prefix + "StreetNumber") ? document.getElementById(prefix + "StreetNumber").value : "";
+      var streetName = document.getElementById(prefix + "StreetName") ? document.getElementById(prefix + "StreetName").value : "";
+      var streetType = document.getElementById(prefix + "StreetType") ? document.getElementById(prefix + "StreetType").value : "";
+
+      if (code !== "A" && !(enterValue || "").trim()) {
+        setReferenceValidationState(prefix, "error", "Reference value is required.");
+        return Promise.resolve(false);
+      }
+      if (code === "A" && (!(streetNumber || "").trim() || !(streetName || "").trim())) {
+        setReferenceValidationState(prefix, "error", "Street number and street name are required.");
+        return Promise.resolve(false);
+      }
+      if (code !== "A" && code !== "P") {
+        setReferenceValidationState(prefix, "success", "Reference value is ready.");
+        return Promise.resolve(true);
+      }
+
+      setReferenceValidationState(prefix, "success", code === "A" ? "Validating address..." : "Validating permit...");
+      return getJson(validateReferenceUrl
+        + "?referenceType=" + encodeURIComponent(code)
+        + "&enterValue=" + encodeURIComponent((enterValue || "").trim())
+        + "&streetNumber=" + encodeURIComponent((streetNumber || "").trim())
+        + "&streetName=" + encodeURIComponent((streetName || "").trim())
+        + "&streetType=" + encodeURIComponent((streetType || "").trim()))
+        .then(function (res) {
+          if (res && res.ok) {
+            setReferenceValidationState(prefix, "success", code === "A" ? "Address validated." : "Permit validated.");
+            return true;
+          }
+          setReferenceValidationState(prefix, "error", res && res.error ? res.error : (code === "A" ? "Address is invalid." : "Permit is invalid."));
+          return false;
+        })
+        .catch(function () {
+          setReferenceValidationState(prefix, "error", code === "A" ? "Could not validate address." : "Could not validate permit.");
+          return false;
+        });
     }
 
     function parseIsoDurationToMinutes(text) {
@@ -2019,6 +2167,20 @@
         loadEntryQueueDetails("addAppt", addApptQueueId.value || "");
       });
     }
+    var addApptRefValue = document.getElementById("addApptRefValue");
+    if (addApptRefValue) {
+      addApptRefValue.addEventListener("change", function () {
+        syncReferenceMode("addAppt");
+      });
+    }
+    ["ReferenceInput", "StreetNumber", "StreetName", "StreetType"].forEach(function (suffix) {
+      var input = document.getElementById("addAppt" + suffix);
+      if (input) {
+        input.addEventListener("blur", function () {
+          validateReferenceInput("addAppt");
+        });
+      }
+    });
 
     var addWalkinQueueId = document.getElementById("addWalkinQueueId");
     if (addWalkinQueueId) {
@@ -2026,6 +2188,20 @@
         loadEntryQueueDetails("addWalkin", addWalkinQueueId.value || "");
       });
     }
+    var addWalkinRefValue = document.getElementById("addWalkinRefValue");
+    if (addWalkinRefValue) {
+      addWalkinRefValue.addEventListener("change", function () {
+        syncReferenceMode("addWalkin");
+      });
+    }
+    ["ReferenceInput", "StreetNumber", "StreetName", "StreetType"].forEach(function (suffix) {
+      var input = document.getElementById("addWalkin" + suffix);
+      if (input) {
+        input.addEventListener("blur", function () {
+          validateReferenceInput("addWalkin");
+        });
+      }
+    });
 
     var saveAddAppointment = document.getElementById("saveAddAppointment");
     if (saveAddAppointment) {
@@ -2034,7 +2210,11 @@
           queueId: document.getElementById("addApptQueueId") ? document.getElementById("addApptQueueId").value : "",
           serviceId: document.getElementById("addApptServiceId") ? document.getElementById("addApptServiceId").value : "",
           contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
-          refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
+          refCriteria: getSelectedReferenceCode("addAppt"),
+          refValue: buildReferenceValue("addAppt"),
+          streetNumber: document.getElementById("addApptStreetNumber") ? document.getElementById("addApptStreetNumber").value : "",
+          streetName: document.getElementById("addApptStreetName") ? document.getElementById("addApptStreetName").value : "",
+          streetType: document.getElementById("addApptStreetType") ? document.getElementById("addApptStreetType").value : "",
           customerName: document.getElementById("addApptCustomerName") ? document.getElementById("addApptCustomerName").value : "",
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
@@ -2048,13 +2228,19 @@
           return;
         }
 
-        postForm(addAppointmentUrl, payload).then(function (res) {
-          if (!res || !res.ok) {
-            showModalFeedback("addAppointmentModal", res && res.error ? res.error : "Could not add appointment.", true);
+        validateReferenceInput("addAppt").then(function (valid) {
+          if (!valid) {
+            showModalFeedback("addAppointmentModal", "Reference is invalid.", true);
             return;
           }
-          closeModal("addAppointmentModal");
-          queueLiveSync();
+          postForm(addAppointmentUrl, payload).then(function (res) {
+            if (!res || !res.ok) {
+              showModalFeedback("addAppointmentModal", res && res.error ? res.error : "Could not add appointment.", true);
+              return;
+            }
+            closeModal("addAppointmentModal");
+            queueLiveSync();
+          });
         });
       });
     }
@@ -2066,7 +2252,11 @@
           queueId: document.getElementById("addWalkinQueueId") ? document.getElementById("addWalkinQueueId").value : "",
           serviceId: document.getElementById("addWalkinServiceId") ? document.getElementById("addWalkinServiceId").value : "",
           contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
-          refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
+          refCriteria: getSelectedReferenceCode("addWalkin"),
+          refValue: buildReferenceValue("addWalkin"),
+          streetNumber: document.getElementById("addWalkinStreetNumber") ? document.getElementById("addWalkinStreetNumber").value : "",
+          streetName: document.getElementById("addWalkinStreetName") ? document.getElementById("addWalkinStreetName").value : "",
+          streetType: document.getElementById("addWalkinStreetType") ? document.getElementById("addWalkinStreetType").value : "",
           customerName: document.getElementById("addWalkinCustomerName") ? document.getElementById("addWalkinCustomerName").value : "",
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
@@ -2077,13 +2267,19 @@
           return;
         }
 
-        postForm(addWalkinUrl, payload).then(function (res) {
-          if (!res || !res.ok) {
-            showModalFeedback("addWalkinModal", res && res.error ? res.error : "Could not add walk-in.", true);
+        validateReferenceInput("addWalkin").then(function (valid) {
+          if (!valid) {
+            showModalFeedback("addWalkinModal", "Reference is invalid.", true);
             return;
           }
-          closeModal("addWalkinModal");
-          queueLiveSync();
+          postForm(addWalkinUrl, payload).then(function (res) {
+            if (!res || !res.ok) {
+              showModalFeedback("addWalkinModal", res && res.error ? res.error : "Could not add walk-in.", true);
+              return;
+            }
+            closeModal("addWalkinModal");
+            queueLiveSync();
+          });
         });
       });
     }

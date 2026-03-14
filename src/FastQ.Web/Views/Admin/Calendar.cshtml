@@ -182,6 +182,25 @@
             gap: 12px;
         }
 
+        .validation-status {
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .validation-status.success {
+            color: #15803d;
+        }
+
+        .validation-status.error {
+            color: #b91c1c;
+        }
+
+        .address-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
         .agenda-item {
             border: 1px solid #dbe4f0;
             border-radius: 16px;
@@ -604,7 +623,7 @@
             <button type="button" class="btn small ghost" data-modal-close="addAppointmentModal">Close</button>
         </div>
 
-        @using (Html.BeginForm("AddAppointment", "Calendar", FormMethod.Post))
+        @using (Html.BeginForm("AddAppointment", "Calendar", FormMethod.Post, new { id = "addAppointmentForm" }))
         {
             @Html.AntiForgeryToken()
             <div class="calendar-modal-body">
@@ -638,9 +657,25 @@
 
                     <div class="calendar-field">
                         <label for="refValue">Reference</label>
-                        <select id="refValue" name="refValue">
+                        <select id="refValue" name="refCriteria">
                             <option value="">Select reference</option>
                         </select>
+                    </div>
+
+                    <div class="calendar-field" id="referenceValueRow">
+                        <label for="referenceInput">Reference Value</label>
+                        <input id="referenceInput" name="refValue" type="text" />
+                        <div class="validation-status is-hidden" id="referenceStatus"></div>
+                    </div>
+
+                    <div class="calendar-field full is-hidden" id="addressRow">
+                        <label>Address</label>
+                        <div class="address-grid">
+                            <input id="streetNumber" name="streetNumber" type="text" placeholder="Street number" />
+                            <input id="streetName" name="streetName" type="text" placeholder="Street name" />
+                            <input id="streetType" name="streetType" type="text" placeholder="Street type" />
+                        </div>
+                        <div class="validation-status is-hidden" id="addressStatus"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -693,7 +728,7 @@
             <button type="button" class="btn small ghost" data-modal-close="addWalkinModal">Close</button>
         </div>
 
-        @using (Html.BeginForm("AddWalkin", "Calendar", FormMethod.Post))
+        @using (Html.BeginForm("AddWalkin", "Calendar", FormMethod.Post, new { id = "addWalkinForm" }))
         {
             @Html.AntiForgeryToken()
             <div class="calendar-modal-body">
@@ -728,9 +763,25 @@
 
                     <div class="calendar-field">
                         <label for="walkinRefValue">Reference</label>
-                        <select id="walkinRefValue" name="refValue">
+                        <select id="walkinRefValue" name="refCriteria">
                             <option value="">Select reference</option>
                         </select>
+                    </div>
+
+                    <div class="calendar-field" id="walkinReferenceValueRow">
+                        <label for="walkinReferenceInput">Reference Value</label>
+                        <input id="walkinReferenceInput" name="refValue" type="text" />
+                        <div class="validation-status is-hidden" id="walkinReferenceStatus"></div>
+                    </div>
+
+                    <div class="calendar-field full is-hidden" id="walkinAddressRow">
+                        <label>Address</label>
+                        <div class="address-grid">
+                            <input id="walkinStreetNumber" name="streetNumber" type="text" placeholder="Street number" />
+                            <input id="walkinStreetName" name="streetName" type="text" placeholder="Street name" />
+                            <input id="walkinStreetType" name="streetType" type="text" placeholder="Street type" />
+                        </div>
+                        <div class="validation-status is-hidden" id="walkinAddressStatus"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -882,6 +933,7 @@
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+            var validateReferenceUrl = "@Url.Action("ValidateReference", "Provider")";
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
@@ -1014,9 +1066,93 @@
                 setSelectOptions(serviceSelect, details && details.services ? details.services : [], "Select service");
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
+                syncEntryReferenceMode(prefix);
                 if (prefix === "") {
                     syncMeetingField();
                 }
+            }
+
+            function getEntryReferenceCode(prefix) {
+                var select = document.getElementById(prefix + "RefValue");
+                return select ? (select.value || "").trim().toUpperCase() : "";
+            }
+
+            function setEntryReferenceStatus(prefix, ok, message) {
+                var suffix = getEntryReferenceCode(prefix) === "A" ? "AddressStatus" : "ReferenceStatus";
+                var status = document.getElementById(prefix + suffix);
+                if (!status) {
+                    return;
+                }
+                status.textContent = message || "";
+                status.className = "validation-status";
+                if (!message) {
+                    status.classList.add("is-hidden");
+                    return;
+                }
+                status.classList.add(ok ? "success" : "error");
+            }
+
+            function syncEntryReferenceMode(prefix) {
+                var code = getEntryReferenceCode(prefix);
+                var valueRow = document.getElementById(prefix + "ReferenceValueRow");
+                var addressRow = document.getElementById(prefix + "AddressRow");
+                var input = document.getElementById(prefix + "ReferenceInput");
+                if (valueRow) {
+                    valueRow.classList.toggle("is-hidden", code === "A");
+                }
+                if (addressRow) {
+                    addressRow.classList.toggle("is-hidden", code !== "A");
+                }
+                if (input) {
+                    input.placeholder = code === "P" ? "Enter permit number" : code === "C" ? "Enter case" : code === "G" ? "Enter general reference" : "Enter reference value";
+                }
+                setEntryReferenceStatus(prefix, false, "");
+            }
+
+            function validateEntryReference(prefix) {
+                var code = getEntryReferenceCode(prefix);
+                if (!code) {
+                    setEntryReferenceStatus(prefix, false, "");
+                    return Promise.resolve(true);
+                }
+
+                var enterValue = document.getElementById(prefix + "ReferenceInput") ? document.getElementById(prefix + "ReferenceInput").value : "";
+                var streetNumber = document.getElementById(prefix + "StreetNumber") ? document.getElementById(prefix + "StreetNumber").value : "";
+                var streetName = document.getElementById(prefix + "StreetName") ? document.getElementById(prefix + "StreetName").value : "";
+                var streetType = document.getElementById(prefix + "StreetType") ? document.getElementById(prefix + "StreetType").value : "";
+
+                if (code !== "A" && !(enterValue || "").trim()) {
+                    setEntryReferenceStatus(prefix, false, "Reference value is required.");
+                    return Promise.resolve(false);
+                }
+                if (code === "A" && (!(streetNumber || "").trim() || !(streetName || "").trim())) {
+                    setEntryReferenceStatus(prefix, false, "Street number and street name are required.");
+                    return Promise.resolve(false);
+                }
+                if (code !== "A" && code !== "P") {
+                    setEntryReferenceStatus(prefix, true, "Reference value is ready.");
+                    return Promise.resolve(true);
+                }
+
+                setEntryReferenceStatus(prefix, true, code === "A" ? "Validating address..." : "Validating permit...");
+                return getJson(validateReferenceUrl
+                    + "?referenceType=" + encodeURIComponent(code)
+                    + "&enterValue=" + encodeURIComponent((enterValue || "").trim())
+                    + "&streetNumber=" + encodeURIComponent((streetNumber || "").trim())
+                    + "&streetName=" + encodeURIComponent((streetName || "").trim())
+                    + "&streetType=" + encodeURIComponent((streetType || "").trim()))
+                    .then(function (res) {
+                        if (res && res.ok) {
+                            setEntryReferenceStatus(prefix, true, code === "A" ? "Address validated." : "Permit validated.");
+                            return true;
+                        }
+                        setEntryReferenceStatus(prefix, false, res && res.error ? res.error : (code === "A" ? "Address is invalid." : "Permit is invalid."));
+                        return false;
+                    })
+                    .catch(function () {
+                        setEntryReferenceStatus(prefix, false, code === "A" ? "Could not validate address." : "Could not validate permit.");
+                        return false;
+                    });
             }
 
             function loadEntryModalQueueDetails(prefix, queueCode) {
@@ -1553,6 +1689,54 @@
                 } else {
                     populateEntryModalOptions("walkin", null);
                 }
+            }
+            var refValueSelect = document.getElementById("refValue");
+            if (refValueSelect) {
+                refValueSelect.addEventListener("change", function () {
+                    syncEntryReferenceMode("");
+                });
+            }
+            var walkinRefValueSelect = document.getElementById("walkinRefValue");
+            if (walkinRefValueSelect) {
+                walkinRefValueSelect.addEventListener("change", function () {
+                    syncEntryReferenceMode("walkin");
+                });
+            }
+            ["ReferenceInput", "StreetNumber", "StreetName", "StreetType"].forEach(function (suffix) {
+                var input = document.getElementById(suffix);
+                if (input) {
+                    input.addEventListener("blur", function () {
+                        validateEntryReference("");
+                    });
+                }
+                var walkinInput = document.getElementById("walkin" + suffix);
+                if (walkinInput) {
+                    walkinInput.addEventListener("blur", function () {
+                        validateEntryReference("walkin");
+                    });
+                }
+            });
+            var addAppointmentForm = document.getElementById("addAppointmentForm");
+            if (addAppointmentForm) {
+                addAppointmentForm.addEventListener("submit", function (evt) {
+                    evt.preventDefault();
+                    validateEntryReference("").then(function (valid) {
+                        if (valid) {
+                            addAppointmentForm.submit();
+                        }
+                    });
+                });
+            }
+            var addWalkinForm = document.getElementById("addWalkinForm");
+            if (addWalkinForm) {
+                addWalkinForm.addEventListener("submit", function (evt) {
+                    evt.preventDefault();
+                    validateEntryReference("walkin").then(function (valid) {
+                        if (valid) {
+                            addWalkinForm.submit();
+                        }
+                    });
+                });
             }
 
             document.querySelectorAll("[data-end-choice]").forEach(function (btn) {

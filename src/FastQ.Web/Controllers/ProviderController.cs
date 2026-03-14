@@ -191,6 +191,13 @@ namespace FastQ.Web.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var result = _customerService.ValidateReference(referenceType, enterValue, streetNumber, streetName, streetType);
+            return Json(new { ok = result.Ok, error = result.Error ?? string.Empty }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType)
         {
@@ -216,7 +223,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refCriteria, string refValue, string streetNumber, string streetName, string streetType, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -231,7 +238,11 @@ namespace FastQ.Web.Controllers
             var res = _customerService.CreateScheduled(
                 qId,
                 serviceId,
+                refCriteria,
                 refValue,
+                streetNumber,
+                streetName,
+                streetType,
                 customerName,
                 phone,
                 contactType,
@@ -247,7 +258,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string customerName, string phone, string contactType, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refCriteria, string refValue, string streetNumber, string streetName, string streetType, string customerName, string phone, string contactType, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -255,7 +266,11 @@ namespace FastQ.Web.Controllers
             var res = _customerService.CreateWalkin(
                 qId,
                 serviceId,
+                refCriteria,
                 refValue,
+                streetNumber,
+                streetName,
+                streetType,
                 customerName,
                 phone,
                 contactType,

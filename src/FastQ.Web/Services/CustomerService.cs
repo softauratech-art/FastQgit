@@ -1,5 +1,9 @@
 using System;
+using System.Configuration;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
 using FastQ.Data.Db;
@@ -131,7 +135,11 @@ namespace FastQ.Web.Services
         public Result<Appointment> CreateScheduled(
             long queueId,
             string serviceId,
+            string refCriteria,
             string refValue,
+            string streetNumber,
+            string streetName,
+            string streetType,
             string customerName,
             string phone,
             string contactType,
@@ -149,6 +157,9 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
+            var validation = ValidateReference(refCriteria, refValue, streetNumber, streetName, streetType);
+            if (!validation.Ok) return Result<Appointment>.Fail(validation.Error);
+            var normalizedRefValue = BuildReferenceValue(refCriteria, refValue, streetNumber, streetName, streetType);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -161,8 +172,8 @@ namespace FastQ.Web.Services
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
-                RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
-                RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                RefCriteria = string.IsNullOrWhiteSpace(refCriteria) ? null : refCriteria.Trim(),
+                RefValue = normalizedRefValue,
                 ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
@@ -186,7 +197,11 @@ namespace FastQ.Web.Services
         public Result<long> CreateWalkin(
             long queueId,
             string serviceId,
+            string refCriteria,
             string refValue,
+            string streetNumber,
+            string streetName,
+            string streetType,
             string customerName,
             string phone,
             string contactType,
@@ -202,6 +217,9 @@ namespace FastQ.Web.Services
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
+            var validation = ValidateReference(refCriteria, refValue, streetNumber, streetName, streetType);
+            if (!validation.Ok) return Result<long>.Fail(validation.Error);
+            var normalizedRefValue = BuildReferenceValue(refCriteria, refValue, streetNumber, streetName, streetType);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
@@ -214,8 +232,8 @@ namespace FastQ.Web.Services
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
-                RefCriteria = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
-                RefValue = string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim(),
+                RefCriteria = string.IsNullOrWhiteSpace(refCriteria) ? null : refCriteria.Trim(),
+                RefValue = normalizedRefValue,
                 ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 Status = AppointmentStatus.Arrived,
@@ -233,6 +251,108 @@ namespace FastQ.Web.Services
             _rt.QueueChanged(walkin.LocationId, walkin.QueueId);
 
             return Result<long>.Success(newId);
+        }
+
+        public Result ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var normalized = (referenceType ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return Result.Success();
+            }
+
+            if (normalized == "P")
+            {
+                return ValidatePermit(enterValue);
+            }
+
+            if (normalized == "A")
+            {
+                return ValidateAddress(streetNumber, streetName, streetType);
+            }
+
+            if (string.IsNullOrWhiteSpace(enterValue))
+            {
+                return Result.Fail("Reference value is required.");
+            }
+
+            return Result.Success();
+        }
+
+        public Result ValidatePermit(string permitNumber)
+        {
+            if (string.IsNullOrWhiteSpace(permitNumber))
+            {
+                return Result.Fail("Permit number is required.");
+            }
+
+            var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
+            var apiKey = ConfigurationManager.AppSettings["FTApiKeyPolymorphic"];
+            if (string.IsNullOrWhiteSpace(apiBaseUrl) || string.IsNullOrWhiteSpace(apiKey))
+            {
+                return Result.Fail("Permit validation is not configured.");
+            }
+
+            var apiUrl = apiBaseUrl.TrimEnd('/') + "/" + Uri.EscapeDataString(permitNumber.Trim());
+            return ExecuteReferenceValidation(apiUrl, apiKey, "Permit is invalid.");
+        }
+
+        private Result ValidateAddress(string streetNumber, string streetName, string streetType)
+        {
+            if (string.IsNullOrWhiteSpace(streetNumber))
+            {
+                return Result.Fail("Street number is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(streetName))
+            {
+                return Result.Fail("Street name is required.");
+            }
+
+            var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
+            var apiKey = ConfigurationManager.AppSettings["FTApiKeyPolymorphic"];
+            if (string.IsNullOrWhiteSpace(apiBaseUrl) || string.IsNullOrWhiteSpace(apiKey))
+            {
+                return Result.Fail("Address validation is not configured.");
+            }
+
+            var query = "StreetNumber=" + Uri.EscapeDataString(streetNumber.Trim()) +
+                        "&StreetName=" + Uri.EscapeDataString(streetName.Trim());
+            if (!string.IsNullOrWhiteSpace(streetType))
+            {
+                query += "&StreetType=" + Uri.EscapeDataString(streetType.Trim());
+            }
+
+            var apiUrl = apiBaseUrl.TrimEnd('/') + "/search?" + query;
+            return ExecuteReferenceValidation(apiUrl, apiKey, "Address is invalid.");
+        }
+
+        private static Result ExecuteReferenceValidation(string apiUrl, string apiKey, string invalidMessage)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(15);
+                    client.DefaultRequestHeaders.Add("FTApiKeyPolymorphic", apiKey);
+                    var response = client.GetAsync(apiUrl).GetAwaiter().GetResult();
+                    return response.IsSuccessStatusCode
+                        ? Result.Success()
+                        : Result.Fail(invalidMessage);
+                }
+            }
+            catch (HttpRequestException)
+            {
+                return Result.Fail("Could not connect to the validation service.");
+            }
+            catch (TaskCanceledException)
+            {
+                return Result.Fail("Validation request timed out.");
+            }
+            catch (WebException)
+            {
+                return Result.Fail("Could not connect to the validation service.");
+            }
         }
 
         public Result Cancel(long appointmentId)
@@ -339,6 +459,21 @@ namespace FastQ.Web.Services
             var first = customer.FirstName ?? "customer";
             var last = customer.LastName ?? "unknown";
             return $"{first}.{last}@placeholder.local".Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        private static string BuildReferenceValue(string refCriteria, string refValue, string streetNumber, string streetName, string streetType)
+        {
+            var normalized = (refCriteria ?? string.Empty).Trim().ToUpperInvariant();
+            if (normalized == "A")
+            {
+                var addressParts = new[] { streetNumber, streetName, streetType }
+                    .Where(v => !string.IsNullOrWhiteSpace(v))
+                    .Select(v => v.Trim());
+                var addressValue = string.Join(" ", addressParts);
+                return string.IsNullOrWhiteSpace(addressValue) ? null : addressValue;
+            }
+
+            return string.IsNullOrWhiteSpace(refValue) ? null : refValue.Trim();
         }
     }
 }

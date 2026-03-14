@@ -248,7 +248,7 @@ namespace FastQ.Data.Db
                         {
                             list.Add(new UserEntity
                             {                                 
-                                EntityId = Convert.ToInt32(reader["LOCATION_ID"]?.ToString()),
+                                EntityId = Convert.ToInt32(reader["ENTITYID"]?.ToString()),
                                 ActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y",
                                 ConfigAdminFlag = (reader["ADMINFLAG"]?.ToString() ?? "Y") == "Y"
                             });
