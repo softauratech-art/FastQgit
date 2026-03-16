@@ -139,6 +139,7 @@
                         <input type="text" id="streetType" name="streetType" placeholder="Street type" />
                     </div>
                 </div>
+                <div id="addressStatus" class="muted"></div>
                 <div class="field">
                     <label for="notes">Notes</label>
                     <input type="text" id="notes" name="notes" placeholder="Additional info" />
@@ -746,7 +747,7 @@ var FastQBook = {
 
     var run = function () {
       return FastQBook.getJson(FastQBook.validateReferenceUrl
-        + "?referenceType=" + encodeURIComponent($("#reference").val() || "")
+        + "?referenceType=" + encodeURIComponent((document.getElementById("reference") ? document.getElementById("reference").value : ""))
         + "&enterValue=" + encodeURIComponent(referenceValue)
         + "&streetNumber=" + encodeURIComponent(streetNumber)
         + "&streetName=" + encodeURIComponent(streetName)
@@ -755,11 +756,11 @@ var FastQBook = {
           if (FastQBook.permitValidation.seq !== requestSeq) {
             return false;
           }
-          if (res && res.ok) {
+          if (res && (res.ok || res.success)) {
             FastQBook.setPermitValidationState(false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
             return true;
           }
-          FastQBook.setPermitValidationState(false, false, res && res.error ? res.error : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
+          FastQBook.setPermitValidationState(false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
           return false;
         })
         .catch(function () {

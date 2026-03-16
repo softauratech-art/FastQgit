@@ -1853,11 +1853,11 @@
                             if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
                                 return false;
                             }
-                            if (res && res.ok) {
+                            if (res && (res.ok || res.success)) {
                                 setPermitValidationState(kind, false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
                                 return true;
                             }
-                            setPermitValidationState(kind, false, false, res && res.error ? res.error : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
+                            setPermitValidationState(kind, false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
                             return false;
                         })
                         .catch(function () {
