@@ -5,11 +5,8 @@ using FastQ.Web.Services;
 using FastQ.Web.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Linq;
 using System.Web.Mvc;
 
@@ -208,6 +205,44 @@ namespace FastQ.Web.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult GetQueueOpenSlots(string queueId, string theDate)
+        {
+            if (!long.TryParse(queueId, out var parsedQueueId) || parsedQueueId <= 0)
+                return Json(new { ok = false, error = "queueId is required" }, JsonRequestBehavior.AllowGet);
+            if (!DateTime.TryParseExact((theDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                return Json(new { ok = false, error = "theDate is required" }, JsonRequestBehavior.AllowGet);
+
+            var slots = _customerService.GetQueueOpenSlots(parsedQueueId, parsedDate)
+                .OrderBy(s => s.SlotBegin)
+                .Select(s => new
+                {
+                    theDate = s.TheDate.ToString("yyyy-MM-dd"),
+                    queueId = s.QueueId,
+                    slotBegin = s.SlotBegin,
+                    slotEnd = s.SlotEnd,
+                    weeklySch = s.WeeklySchedule,
+                    intervalTime = s.IntervalTime,
+                    availableResources = s.AvailableResources
+                })
+                .ToList();
+
+            return Json(new { ok = true, data = slots }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult ValidateCustomerTimeSelection(string email, string phone, string appointmentDate, string startTime)
+        {
+            if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                return Json(new { ok = false, error = "Appointment date is required." }, JsonRequestBehavior.AllowGet);
+            if (!TryParseStartTime(startTime, out var parsedTime))
+                return Json(new { ok = false, error = "Start time is required." }, JsonRequestBehavior.AllowGet);
+
+            var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
+            var res = _customerService.ValidateCustomerTimeSelection(email, phone, localStart.ToUniversalTime());
+            return Json(new { ok = res.Ok, error = res.Ok ? null : res.Error }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         public JsonResult ProviderAction(string action, string appointmentId, string providerId, string srcType, string notes)
         {
@@ -261,7 +296,7 @@ namespace FastQ.Web.Controllers
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." });
 
-            if (!TimeSpan.TryParse((startTime ?? string.Empty).Trim(), CultureInfo.InvariantCulture, out var parsedTime))
+            if (!TryParseStartTime(startTime, out var parsedTime))
                 return Json(new { ok = false, error = "Start time is required." });
 
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
@@ -369,106 +404,10 @@ namespace FastQ.Web.Controllers
         }
 
         [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]
-        public async Task<JsonResult> ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        public JsonResult ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(referenceType))
-                {
-                    return Json(new { success = false, message = "Reference type is required", ok = false, error = "Reference type is required" }, JsonRequestBehavior.AllowGet);
-                }
-
-                var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
-                if (string.IsNullOrEmpty(apiBaseUrl))
-                {
-                    Trace.TraceError("FTAPIV1BaseUrl not configured in web.config");
-                    return Json(new { success = false, message = "API configuration error", ok = false, error = "API configuration error" }, JsonRequestBehavior.AllowGet);
-                }
-
-                var apiKey = ConfigurationManager.AppSettings["FTApiKeyPolymorphic"];
-                if (string.IsNullOrEmpty(apiKey))
-                {
-                    Trace.TraceError("FTApiKeyPolymorphic not configured in web.config");
-                    return Json(new { success = false, message = "API key configuration error", ok = false, error = "API key configuration error" }, JsonRequestBehavior.AllowGet);
-                }
-
-                apiBaseUrl = apiBaseUrl.TrimEnd('/');
-                string apiUrl = null;
-                var referenceTypeLower = referenceType.ToLowerInvariant();
-
-                if (referenceTypeLower == "permit" || referenceTypeLower == "p")
-                {
-                    if (string.IsNullOrEmpty(enterValue))
-                    {
-                        return Json(new { success = false, message = "Permit number is required", ok = false, error = "Permit number is required" }, JsonRequestBehavior.AllowGet);
-                    }
-                    apiUrl = string.Format(CultureInfo.InvariantCulture, "{0}/{1}", apiBaseUrl, enterValue.Trim());
-                }
-                else if (referenceTypeLower == "address" || referenceTypeLower == "a")
-                {
-                    if (string.IsNullOrEmpty(streetNumber))
-                    {
-                        return Json(new { success = false, message = "Street number is required", ok = false, error = "Street number is required" }, JsonRequestBehavior.AllowGet);
-                    }
-                    if (string.IsNullOrEmpty(streetName))
-                    {
-                        return Json(new { success = false, message = "Street name is required", ok = false, error = "Street name is required" }, JsonRequestBehavior.AllowGet);
-                    }
-
-                    var queryParams = new List<string>
-                    {
-                        "StreetNumber=" + Uri.EscapeDataString(streetNumber.Trim()),
-                        "StreetName=" + Uri.EscapeDataString(streetName.Trim())
-                    };
-                    if (!string.IsNullOrEmpty(streetType))
-                    {
-                        queryParams.Add("StreetType=" + Uri.EscapeDataString(streetType.Trim()));
-                    }
-
-                    apiUrl = string.Format(CultureInfo.InvariantCulture, "{0}/search?{1}", apiBaseUrl, string.Join("&", queryParams));
-                }
-                else
-                {
-                    return Json(new { success = false, message = "Invalid reference type", ok = false, error = "Invalid reference type" }, JsonRequestBehavior.AllowGet);
-                }
-
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.Timeout = TimeSpan.FromSeconds(30);
-                    httpClient.DefaultRequestHeaders.Add("FTApiKeyPolymorphic", apiKey);
-
-                    try
-                    {
-                        var response = await httpClient.GetAsync(apiUrl);
-                        var responseContent = await response.Content.ReadAsStringAsync();
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            Trace.TraceInformation("API validation successful for {0}: {1}", referenceType, enterValue);
-                            return Json(new { success = true, message = "Validation Succeeded...", ok = true, error = (string)null }, JsonRequestBehavior.AllowGet);
-                        }
-
-                        Trace.TraceWarning("API validation failed for {0}: {1}. Status: {2}, Response: {3}", referenceType, enterValue, response.StatusCode, responseContent);
-                        var message = string.Format(CultureInfo.InvariantCulture, "Validation failed: {0}", response.StatusCode);
-                        return Json(new { success = false, message = message, ok = false, error = message }, JsonRequestBehavior.AllowGet);
-                    }
-                    catch (HttpRequestException httpEx)
-                    {
-                        Trace.TraceError("HTTP error calling API: {0}", httpEx.Message);
-                        return Json(new { success = false, message = "Error connecting to validation service", ok = false, error = "Error connecting to validation service" }, JsonRequestBehavior.AllowGet);
-                    }
-                    catch (TaskCanceledException timeoutEx)
-                    {
-                        Trace.TraceError("Timeout calling API: {0}", timeoutEx.Message);
-                        return Json(new { success = false, message = "Validation request timed out", ok = false, error = "Validation request timed out" }, JsonRequestBehavior.AllowGet);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError("Error validating reference: {0} - {1}", ex.Message, ex.StackTrace);
-                return Json(new { success = false, message = "An error occurred during validation", ok = false, error = "An error occurred during validation" }, JsonRequestBehavior.AllowGet);
-            }
+            var res = _customerService.ValidateReference(referenceType, enterValue, streetNumber, streetName, streetType);
+            return Json(new { success = res.Ok, message = res.Ok ? "Validation Succeeded..." : res.Error, ok = res.Ok, error = res.Ok ? null : res.Error }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
@@ -663,6 +602,23 @@ namespace FastQ.Web.Controllers
 
             return allowed ? null : "You do not have permission for this action.";
         }
+
+        private static bool TryParseStartTime(string value, out TimeSpan parsedTime)
+        {
+            var text = (value ?? string.Empty).Trim();
+            if (TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out parsedTime))
+            {
+                return true;
+            }
+
+            if (DateTime.TryParseExact(text, new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDateTime))
+            {
+                parsedTime = parsedDateTime.TimeOfDay;
+                return true;
+            }
+
+            parsedTime = default;
+            return false;
+        }
     }
 }
-

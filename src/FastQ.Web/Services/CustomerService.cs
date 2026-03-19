@@ -1,8 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Mail;
+using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
 using FastQ.Data.Db;
@@ -151,10 +157,16 @@ namespace FastQ.Web.Services
             var queueValidation = ValidateScheduledInputAgainstQueueDetails(queueId, parsedServiceId, contactType, refCriteria, scheduledForUtc);
             if (!queueValidation.Ok)
                 return Result<Appointment>.Fail(queueValidation.Error);
+            var slotValidation = ValidateScheduledTimeSlot(queueId, scheduledForUtc);
+            if (!slotValidation.Ok)
+                return Result<Appointment>.Fail(slotValidation.Error);
 
             var now = _clock.UtcNow;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
             var customer = GetOrCreateCustomer(customerName, email, phone, !string.IsNullOrWhiteSpace(meetingUrl), user, now);
+            var customerTimeValidation = ValidateCustomerTimeAvailability(customer.Id, scheduledForUtc);
+            if (!customerTimeValidation.Ok)
+                return Result<Appointment>.Fail(customerTimeValidation.Error);
 
             var appt = new Appointment
             {
@@ -185,6 +197,7 @@ namespace FastQ.Web.Services
 
             _appts.Add(appt);
             var insertedAppt = _appts.Get(appt.Id) ?? appt;
+            SendAppointmentConfirmation(insertedAppt, queue, customerName, parsedServiceId);
             _rt.AppointmentChanged(insertedAppt);
             _rt.QueueChanged(insertedAppt.LocationId, insertedAppt.QueueId);
 
@@ -228,6 +241,7 @@ namespace FastQ.Web.Services
                 return Result<long>.Fail(referenceValidation.Error);
 
             var now = _clock.UtcNow;
+            var localNow = DateTime.Now;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
             var customer = GetOrCreateCustomer(customerName, email, phone, false, user, now);
 
@@ -251,7 +265,7 @@ namespace FastQ.Web.Services
                 CreatedUtc = now,
                 UpdatedUtc = now
             };
-            walkin.ScheduledForUtc = now;
+            walkin.ScheduledForUtc = localNow;
 
             var newId = _appts.AddWalkin(walkin);
             _rt.AppointmentChanged(walkin);
@@ -322,6 +336,26 @@ namespace FastQ.Web.Services
             }
 
             return _customers.GetByEmail(email.Trim());
+        }
+
+        public IList<QueueOpenSlot> GetQueueOpenSlots(long queueId, DateTime dateLocal)
+        {
+            return _appts.GetQueueOpenSlots(queueId, dateLocal.Date);
+        }
+
+        public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledForUtc)
+        {
+            var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+            var normalizedPhone = (phone ?? string.Empty).Trim();
+            Customer customer = null;
+            if (!string.IsNullOrWhiteSpace(normalizedEmail))
+                customer = _customers.GetByEmail(normalizedEmail);
+            if (customer == null && !string.IsNullOrWhiteSpace(normalizedPhone))
+                customer = _customers.GetByPhone(normalizedPhone);
+            if (customer == null)
+                return Result.Success();
+
+            return ValidateCustomerTimeAvailability(customer.Id, scheduledForUtc);
         }
 
         private Customer GetOrCreateCustomer(string name, string email, string phone, bool smsOptIn, string stampUser, DateTime now)
@@ -408,6 +442,12 @@ namespace FastQ.Web.Services
                 return ValidatePermitNumber(enterValue);
             }
 
+            if (string.Equals(normalizedType, "C", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedType, "Case", StringComparison.OrdinalIgnoreCase))
+            {
+                return ValidateCaseNumber(enterValue);
+            }
+
             if (string.Equals(normalizedType, "A", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(normalizedType, "Address", StringComparison.OrdinalIgnoreCase))
             {
@@ -418,6 +458,16 @@ namespace FastQ.Web.Services
         }
 
         private static Result ValidatePermitNumber(string permitNumber)
+        {
+            return ValidateDirectReferenceValue(permitNumber, "Permit number is required.", "Permit number is invalid.");
+        }
+
+        private static Result ValidateCaseNumber(string caseNumber)
+        {
+            return ValidateDirectReferenceValue(caseNumber, "Case number is required.", "Case number is invalid.");
+        }
+
+        private static Result ValidateDirectReferenceValue(string value, string requiredMessage, string invalidMessage)
         {
             var apiBaseUrl = ConfigurationManager.AppSettings["FTAPIV1BaseUrl"];
             if (string.IsNullOrWhiteSpace(apiBaseUrl))
@@ -431,19 +481,19 @@ namespace FastQ.Web.Services
                 return Result.Fail("Permit validation API key is not configured.");
             }
 
-            var normalizedPermit = (permitNumber ?? string.Empty).Trim();
-            if (normalizedPermit.Length == 0)
+            var normalizedValue = (value ?? string.Empty).Trim();
+            if (normalizedValue.Length == 0)
             {
-                return Result.Fail("Permit number is required.");
+                return Result.Fail(requiredMessage);
             }
 
             var requestUrl = string.Format(
                 System.Globalization.CultureInfo.InvariantCulture,
                 "{0}/{1}",
                 apiBaseUrl.TrimEnd('/'),
-                Uri.EscapeDataString(normalizedPermit));
+                Uri.EscapeDataString(normalizedValue));
 
-            return ExecuteReferenceValidation(requestUrl, apiKey, "Permit number is invalid.");
+            return ExecuteReferenceValidation(requestUrl, apiKey, invalidMessage);
         }
 
         private static Result ValidateAddress(string streetNumber, string streetName, string streetType)
@@ -560,6 +610,49 @@ namespace FastQ.Web.Services
             }
 
             return Result.Success();
+        }
+
+        private Result ValidateScheduledTimeSlot(long queueId, DateTime scheduledForUtc)
+        {
+            var localScheduled = scheduledForUtc.Kind == DateTimeKind.Utc ? scheduledForUtc.ToLocalTime() : scheduledForUtc;
+            var slots = _appts.GetQueueOpenSlots(queueId, localScheduled.Date);
+            if (slots == null || slots.Count == 0)
+                return Result.Fail("No available time slots were found for the selected date.");
+
+            var matched = slots.Any(slot => SlotMatches(slot, localScheduled));
+            return matched
+                ? Result.Success()
+                : Result.Fail("Selected time is no longer available for this queue.");
+        }
+
+        private Result ValidateCustomerTimeAvailability(long customerId, DateTime scheduledForUtc)
+        {
+            if (customerId <= 0)
+                return Result.Success();
+
+            var conflict = _appts.ListByCustomer(customerId)
+                .Any(a =>
+                    a.Id > 0 &&
+                    a.ScheduledForUtc == scheduledForUtc &&
+                    a.Status != AppointmentStatus.Cancelled &&
+                    a.Status != AppointmentStatus.ClosedBySystem &&
+                    a.Status != AppointmentStatus.Completed &&
+                    a.Status != AppointmentStatus.TransferredOut);
+
+            return conflict
+                ? Result.Fail("Customer already has an appointment scheduled for this date and time.")
+                : Result.Success();
+        }
+
+        private static bool SlotMatches(QueueOpenSlot slot, DateTime localScheduled)
+        {
+            if (slot == null || string.IsNullOrWhiteSpace(slot.SlotBegin))
+                return false;
+
+            if (!DateTime.TryParseExact(slot.SlotBegin.Trim(), new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedBegin))
+                return false;
+
+            return parsedBegin.TimeOfDay == localScheduled.TimeOfDay;
         }
 
         private static JObject ParseJsonObject(string json)
@@ -716,6 +809,142 @@ namespace FastQ.Web.Services
             }
 
             return string.IsNullOrWhiteSpace(enteredValue) ? null : enteredValue.Trim();
+        }
+
+        private void SendAppointmentConfirmation(Appointment appointment, Queue queue, string customerName, long serviceId)
+        {
+            try
+            {
+                var host = ConfigurationManager.AppSettings["AppointmentMailHost"];
+                var fromEmail = ConfigurationManager.AppSettings["AppointmentMailFrom"];
+                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(fromEmail) || appointment == null)
+                    return;
+
+                var toEmail = (appointment.CustomerEmail ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(toEmail))
+                    return;
+
+                var portValue = ConfigurationManager.AppSettings["AppointmentMailPort"];
+                if (!int.TryParse(portValue, out var port) || port <= 0)
+                    port = 25;
+
+                var loginUrl = ConfigurationManager.AppSettings["AppointmentLoginUrl"] ?? "#";
+                var inPersonLocation = ConfigurationManager.AppSettings["AppointmentInPersonLocation"] ?? "TBD";
+                var queueName = queue?.Name ?? "Queue";
+                var serviceName = _queues.ListServicesByQueue(queue?.Id ?? 0)
+                    .FirstOrDefault(s => s.Item1 == serviceId)?.Item2 ?? queueName;
+
+                using (var message = new MailMessage())
+                {
+                    message.From = new MailAddress(fromEmail);
+                    message.To.Add(toEmail);
+                    message.Subject = "Appointment Confirmation";
+                    message.Body = BuildAppointmentConfirmationHtml(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
+                    message.IsBodyHtml = true;
+
+                    using (var client = new SmtpClient(host, port))
+                    {
+                        var enableSslValue = ConfigurationManager.AppSettings["AppointmentMailEnableSsl"];
+                        if (bool.TryParse(enableSslValue, out var enableSsl))
+                            client.EnableSsl = enableSsl;
+
+                        var username = ConfigurationManager.AppSettings["AppointmentMailUsername"];
+                        var password = ConfigurationManager.AppSettings["AppointmentMailPassword"];
+                        if (!string.IsNullOrWhiteSpace(username))
+                            client.Credentials = new System.Net.NetworkCredential(username, password ?? string.Empty);
+
+                        client.Send(message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError("Failed to send appointment confirmation for appointment {0}: {1}", appointment?.Id ?? 0, ex);
+            }
+        }
+
+        private static string BuildAppointmentConfirmationHtml(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
+        {
+            var safeCustomerName = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(customerName) ? "Customer" : customerName.Trim());
+            var safeQueueName = HttpUtility.HtmlEncode(queueName ?? string.Empty);
+            var safeServiceName = HttpUtility.HtmlEncode(serviceName ?? string.Empty);
+            var safeAppointmentType = HttpUtility.HtmlEncode(GetContactMethodText(appointment.ContactType));
+            var safeLocation = HttpUtility.HtmlEncode(inPersonLocation ?? "TBD");
+            var safePhone = HttpUtility.HtmlEncode(appointment.CustomerPhone ?? string.Empty);
+            var safeLoginUrl = HttpUtility.HtmlAttributeEncode(loginUrl ?? "#");
+            var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledForUtc.ToLocalTime().ToString("MMMM dd, yyyy h:mm tt"));
+            var displayLink = BuildMeetingLinkHtml(appointment.MeetingUrl);
+
+            var html = new StringBuilder();
+            html.AppendLine("<!DOCTYPE html>");
+            html.AppendLine("<html lang=\"en\">");
+            html.AppendLine("<head>");
+            html.AppendLine("    <meta charset=\"utf-8\" />");
+            html.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
+            html.AppendLine("    <title>Appointment Confirmation</title>");
+            html.AppendLine("    <style>");
+            html.AppendLine("        body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; margin: 0; padding: 20px; }");
+            html.AppendLine("        .container { max-width: 600px; margin: 0 auto; }");
+            html.AppendLine("        h2 { color: #667eea; font-size: 18px; margin-bottom: 16px; }");
+            html.AppendLine("        p { margin: 0 0 12px 0; }");
+            html.AppendLine("        .details { margin: 16px 0; padding: 12px; background: #f5f5f5; border-radius: 4px; }");
+            html.AppendLine("        .details p { margin: 6px 0; }");
+            html.AppendLine("        .footer { margin-top: 24px; font-size: 12px; color: #666; }");
+            html.AppendLine("        a { color: #007bff; }");
+            html.AppendLine("    </style>");
+            html.AppendLine("</head>");
+            html.AppendLine("<body>");
+            html.AppendLine("    <div class=\"container\">");
+            html.AppendLine($"        <p>Dear {safeCustomerName},</p>");
+            html.AppendLine($"        <p>Your appointment with Orange County {safeQueueName} is confirmed. See below for details:</p>");
+            html.AppendLine("        <div class=\"details\">");
+            html.AppendLine($"            <p><strong>Appointment Time:</strong> {appointmentTime}</p>");
+            html.AppendLine($"            <p><strong>Appointment Type:</strong> {safeAppointmentType}</p>");
+            html.AppendLine($"            <p><strong>Queue:</strong> {safeQueueName}</p>");
+            html.AppendLine($"            <p><strong>Service:</strong> {safeServiceName}</p>");
+            html.AppendLine("        </div>");
+            html.AppendLine($"        <p><strong>For In-person:</strong> {safeLocation}</p>");
+            html.AppendLine($"        <p><strong>For Online:</strong> A virtual appointment request has been submitted and will be conducted through Webex at {displayLink}. Prior to the meeting, please follow the instructions below:</p>");
+            html.AppendLine("        <p>Webex Instructions, English | Spanish | Creole</p>");
+            html.AppendLine($"        <p><strong>For Phone:</strong> Our staff will contact you at the phone number provided ({safePhone}) at the scheduled time.</p>");
+            html.AppendLine("        <p>Sincerely,</p>");
+            html.AppendLine("        <p>Orange County Government, FL</p>");
+            html.AppendLine("        <div class=\"footer\">");
+            html.AppendLine($"            <p>You are responsible to <a href=\"{safeLoginUrl}\">Log In</a> to the Appointment System to review your Upcoming Appointments.</p>");
+            html.AppendLine("            <p>Orange County reserves the right to modify or reschedule your appointment date and time, based on the availability of staff and other considerations.</p>");
+            html.AppendLine("            <p>If you cannot attend this appointment, as a courtesy, please cancel this appointment from your dashboard as soon as possible.</p>");
+            html.AppendLine("        </div>");
+            html.AppendLine("    </div>");
+            html.AppendLine("</body>");
+            html.AppendLine("</html>");
+            return html.ToString();
+        }
+
+        private static string BuildMeetingLinkHtml(string meetingUrl)
+        {
+            var safeUrl = (meetingUrl ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(safeUrl))
+                return "the provided meeting link";
+
+            var encodedUrl = HttpUtility.HtmlAttributeEncode(safeUrl);
+            var encodedText = HttpUtility.HtmlEncode(safeUrl);
+            return $"<a href=\"{encodedUrl}\">{encodedText}</a>";
+        }
+
+        private static string GetContactMethodText(string contactType)
+        {
+            var normalized = (contactType ?? string.Empty).Trim().ToUpperInvariant();
+            switch (normalized)
+            {
+                case "PC":
+                    return "Phone";
+                case "OM":
+                    return "Online";
+                case "IP":
+                    return "In-person";
+                default:
+                    return string.IsNullOrWhiteSpace(normalized) ? "In-person" : normalized;
+            }
         }
 
         private struct ScheduleWindow

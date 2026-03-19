@@ -1018,9 +1018,11 @@
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
             var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
+            var getQueueOpenSlotsUrl = "@Url.Action("GetQueueOpenSlots", "Provider")";
             var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
             var validatePermitUrl = "@Url.Action("ValidatePermit", "Provider")";
             var validateReferenceUrl = "@Url.Action("ValidateReference", "Provider")";
+            var validateCustomerTimeUrl = "@Url.Action("ValidateCustomerTimeSelection", "Provider")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
@@ -1032,6 +1034,9 @@
             var permitValidationState = {
                 appointment: { seq: 0, pending: false, valid: false, message: "" },
                 walkin: { seq: 0, pending: false, valid: false, message: "" }
+            };
+            var timeSelectionState = {
+                appointment: { seq: 0, pending: false, valid: true, message: "" }
             };
             var permitValidationTimers = {};
             var customerLookupTimers = {};
@@ -1108,6 +1113,18 @@
                     option.textContent = item.name || item.code || "";
                     selectElement.appendChild(option);
                 });
+            }
+
+            function to24Hour(value) {
+                var match = /^\s*(\d{1,2})\:(\d{2})\s*([AaPp][Mm])\s*$/.exec(value || "");
+                if (!match) {
+                    return "00:00";
+                }
+                var hour = parseInt(match[1], 10) % 12;
+                if (match[3].toUpperCase() === "PM") {
+                    hour += 12;
+                }
+                return toTwoDigits(hour) + ":" + match[2];
             }
 
             function parseIsoDurationToMinutes(text) {
@@ -1197,6 +1214,21 @@
                     return true;
                 }
                 return weekly.indexOf(getWeekdayCode(dateValue)) >= 0;
+            }
+
+            function getMinimumFutureMinutes(dateValue) {
+                if (!(dateValue instanceof Date)) {
+                    return null;
+                }
+
+                var now = new Date();
+                if (now.getFullYear() !== dateValue.getFullYear() ||
+                    now.getMonth() !== dateValue.getMonth() ||
+                    now.getDate() !== dateValue.getDate()) {
+                    return null;
+                }
+
+                return (now.getHours() * 60) + now.getMinutes() + 1;
             }
 
             function setRouteReferenceOptions(items, selectedValue) {
@@ -1379,6 +1411,7 @@
                 var schedules = details && details.schedules ? details.schedules : [];
                 var options = [];
                 var seen = {};
+                var minimumFutureMinutes = getMinimumFutureMinutes(dateValue);
 
                 schedules.forEach(function (schedule) {
                     if (!isScheduleActiveOnDate(schedule, dateValue)) {
@@ -1394,6 +1427,9 @@
                     }
 
                     for (var minutes = window.open; minutes < window.close; minutes += intervalMinutes) {
+                        if (minimumFutureMinutes !== null && minutes < minimumFutureMinutes) {
+                            continue;
+                        }
                         var hh = toTwoDigits(Math.floor(minutes / 60) % 24);
                         var mm = toTwoDigits(minutes % 60);
                         var value = hh + ":" + mm;
@@ -1428,14 +1464,88 @@
             function populateEntryModalTimeOptions(details, selectedDateValue) {
                 var timeSelect = document.getElementById("startTime");
                 if (!timeSelect) {
-                    return;
+                    return Promise.resolve();
+                }
+                var queueSelect = document.getElementById("queueId");
+                var queueId = queueSelect ? (queueSelect.value || "") : "";
+                if (!queueId || !selectedDateValue) {
+                    setSelectValues(timeSelect, [], "Select time");
+                    return Promise.resolve();
                 }
 
-                var options = getScheduleTimeOptions(details, selectedDateValue);
-                setSelectValues(timeSelect, options, "Select time");
-                if (options.length > 0) {
-                    timeSelect.value = options[0].value;
+                return getJson(getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(queueId) + "&theDate=" + encodeURIComponent(selectedDateValue))
+                    .then(function (res) {
+                        var options = res && res.ok
+                            ? (res.data || []).map(function (slot) {
+                                return { value: slot.slotBegin || "", label: slot.slotBegin || "" };
+                            }).sort(function (a, b) {
+                                return Date.parse("1970-01-01T" + to24Hour(a.value) + ":00") - Date.parse("1970-01-01T" + to24Hour(b.value) + ":00");
+                            })
+                            : [];
+                        setSelectValues(timeSelect, options, "Select time");
+                        if (options.length > 0) {
+                            timeSelect.value = options[0].value;
+                        }
+                        return validateCustomerTimeSelection("appointment");
+                    })
+                    .catch(function () {
+                        setSelectValues(timeSelect, [], "Select time");
+                        setTimeSelectionState("appointment", false, false, "Could not load available time slots.");
+                    });
+            }
+
+            function setTimeSelectionState(kind, pending, valid, message) {
+                timeSelectionState[kind] = timeSelectionState[kind] || { seq: 0, pending: false, valid: true, message: "" };
+                timeSelectionState[kind].pending = !!pending;
+                timeSelectionState[kind].valid = !!valid;
+                timeSelectionState[kind].message = message || "";
+            }
+
+            function validateCustomerTimeSelection(kind) {
+                if (kind !== "appointment") {
+                    return Promise.resolve(true);
                 }
+
+                var emailInput = document.getElementById("email");
+                var phoneInput = document.getElementById("phone");
+                var dateInput = document.getElementById("appointmentDate");
+                var timeInput = document.getElementById("startTime");
+                var email = emailInput ? (emailInput.value || "").trim() : "";
+                var phone = phoneInput ? (phoneInput.value || "").trim() : "";
+                var appointmentDate = dateInput ? (dateInput.value || "").trim() : "";
+                var startTime = timeInput ? (timeInput.value || "").trim() : "";
+                if (!appointmentDate || !startTime || (!email && !phone)) {
+                    setTimeSelectionState(kind, false, true, "");
+                    return Promise.resolve(true);
+                }
+
+                timeSelectionState[kind] = timeSelectionState[kind] || { seq: 0, pending: false, valid: true, message: "" };
+                timeSelectionState[kind].seq += 1;
+                var requestSeq = timeSelectionState[kind].seq;
+                setTimeSelectionState(kind, true, false, "Checking customer availability...");
+                return getJson(validateCustomerTimeUrl
+                    + "?email=" + encodeURIComponent(email)
+                    + "&phone=" + encodeURIComponent(phone)
+                    + "&appointmentDate=" + encodeURIComponent(appointmentDate)
+                    + "&startTime=" + encodeURIComponent(startTime))
+                    .then(function (res) {
+                        if (!timeSelectionState[kind] || timeSelectionState[kind].seq !== requestSeq) {
+                            return false;
+                        }
+                        if (res && res.ok) {
+                            setTimeSelectionState(kind, false, true, "");
+                            return true;
+                        }
+                        setTimeSelectionState(kind, false, false, res && res.error ? res.error : "Customer already has an appointment at this time.");
+                        return false;
+                    })
+                    .catch(function () {
+                        if (!timeSelectionState[kind] || timeSelectionState[kind].seq !== requestSeq) {
+                            return false;
+                        }
+                        setTimeSelectionState(kind, false, false, "Could not validate customer availability.");
+                        return false;
+                    });
             }
 
             function populateRouteDateOptions(selectedDateValue) {
@@ -1654,18 +1764,29 @@
             function setCustomerLookupState(prefix, found, data) {
                 setCustomerLookupLoading(prefix, false);
                 var ids = getCustomerLookupFieldIds(prefix);
+                var emailId = prefix === "walkin" ? "walkinEmail" : "email";
+                var email = document.getElementById(emailId);
                 var firstName = document.getElementById(ids.firstNameId);
                 var lastName = document.getElementById(ids.lastNameId);
                 var phone = document.getElementById(ids.phoneId);
+                var wasFound = email && email.getAttribute("data-customer-found") === "1";
                 if (found && data) {
                     if (firstName) firstName.value = data.firstName || "";
                     if (lastName) lastName.value = data.lastName || "";
                     if (phone) phone.value = data.phone || "";
+                } else if (wasFound) {
+                    if (firstName) firstName.value = "";
+                    if (lastName) lastName.value = "";
+                    if (phone) phone.value = "";
+                }
+                if (email) {
+                    email.setAttribute("data-customer-found", found ? "1" : "0");
                 }
                 setFieldDisabled(ids.firstNameId, found);
                 setFieldDisabled(ids.lastNameId, found);
                 setFieldDisabled(ids.phoneId, found);
                 setCustomerLookupMessage(prefix, found, found ? "Customer found." : "");
+                validateCustomerTimeSelection(prefix);
             }
 
             function lookupCustomerByEmail(prefix) {
@@ -1714,7 +1835,7 @@
                 customerLookupTimers[timerKey] = setTimeout(function () {
                     customerLookupTimers[timerKey] = 0;
                     lookupCustomerByEmail(prefix);
-                }, 300);
+                }, 700);
             }
 
             function getPermitFieldConfig(kind) {
@@ -1749,7 +1870,7 @@
                     case "A":
                         return { label: "Address", placeholder: "Enter address", validatePermit: false, useAddressFields: true };
                     case "C":
-                        return { label: "Case", placeholder: "Enter case", validatePermit: false, useAddressFields: false };
+                        return { label: "Case", placeholder: "Enter case number", validatePermit: true, useAddressFields: false };
                     case "G":
                         return { label: "General", placeholder: "Enter general reference", validatePermit: false, useAddressFields: false };
                     case "P":
@@ -1840,7 +1961,8 @@
                 state.seq += 1;
                 permitValidationState[kind] = state;
                 var requestSeq = state.seq;
-                setPermitValidationState(kind, true, false, meta.useAddressFields ? "Validating address..." : "Validating permit number...");
+                var invalidLabel = meta.label || "Reference";
+                setPermitValidationState(kind, true, false, meta.useAddressFields ? "Validating address..." : ("Validating " + invalidLabel.toLowerCase() + "..."));
 
                 var run = function () {
                     return getJson(validateReferenceUrl
@@ -1854,17 +1976,17 @@
                                 return false;
                             }
                             if (res && (res.ok || res.success)) {
-                                setPermitValidationState(kind, false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
+                                setPermitValidationState(kind, false, true, meta.useAddressFields ? "Address validated." : (invalidLabel + " validated."));
                                 return true;
                             }
-                            setPermitValidationState(kind, false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
+                            setPermitValidationState(kind, false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : (invalidLabel + " is invalid.")));
                             return false;
                         })
                         .catch(function () {
                             if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
                                 return false;
                             }
-                            setPermitValidationState(kind, false, false, meta.useAddressFields ? "Could not validate address." : "Could not validate permit number.");
+                            setPermitValidationState(kind, false, false, meta.useAddressFields ? "Could not validate address." : ("Could not validate " + invalidLabel.toLowerCase() + "."));
                             return false;
                         });
                 };
@@ -2094,8 +2216,6 @@
             var emailInput = document.getElementById("email");
             if (emailInput) {
                 emailInput.addEventListener("input", function () { queueCustomerLookupByEmail(""); });
-                emailInput.addEventListener("change", function () { lookupCustomerByEmail(""); });
-                emailInput.addEventListener("blur", function () { lookupCustomerByEmail(""); });
             }
             if (queueIdSelect) {
                 queueIdSelect.addEventListener("change", function () {
@@ -2112,6 +2232,10 @@
                 appointmentDateSelect.addEventListener("change", function () {
                     populateEntryModalTimeOptions(activeEntryQueueDetails[""], appointmentDateSelect.value || "");
                 });
+            }
+            var appointmentTimeSelect = document.getElementById("startTime");
+            if (appointmentTimeSelect) {
+                appointmentTimeSelect.addEventListener("change", function () { validateCustomerTimeSelection("appointment"); });
             }
             var refValueSelect = document.getElementById("refValue");
             if (refValueSelect) {
@@ -2143,8 +2267,6 @@
             var walkinEmailInput = document.getElementById("walkinEmail");
             if (walkinEmailInput) {
                 walkinEmailInput.addEventListener("input", function () { queueCustomerLookupByEmail("walkin"); });
-                walkinEmailInput.addEventListener("change", function () { lookupCustomerByEmail("walkin"); });
-                walkinEmailInput.addEventListener("blur", function () { lookupCustomerByEmail("walkin"); });
             }
             var walkinRefValueSelect = document.getElementById("walkinRefValue");
             if (walkinRefValueSelect) {
@@ -2201,6 +2323,14 @@
                     validatePermitNumber("appointment", true).then(function (isValid) {
                         if (!isValid) {
                             window.alert(permitValidationState.appointment.message || "Reference value is invalid.");
+                            return;
+                        }
+                        if (timeSelectionState.appointment && timeSelectionState.appointment.pending) {
+                            window.alert("Customer availability validation is still in progress.");
+                            return;
+                        }
+                        if (timeSelectionState.appointment && !timeSelectionState.appointment.valid) {
+                            window.alert(timeSelectionState.appointment.message || "Customer already has an appointment at this time.");
                             return;
                         }
 

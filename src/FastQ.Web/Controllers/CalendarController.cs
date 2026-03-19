@@ -110,7 +110,7 @@ namespace FastQ.Web.Controllers
                 return CalendarError(displayMonth, selected, "Appointment date is required.");
             }
 
-            if (!TimeSpan.TryParse(startTime, CultureInfo.InvariantCulture, out var parsedTime))
+            if (!TryParseStartTime(startTime, out var parsedTime))
             {
                 if (Request.IsAjaxRequest())
                 {
@@ -301,6 +301,24 @@ namespace FastQ.Web.Controllers
             }
 
             return null;
+        }
+
+        private static bool TryParseStartTime(string value, out TimeSpan parsedTime)
+        {
+            var text = (value ?? string.Empty).Trim();
+            if (TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out parsedTime))
+            {
+                return true;
+            }
+
+            if (DateTime.TryParseExact(text, new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDateTime))
+            {
+                parsedTime = parsedDateTime.TimeOfDay;
+                return true;
+            }
+
+            parsedTime = default;
+            return false;
         }
     }
 }

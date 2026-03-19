@@ -211,9 +211,11 @@ window.FASTQ_CONTEXT = { };
 var FastQBook = {
   getQueuesUrl: "/Provider/GetTransferQueues",
   getQueueDetailsUrl: "/Provider/GetQueueDetails",
+  getQueueOpenSlotsUrl: "/Customer/GetQueueOpenSlots",
   getCustomerByEmailUrl: "/Customer/LookupCustomerByEmail",
   validatePermitUrl: "/Customer/ValidatePermit",
   validateReferenceUrl: "/Customer/ValidateReference",
+  validateCustomerTimeUrl: "/Customer/ValidateCustomerTimeSelection",
   state: {
     queueId: "",
     queueName: "",
@@ -236,6 +238,12 @@ var FastQBook = {
     seq: 0,
     pending: false,
     valid: false,
+    message: ""
+  },
+  timeSelectionValidation: {
+    seq: 0,
+    pending: false,
+    valid: true,
     message: ""
   },
   permitValidationTimer: 0,
@@ -331,6 +339,18 @@ var FastQBook = {
     return value < 10 ? ("0" + value) : String(value);
   },
 
+  to24Hour: function (value) {
+    var match = /^\s*(\d{1,2})\:(\d{2})\s*([AaPp][Mm])\s*$/.exec(value || "");
+    if (!match) {
+      return "00:00";
+    }
+    var hour = parseInt(match[1], 10) % 12;
+    if (match[3].toUpperCase() === "PM") {
+      hour += 12;
+    }
+    return this.toTwoDigits(hour) + ":" + match[2];
+  },
+
   getWeekdayCode: function (dateValue) {
     var day = dateValue.getDay();
     return day === 0 ? "7" : String(day);
@@ -393,6 +413,21 @@ var FastQBook = {
     return weekly.indexOf(this.getWeekdayCode(dateValue)) >= 0;
   },
 
+  getMinimumFutureMinutes: function (dateValue) {
+    if (!dateValue) {
+      return null;
+    }
+
+    var today = new Date();
+    if (today.getFullYear() !== dateValue.getFullYear() ||
+        today.getMonth() !== dateValue.getMonth() ||
+        today.getDate() !== dateValue.getDate()) {
+      return null;
+    }
+
+    return (today.getHours() * 60) + today.getMinutes() + 1;
+  },
+
   buildDateOptions: function () {
     var options = [];
     var seen = {};
@@ -430,54 +465,45 @@ var FastQBook = {
   },
 
   buildTimeOptions: function () {
-    var options = [];
-    var seen = {};
     var selectedDateValue = this.state.appointmentDate;
-    var schedules = this.activeQueueDetails && this.activeQueueDetails.schedules ? this.activeQueueDetails.schedules : [];
 
     if (!selectedDateValue) {
       this.setSelectValues(document.getElementById("startTime"), [], "Select time");
       this.state.startTime = "";
-      return;
+      this.setTimeSelectionState(false, true, "");
+      return Promise.resolve();
     }
-
-    var dateValue = new Date(selectedDateValue + "T00:00:00");
-    schedules.forEach(function (schedule) {
-      if (!FastQBook.isScheduleActiveOnDate(schedule, dateValue)) {
-        return;
-      }
-
-      var openMinutes = FastQBook.parseIsoDurationToMinutes(schedule.openTime);
-      var closeMinutes = FastQBook.parseIsoDurationToMinutes(schedule.closeTime);
-      var intervalMinutes = FastQBook.parseIsoDurationToMinutes(schedule.intervalTime) || 30;
-      var window = FastQBook.normalizeScheduleWindow(openMinutes, closeMinutes);
-      if (!window) {
-        return;
-      }
-
-      for (var minutes = window.open; minutes < window.close; minutes += intervalMinutes) {
-        var hh = FastQBook.toTwoDigits(Math.floor(minutes / 60) % 24);
-        var mm = FastQBook.toTwoDigits(minutes % 60);
-        var value = hh + ":" + mm;
-        if (seen[value]) {
-          continue;
-        }
-        seen[value] = true;
-        options.push({
-          value: value,
-          label: value
-        });
-      }
-    });
-
-    options.sort(function (a, b) { return a.value.localeCompare(b.value); });
-    this.setSelectValues(document.getElementById("startTime"), options, "Select time");
-    if (options.length > 0) {
-      document.getElementById("startTime").value = options[0].value;
-      this.state.startTime = options[0].value;
-    } else {
+    if (!this.state.queueId) {
+      this.setSelectValues(document.getElementById("startTime"), [], "Select time");
       this.state.startTime = "";
+      this.setTimeSelectionState(false, true, "");
+      return Promise.resolve();
     }
+
+    return this.getJson(this.getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(this.state.queueId) + "&theDate=" + encodeURIComponent(selectedDateValue))
+      .then(function (res) {
+        var options = res && res.ok
+          ? (res.data || []).map(function (slot) {
+              return { value: slot.slotBegin || "", label: slot.slotBegin || "" };
+            }).sort(function (a, b) {
+              return Date.parse("1970-01-01T" + FastQBook.to24Hour(a.value) + ":00") - Date.parse("1970-01-01T" + FastQBook.to24Hour(b.value) + ":00");
+            })
+          : [];
+        FastQBook.setSelectValues(document.getElementById("startTime"), options, "Select time");
+        if (options.length > 0) {
+          document.getElementById("startTime").value = options[0].value;
+          FastQBook.state.startTime = options[0].value;
+        } else {
+          FastQBook.state.startTime = "";
+        }
+        FastQBook.setTimeSelectionState(false, true, "");
+        return FastQBook.validateSelectedTime();
+      })
+      .catch(function () {
+        FastQBook.setSelectValues(document.getElementById("startTime"), [], "Select time");
+        FastQBook.state.startTime = "";
+        FastQBook.setTimeSelectionState(false, false, "Could not load available time slots.");
+      });
   },
 
   renderStepper: function () {
@@ -556,6 +582,7 @@ var FastQBook = {
   syncTime: function () {
     var timeSelect = document.getElementById("startTime");
     this.state.startTime = timeSelect ? timeSelect.value : "";
+    this.validateSelectedTime();
     this.renderSummary();
   },
 
@@ -580,7 +607,7 @@ var FastQBook = {
       case "A":
         return { label: "Address", placeholder: "Enter address", validatePermit: false, useAddressFields: true };
       case "C":
-        return { label: "Case", placeholder: "Enter case", validatePermit: false, useAddressFields: false };
+        return { label: "Case", placeholder: "Enter case number", validatePermit: true, useAddressFields: false };
       case "G":
         return { label: "General", placeholder: "Enter general reference", validatePermit: false, useAddressFields: false };
       case "P":
@@ -648,6 +675,7 @@ var FastQBook = {
       $("#phone").val(customer.phone || "");
       this.setCustomerFieldsDisabled(true);
       this.setCustomerLookupStatus(true, "Customer found.");
+      this.validateSelectedTime();
       return;
     }
 
@@ -656,6 +684,7 @@ var FastQBook = {
     }
     this.setCustomerFieldsDisabled(false);
     this.setCustomerLookupStatus(false, "");
+    this.validateSelectedTime();
   },
 
   lookupCustomerByEmail: function () {
@@ -688,6 +717,48 @@ var FastQBook = {
           return;
         }
         FastQBook.applyCustomerLookup(null);
+      });
+  },
+
+  setTimeSelectionState: function (pending, valid, message) {
+    this.timeSelectionValidation.pending = !!pending;
+    this.timeSelectionValidation.valid = !!valid;
+    this.timeSelectionValidation.message = message || "";
+  },
+
+  validateSelectedTime: function () {
+    var email = ($("#email").val() || "").trim();
+    var phone = ($("#phone").val() || "").trim();
+    if (!this.state.appointmentDate || !this.state.startTime || (!email && !phone)) {
+      this.setTimeSelectionState(false, true, "");
+      return Promise.resolve(true);
+    }
+
+    this.timeSelectionValidation.seq += 1;
+    var requestSeq = this.timeSelectionValidation.seq;
+    this.setTimeSelectionState(true, false, "Checking customer availability...");
+    return this.getJson(this.validateCustomerTimeUrl
+      + "?email=" + encodeURIComponent(email)
+      + "&phone=" + encodeURIComponent(phone)
+      + "&appointmentDate=" + encodeURIComponent(this.state.appointmentDate)
+      + "&startTime=" + encodeURIComponent(this.state.startTime))
+      .then(function (res) {
+        if (FastQBook.timeSelectionValidation.seq !== requestSeq) {
+          return false;
+        }
+        if (res && res.ok) {
+          FastQBook.setTimeSelectionState(false, true, "");
+          return true;
+        }
+        FastQBook.setTimeSelectionState(false, false, res && res.error ? res.error : "Customer already has an appointment at this time.");
+        return false;
+      })
+      .catch(function () {
+        if (FastQBook.timeSelectionValidation.seq !== requestSeq) {
+          return false;
+        }
+        FastQBook.setTimeSelectionState(false, false, "Could not validate customer availability.");
+        return false;
       });
   },
 
@@ -743,7 +814,8 @@ var FastQBook = {
 
     this.permitValidation.seq += 1;
     var requestSeq = this.permitValidation.seq;
-    this.setPermitValidationState(true, false, meta.useAddressFields ? "Validating address..." : "Validating permit number...");
+    var invalidLabel = meta.label || "Reference";
+    this.setPermitValidationState(true, false, meta.useAddressFields ? "Validating address..." : ("Validating " + invalidLabel.toLowerCase() + "..."));
 
     var run = function () {
       return FastQBook.getJson(FastQBook.validateReferenceUrl
@@ -757,17 +829,17 @@ var FastQBook = {
             return false;
           }
           if (res && (res.ok || res.success)) {
-            FastQBook.setPermitValidationState(false, true, meta.useAddressFields ? "Address validated." : "Permit number validated.");
+            FastQBook.setPermitValidationState(false, true, meta.useAddressFields ? "Address validated." : (invalidLabel + " validated."));
             return true;
           }
-          FastQBook.setPermitValidationState(false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : "Permit number is invalid."));
+          FastQBook.setPermitValidationState(false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : (invalidLabel + " is invalid.")));
           return false;
         })
         .catch(function () {
           if (FastQBook.permitValidation.seq !== requestSeq) {
             return false;
           }
-          FastQBook.setPermitValidationState(false, false, meta.useAddressFields ? "Could not validate address." : "Could not validate permit number.");
+          FastQBook.setPermitValidationState(false, false, meta.useAddressFields ? "Could not validate address." : ("Could not validate " + invalidLabel.toLowerCase() + "."));
           return false;
         });
     };
@@ -940,6 +1012,16 @@ var FastQBook = {
       return false;
     }
 
+    if (this.timeSelectionValidation.pending) {
+      $("#msg").addClass("error").text("Customer availability validation is still in progress.");
+      return false;
+    }
+
+    if (!this.timeSelectionValidation.valid) {
+      $("#msg").addClass("error").text(this.timeSelectionValidation.message || "Customer already has an appointment at this time.");
+      return false;
+    }
+
     return true;
   },
 
@@ -1048,9 +1130,6 @@ var FastQBook = {
         FastQBook.syncTime();
       });
     }
-    $("#email").on("change blur", function () {
-      FastQBook.lookupCustomerByEmail();
-    });
     $("#email").on("input", function () {
       if (FastQBook.customerLookupTimer) {
         clearTimeout(FastQBook.customerLookupTimer);
@@ -1059,7 +1138,7 @@ var FastQBook = {
       FastQBook.customerLookupTimer = setTimeout(function () {
         FastQBook.customerLookupTimer = 0;
         FastQBook.lookupCustomerByEmail();
-      }, 300);
+      }, 700);
     });
     $("#permitNumber").on("input", function () {
       FastQBook.validatePermitNumber(false);

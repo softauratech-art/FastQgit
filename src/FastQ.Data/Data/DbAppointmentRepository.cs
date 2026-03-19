@@ -190,6 +190,52 @@ namespace FastQ.Data.Db
             return ListByFilter(null, null);
         }
 
+        public IList<QueueOpenSlot> GetQueueOpenSlots(long queueId, DateTime dateLocal)
+        {
+            var list = new List<QueueOpenSlot>();
+            if (queueId <= 0)
+            {
+                return list;
+            }
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn, "BEGIN fqowner.FQ_EXTERNAL.GET_QUEUE_OPENSLOTS(:p_queueid, :p_thedate, :p_json); END;"))
+            {
+                DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_thedate", dateLocal.Date, DbType.DateTime);
+                var jsonParam = DataAccess.AddParam(cmd, "p_json", null, DbType.String);
+                jsonParam.Direction = ParameterDirection.Output;
+                jsonParam.Size = 32767;
+
+                cmd.ExecuteNonQuery();
+
+                var rawJson = jsonParam.Value == DBNull.Value ? string.Empty : jsonParam.Value?.ToString();
+                if (string.IsNullOrWhiteSpace(rawJson))
+                {
+                    return list;
+                }
+
+                var array = JArray.Parse(rawJson);
+                foreach (var item in array.OfType<JObject>())
+                {
+                    DateTime parsedDate;
+                    DateTime.TryParse(item["thedate"]?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate);
+                    list.Add(new QueueOpenSlot
+                    {
+                        TheDate = parsedDate == default ? dateLocal.Date : parsedDate.Date,
+                        QueueId = item["queue_id"]?.ToObject<long?>() ?? queueId,
+                        SlotBegin = item["slot_begin"]?.ToString() ?? string.Empty,
+                        SlotEnd = item["slot_end"]?.ToString() ?? string.Empty,
+                        WeeklySchedule = item["weekly_sch"]?.ToString() ?? string.Empty,
+                        IntervalTime = item["interval_time"]?.ToString() ?? string.Empty,
+                        AvailableResources = item["available_resources"]?.ToObject<int?>() ?? 0
+                    });
+                }
+            }
+
+            return list;
+        }
+
         public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
         {
             return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
@@ -326,6 +372,8 @@ namespace FastQ.Data.Db
                             CustomerName = fullName,
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
                             ContactType = ReadField(reader, "CONTACTTYPE"),
+                            RefValue = ReadField(reader, "REF_VALUE"),
+                            MeetingUrl = ReadField(reader, "MEETINGURL"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });

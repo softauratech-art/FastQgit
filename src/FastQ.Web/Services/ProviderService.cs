@@ -196,6 +196,9 @@ namespace FastQ.Web.Services
                     Status = a.Status,
                     StatusText = GetStatusText(a.Status),
                     ContactMethod = contact,
+                    ContactTypeCode = a.ContactType,
+                    RefValue = a.RefValue,
+                    MeetingUrl = a.MeetingUrl,
                     StampUser = a.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
@@ -251,6 +254,9 @@ namespace FastQ.Web.Services
                     Status = r.Status,
                     StatusText = GetStatusText(r.Status),
                     ContactMethod = GetContactMethodText(r.ContactType),
+                    ContactTypeCode = r.ContactType,
+                    RefValue = r.RefValue,
+                    MeetingUrl = r.MeetingUrl,
                     StampUser = r.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
