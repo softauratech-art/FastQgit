@@ -13,15 +13,14 @@ namespace FastQ.Web.Controllers
         //public const string allowedRoles = $"{nameof(Utilities.FQRole.Host)},{nameof(Utilities.FQRole.Provider)},{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)},{nameof(Utilities.FQRole.Reporter)}";
         //[FQAuthorizeUser(AllowRole = allowedRoles)]
         [HttpGet]
-        public ActionResult Index(string eid)
+        public ActionResult Index()
         {
-            new Services.AuthService().SetSessionEntityId(eid);
             return View();
         }
-        
+       
         public ActionResult Restricted(string path)
-        {            
-            ViewBag.errmsg = path;
+        {
+            ViewBag.ErrMsg = path;
             return View();
         }
     }

@@ -17,7 +17,7 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
-        private readonly ILocationRepository _locations;
+        //private readonly ILocationRepository _locations;
         private readonly IServiceTransactionRepository _serviceTransactions;
         private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
@@ -27,7 +27,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
-                DbRepositoryFactory.CreateLocationRepository(),
+                //DbRepositoryFactory.CreateLocationRepository(),
                 DbRepositoryFactory.CreateServiceTransactionRepository(),
                 new SystemClock(),
                 new SignalRRealtimeNotifier())
@@ -38,7 +38,7 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
-            ILocationRepository locations,
+            //ILocationRepository locations,
             IServiceTransactionRepository serviceTransactions,
             IClock clock,
             IRealtimeNotifier rt)
@@ -46,7 +46,7 @@ namespace FastQ.Web.Services
             _appts = appts;
             _customers = customers;
             _queues = queues;
-            _locations = locations;
+            //_locations = locations;
             _serviceTransactions = serviceTransactions;
             _clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
@@ -287,7 +287,7 @@ namespace FastQ.Web.Services
 
         public QueueSnapshotDto GetQueueSnapshot(long locationId, long queueId)
         {
-            var location = _locations.Get(locationId);
+            //var location = _locations.Get(locationId);
             var queue = _queues.Get(queueId);
 
             var all = _appts.ListByQueue(queueId)
@@ -307,7 +307,7 @@ namespace FastQ.Web.Services
             {
                 LocationId = locationId,
                 QueueId = queueId,
-                LocationName = location?.Name ?? "Unknown",
+                //LocationName = location?.Name ?? "Unknown",
                 QueueName = queue?.Name ?? "Unknown",
                 WaitingCount = waiting.Count,
                 InServiceCount = inService.Count,

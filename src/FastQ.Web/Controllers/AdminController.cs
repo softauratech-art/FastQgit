@@ -13,11 +13,11 @@ namespace FastQ.Web.Controllers
     [FQAuthorizeUser(AllowRole = $"{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class AdminController : Controller
     {
-        private readonly AdminService _service;
+        //private readonly AdminService _service;
 
         public AdminController()
         {
-            _service = new AdminService();
+            //_service = new AdminService();
         }
 
         [HttpGet]

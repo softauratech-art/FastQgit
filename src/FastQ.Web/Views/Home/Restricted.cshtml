@@ -9,10 +9,13 @@
         </div>
     </div>
 }
-<div class="card">    
-        <div class="card-header">
-            <h3 class="card-title">Access Denied</h3>           
-        </div>
-        <p>You do not have access to the requested feature.</p>
-        <p>@ViewBag.errmsg</p>
+@{ 
+    var errm = ViewBag.ErrMsg != null ? ViewBag.ErrMsg: "";
+}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Access Denied</h3>
+    </div>
+    <p>You do not have access to the requested feature.</p>
+    <p>@errm</p>
 </div>

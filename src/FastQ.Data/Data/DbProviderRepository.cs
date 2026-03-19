@@ -13,80 +13,21 @@ namespace FastQ.Data.Db
         {
         }
 
-        public Provider Get(string id)
+        public IList<Provider> ListByEntity(long entityId)
         {
-            var providerKey = (id ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(providerKey)) return null;
-
-            using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, TITLE, STAMPDATE, STAMPUSER
-                  FROM FQUSERS
-                  WHERE USER_ID = :userId"))
-            {
-                DataAccess.AddParam(cmd, "userId", providerKey, DbType.String);
-                using (var reader = cmd.ExecuteReader())
-                {
-                    return reader.Read() ? MapProvider(reader, 0) : null;
-                }
-            }
-        }
-
-        public void Add(Provider provider)
-        {
-            var providerId = (provider.Id ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(providerId))
-                throw new InvalidOperationException("Provider Id is required.");
-
-            SplitName(provider.Name, out var first, out var last);
-            if (!string.IsNullOrWhiteSpace(provider.FirstName)) first = provider.FirstName;
-            if (!string.IsNullOrWhiteSpace(provider.LastName)) last = provider.LastName;
-            var email = string.IsNullOrWhiteSpace(provider.Email) ? $"{providerId}@placeholder.local" : provider.Email;
-            var stampUser = string.IsNullOrWhiteSpace(provider.StampUser) ? "fastq" : provider.StampUser;
-            var activeFlag = provider.ActiveFlag ? "Y" : "N";
-            var adminFlag = provider.AdminFlag ? "Y" : "N";
-
-            using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"INSERT INTO fqowner.FQ_USERS
-                    (USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, PASSWORD, TITLE, STAMPDATE, STAMPUSER)
-                  VALUES
-                    (:userId, :fname, :lname, :email, :phone, :language, :activeFlag, :adminFlag, :password, :title, SYSDATE, :stampUser)"))
-            {
-                DataAccess.AddParam(cmd, "userId", providerId, DbType.String);
-                DataAccess.AddParam(cmd, "fname", first, DbType.String);
-                DataAccess.AddParam(cmd, "lname", last, DbType.String);
-                DataAccess.AddParam(cmd, "email", email, DbType.String);
-                DataAccess.AddParam(cmd, "phone", provider.Phone ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "language", provider.Language ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
-                DataAccess.AddParam(cmd, "adminFlag", adminFlag, DbType.String);
-                DataAccess.AddParam(cmd, "password", provider.Password ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "title", provider.Title ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        public IList<Provider> ListByLocation(long locationId)
-        {
-            if (locationId <= 0) return new List<Provider>();
+            if (entityId <= 0) return new List<Provider>();
 
             var list = new List<Provider>();
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT DISTINCT u.USER_ID, u.FNAME, u.LNAME, u.EMAIL, u.PHONE, u.LANGUAGE, u.ACTIVEFLAG, u.ADMINFLAG, u.TITLE, u.STAMPDATE, u.STAMPUSER
-                  FROM fqowner.FQ_USERS u
-                  JOIN fqowner.USER_PERMISSIONS p ON p.USER_ID = u.USER_ID
-                  JOIN VALIDQUEUES q ON q.QUEUE_ID = p.QUEUE_ID
-                  WHERE q.LOCATION_ID = :locationId"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_PROVIDERS_BY_ENTITY"))
             {
-                DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_entityid", entityId, DbType.Int64);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        var provider = MapProvider(reader, locationId);
+                        var provider = MapProvider(reader, entityId);
                         if (provider != null) list.Add(provider);
                     }
                 }
@@ -95,25 +36,24 @@ namespace FastQ.Data.Db
             return list;
         }
 
-        public IList<Provider> ListAll()
-        {
-            var list = new List<Provider>();
-            using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, TITLE, STAMPDATE, STAMPUSER
-                  FROM fqowner.FQ_USERS
-                  WHERE NVL(ACTIVEFLAG, 'Y') = 'Y'"))
-            using (var reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    var provider = MapProvider(reader, 0);
-                    if (provider != null) list.Add(provider);
-                }
-            }
-
-            return list;
-        }
+        //public IList<Provider> ListAll()
+        //{
+        //    var list = new List<Provider>();
+        //    using (var conn = DataAccess.Open())
+        //    using (var cmd = DataAccess.CreateCommand(conn,
+        //        @"SELECT USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, TITLE, STAMPDATE, STAMPUSER
+        //          FROM fqowner.FQ_USERS
+        //          WHERE NVL(ACTIVEFLAG, 'Y') = 'Y'"))
+        //    using (var reader = cmd.ExecuteReader())
+        //    {
+        //        while (reader.Read())
+        //        {
+        //            var provider = MapProvider(reader, 0);
+        //            if (provider != null) list.Add(provider);
+        //        }
+        //    }
+        //    return list;
+        //}
 
         private static Provider MapProvider(IDataRecord record, long locationId)
         {

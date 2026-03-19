@@ -59,7 +59,7 @@
                 <div class="user-chip">
                     <%=New FastQ.Web.Services.AuthService().GetLoggedInWindowsUser() %>
                     <!--Before:   <%=Session.Keys.Count() %>-->
-                    <%Session.Clear() %>
+                    <%Session.Abandon() %>
                     <!--After: <%=Session.Keys.Count() %>-->
                 </div>
             </header>

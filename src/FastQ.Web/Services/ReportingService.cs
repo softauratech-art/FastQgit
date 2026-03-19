@@ -34,7 +34,7 @@ namespace FastQ.Web.Services
 
         public IList<Provider> ListProviders(long? locationId)
         {
-            return locationId.HasValue ? _providers.ListByLocation(locationId.Value) : _providers.ListAll();
+            return locationId.HasValue ? _providers.ListByEntity(locationId.Value) : [];
         }
 
         public IList<Queue> ListQueues(long? locationId)

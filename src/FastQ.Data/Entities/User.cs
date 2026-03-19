@@ -28,8 +28,8 @@ namespace FastQ.Data.Entities
     public class UserEntity
     {
         public int EntityId { get; set; }
+        public string EntityName { get; set; }
         public bool ConfigAdminFlag { get; set; } = false;
-
         public bool ActiveFlag { get; set; } = true;
     }
     public class UserQueuePermission

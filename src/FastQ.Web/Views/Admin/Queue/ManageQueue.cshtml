@@ -8,39 +8,8 @@
 
 @section Head
     {
-    <!-- Latest compiled and minified CSS -->
-    @*<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">*@
     <link rel="stylesheet" href="~/Content/modal.css" />
     <link rel="stylesheet" href="~/Content/queueadmin.css" />
-
-    <style>
-        /*
-        .section-configuration {
-            margin-bottom: 5px;
-        }
-
-        .configuration-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-            .configuration-header h2 {
-                font-size: 18px;
-                font-weight: 600;
-                color: var(--text-main);
-                margin: 0;
-            }
-
-        .config-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }*/
-    </style>
 }
 
 @section PageHeader {
@@ -48,11 +17,7 @@
         <div class="topbar-title">Manage Queue</div>
         <div class="topbar-sub">Manage Queues Configuration, Services and Schedules</div>
     </div>
-    <div class="top-actions">
-        @*<div>
-                  @Html.ActionLink("Back to List", "Index", null, new { @class = "btn btn-outline-secondary" })
-            </div>*@
-    </div>
+    @*<div class="top-actions"></div>*@
 }
 @{
     if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
@@ -77,13 +42,6 @@
     <section class="section-configuration card">
         <div class="configuration-header">
             <h2>Configuration</h2>
-            @*<div class="primary-actions">
-                    <button class="btn btn-cancel">Cancel</button>
-                    <button class="btn btn-save"><i class="bi bi-check"></i> Save</button>
-                </div>*@
-            @Html.ValidationSummary(false, "", new { @class = "text-danger" })
-
-
             <div class="primary-actions">
                 <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "Queue")"/>
                 <input type="submit" value="Save Config" class="btn-save" />
@@ -230,9 +188,6 @@
                     </div>
                 </div>
             </div>
-
-
-
         </div>
     </section>
 }
@@ -240,7 +195,7 @@
 <div class="card">
     <div class="card-title" style="display:block;">
         Services
-        <button onclick="showInPopup('@Url.Action("AddService","Queue", Model.Id)','New Service')"
+        <button onclick="showInPopup('@Url.Action("EditService","Queue", 0)','New Service')"
                 class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
             Add Service
         </button>
@@ -260,7 +215,7 @@
 <div class="card">
     <div class="card-title" style="display:block;">
         Schedules
-        <button onclick="showInPopup('@Url.Action("AddSchedule","Queue", Model.Id)','New Schedule')"
+        <button onclick="showInPopup('@Url.Action("EditSchedule","Queue", Model.Id)','New Schedule')"
                 class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
             Add Schedule
         </button>
@@ -277,9 +232,6 @@
         }
     </div>
 </div>
-
-
-
 
 <div id="form-modal" class="queue-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
     <div class="queue-modal">
@@ -305,8 +257,8 @@
         function clearModalBody(id) {
             $('#' + id + ' .modal-body').empty();
             $('#' + id + ' .modal-title').empty();
-
         }
+
         function closeModal(id) {
             var modal = document.getElementById(id);
             if (modal) {
@@ -314,6 +266,7 @@
                 clearModalBody(id);
             }
         }
+
         function openModal(id) {
             var modal = document.getElementById(id);
             if (modal) {
@@ -379,6 +332,59 @@
                     }
                 }
             }
+
+            showErrors = (errors) => {
+                $(".validation - summary - erros").empty();
+                var errlist = $('<ul></ul>');
+                for (var key in errors) {
+                    if (errros.hasOwnProperty(key)) {
+                        errors[key].forEach(function (errmsg) {
+                            errlist.append('<li>' + errmsg + '</li>');
+                        });
+                    }
+                }
+                $(".validation - summary - erros").append(errlist);
+            }
+
+            postQchildForm = (form) => {
+                try {
+                    var sid = $(form).data("id");
+                    var partialviewdiv = $(form).data("secname");
+                    var errcode;
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                errcode = response.status;
+                                throw new Error(`Server responded with ${response.status}`);
+                            }
+                            // Return the response as plain text (HTML string)
+                            return response.text();
+                        })
+                        .then(html => {
+                            // reload partial view
+                            $(`#${partialviewdiv}`).replaceWith(html);
+                            $('#form-modal .modal-body').html('Record updated successfully');
+                            $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
+                        })
+                        .catch(error => {
+                            if (errcode == 400)
+                                $('#form-modal .validation-summary-error').html(`Please fill out all fields`);
+                            else
+                                $('#form-modal .validation-summary-error').html(`Update Failed ${error}`);
+                            //was:$('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                        });
+
+                } catch (err) {
+                    console.error('Submission failed:', err);
+                    $('#form-modal .modal-body').html(`Submission failed ${err}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                }
+                // Prevents default form submission
+                return false;
+            }
+
         });
 
         $(document).on('click', '.btnDeleteSvc', function(){
@@ -388,58 +394,6 @@
         $(document).on('click', '.btnDeleteSch', function () {
             deleteRecord(this);
         });
-
-        function postQchildForm(form) {
-            try {
-                var sid = $(form).data("id");
-                var partialviewdiv = $(form).data("secname");
-                var errcode;
-                fetch(form.action, {
-                        method: 'POST',
-                        body: new FormData(form)
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            errcode = response.status;
-                            throw new Error(`Server responded with ${response.status}`);
-                        }
-                        // Return the response as plain text (HTML string)
-                        return response.text();
-                    })
-                    .then(html => {
-                        // reload partial view
-                        $(`#${partialviewdiv}`).replaceWith(html);
-                        $('#form-modal .modal-body').html('Record updated successfully');
-                        $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
-                    })
-                    .catch(error => {
-                        if (errcode == 400)
-                            $('#form-modal .validation-summary-error').html(`Please fill out all fields`);
-                        else
-                            $('#form-modal .validation-summary-error').html(`Update Failed ${error}`);
-                        //was:$('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
-                    });
-
-            } catch (err) {
-                console.error('Submission failed:', err);
-                $('#form-modal .modal-body').html(`Submission failed ${err}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
-            }
-            // Prevents default form submission
-            return false;
-        }
-
-        function showErrors(errors) {
-            $(".validation - summary - erros").empty();
-            var errlist = $('<ul></ul>');
-            for (var key in errors) {
-                if (errros.hasOwnProperty(key)) {
-                    errors[key].forEach(function (errmsg) {
-                        errlist.append('<li>' + errmsg + '</li>');
-                    });
-                }
-            }
-            $(".validation - summary - erros").append(errlist);
-        }
 
         // Pill tag click handling
         document.querySelectorAll('.pill-tag input[type="checkbox"]').forEach(checkbox => {

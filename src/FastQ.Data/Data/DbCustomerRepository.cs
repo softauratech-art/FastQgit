@@ -1,8 +1,9 @@
+using FastQ.Data.Entities;
+using FastQ.Data.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using FastQ.Data.Entities;
-using FastQ.Data.Repositories;
+using System.Web.Helpers;
 
 namespace FastQ.Data.Db
 {
@@ -10,20 +11,23 @@ namespace FastQ.Data.Db
     {
         public Customer Get(long id)
         {
+            //@"SELECT CUSTOMER_ID,
+            //             FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+            //             FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+            //             SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+            //      FROM CUSTOMERS
+            //      WHERE CUSTOMER_ID = :customerId"
+            
             if (id <= 0) return null;
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID,
-                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
-                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
-                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
-                  FROM CUSTOMERS
-                  WHERE CUSTOMER_ID = :customerId"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_CUSTOMERS"))
             {
-                DataAccess.AddParam(cmd, "customerId", id, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_fldname", "CUSTOMER_ID", DbType.String);
+                DataAccess.AddParam(cmd, "p_fldvalue", id.ToString(), DbType.String);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
                     return reader.Read() ? MapCustomer(reader) : null;
@@ -33,21 +37,24 @@ namespace FastQ.Data.Db
 
         public Customer GetByPhone(string phone)
         {
+            //@"SELECT CUSTOMER_ID,
+            //             FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+            //             FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+            //             SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+            //      FROM CUSTOMERS
+            //      WHERE lower(FQ_CRYPTO_PKG.DECRYPT(PHONE)) = lower(:phone)"
+
             phone = phone?.Trim();
             if (string.IsNullOrEmpty(phone)) return null;
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID,
-                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
-                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
-                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
-                  FROM CUSTOMERS
-                  WHERE lower(FQ_CRYPTO_PKG.DECRYPT(PHONE)) = lower(:phone)"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_CUSTOMERS"))
             {
-                DataAccess.AddParam(cmd, "phone", phone, DbType.String);
+                DataAccess.AddParam(cmd, "p_fldname", "PHONE", DbType.String);
+                DataAccess.AddParam(cmd, "p_fldvalue", phone, DbType.String);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
                     return reader.Read() ? MapCustomer(reader) : null;
@@ -57,21 +64,24 @@ namespace FastQ.Data.Db
 
         public Customer GetByEmail(string email)
         {
+            //@"SELECT CUSTOMER_ID,
+            //             FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+            //             FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+            //             SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+            //      FROM CUSTOMERS
+            //      WHERE lower(FQ_CRYPTO_PKG.DECRYPT(EMAIL)) = lower(:email)"
+
             email = email?.Trim();
             if (string.IsNullOrEmpty(email)) return null;
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID,
-                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
-                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
-                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
-                  FROM CUSTOMERS
-                  WHERE lower(FQ_CRYPTO_PKG.DECRYPT(EMAIL)) = lower(:email)"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_CUSTOMERS"))
             {
-                DataAccess.AddParam(cmd, "email", email, DbType.String);
+                DataAccess.AddParam(cmd, "p_fldname" , "EMAIL", DbType.String);
+                DataAccess.AddParam(cmd, "p_fldvalue", email, DbType.String);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
                     return reader.Read() ? MapCustomer(reader) : null;
@@ -83,9 +93,6 @@ namespace FastQ.Data.Db
         {
             using (var conn = DataAccess.Open())
             {
-                var newId = DataAccess.NextVal(conn, "CUSTOMERSEQ");
-                customer.Id = newId;
-
                 SplitName(customer.Name, out var first, out var last);
                 if (!string.IsNullOrWhiteSpace(customer.FirstName)) first = customer.FirstName;
                 if (!string.IsNullOrWhiteSpace(customer.LastName)) last = customer.LastName;
@@ -93,23 +100,30 @@ namespace FastQ.Data.Db
                 var stampUser = string.IsNullOrWhiteSpace(customer.StampUser) ? "fastq" : customer.StampUser;
                 var activeFlag = customer.ActiveFlag ? "Y" : "N";
 
-                using (var cmd = DataAccess.CreateCommand(conn,
-                    @"INSERT INTO CUSTOMERS
-                        (CUSTOMER_ID, FNAME, LNAME, EMAIL, PHONE, SMS_OPTIN, ACTIVEFLAG, STAMPUSER, STAMPDATE)
-                      VALUES
-                        (:customerId, FQ_CRYPTO_PKG.ENCRYPT(:fname), FQ_CRYPTO_PKG.ENCRYPT(:lname),
-                         FQ_CRYPTO_PKG.ENCRYPT(:email), FQ_CRYPTO_PKG.ENCRYPT(:phone),
-                         :smsOptIn, :activeFlag, :stampUser, SYSDATE)"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.INSERT_CUSTOMER"))
                 {
-                    DataAccess.AddParam(cmd, "customerId", newId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "fname", first, DbType.String);
-                    DataAccess.AddParam(cmd, "lname", last, DbType.String);
-                    DataAccess.AddParam(cmd, "email", email, DbType.String);
-                    DataAccess.AddParam(cmd, "phone", customer.Phone ?? string.Empty, DbType.String);
-                    DataAccess.AddParam(cmd, "smsOptIn", customer.SmsOptIn ? "Y" : "N", DbType.String);
-                    DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
-                    DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
+                    DataAccess.AddParam(cmd, "p_fname", first, DbType.String);
+                    DataAccess.AddParam(cmd, "p_lname", last, DbType.String);
+                    DataAccess.AddParam(cmd, "p_email", email, DbType.String);
+                    DataAccess.AddParam(cmd, "p_phone", customer.Phone ?? string.Empty, DbType.String);
+                    DataAccess.AddParam(cmd, "p_sms_optin", customer.SmsOptIn ? "Y" : "N", DbType.String);
+                    DataAccess.AddParam(cmd, "p_activeflag", activeFlag, DbType.String);
+                    DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
+
+                    var outId = DataAccess.AddParam(cmd, "p_customer_id", null, DbType.Int64);
+                    outId.Direction = ParameterDirection.Output;
+                    var outMsg = DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String);
+                    outMsg.Direction = ParameterDirection.Output;
+                    outMsg.Size = 4000;
+
                     cmd.ExecuteNonQuery();
+
+                    var error = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(error))
+                        throw new InvalidOperationException(error);
+
+                    if (outId.Value != DBNull.Value && outId.Value != null)
+                        customer.Id = Convert.ToInt64(outId.Value);
                 }
             }
         }
@@ -128,50 +142,54 @@ namespace FastQ.Data.Db
             var activeFlag = customer.ActiveFlag ? "Y" : "N";
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"UPDATE CUSTOMERS
-                  SET FNAME = FQ_CRYPTO_PKG.ENCRYPT(:fname),
-                      LNAME = FQ_CRYPTO_PKG.ENCRYPT(:lname),
-                      EMAIL = FQ_CRYPTO_PKG.ENCRYPT(:email),
-                      PHONE = FQ_CRYPTO_PKG.ENCRYPT(:phone),
-                      SMS_OPTIN = :smsOptIn,
-                      ACTIVEFLAG = :activeFlag,
-                      STAMPUSER = :stampUser,
-                      STAMPDATE = SYSDATE
-                  WHERE CUSTOMER_ID = :customerId"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.UPDATE_CUSTOMER"))
             {
-                DataAccess.AddParam(cmd, "fname", first, DbType.String);
-                DataAccess.AddParam(cmd, "lname", last, DbType.String);
-                DataAccess.AddParam(cmd, "email", email, DbType.String);
-                DataAccess.AddParam(cmd, "phone", customer.Phone ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "smsOptIn", customer.SmsOptIn ? "Y" : "N", DbType.String);
-                DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
-                DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
-                DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_customer_id", customerId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_fname", first, DbType.String);
+                DataAccess.AddParam(cmd, "p_lname", last, DbType.String);
+                DataAccess.AddParam(cmd, "p_email", email, DbType.String);
+                DataAccess.AddParam(cmd, "p_phone", customer.Phone ?? string.Empty, DbType.String);
+                DataAccess.AddParam(cmd, "p_sms_optin", customer.SmsOptIn ? "Y" : "N", DbType.String);
+                DataAccess.AddParam(cmd, "p_activeflag", activeFlag, DbType.String);
+                DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
+
+                var outMsg = DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String);
+                outMsg.Direction = ParameterDirection.Output;
+                outMsg.Size = 4000;
+
                 cmd.ExecuteNonQuery();
+
+                var error = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(error))
+                    throw new InvalidOperationException(error);
             }
         }
 
         public IList<Customer> ListAll()
         {
+            //@"SELECT CUSTOMER_ID,
+            //             FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
+            //             FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
+            //             FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
+            //             SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
+            //      FROM CUSTOMERS"
+            
             var list = new List<Customer>();
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT CUSTOMER_ID,
-                         FQ_CRYPTO_PKG.DECRYPT(FNAME) AS FNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(LNAME) AS LNAME,
-                         FQ_CRYPTO_PKG.DECRYPT(EMAIL) AS EMAIL,
-                         FQ_CRYPTO_PKG.DECRYPT(PHONE) AS PHONE,
-                         SMS_OPTIN, ACTIVEFLAG, STAMPDATE, STAMPUSER
-                  FROM CUSTOMERS"))
-            using (var reader = cmd.ExecuteReader())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_CUSTOMERS"))
             {
-                while (reader.Read())
+                DataAccess.AddParam(cmd, "p_fldname", "ALL", DbType.String);
+                DataAccess.AddParam(cmd, "p_fldvalue", "", DbType.String);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                using (var reader = cmd.ExecuteReader())
                 {
-                    list.Add(MapCustomer(reader));
+                    while (reader.Read())
+                    {
+                        list.Add(MapCustomer(reader));
+                    }
                 }
             }
-
             return list;
         }
 

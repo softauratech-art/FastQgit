@@ -116,7 +116,7 @@ code {
 }
 
 .logo {
-    height: 40px; /* Adjust the logo size as needed */
+    height: 35px; /* Adjust the logo size as needed */
     width: auto;
     /* Optional: ensure the image doesn't exceed the container height */
     max-height: 100%;

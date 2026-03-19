@@ -40,7 +40,7 @@ namespace FastQ.Web.Services
 
         public QueueVM GetQueue(long queueid)
         {
-            var item = _queues.GetQueueDetails(queueid);
+            var item = _queues.Get(queueid);
             var model = new QueueVM
             {
                 Name = item.Name,

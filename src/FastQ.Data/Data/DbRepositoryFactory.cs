@@ -21,10 +21,10 @@ namespace FastQ.Data.Db
             return new DbQueueRepository();
         }
 
-        public static ILocationRepository CreateLocationRepository()
-        {
-            return new DbLocationRepository();
-        }
+        //public static ILocationRepository CreateLocationRepository()
+        //{
+        //    return new DbLocationRepository();
+        //}
 
         public static IProviderRepository CreateProviderRepository()
         {

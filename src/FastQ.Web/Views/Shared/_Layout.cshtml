@@ -10,6 +10,9 @@
     var isReporter = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Reporter);
     var isQueueAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin);
     var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
+    var entities = Request.Cookies["fq_user_entities"] == null ? "" : Request.Cookies["fq_user_entities"].Value;
+    var isSessionTimeout = (Session["fq_current_entity"] == null || Session["fq_current_entity"].ToString() == "0");
+    var returnURL = Request["path"] == null ? "/" : Request["path"];
 }
 <!DOCTYPE html>
 <html>
@@ -25,6 +28,7 @@
     @*<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />*@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/Content/site.css">
+    <link rel="stylesheet" href="~/Content/modal.css"/>
     <style>
 
         .fastq-modal-backdrop {
@@ -117,7 +121,7 @@
                         </a>
                     </div>
 
-                    <div class="nav-section">
+                    @*<div class="nav-section">
                         <div class="nav-title">Customers</div>
 
                         <a class="nav-link" href="/Customer/Book">
@@ -129,7 +133,7 @@
                             <i class="bi bi-person-walking"></i>
                             <span class="nav-text">Walkin</span>
                         </a>
-                    </div>
+                    </div>*@
                 }
 
                 @if (isSuperAdmin || isQueueAdmin)
@@ -156,17 +160,17 @@
                     </div>
                 }
 
-                
-            <div class="nav-section">
-                @if (isReporter || isSuperAdmin)
-                {
-                    <div class="nav-title">Reports</div>
-                    <a class="nav-link" href="@Url.Action("Overview", "Reporting")">
-                        <!--/Reporting/Overview-->
-                        <i class="bi bi-bar-chart-line"></i>
-                        <span class="nav-text">Reports</span>
-                    </a>
-                }
+
+                <div class="nav-section">
+                    @if (isReporter || isSuperAdmin || isQueueAdmin)
+                    {
+                        <div class="nav-title">Reports</div>
+                        <a class="nav-link" href="@Url.Action("Overview", "Reporting")">
+                            <!--/Reporting/Overview-->
+                            <i class="bi bi-bar-chart-line"></i>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                    }
                     <a class="nav-link" href="~/Logout.aspx">
                         <i class="bi bi-box-arrow-right"></i>
                         <span class="nav-text">Logout</span>
@@ -200,6 +204,19 @@
                         <span class="pill">Online</span>
                         <span class="muted"></span>
                     </div>
+                    <div style="font-size:small">
+                        @{ if (Request["debug"] != null && Request["debug"].ToString() == "1")
+                            {
+                                foreach (string sessionKey in HttpContext.Current.Session.Keys)
+                                {
+                                    object sessionValue = HttpContext.Current.Session[sessionKey];
+                                    <div>@sessionKey : @sessionValue</div>
+                                }
+                            
+                            <small>@entities</small>
+                            }
+                        }
+                    </div>
                 </div>
             </div>
         </aside>
@@ -216,6 +233,25 @@
             <main class="page">
                 @RenderBody()
             </main>
+        </div>
+    </div>
+
+    <div id="timeoutModal" class="modal-backdrop hide" role="dialog" aria-modal="true" aria-labelledby="timeoutModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="timeoutModalTitle">Please choose an Entity to proceed</h5>
+            </div>
+            <div class="modal-body">
+                @{ if (entities != null && !string.IsNullOrEmpty(entities))
+                    {
+                        foreach (var item in entities.Split(',').ToList())
+                        {
+                            var eid = item.Split(':')[0];
+                            <a href="@returnURL?eid=@eid" class="btn secondary btn-action-edit" style="margin-right:10px">@item.Split(':')[1]</a>
+                        }
+                    }
+                 }
+            </div>
         </div>
     </div>
 
@@ -331,6 +367,15 @@
                 showErrorModal(text, "Error");
             });
         })();
-    </script>
+
+        //Monitor session validity and entity for this session
+        function showTimeoutModal(state) {
+            if (state == "True" || state == "true")
+                document.getElementById('timeoutModal').classList.add('show');
+        }
+        var newsession = "@(isSessionTimeout && entities.Length > 1)";   
+        showTimeoutModal(newsession);
+
+</script>
 </body>
 </html>

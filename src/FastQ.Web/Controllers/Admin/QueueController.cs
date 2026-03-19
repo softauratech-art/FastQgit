@@ -1,22 +1,24 @@
-﻿using FastQ.Data.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Mvc;
 using FastQ.Web.Attributes;
 using FastQ.Web.Models.Admin;
 using FastQ.Web.Services;
 using FastQ.Web.Helpers;
-using Microsoft.Ajax.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Remoting.Messaging;
-using System.Threading.Tasks;
-using System.Web.Mvc;
 
 namespace FastQ.Web.Controllers.Admin
 {
     [FQAuthorizeUser(AllowRole = $"{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class QueueController : Controller
     {
+        private readonly QueueService _service;
+        private readonly string controllerpath = "../Admin/Queue/";
+        public QueueController()
+        {
+            _service = new QueueService();
+        }
+
         #region Queue-Base-Record
         // GET: User       
         //[Route("admin")]
@@ -25,7 +27,7 @@ namespace FastQ.Web.Controllers.Admin
             IList<QueueVM> lQueues;
             try
             {
-                lQueues = new QueueService().ListQueues();
+                lQueues = _service.ListQueues();
             }
             catch (Exception ex)
             {
@@ -33,51 +35,8 @@ namespace FastQ.Web.Controllers.Admin
                 return View("Error");
             }
 
-            return View("../Admin/Queue/List", lQueues);
-        }
-
-        // GET: Queue/Details/1
-        //[Route("admin")]
-        public ActionResult Details(long id)
-        {
-            try
-            {
-                var oQueue = new QueueService().GetQueue(id);
-                if (oQueue == null)  return HttpNotFound();                 
-
-                return View("../Admin/Queue/View", oQueue);
-            }
-            catch (Exception ex)
-            {
-                ViewBag.ErrorMessage = "An error occurred: " + ex.Message;
-                return View("Error");
-            }
-        }
-
-        // GET: Queue/Create
-        public ActionResult Create()
-        {
-            //var locationid = Convert.ToInt64(Request.QueryString["locid"].ToString());
-            var oQueue = new QueueVM { Id = 0, LocationId = 1, ActiveFlag=true };
-            return View("../Admin/Queue/ManageQueue", oQueue);
-        }
-
-        // POST: Queue/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(QueueVM ovm)
-        {
-            try
-            {
-                // TODO: Add insert logic here
-
-                return Edit(ovm);
-            }
-            catch
-            {
-                return View();
-            }
-        }
+            return View(controllerpath + "List", lQueues);
+        }             
 
         // GET: Queue/Edit(Insert)
         // GET: Queue/Edit/5(Update)
@@ -85,21 +44,19 @@ namespace FastQ.Web.Controllers.Admin
         {
             //If id=0 For-Insert
             if (id == 0)
-                return View("../Admin/Queue/ManageQueue", new QueueVM { Id = 0, LocationId = 1 });
+                return View(controllerpath + "ManageQueue", new QueueVM { Id = 0, LocationId = 1 });
 
             //else For-Update
-            var oQueue = new QueueService().GetQueue(id);
+            var oQueue = _service.GetQueue(id);
             oQueue.LeadTimeMin = Helpers.Utilities.ParseDurationFromISO(oQueue.LeadTimeMin);
             oQueue.LeadTimeMax = Helpers.Utilities.ParseDurationFromISO(oQueue.LeadTimeMax);
 
-            return View("../Admin/Queue/ManageQueue", oQueue);
+            return View(controllerpath + "ManageQueue", oQueue);
         }
 
-        // POST: Queue/Edit/10001
+        //POST: Queue/Edit/10001
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[AuthorizeUsers] 
-        //public ActionResult Edit(string id, FormCollection collection)
         public ActionResult Edit(QueueVM ovm)
         {
             try
@@ -114,36 +71,35 @@ namespace FastQ.Web.Controllers.Admin
 
                 if (ModelState.IsValid)
                 {
-                    Int64 id = new QueueService().AddOrUpdateQueue(ovm);
+                    Int64 id = _service.AddOrUpdateQueue(ovm);
                     ViewBag.SuccessMessage = "Data saved successfully";
 
                     // if no errors then send to Details-view
-                    var oQueue = new QueueService().GetQueue(id);
+                    var oQueue = _service.GetQueue(id);
                     if (oQueue == null) return HttpNotFound();
                     
                     if (ovm.Id == 0)
                         return RedirectToAction("Edit", "Queue", new { id = oQueue.Id });
                     else
-                        return View("../Admin/Queue/ManageQueue", oQueue);                    
+                        return View(controllerpath + "ManageQueue", oQueue);                    
                 }
 
                 ViewBag.ErrorMessage = "Validation failed. Please check the details.";
-                return View("../Admin/Queue/ManageQueue", ovm);
+                return View(controllerpath + "ManageQueue", ovm);
             }
             catch (Exception ex) 
             {
                 ViewBag.ErrorMessage = "An error occurred while processing your request. " + ex.Message;
-                return View("../Admin/Queue/ManageQueue", ovm);
+                return View(controllerpath + "ManageQueue", ovm);
             }
         }
 
         // GET: Queue/Delete/10001
-        //[AuthorizeUsers] 
         public ActionResult Delete(Int64 id)
         {
             try
             {
-                new QueueService().Delete(id);
+                _service.Delete(id);
                 ViewBag.SuccessMessage = "Record deleted successfully";
             }
             catch (Exception ex){
@@ -152,60 +108,40 @@ namespace FastQ.Web.Controllers.Admin
             return RedirectToAction("Index");
         }
 
-        //// POST: Queue/Delete/5
-        //[HttpPost]
-        //public ActionResult Delete(Int64 id, FormCollection collection)
-        //{
-        //    try
-        //    {
-        //        // TODO: Add delete logic here
-        //        return RedirectToAction("Index");
-        //    }
-        //    catch
-        //    {
-        //        return View();
-        //    }
-        //}
-
         #endregion Queue-Base-Record
 
         #region Schedule actions
         // GET: Queue/EditSchedule(Insert)
         // GET: Queue/EditSchedule/5(Update)
         [HttpGet]
-        //[AuthorizeUsers] 
         public ActionResult EditSchedule(long id = 0)
         {
-            QueueScheduleVM ovm = new QueueService().GetQueueSchedule(id);
-            return PartialView("../Admin/Queue/_ScheduleEditor", ovm);
+            if (id == 0)
+            {
+                var queueid = Convert.ToInt64(Request.QueryString["queueid"].ToString());
+                return PartialView(controllerpath + "_ScheduleEditor", new QueueScheduleVM() { Id = 0, QueueId = queueid });
+            }
+
+            QueueScheduleVM ovm = _service.GetQueueSchedule(id);
+            return PartialView(controllerpath + "_ScheduleEditor", ovm);
         }
 
-        [HttpGet]
-        //[AuthorizeUsers]
-        public ActionResult AddSchedule()
-        {
-            var queueid = Convert.ToInt64(Request.QueryString["queueid"].ToString());
-            QueueScheduleVM ovm = new QueueScheduleVM() { Id = 0, QueueId = queueid };
-            return PartialView("../Admin/Queue/_ScheduleEditor", ovm);
-        }
-
-        // POST: Queue/DeleteSchedule/5     
-        //[AuthorizeUsers]        
+        // POST: Queue/DeleteSchedule/5
         [HttpPost, ActionName("DeleteSchedule")]
         //[ValidateAntiForgeryToken]
         public ActionResult DeleteSchConfirmed(long id, long queueid)
         {
-            new QueueService().DeleteQSchedule(id);
+            _service.DeleteQSchedule(id);
 
-            var oQueue = new QueueService().GetQueue(queueid);
-            return PartialView("../Admin/Queue/_QueueSchedules", oQueue.Schedules);
+            var oQueue = _service.GetQueue(queueid);
+            return PartialView(controllerpath + "_QueueSchedules", oQueue.Schedules);
 
             //return Json(new { success = true, message = "Record deleted successfully" });
         }
+
         // POST: Queue/EditSchedule/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[AuthorizeUsers] 
         public ActionResult EditSchedule(long id, QueueScheduleVM ovm)
         {
             if (ModelState.IsValid)
@@ -215,11 +151,11 @@ namespace FastQ.Web.Controllers.Admin
                     //Set weeklySchedule from Formcollection
                     ovm.WeeklySchedule = Request.Form["WeeklySchedule"].ToString().Replace(",", "");
 
-                    new QueueService().AddOrUpdateQSchedule(ovm);
+                    _service.AddOrUpdateQSchedule(ovm);
                     // if no errors then refresh partialview
-                    var oQueue = new QueueService().GetQueue(ovm.QueueId);
+                    var oQueue = _service.GetQueue(ovm.QueueId);
                     if (oQueue == null) return HttpNotFound();
-                    return PartialView("../Admin/Queue/_QueueSchedules", oQueue.Schedules); //==> this works
+                    return PartialView(controllerpath + "_QueueSchedules", oQueue.Schedules); //==> this works
 
                     //return Json(new { ok = true, html = PartialViewResult("_ScheduleEditor", ovm), message = "Data submitted successfully." });
                 }
@@ -228,13 +164,13 @@ namespace FastQ.Web.Controllers.Admin
                     throw new Exception(ex.Message);
                     // If invalid, return the partial view again with error
                     //ViewBag.Error = ex.Message;
-                    //return PartialView("../Admin/Queue/_ScheduleEditor", ovm);
+                    //return PartialView(controllerpath + "_ScheduleEditor", ovm);
                 }
             }
             else
             {
                 // If invalid, return the partial view again with validation errors
-                //return PartialView("../Admin/Queue/_ScheduleEditor", ovm);
+                //return PartialView(controllerpath + "_ScheduleEditor", ovm);
                 //throw new Exception("Validation Error");
 
                 Response.StatusCode = 400;
@@ -249,43 +185,34 @@ namespace FastQ.Web.Controllers.Admin
 
 
         #region Service actions: Add Edit Delete
-        // GET: Queue/AddService
-        [HttpGet]
-        //[AuthorizeUsers]
-        public ActionResult AddService()
-        {
-            var queueid = Convert.ToInt64(Request.QueryString["queueid"].ToString());
-            QueueServiceVM ovm = new QueueServiceVM() { Id = 0, QueueId = queueid };
-            return PartialView("../Admin/Queue/_ServiceEditor", ovm);
-        }
 
-        // GET: Queue/EditService(Insert)
-        // GET: Queue/EditService/5(Update)
         [HttpGet]
-        //[AuthorizeUsers] 
         public ActionResult EditService(long id = 0)
-        {
-            QueueServiceVM ovm = new QueueService().GetQueueService(id);
-            return PartialView("../Admin/Queue/_ServiceEditor", ovm);
+        {            
+            if (id == 0)
+            {
+                var queueid = Convert.ToInt64(Request.QueryString["queueid"].ToString()); 
+                return PartialView(controllerpath + "_ServiceEditor", new QueueServiceVM() { Id = 0, QueueId = queueid });
+            }
+            QueueServiceVM ovm = _service.GetQueueService(id);
+            return PartialView(controllerpath + "_ServiceEditor", ovm);
         }
 
         // POST: Queue/EditService/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        //[AuthorizeUsers] 
-        //public ActionResult EditService(long id, FormCollection collection)
         public ActionResult EditService(long id, QueueServiceVM ovm)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    new QueueService().AddOrUpdateQService(ovm);
+                    _service.AddOrUpdateQService(ovm);
                     // if no errors then refresh partialview
-                    var oQueue = new QueueService().GetQueue(ovm.QueueId);
+                    var oQueue = _service.GetQueue(ovm.QueueId);
 
                     if (oQueue == null) return HttpNotFound();
-                    return PartialView("../Admin/Queue/_QueueServices", oQueue.Services);
+                    return PartialView(controllerpath + "_QueueServices", oQueue.Services);
                     //return Json(new { success = true, html = View("_ServiceEditor", ovm), message = "Data submitted successfully." });
                 }
                 catch (Exception ex)
@@ -303,21 +230,18 @@ namespace FastQ.Web.Controllers.Admin
             }
         }
 
-        // POST: Queue/DeleteService/5     
-        //[AuthorizeUsers]        
+        // POST: Queue/DeleteService/5
         [HttpPost, ActionName("DeleteService")]
         //[ValidateAntiForgeryToken]
         public ActionResult DeleteSvcConfirmed(long id, long queueid)
         {
-            new QueueService().DeleteQService(id);
+            _service.DeleteQService(id);
 
-            var oQueue = new QueueService().GetQueue(queueid);
-            return PartialView("../Admin/Queue/_QueueServices", oQueue.Services);
+            var oQueue = _service.GetQueue(queueid);
+            return PartialView(controllerpath + "_QueueServices", oQueue.Services);
 
             //return Json(new { success = true, message = "Record deleted successfully" });
         }
         #endregion
-
-    
     }
 }

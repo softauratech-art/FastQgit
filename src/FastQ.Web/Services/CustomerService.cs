@@ -18,7 +18,7 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
-        private readonly ILocationRepository _locations;
+        //private readonly ILocationRepository _locations;
         private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
@@ -27,7 +27,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
-                DbRepositoryFactory.CreateLocationRepository(),
+                //DbRepositoryFactory.CreateLocationRepository(),
                 new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
@@ -37,14 +37,14 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
-            ILocationRepository locations,
+            //ILocationRepository locations,
             IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
             _customers = customers;
             _queues = queues;
-            _locations = locations;
+            //_locations = locations;
             _clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
@@ -65,7 +65,8 @@ namespace FastQ.Web.Services
                 locationId = queue.LocationId;
             }
 
-            var location = _locations.Get(locationId);
+            //var location = _locations.Get(locationId);
+            var location = "";
             if (location == null) return Result<Appointment>.Fail("Location not found.");
 
             if (queue.LocationId != locationId) return Result<Appointment>.Fail("Queue not found for this location.");
@@ -283,7 +284,7 @@ namespace FastQ.Web.Services
             var appt = _appts.Get(appointmentId);
             if (appt == null) return null;
 
-            var location = _locations.Get(appt.LocationId);
+            //var location = _locations.Get(appt.LocationId);
             var queue = _queues.Get(appt.QueueId);
 
             var snapshot = new AppointmentSnapshotDto
@@ -291,7 +292,7 @@ namespace FastQ.Web.Services
                 AppointmentId = appt.Id,
                 LocationId = appt.LocationId,
                 QueueId = appt.QueueId,
-                LocationName = location?.Name ?? "Unknown",
+                //LocationName = location?.Name ?? "Unknown",
                 QueueName = queue?.Name ?? "Unknown",
                 Status = appt.Status.ToString(),
                 ScheduledForUtc = appt.ScheduledForUtc.ToString("u"),

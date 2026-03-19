@@ -1,11 +1,23 @@
 @{
     ViewBag.Title = "Reporting";
 }
-<div class="card">
+
+
+@section PageHeader {
+    <div>
+        @*<div class="eyebrow">Reporting</div>*@
+        <div class="topbar-title">Daily summary and provider activity</div>
+        <div class="topbar-sub">Live reporting powered by the in-memory store with instant SignalR refresh.</div>
+    </div>
+    <div class="top-actions">
+    </div>
+}
+
+@*<div class="card">
     <div class="eyebrow">Reporting</div>
     <h2 class="page-title">Daily summary and provider activity</h2>
-    <p class="lead">Live reporting powered by the in-memory store with instant SignalR refresh.</p>
-</div>
+    <p class="lead"></p>
+</div>*@
 
 <div class="card">
     <div class="card-header">
@@ -69,114 +81,114 @@
 </div>
 
 @section Scripts {
-<script>
-window.FASTQ_CONTEXT = {
-  locationId: "00a98ac7-0000-0000-4641-535451494430"
-};
+    <script>
+        window.FASTQ_CONTEXT = {
+            locationId: @(new FastQ.Web.Services.AuthService().GetSessionEntityId())
+        };
 
-var FastQReport = {
-  refresh: function() {
-    var queueId = document.getElementById("reportQueue").value;
-    $("#reportMsg").removeClass("error ok").text("Loading...");
-    $.getJSON("/Reporting/ReportingSnapshot", { locationId: window.FASTQ_CONTEXT.locationId, queueId: queueId })
-      .done(function(res){
-        if (!res || !res.ok) {
-          $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
-          return;
-        }
-        $("#reportMsg").addClass("ok").text("Up to date.");
-        FastQReport.render(res.data);
-      })
-      .fail(function(){
-        $("#reportMsg").addClass("error").text("Load failed.");
-      });
-  },
+        var FastQReport = {
+            refresh: function () {
+                var queueId = document.getElementById("reportQueue").value;
+                $("#reportMsg").removeClass("error ok").text("Loading...");
+                $.getJSON("/Reporting/ReportingSnapshot", { locationId: window.FASTQ_CONTEXT.locationId, queueId: queueId })
+                    .done(function (res) {
+                        if (!res || !res.ok) {
+                            $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
+                            return;
+                        }
+                        $("#reportMsg").addClass("ok").text("Up to date.");
+                        FastQReport.render(res.data);
+                    })
+                    .fail(function () {
+                        $("#reportMsg").addClass("error").text("Load failed.");
+                    });
+            },
 
-  render: function(d) {
-    $("#reportBooked").text(d.BookedToday);
-    $("#reportScheduled").text(d.ScheduledToday);
-    $("#reportCompleted").text(d.CompletedToday);
-    $("#reportCancelled").text(d.CancelledToday);
+            render: function (d) {
+                $("#reportBooked").text(d.BookedToday);
+                $("#reportScheduled").text(d.ScheduledToday);
+                $("#reportCompleted").text(d.CompletedToday);
+                $("#reportCancelled").text(d.CancelledToday);
 
-    FastQReport.renderQueues(d.Queues || []);
-    FastQReport.renderProviders(d.Providers || []);
-    FastQReport.renderTrend(d.DailyTrend || []);
+                FastQReport.renderQueues(d.Queues || []);
+                FastQReport.renderProviders(d.Providers || []);
+                FastQReport.renderTrend(d.DailyTrend || []);
 
-    var queueSelect = document.getElementById("reportQueue");
-    if (queueSelect && queueSelect.options.length === 0) {
-      queueSelect.appendChild(new Option("All queues", ""));
-      (d.Queues || []).forEach(function(q) {
-        queueSelect.appendChild(new Option(q.QueueName, q.QueueId));
-      });
-    }
-  },
+                var queueSelect = document.getElementById("reportQueue");
+                if (queueSelect && queueSelect.options.length === 0) {
+                    queueSelect.appendChild(new Option("All queues", ""));
+                    (d.Queues || []).forEach(function (q) {
+                        queueSelect.appendChild(new Option(q.QueueName, q.QueueId));
+                    });
+                }
+            },
 
-  renderQueues: function(rows) {
-    if (!rows || rows.length === 0) {
-      $("#queueTable").html("<div class='muted'>No queue data yet.</div>");
-      return;
-    }
-    var html = "<table class='table'><thead><tr>" +
-      "<th>Queue</th><th>Waiting</th><th>In Service</th><th>Completed</th><th>Cancelled</th>" +
-      "</tr></thead><tbody>";
-    rows.forEach(function(r){
-      html += "<tr>" +
-        "<td>" + r.QueueName + "</td>" +
-        "<td>" + r.Waiting + "</td>" +
-        "<td>" + r.InService + "</td>" +
-        "<td>" + r.Completed + "</td>" +
-        "<td>" + r.Cancelled + "</td>" +
-        "</tr>";
-    });
-    html += "</tbody></table>";
-    $("#queueTable").html(html);
-  },
+            renderQueues: function (rows) {
+                if (!rows || rows.length === 0) {
+                    $("#queueTable").html("<div class='muted'>No queue data yet.</div>");
+                    return;
+                }
+                var html = "<table class='table'><thead><tr>" +
+                    "<th>Queue</th><th>Waiting</th><th>In Service</th><th>Completed</th><th>Cancelled</th>" +
+                    "</tr></thead><tbody>";
+                rows.forEach(function (r) {
+                    html += "<tr>" +
+                        "<td>" + r.QueueName + "</td>" +
+                        "<td>" + r.Waiting + "</td>" +
+                        "<td>" + r.InService + "</td>" +
+                        "<td>" + r.Completed + "</td>" +
+                        "<td>" + r.Cancelled + "</td>" +
+                        "</tr>";
+                });
+                html += "</tbody></table>";
+                $("#queueTable").html(html);
+            },
 
-  renderProviders: function(rows) {
-    if (!rows || rows.length === 0) {
-      $("#providerTable").html("<div class='muted'>No provider activity yet.</div>");
-      return;
-    }
-    var html = "<table class='table'><thead><tr>" +
-      "<th>Provider</th><th>Arrived</th><th>In Service</th><th>Completed</th><th>Cancelled</th>" +
-      "</tr></thead><tbody>";
-    rows.forEach(function(r){
-      html += "<tr>" +
-        "<td>" + r.ProviderName + "</td>" +
-        "<td>" + r.Arrived + "</td>" +
-        "<td>" + r.InService + "</td>" +
-        "<td>" + r.Completed + "</td>" +
-        "<td>" + r.Cancelled + "</td>" +
-        "</tr>";
-    });
-    html += "</tbody></table>";
-    $("#providerTable").html(html);
-  },
+            renderProviders: function (rows) {
+                if (!rows || rows.length === 0) {
+                    $("#providerTable").html("<div class='muted'>No provider activity yet.</div>");
+                    return;
+                }
+                var html = "<table class='table'><thead><tr>" +
+                    "<th>Provider</th><th>Arrived</th><th>In Service</th><th>Completed</th><th>Cancelled</th>" +
+                    "</tr></thead><tbody>";
+                rows.forEach(function (r) {
+                    html += "<tr>" +
+                        "<td>" + r.ProviderName + "</td>" +
+                        "<td>" + r.Arrived + "</td>" +
+                        "<td>" + r.InService + "</td>" +
+                        "<td>" + r.Completed + "</td>" +
+                        "<td>" + r.Cancelled + "</td>" +
+                        "</tr>";
+                });
+                html += "</tbody></table>";
+                $("#providerTable").html(html);
+            },
 
-  renderTrend: function(rows) {
-    if (!rows || rows.length === 0) {
-      $("#trendChart").html("<div class='muted'>No trend data yet.</div>");
-      return;
-    }
-    var max = Math.max.apply(null, rows.map(function(r){ return r.Booked; }).concat([1]));
-    var html = "";
-    rows.forEach(function(r){
-      var pct = Math.round((r.Booked / max) * 100);
-      html += "<div class='trend-row'>" +
-        "<div class='muted'>" + r.Date + "</div>" +
-        "<div class='bar-track'><div class='bar-fill' style='width:" + pct + "%'></div></div>" +
-        "<div>" + r.Booked + "</div>" +
-        "</div>";
-    });
-    $("#trendChart").html(html);
-  }
-};
+            renderTrend: function (rows) {
+                if (!rows || rows.length === 0) {
+                    $("#trendChart").html("<div class='muted'>No trend data yet.</div>");
+                    return;
+                }
+                var max = Math.max.apply(null, rows.map(function (r) { return r.Booked; }).concat([1]));
+                var html = "";
+                rows.forEach(function (r) {
+                    var pct = Math.round((r.Booked / max) * 100);
+                    html += "<div class='trend-row'>" +
+                        "<div class='muted'>" + r.Date + "</div>" +
+                        "<div class='bar-track'><div class='bar-fill' style='width:" + pct + "%'></div></div>" +
+                        "<div>" + r.Booked + "</div>" +
+                        "</div>";
+                });
+                $("#trendChart").html(html);
+            }
+        };
 
-$(function(){
-  FastQReport.refresh();
-});
+        $(function () {
+            FastQReport.refresh();
+        });
 
-window.onFastQQueueUpdated = function() { FastQReport.refresh(); };
-window.onFastQAppointmentUpdated = function() { FastQReport.refresh(); };
-</script>
+        window.onFastQQueueUpdated = function () { FastQReport.refresh(); };
+        window.onFastQAppointmentUpdated = function () { FastQReport.refresh(); };
+    </script>
 }

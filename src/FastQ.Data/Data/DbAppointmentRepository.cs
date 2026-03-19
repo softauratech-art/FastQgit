@@ -88,30 +88,33 @@ namespace FastQ.Data.Db
                 var createdBy = string.IsNullOrWhiteSpace(appointment.CreatedBy) ? "fastq" : appointment.CreatedBy;
                 var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
 
-                using (var cmd = DataAccess.CreateCommand(conn,
-                    @"INSERT INTO WALKINS
-                        (WALKIN_ID, CUSTOMER_ID, QUEUE_ID, SERVICE_ID, REF_CRITERIA, REF_VALUE, CONTACTTYPE, MOREINFO,
-                         JOIN_TIME, END_TIME, STATUS, MEETINGURL, LANGUAGE_PREF, CREATEDBY, CREATEDON, STAMPUSER, STAMPDATE)
-                      VALUES
-                        (:walkinId, :customerId, :queueId, :serviceId, :refCriteria, :refValue, :contactType, :moreInfo,
-                         TO_DSINTERVAL(:joinTime), TO_DSINTERVAL(:endTime), :status, :meetingUrl, :languagePref, :createdBy, SYSDATE, :stampUser, SYSDATE)"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.INSERT_WALKIN"))
                 {
-                    DataAccess.AddParam(cmd, "walkinId", newId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "serviceId", ToNullableLong(appointment.ServiceId), DbType.Int64);
-                    DataAccess.AddParam(cmd, "refCriteria", appointment.RefCriteria, DbType.String);
-                    DataAccess.AddParam(cmd, "refValue", appointment.RefValue, DbType.String);
-                    DataAccess.AddParam(cmd, "contactType", appointment.ContactType, DbType.String);
-                    DataAccess.AddParam(cmd, "moreInfo", appointment.MoreInfo, DbType.String);
-                    DataAccess.AddParam(cmd, "joinTime", joinInterval, DbType.String);
-                    DataAccess.AddParam(cmd, "endTime", endInterval, DbType.String);
-                    DataAccess.AddParam(cmd, "status", appointment.Status.ToString(), DbType.String);
-                    DataAccess.AddParam(cmd, "meetingUrl", appointment.MeetingUrl, DbType.String);
-                    DataAccess.AddParam(cmd, "languagePref", appointment.LanguagePreference, DbType.String);
-                    DataAccess.AddParam(cmd, "createdBy", createdBy, DbType.String);
-                    DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
+                    DataAccess.AddParam(cmd, "p_customer_id", customerId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "p_queue_id", queueId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "p_service_id", ToNullableLong(appointment.ServiceId), DbType.Int64);
+                    DataAccess.AddParam(cmd, "p_ref_criteria", appointment.RefCriteria, DbType.String);
+                    DataAccess.AddParam(cmd, "p_ref_value", appointment.RefValue, DbType.String);
+                    DataAccess.AddParam(cmd, "p_contacttype", appointment.ContactType, DbType.String);
+                    DataAccess.AddParam(cmd, "p_moreinfo", appointment.MoreInfo, DbType.String);
+                    DataAccess.AddParam(cmd, "p_join_time", joinInterval, DbType.String);
+                    DataAccess.AddParam(cmd, "p_end_time", endInterval, DbType.String);
+                    DataAccess.AddParam(cmd, "p_status", appointment.Status.ToString(), DbType.String);
+                    DataAccess.AddParam(cmd, "p_meetingurl", appointment.MeetingUrl, DbType.String);
+                    DataAccess.AddParam(cmd, "p_language_pref", appointment.LanguagePreference, DbType.String);
+                    DataAccess.AddParam(cmd, "p_createdby", createdBy, DbType.String);
+                    DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
+                    var outId = DataAccess.AddParam(cmd, "p_walkin_id", null, DbType.Int64);
+                    outId.Direction = ParameterDirection.Output;
+                    var outMsg = DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String);
+                    outMsg.Direction = ParameterDirection.Output;
+                    outMsg.Size = 4000;
                     cmd.ExecuteNonQuery();
+                    var error = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(error))
+                        throw new InvalidOperationException(error);
+                    if (outId.Value != DBNull.Value && outId.Value != null)
+                        newId = Convert.ToInt64(outId.Value);
                 }
 
                 return newId;
@@ -131,48 +134,36 @@ namespace FastQ.Data.Db
                 throw new InvalidOperationException("QueueId must be a numeric ID.");
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"UPDATE APPOINTMENTS
-                  SET CUSTOMER_ID = :customerId,
-                      QUEUE_ID = :queueId,
-                      SERVICE_ID = :serviceId,
-                      REF_CRITERIA = :refCriteria,
-                      REF_VALUE = :refValue,
-                      CONTACTTYPE = :contactType,
-                      MOREINFO = :moreInfo,
-                      APPT_DATE = :apptDate,
-                      START_TIME = TO_DSINTERVAL(:startTime),
-                      END_TIME = TO_DSINTERVAL(:endTime),
-                      STATUS = :status,
-                      CONFCODE = :confCode,
-                      MEETINGURL = :meetingUrl,
-                      LANGUAGE_PREF = :languagePref,
-                      STAMPUSER = :stampUser,
-                      STAMPDATE = SYSDATE
-                  WHERE APPOINTMENT_ID = :apptId"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.UPDATE_APPOINTMENT"))
             {
                 var apptDate = ResolveApptDate(appointment);
                 var startInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
                 var endInterval = OracleInterval(appointment.EndTime);
                 var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
 
-                DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64);
-                DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
-                DataAccess.AddParam(cmd, "serviceId", ToNullableLong(appointment.ServiceId), DbType.Int64);
-                DataAccess.AddParam(cmd, "refCriteria", appointment.RefCriteria, DbType.String);
-                DataAccess.AddParam(cmd, "refValue", appointment.RefValue, DbType.String);
-                DataAccess.AddParam(cmd, "contactType", appointment.ContactType, DbType.String);
-                DataAccess.AddParam(cmd, "moreInfo", appointment.MoreInfo, DbType.String);
-                DataAccess.AddParam(cmd, "status", appointment.Status.ToString(), DbType.String);
-                DataAccess.AddParam(cmd, "apptDate", apptDate, DbType.DateTime);
-                DataAccess.AddParam(cmd, "startTime", startInterval, DbType.String);
-                DataAccess.AddParam(cmd, "endTime", endInterval, DbType.String);
-                DataAccess.AddParam(cmd, "confCode", appointment.ConfirmationCode, DbType.String);
-                DataAccess.AddParam(cmd, "meetingUrl", appointment.MeetingUrl, DbType.String);
-                DataAccess.AddParam(cmd, "languagePref", appointment.LanguagePreference, DbType.String);
-                DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
-                DataAccess.AddParam(cmd, "apptId", apptId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_apptid", apptId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_customer_id", customerId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_queue_id", queueId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_service_id", ToNullableLong(appointment.ServiceId), DbType.Int64);
+                DataAccess.AddParam(cmd, "p_ref_criteria", appointment.RefCriteria, DbType.String);
+                DataAccess.AddParam(cmd, "p_ref_value", appointment.RefValue, DbType.String);
+                DataAccess.AddParam(cmd, "p_contacttype", appointment.ContactType, DbType.String);
+                DataAccess.AddParam(cmd, "p_moreinfo", appointment.MoreInfo, DbType.String);
+                DataAccess.AddParam(cmd, "p_appt_date", apptDate, DbType.DateTime);
+                DataAccess.AddParam(cmd, "p_start_time", startInterval, DbType.String);
+                DataAccess.AddParam(cmd, "p_end_time", endInterval, DbType.String);
+                DataAccess.AddParam(cmd, "p_status", appointment.Status.ToString(), DbType.String);
+                DataAccess.AddParam(cmd, "p_confcode", appointment.ConfirmationCode, DbType.String);
+                DataAccess.AddParam(cmd, "p_meetingurl", appointment.MeetingUrl, DbType.String);
+                DataAccess.AddParam(cmd, "p_language_pref", appointment.LanguagePreference, DbType.String);
+                DataAccess.AddParam(cmd, "p_stampuser", stampUser, DbType.String);
+                var outMsg = DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String);
+                outMsg.Direction = ParameterDirection.Output;
+                outMsg.Size = 4000;
                 cmd.ExecuteNonQuery();
+                var error = outMsg.Value == DBNull.Value ? string.Empty : outMsg.Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(error))
+                    throw new InvalidOperationException(error);
             }
         }
 
@@ -353,14 +344,16 @@ namespace FastQ.Data.Db
             }
 
             var normalizedSrcType = char.ToUpperInvariant(srcType);
-            var tableName = normalizedSrcType == 'W' ? "fqowner.WALKINS" : "fqowner.APPOINTMENTS";
-            var idColumn = normalizedSrcType == 'W' ? "WALKIN_ID" : "APPOINTMENT_ID";
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn, $"SELECT QUEUE_ID FROM {tableName} WHERE {idColumn} = :sourceId"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUE_ID_FOR_SOURCE"))
             {
-                DataAccess.AddParam(cmd, "sourceId", sourceId, DbType.Int64);
-                var value = cmd.ExecuteScalar();
+                DataAccess.AddParam(cmd, "p_src_type", normalizedSrcType.ToString(), DbType.String);
+                DataAccess.AddParam(cmd, "p_src_id", sourceId, DbType.Int64);
+                var outParam = DataAccess.AddParam(cmd, "p_queue_id", null, DbType.Int64);
+                outParam.Direction = ParameterDirection.Output;
+                cmd.ExecuteNonQuery();
+                var value = outParam.Value;
                 if (value == null || value == DBNull.Value)
                 {
                     return null;
@@ -374,18 +367,9 @@ namespace FastQ.Data.Db
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
         {
             var list = new List<Appointment>();
-            var sql = @"SELECT a.*, q.LOCATION_ID
-                        FROM fqowner.APPOINTMENTS a
-                        JOIN fqowner.VALIDQUEUES q ON q.QUEUE_ID = a.QUEUE_ID";
-            if (!string.IsNullOrWhiteSpace(whereClause))
-            {
-                sql += " WHERE " + whereClause;
-            }
-
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn, sql))
+            using (var cmd = CreateListCommand(conn, whereClause, addParams))
             {
-                addParams?.Invoke(cmd);
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -646,13 +630,13 @@ namespace FastQ.Data.Db
                 return 0;
             }
 
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT APPOINTMENT_ID
-                    FROM fqowner.APPOINTMENTS
-                   WHERE CONFCODE = :confCode"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPT_ID_BY_CONF"))
             {
-                DataAccess.AddParam(cmd, "confCode", confirmationCode.Trim(), DbType.String);
-                var value = cmd.ExecuteScalar();
+                DataAccess.AddParam(cmd, "p_confcode", confirmationCode.Trim(), DbType.String);
+                var outParam = DataAccess.AddParam(cmd, "p_apptid", null, DbType.Int64);
+                outParam.Direction = ParameterDirection.Output;
+                cmd.ExecuteNonQuery();
+                var value = outParam.Value;
                 if (value == null || value == DBNull.Value)
                 {
                     return 0;
@@ -779,6 +763,46 @@ namespace FastQ.Data.Db
             }
 
             return false;
+        }
+
+        private static DbCommand CreateListCommand(DbConnection conn, string whereClause, Action<DbCommand> addParams)
+        {
+            DbCommand cmd;
+            if (string.Equals(whereClause, "a.QUEUE_ID = :queueId", StringComparison.OrdinalIgnoreCase))
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_QUEUE");
+            }
+            else if (string.Equals(whereClause, "a.CUSTOMER_ID = :customerId", StringComparison.OrdinalIgnoreCase))
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_CUSTOMER");
+            }
+            else if (string.Equals(whereClause, "q.LOCATION_ID = :locationId", StringComparison.OrdinalIgnoreCase))
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_LOCATION");
+            }
+            else
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_ALL_APPTS");
+            }
+
+            addParams?.Invoke(cmd);
+            RenameParameterIfPresent(cmd, "queueId", "p_queueid");
+            RenameParameterIfPresent(cmd, "customerId", "p_customerid");
+            RenameParameterIfPresent(cmd, "locationId", "p_locationid");
+            DataAccess.AddOutRefCursor(cmd, "p_cur");
+            return cmd;
+        }
+
+        private static void RenameParameterIfPresent(DbCommand cmd, string fromName, string toName)
+        {
+            foreach (DbParameter parameter in cmd.Parameters)
+            {
+                if (string.Equals(parameter.ParameterName, fromName, StringComparison.OrdinalIgnoreCase))
+                {
+                    parameter.ParameterName = toName;
+                    return;
+                }
+            }
         }
     }
 }

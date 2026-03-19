@@ -10,14 +10,6 @@ using FastQ.Web.Models;
 
 namespace FastQ.Web.Services
 {
-    //public enum FQRole
-    //{
-    //    Host,       // Value 0 by default
-    //    Provider,   // Value 1 by default
-    //    QueueAdmin, // Value 2 by default
-    //    Reporter,   // Value 3 by default
-    //    SuperAdmin  // Value 4 by default
-    //}
     public class AuthService
     {
         public string GetLoggedInWindowsUser()
@@ -52,46 +44,59 @@ namespace FastQ.Web.Services
                 return entityid;
             return 0;
         }
-        public void SetSessionEntityId(string param)
+        public void SetSessionEntityId()
         {
+            string param = HttpContext.Current.Request["eid"] != null ? HttpContext.Current.Request["eid"].ToString(): string.Empty;
             if (!string.IsNullOrWhiteSpace(param) && Int32.TryParse(param, out int entityid))
             {
                 HttpContext.Current.Session["fq_current_entity"] = entityid;
             }
             else
             {
-                if (GetSessionEntityId() == 0)
-                    HttpContext.Current.Session["fq_current_entity"] = 1;  //--default to 1 (Phase I for PEDS agency)
-                //TODO: otherwise set it to oUser's 1st active BusinessEntities.entry                
+                int? eid = GetSessionEntityId();
+                if (eid == 0)
+                {
+                    if (HttpContext.Current.Session?["fq_user"] != null && HttpContext.Current.Session?["fq_user"] is Data.Entities.User)
+                    {
+                        FastQ.Data.Entities.User ousr = (FastQ.Data.Entities.User)HttpContext.Current.Session["fq_user"];
+
+                        int cnt = ousr.BusinessEntities.Count(e => e.ActiveFlag == true);                        
+                        if (cnt == 1)
+                            eid = ousr.BusinessEntities?.FirstOrDefault(e => e.ActiveFlag == true).EntityId;  //auto-default
+                    }                    
+                }
+                HttpContext.Current.Session["fq_current_entity"] = eid;               
             }
         }
 
-        public bool IsInRole(FastQ.Web.Helpers.Utilities.FQRole role)
+        public bool IsInRole(Helpers.Utilities.FQRole role)
         {
-            /* Inspect the Session-User-Object for roles and permissions
-             *    TODO: WIP PR 3.9.2026           
-             */
+            /* Inspect the Session-User-Object for roles and permissions */
 
             bool result= false;
             var httpContext = HttpContext.Current;
             if (httpContext.Session?["fq_user"] == null)  return false;
-
-            int eid = new AuthService().GetSessionEntityId();
-
             FastQ.Data.Entities.User ousr = (FastQ.Data.Entities.User)httpContext.Session["fq_user"];
 
+            int eid = new AuthService().GetSessionEntityId();            
+
+            // Allow only if User has active access to This entity
+            if (ousr.BusinessEntities?.FirstOrDefault(e => e.EntityId == eid && e.ActiveFlag == true) == null)
+                return false;
+
+            // Process Roles for User with active access to This entity
             switch (role) {
                 case Helpers.Utilities.FQRole.Host:
-                    result = ousr.Queues.FirstOrDefault(l => l.HostFlag == true) != null && ousr.BusinessEntities.FirstOrDefault(e => e.EntityId == eid) != null;
+                    result = ousr.Queues.FirstOrDefault(l => l.HostFlag == true && l.EntityId == eid) != null;
                     break;
                 case Helpers.Utilities.FQRole.Provider:
-                    result = ousr.Queues.FirstOrDefault(l => l.ProviderFlag == true) != null && ousr.BusinessEntities.FirstOrDefault(e => e.EntityId == eid) != null;
+                    result = ousr.Queues.FirstOrDefault(l => l.ProviderFlag == true && l.EntityId == eid) != null;
                     break;
                 case Helpers.Utilities.FQRole.QueueAdmin:
-                    result = ousr.Queues.FirstOrDefault(l => l.QueueAdminFlag == true) != null && ousr.BusinessEntities.FirstOrDefault(e => e.EntityId == eid) != null;
+                    result = ousr.Queues.FirstOrDefault(l => l.QueueAdminFlag == true && l.EntityId == eid) != null;
                     break;
                 case Helpers.Utilities.FQRole.Reporter:
-                    result = ousr.Queues.FirstOrDefault(l => l.ReporterFlag == true) != null && ousr.BusinessEntities.FirstOrDefault(e => e.EntityId == eid) != null; 
+                    result = ousr.Queues.FirstOrDefault(l => l.ReporterFlag == true && l.EntityId == eid) != null; 
                     break;
                 case Helpers.Utilities.FQRole.SuperAdmin:                    
                     result = ousr.BusinessEntities.FirstOrDefault(e => e.ConfigAdminFlag == true && e.EntityId == eid) != null; 
@@ -101,7 +106,7 @@ namespace FastQ.Web.Services
             return result;
         }
 
-        public bool isAdminForQueue(long qid)
+        public bool IsAdminForQueue(long qid)
         {
             var httpContext = HttpContext.Current;
             if (httpContext.Session?["fq_user"] == null) return false;

@@ -13,7 +13,7 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
-        private readonly ILocationRepository _locations;
+        // readonly ILocationRepository _locations;
         private readonly IProviderRepository _providers;
         private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
@@ -23,7 +23,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
-                DbRepositoryFactory.CreateLocationRepository(),
+                //DbRepositoryFactory.CreateLocationRepository(),
                 DbRepositoryFactory.CreateProviderRepository(),
                 new SystemClock(),
                 new SignalRRealtimeNotifier())
@@ -34,7 +34,7 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
-            ILocationRepository locations,
+            //ILocationRepository locations,
             IProviderRepository providers,
             IClock clock,
             IRealtimeNotifier rt)
@@ -42,21 +42,21 @@ namespace FastQ.Web.Services
             _appts = appts;
             _customers = customers;
             _queues = queues;
-            _locations = locations;
+            //_locations = locations;
             _providers = providers;
             _clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
-        public Location GetPrimaryLocation()
-        {
-            return _locations.ListAll().FirstOrDefault();
-        }
+        //public Location GetPrimaryLocation()
+        //{
+        //    return _locations.ListAll().FirstOrDefault();
+        //}
 
-        public IList<Location> ListLocations()
-        {
-            return _locations.ListAll();
-        }
+        //public IList<Location> ListLocations()
+        //{
+        //    return _locations.ListAll();
+        //}
 
         public IList<Queue> ListQueuesByLocation(long locationId)
         {
@@ -82,7 +82,7 @@ namespace FastQ.Web.Services
 
         public IList<Provider> ListProviders(long? locationId)
         {
-            return locationId.HasValue ? _providers.ListByLocation(locationId.Value) : _providers.ListAll();
+            return locationId.HasValue ? _providers.ListByEntity(locationId.Value) : [];
         }
 
         public Queue GetQueue(long queueId)

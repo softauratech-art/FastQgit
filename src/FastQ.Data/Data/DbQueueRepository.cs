@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Web.Management;
 
 namespace FastQ.Data.Db
 {
@@ -12,24 +13,10 @@ namespace FastQ.Data.Db
     {
         public DbQueueRepository()
         {
-          
         }
+
         #region Queue Base-record
         public Queue Get(long id)
-        {
-            if (id <= 0) return null;
-
-            using var conn = DataAccess.Open();
-            using var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT QUEUE_ID, NAME, NAME_ES, NAME_CP, LOCATION_ID, ACTIVEFLAG, EMP_ONLY, HIDE_IN_KIOSK, HIDE_IN_MONITOR, LEAD_TIME_MIN, LEAD_TIME_MAX, HAS_GUIDELINES, HAS_UPLOADS
-                  FROM fqowner.VALIDQUEUES
-                  WHERE QUEUE_ID = :queueId");
-            DataAccess.AddParam(cmd, "queueId", id, DbType.Int64);
-            using var reader = cmd.ExecuteReader();
-            return reader.Read() ? MapQueue(reader) : null;
-        }
-
-        public Queue GetQueueDetails(long id)
         {
             if (id <= 0) return null;
 
@@ -53,11 +40,8 @@ namespace FastQ.Data.Db
 
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
-
                 DataAccess.AddParam(cmd, "p_queueId", oqueue.Id, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_locationid", oqueue.LocationId, DbType.Int64);
-                //DataAccess.AddParam(cmd, "p_datebegin", oqueue.BeginDate.ToShortDateString(), DbType.String);
-                //DataAccess.AddParam(cmd, "p_dateend", oqueue.EndDate.ToShortDateString(), DbType.String);
                 DataAccess.AddParam(cmd, "p_name", oqueue.Name, DbType.String);
                 DataAccess.AddParam(cmd, "p_namees", oqueue.NameEs, DbType.String);
                 DataAccess.AddParam(cmd, "p_namecp", oqueue.NameCp, DbType.String);
@@ -87,89 +71,6 @@ namespace FastQ.Data.Db
             }
         }
 
-        //public void Add(Queue queue)
-        //{
-        //    using (var conn = DataAccess.Open())
-        //    {
-        //        var queueId = queue.Id;
-        //        if (queueId <= 0)
-        //        {
-        //            queueId = DataAccess.NextVal(conn, "QUEUESEQ");
-        //            queue.Id = queueId;
-        //        }
-
-        //        var locationId = queue.LocationId;
-        //        if (locationId <= 0)
-        //            throw new InvalidOperationException("LocationId must be a numeric ID.");
-
-        //        using (var cmd = DataAccess.CreateCommand(conn,
-        //            @"INSERT INTO VALIDQUEUES
-        //                (QUEUE_ID, NAME, NAME_ES, NAME_CP, LOCATION_ID, ACTIVEFLAG, EMP_ONLY, HIDE_IN_KIOSK, HIDE_IN_MONITOR, LEAD_TIME_MIN, LEAD_TIME_MAX, HAS_GUIDELINES, HAS_UPLOADS)
-        //              VALUES
-        //                (:queueId, :name, :nameEs, :nameCp, :locationId, :activeFlag, :empOnly, :hideInKiosk, :hideInMonitor, :leadMin, :leadMax, :hasGuidelines, :hasUploads)"))
-        //        {
-        //            var activeFlag = queue.ActiveFlag ? "Y" : "N";
-        //            DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
-        //            DataAccess.AddParam(cmd, "name", queue.Name ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "nameEs", queue.NameEs ?? queue.Name ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "nameCp", queue.NameCp ?? queue.Name ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64);
-        //            DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
-        //            DataAccess.AddParam(cmd, "empOnly", queue.EmpOnly ? "Y" : "N", DbType.String);
-        //            DataAccess.AddParam(cmd, "hideInKiosk", queue.HideInKiosk ? "Y" : "N", DbType.String);
-        //            DataAccess.AddParam(cmd, "hideInMonitor", queue.HideInMonitor ? "Y" : "N", DbType.String);
-        //            DataAccess.AddParam(cmd, "leadMin", ResolveLeadMin(queue), DbType.String);
-        //            DataAccess.AddParam(cmd, "leadMax", ResolveLeadMax(queue), DbType.String);
-        //            DataAccess.AddParam(cmd, "hasGuidelines", queue.HasGuidelines ? "Y" : "N", DbType.String);
-        //            DataAccess.AddParam(cmd, "hasUploads", queue.HasUploads ? "Y" : "N", DbType.String);
-        //            cmd.ExecuteNonQuery();
-        //        }
-        //    }
-        //}
-
-        //public void Update(Queue queue)
-        //{
-        //    var queueId = queue.Id;
-        //    if (queueId <= 0)
-        //        throw new InvalidOperationException("Queue Id must be a numeric ID.");
-        //    var locationId = queue.LocationId;
-        //    if (locationId <= 0)
-        //        throw new InvalidOperationException("LocationId must be a numeric ID.");
-
-        //    using (var conn = DataAccess.Open())
-        //    using (var cmd = DataAccess.CreateCommand(conn,
-        //        @"UPDATE VALIDQUEUES
-        //          SET NAME = :name,
-        //              NAME_ES = :nameEs,
-        //              NAME_CP = :nameCp,
-        //              LOCATION_ID = :locationId,
-        //              ACTIVEFLAG = :activeFlag,
-        //              EMP_ONLY = :empOnly,
-        //              HIDE_IN_KIOSK = :hideInKiosk,
-        //              HIDE_IN_MONITOR = :hideInMonitor,
-        //              LEAD_TIME_MIN = :leadMin,
-        //              LEAD_TIME_MAX = :leadMax,
-        //              HAS_GUIDELINES = :hasGuidelines,
-        //              HAS_UPLOADS = :hasUploads
-        //          WHERE QUEUE_ID = :queueId"))
-        //    {
-        //        DataAccess.AddParam(cmd, "name", queue.Name ?? string.Empty, DbType.String);
-        //        DataAccess.AddParam(cmd, "nameEs", queue.NameEs ?? queue.Name ?? string.Empty, DbType.String);
-        //        DataAccess.AddParam(cmd, "nameCp", queue.NameCp ?? queue.Name ?? string.Empty, DbType.String);
-        //        DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64);
-        //        DataAccess.AddParam(cmd, "activeFlag", queue.ActiveFlag ? "Y" : "N", DbType.String);
-        //        DataAccess.AddParam(cmd, "empOnly", queue.EmpOnly ? "Y" : "N", DbType.String);
-        //        DataAccess.AddParam(cmd, "hideInKiosk", queue.HideInKiosk ? "Y" : "N", DbType.String);
-        //        DataAccess.AddParam(cmd, "hideInMonitor", queue.HideInMonitor ? "Y" : "N", DbType.String);
-        //        DataAccess.AddParam(cmd, "leadMin", ResolveLeadMin(queue), DbType.String);
-        //        DataAccess.AddParam(cmd, "leadMax", ResolveLeadMax(queue), DbType.String);
-        //        DataAccess.AddParam(cmd, "hasGuidelines", queue.HasGuidelines ? "Y" : "N", DbType.String);
-        //        DataAccess.AddParam(cmd, "hasUploads", queue.HasUploads ? "Y" : "N", DbType.String);
-        //        DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
-        //        cmd.ExecuteNonQuery();
-        //    }
-        //}
-
         public void Delete(long id, string stampuser)
         {
             using var conn = DataAccess.Open();
@@ -185,11 +86,11 @@ namespace FastQ.Data.Db
                 if (dberr != null) throw new InvalidOperationException(dberr);
             }
         }
-
-        public IList<Entities.Queue> ListByLocation(long entityid)
-        {
-            return ListByEntity(entityid, string.Empty);
-        }
+        
+        //public IList<Entities.Queue> ListByLocation(long entityid)
+        //{
+        //    return ListByEntity(entityid, string.Empty);
+        //}
 
         public IList<Entities.Queue> ListByEntity(long? entityid, string stampuser)
         {
@@ -213,27 +114,6 @@ namespace FastQ.Data.Db
             return list;
         }
 
-        //public IList<Queue> ListAll()
-        //{
-        //    var list = new List<Queue>();
-        //    using (var conn = DataAccess.Open())
-        //    {
-        //        using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUES"))
-        //        {
-        //            DataAccess.AddParam(cmd, "p_location", null, DbType.Int64);
-        //            DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
-        //            using (var reader = cmd.ExecuteReader())
-        //            {
-        //                while (reader.Read())
-        //                {
-        //                    list.Add(MapQueue(reader));
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    return list;
-        //}
         public IList<Tuple<long, string>> ListServicesByQueue(long queueId)
         {
             var list = new List<Tuple<long, string>>();
@@ -265,18 +145,19 @@ namespace FastQ.Data.Db
 
         public Tuple<string, string, string> GetQueueDetailsJson(long queueId)
         {
+            //@"SELECT Q_SERVICES, Q_SCHEDULES, Q_DETAILS
+            //      FROM fqowner.VW_QUEUE_DETAILS_JSON
+            //      WHERE QUEUE_ID = :queueId"
             if (queueId <= 0)
             {
                 return null;
             }
 
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT Q_SERVICES, Q_SCHEDULES, Q_DETAILS
-                  FROM fqowner.VW_QUEUE_DETAILS_JSON
-                  WHERE QUEUE_ID = :queueId"))
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUE_DETAILS"))               
             {
                 DataAccess.AddParam(cmd, "queueId", queueId, DbType.Int64);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
                     if (!reader.Read())
@@ -413,22 +294,6 @@ namespace FastQ.Data.Db
             }
             return items;
         }
-
-
-        //private static string ResolveLeadMin(Queue queue)
-        //{
-        //    return !string.IsNullOrWhiteSpace(queue.LeadTimeMin)
-        //        ? queue.LeadTimeMin
-        //        : queue.Config.MinHoursLead.ToString();
-        //}
-
-        //private static string ResolveLeadMax(Queue queue)
-        //{
-        //    return !string.IsNullOrWhiteSpace(queue.LeadTimeMax)
-        //        ? queue.LeadTimeMax
-        //        : queue.Config.MaxDaysAhead.ToString();
-        //}
-
         #endregion
 
         #region QueueService
@@ -453,7 +318,6 @@ namespace FastQ.Data.Db
                         NameCp = reader["SERVICE_NAME_CP"]?.ToString(),
                         ActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"
                     } : null;
-
                 }
             }
         }

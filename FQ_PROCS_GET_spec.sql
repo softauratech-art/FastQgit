@@ -52,6 +52,55 @@ CREATE OR REPLACE PACKAGE FQ_PROCS_GET AS
     p_cur OUT Ref_Cursor_Types.ref_cursor
   );
 
+  PROCEDURE GET_CUSTOMER (
+    p_customerid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_CUSTOMER_BY_PHONE (
+    p_phone IN VARCHAR2,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_CUSTOMER_BY_EMAIL (
+    p_email IN VARCHAR2,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_CUSTOMERS (
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_APPTS_BY_QUEUE (
+    p_queueid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_APPTS_BY_CUSTOMER (
+    p_customerid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_APPTS_BY_LOCATION (
+    p_locationid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_ALL_APPTS (
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
+  PROCEDURE GET_APPT_ID_BY_CONF (
+    p_confcode IN VARCHAR2,
+    p_apptid OUT NUMBER
+  );
+
+  PROCEDURE GET_QUEUE_ID_FOR_SOURCE (
+    p_src_type IN VARCHAR2,
+    p_src_id IN NUMBER,
+    p_queue_id OUT NUMBER
+  );
+
   PROCEDURE GET_MYPROFILE (
     p_userid IN VARCHAR2,
     p_cur OUT Ref_Cursor_Types.ref_cursor

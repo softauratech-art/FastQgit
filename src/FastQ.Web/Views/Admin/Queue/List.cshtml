@@ -2,7 +2,6 @@
 @using FastQ.Web.Helpers;
 @{
     var authService = new FastQ.Web.Services.AuthService();
-    var isadmin = false;
 }
 
     @section Head{
@@ -72,7 +71,7 @@
                         <td>@Utilities.ParseTimeInterval(item.LeadTimeMin)</td>
                         <td>@Utilities.ParseTimeInterval(item.LeadTimeMax)</td>
                         <td class="table-actions">
-                            @if (authService.isAdminForQueue(item.Id) || authService.IsInRole(Utilities.FQRole.SuperAdmin))
+                            @if (authService.IsAdminForQueue(item.Id) || authService.IsInRole(Utilities.FQRole.SuperAdmin))
                             {
                                 <a href="@Url.Action("Edit", "Queue", new { id = item.Id })" class="btn small ghost btn-action-edit">
                                     <i class="bi bi-pencil "></i> Edit
@@ -120,7 +119,7 @@
                 },
                 initComplete: function () {
                     // Use initComplete to insert the actual hyperlink after the table is initialized
-                    $('.action-btn-div').wrapInner('@Html.ActionLink("Create New", "Create", 0, new { @class = "btn-add" })');
+                    $('.action-btn-div').wrapInner('@Html.ActionLink("Create New", "Edit", 0, new { @class = "btn-add" })');
                 }
             });
         });
