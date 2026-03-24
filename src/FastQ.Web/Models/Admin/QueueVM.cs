@@ -111,7 +111,7 @@ namespace FastQ.Web.Models.Admin
                     {
                         new ContactMethodItem {Name="Online Meeting", Value="OM", IsChecked=(this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("OM"))},
                         new ContactMethodItem {Name="Phone Call", Value="PC", IsChecked=(this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("PC"))},
-                        new ContactMethodItem { Name = "In Person", Value = "IP", IsChecked = (this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("IP")) }
+                        new ContactMethodItem { Name = "In-Person", Value = "IP", IsChecked = (this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("IP")) }
                     };
                 return ret;
             }

@@ -101,6 +101,17 @@
 --------------------------------------------------------
 
   CREATE TABLE "VALIDCONTACTTYPES" ("TYPE_KEY" VARCHAR2(3), "TYPE_VAL" VARCHAR2(100), "TYPE_VAL_ES" VARCHAR2(100), "TYPE_VAL_CP" VARCHAR2(100), "ACTIVEFLAG" CHAR(1) DEFAULT 'Y')   NO INMEMORY
+
+--------------------------------------------------------
+--  Seed data for Table VALIDCONTACTTYPES
+--------------------------------------------------------
+
+  INSERT INTO "VALIDCONTACTTYPES" ("TYPE_KEY", "TYPE_VAL", "TYPE_VAL_ES", "TYPE_VAL_CP", "ACTIVEFLAG")
+  VALUES ('IP', 'In-Person', 'In-Person', 'In-Person', 'Y');
+
+-- Example queue mapping. Replace 10003 with the target queue id.
+-- INSERT INTO "QUEUE_CONTACTTYPES" ("QUEUE_ID", "CONTACT_KEY")
+-- VALUES (10003, 'IP');
 --------------------------------------------------------
 --  DDL for Table VALIDHOLIDAYS
 --------------------------------------------------------

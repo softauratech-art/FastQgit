@@ -362,6 +362,10 @@ namespace FastQ.Web.Services
         {
             var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
             var normalizedPhone = (phone ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                throw new InvalidOperationException("Email is required.");
+            }
             var customer = !string.IsNullOrWhiteSpace(normalizedEmail)
                 ? _customers.GetByEmail(normalizedEmail)
                 : null;
@@ -384,7 +388,7 @@ namespace FastQ.Web.Services
                     StampDateUtc = now,
                     StampUser = stampUser
                 };
-                customer.Email = string.IsNullOrWhiteSpace(normalizedEmail) ? BuildPlaceholderEmail(customer) : normalizedEmail;
+                customer.Email = normalizedEmail;
                 _customers.Add(customer);
                 return customer;
             }
@@ -394,33 +398,13 @@ namespace FastQ.Web.Services
             {
                 customer.Name = name.Trim();
             }
-            if (!string.IsNullOrWhiteSpace(normalizedEmail))
-            {
-                customer.Email = normalizedEmail;
-            }
+            customer.Email = normalizedEmail;
             customer.Phone = normalizedPhone;
             customer.UpdatedUtc = now;
             customer.StampDateUtc = now;
             customer.StampUser = stampUser;
             _customers.Update(customer);
             return customer;
-        }
-
-        private static string BuildPlaceholderEmail(Customer customer)
-        {
-            if (!string.IsNullOrWhiteSpace(customer.Email))
-            {
-                return customer.Email;
-            }
-
-            if (!string.IsNullOrWhiteSpace(customer.Phone))
-            {
-                return $"{customer.Phone}@placeholder.local";
-            }
-
-            var first = customer.FirstName ?? "customer";
-            var last = customer.LastName ?? "unknown";
-            return $"{first}.{last}@placeholder.local".Replace(" ", string.Empty).ToLowerInvariant();
         }
 
         public Result ValidatePermit(string permitNumber)
@@ -941,9 +925,9 @@ namespace FastQ.Web.Services
                 case "OM":
                     return "Online";
                 case "IP":
-                    return "In-person";
+                    return "In-Person";
                 default:
-                    return string.IsNullOrWhiteSpace(normalized) ? "In-person" : normalized;
+                    return string.IsNullOrWhiteSpace(normalized) ? "In-Person" : normalized;
             }
         }
 

@@ -286,8 +286,8 @@ namespace FastQ.Web.Services
             {
                 "PC" => "Phone Call",
                 "OM" => "Online Meeting",
-                "IP" => "In Person",
-                _ => string.IsNullOrWhiteSpace(normalized) ? "In Person" : normalized
+                "IP" => "In-Person",
+                _ => string.IsNullOrWhiteSpace(normalized) ? "In-Person" : normalized
             };
         }
 

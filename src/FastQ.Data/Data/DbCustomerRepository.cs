@@ -96,7 +96,7 @@ namespace FastQ.Data.Db
                 SplitName(customer.Name, out var first, out var last);
                 if (!string.IsNullOrWhiteSpace(customer.FirstName)) first = customer.FirstName;
                 if (!string.IsNullOrWhiteSpace(customer.LastName)) last = customer.LastName;
-                var email = BuildPlaceholderEmail(customer, first, last);
+                var email = ResolveEmailForPersistence(customer, first, last);
                 var stampUser = string.IsNullOrWhiteSpace(customer.StampUser) ? "fastq" : customer.StampUser;
                 var activeFlag = customer.ActiveFlag ? "Y" : "N";
 
@@ -137,7 +137,7 @@ namespace FastQ.Data.Db
             SplitName(customer.Name, out var first, out var last);
             if (!string.IsNullOrWhiteSpace(customer.FirstName)) first = customer.FirstName;
             if (!string.IsNullOrWhiteSpace(customer.LastName)) last = customer.LastName;
-            var email = BuildPlaceholderEmail(customer, first, last);
+            var email = ResolveEmailForPersistence(customer, first, last);
             var stampUser = string.IsNullOrWhiteSpace(customer.StampUser) ? "fastq" : customer.StampUser;
             var activeFlag = customer.ActiveFlag ? "Y" : "N";
 
@@ -246,6 +246,17 @@ namespace FastQ.Data.Db
             var parts = trimmed.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
             first = parts.Length > 0 ? parts[0] : string.Empty;
             last = parts.Length > 1 ? parts[1] : string.Empty;
+        }
+
+        private static string ResolveEmailForPersistence(Customer customer, string first, string last)
+        {
+            var email = (customer.Email ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                return email;
+            }
+
+            return BuildPlaceholderEmail(customer, first, last);
         }
 
         private static string BuildPlaceholderEmail(Customer customer, string first, string last)
