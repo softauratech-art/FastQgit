@@ -260,6 +260,42 @@ namespace FastQ.Data.Db
             }
         }
 
+        public IList<UserQueuePermission> GetActionQueuePermissions(string uid)
+        {
+            var list = new List<UserQueuePermission>();
+            if (string.IsNullOrWhiteSpace(uid))
+            {
+                return list;
+            }
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_USER_ACTION_QUEUE_ACCESS"))
+            {
+                DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
+                DataAccess.AddOutRefCursor(cmd, "p_cur");
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new UserQueuePermission
+                        {
+                            UserId = uid,
+                            QueueId = Convert.ToInt64(reader["QUEUE_ID"]?.ToString()),
+                            QueueName = reader["NAME"]?.ToString() ?? string.Empty,
+                            EntityId = Convert.ToInt32(reader["LOCATION_ID"]?.ToString()),
+                            HostFlag = (reader["HOST_FLAG"]?.ToString() ?? "N") == "Y",
+                            ProviderFlag = (reader["PROVIDER_FLAG"]?.ToString() ?? "N") == "Y",
+                            ReporterFlag = (reader["REPORTER_FLAG"]?.ToString() ?? "N") == "Y",
+                            QueueAdminFlag = (reader["QUEUEADMIN_FLAG"]?.ToString() ?? "N") == "Y",
+                            QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
+
         //private static string ReadRawString(IDataRecord record, string field)
         //{
         //    var ordinal = record.GetOrdinal(field);
@@ -271,4 +307,3 @@ namespace FastQ.Data.Db
 
     }
 }
-

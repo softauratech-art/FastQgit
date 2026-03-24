@@ -187,6 +187,33 @@ BEGIN
         AND trunc(appt_date) BETWEEN trunc(p_range_startdate) AND trunc(p_range_enddate);
 END;
 
+PROCEDURE GET_USER_ACTION_QUEUE_ACCESS (
+    p_userid IN VARCHAR2,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+)
+AS
+BEGIN
+ OPEN p_cur FOR
+    SELECT DISTINCT
+        q.queue_id,
+        q.name,
+        q.location_id,
+        q.activeflag,
+        p.provider_flag,
+        p.host_flag,
+        p.queueadmin_flag,
+        p.reporter_flag
+    FROM validqueues q
+        INNER JOIN appointments a ON q.queue_id = a.queue_id
+        INNER JOIN user_permissions p ON q.queue_id = p.queue_id
+        INNER JOIN fq_users u ON u.user_id = p.user_id
+    WHERE NVL(q.activeflag,'N') = 'Y'
+        AND lower(u.user_id) = lower(p_userid)
+        AND NVL(u.activeflag,'N') = 'Y'
+        AND (p.provider_flag = 'Y' OR p.host_flag = 'Y' OR p.queueadmin_flag = 'Y' OR p.reporter_flag = 'Y')
+        AND trunc(a.appt_date) BETWEEN trunc(sysdate-30) AND trunc(sysdate);
+END;
+
 PROCEDURE GET_APPT_DETAILS (
     p_apptid IN Appointments.appointment_id%type,
     p_cur OUT Ref_Cursor_Types.ref_cursor

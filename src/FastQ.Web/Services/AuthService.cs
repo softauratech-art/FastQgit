@@ -6,12 +6,21 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Web;
 using FastQ.Data.Entities;
+using FastQ.Data.Db;
+using FastQ.Data.Repositories;
 using FastQ.Web.Models;
 
 namespace FastQ.Web.Services
 {
     public class AuthService
     {
+        private readonly IUserRepository _users;
+
+        public AuthService()
+        {
+            _users = DbRepositoryFactory.CreateUserRepository();
+        }
+
         public string GetLoggedInWindowsUser()
         {
             var httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;
@@ -128,6 +137,9 @@ namespace FastQ.Web.Services
             var queuePermissions = (user.Queues ?? new List<UserQueuePermission>())
                 .Where(q => q.QueueActiveFlag && (currentEntityId <= 0 || q.EntityId == currentEntityId))
                 .ToList();
+            var actionQueuePermissions = (_users.GetActionQueuePermissions(user.UserId) ?? new List<UserQueuePermission>())
+                .Where(q => q.QueueActiveFlag && (currentEntityId <= 0 || q.EntityId == currentEntityId))
+                .ToList();
 
             var hasActiveEntity = (user.BusinessEntities ?? new List<UserEntity>())
                 .Any(e => e.ActiveFlag && (currentEntityId <= 0 || e.EntityId == currentEntityId));
@@ -147,12 +159,12 @@ namespace FastQ.Web.Services
             access.CanAddEntries = access.CanCheckIn;
             access.CanViewReports = access.IsAdmin || access.IsReporter;
             access.CanAccessAdmin = access.IsAdmin || access.IsQueueAdmin;
-            access.ProviderQueueIds = queuePermissions
+            access.ProviderQueueIds = actionQueuePermissions
                 .Where(q => q.ProviderFlag)
                 .Select(q => q.QueueId)
                 .Distinct()
                 .ToList();
-            access.QueueAdminQueueIds = queuePermissions
+            access.QueueAdminQueueIds = actionQueuePermissions
                 .Where(q => q.QueueAdminFlag)
                 .Select(q => q.QueueId)
                 .Distinct()
@@ -164,25 +176,25 @@ namespace FastQ.Web.Services
         public bool CanCheckIn(long queueId)
         {
             var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanCheckIn;
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
         }
 
         public bool CanTransfer(long queueId)
         {
             var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanTransfer;
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
         }
 
         public bool CanCancel(long queueId)
         {
             var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanCancel;
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
         }
 
         public bool CanUpdateInfo(long queueId)
         {
             var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanUpdateInfo;
+            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
         }
 
         public bool CanAddEntries(long queueId)

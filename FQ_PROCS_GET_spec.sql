@@ -47,6 +47,11 @@ CREATE OR REPLACE PACKAGE FQ_PROCS_GET AS
     p_cur OUT Ref_Cursor_Types.ref_cursor
   );
 
+  PROCEDURE GET_USER_ACTION_QUEUE_ACCESS (
+    p_userid IN VARCHAR2,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+  );
+
   PROCEDURE GET_APPT_DETAILS (
     p_apptid IN Appointments.appointment_id%type,
     p_cur OUT Ref_Cursor_Types.ref_cursor

@@ -10,6 +10,6 @@ namespace FastQ.Data.Repositories
         void Add(User ouser);
         void Update(User ouser);
         IList<User> ListAll(Int32 entityid, string stampuser);
+        IList<UserQueuePermission> GetActionQueuePermissions(string uid);
     }
 }
-

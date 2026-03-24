@@ -2375,22 +2375,7 @@
       if (access.IsAdmin) {
         return true;
       }
-      if (actionName === "arrive") {
-        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
-      }
-      if (actionName === "transfer") {
-        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
-      }
-      if (actionName === "remove") {
-        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
-      }
-      if (actionName === "info") {
-        return !!access.IsHost || !!access.IsProvider || queueAdminHasQueue;
-      }
-      if (actionName === "begin" || actionName === "end") {
-        return providerHasQueue || queueAdminHasQueue;
-      }
-      return false;
+      return providerHasQueue || queueAdminHasQueue;
     }
 
     function canAction(status, actionName, queueId) {
