@@ -526,7 +526,7 @@
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
-                                <td>@row.StartTimeText</td>
+                                <td>@row.StartDateText<br />@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
                                 <td>@row.CustomerName</td>
@@ -643,7 +643,7 @@
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
-                                <td>@row.StartTimeText</td>
+                                <td>@row.StartDateText<br />@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
                                 <td>@row.CustomerName</td>
@@ -1713,16 +1713,23 @@
       }
       return getJson(getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(queueId) + "&theDate=" + encodeURIComponent(selectedDate))
         .then(function (res) {
+          var selectedDateValue = new Date(selectedDate + "T00:00:00");
+          var minimumFutureMinutes = getMinimumFutureMinutes(selectedDateValue);
           var timeOptions = res && res.ok
             ? (res.data || []).map(function (slot) {
-                return { value: slot.slotBegin || "", label: slot.slotBegin || "" };
+                var slotValue = slot.slotBegin || "";
+                var slotMinutes = Date.parse("1970-01-01T" + to24Hour(slotValue) + ":00");
+                var totalMinutes = isNaN(slotMinutes) ? null : ((new Date(slotMinutes)).getUTCHours() * 60) + (new Date(slotMinutes)).getUTCMinutes();
+                var isPast = minimumFutureMinutes !== null && totalMinutes !== null && totalMinutes < minimumFutureMinutes;
+                return { value: slotValue, label: slotValue, disabled: isPast };
               }).sort(function (a, b) {
                 return Date.parse("1970-01-01T" + to24Hour(a.value) + ":00") - Date.parse("1970-01-01T" + to24Hour(b.value) + ":00");
               })
             : [];
           setSelectValues(timeSelect, timeOptions, "Select time");
-          if (timeOptions.length > 0) {
-            timeSelect.value = timeOptions[0].value;
+          var firstEnabled = timeOptions.find(function (option) { return !option.disabled; });
+          if (firstEnabled) {
+            timeSelect.value = firstEnabled.value;
           }
           return validateCustomerTimeSelection(prefix);
         })
@@ -1980,6 +1987,7 @@
         var option = document.createElement("option");
         option.value = item.value;
         option.textContent = item.label;
+        option.disabled = !!item.disabled;
         selectElement.appendChild(option);
       });
     }
