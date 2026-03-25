@@ -1718,12 +1718,11 @@
           var timeOptions = res && res.ok
             ? (res.data || []).map(function (slot) {
                 var slotValue = slot.slotBegin || "";
-                var slotMinutes = Date.parse("1970-01-01T" + to24Hour(slotValue) + ":00");
-                var totalMinutes = isNaN(slotMinutes) ? null : ((new Date(slotMinutes)).getUTCHours() * 60) + (new Date(slotMinutes)).getUTCMinutes();
+                var totalMinutes = parseClockMinutes(slotValue);
                 var isPast = minimumFutureMinutes !== null && totalMinutes !== null && totalMinutes < minimumFutureMinutes;
                 return { value: slotValue, label: slotValue, disabled: isPast };
               }).sort(function (a, b) {
-                return Date.parse("1970-01-01T" + to24Hour(a.value) + ":00") - Date.parse("1970-01-01T" + to24Hour(b.value) + ":00");
+                return (parseClockMinutes(a.value) || 0) - (parseClockMinutes(b.value) || 0);
               })
             : [];
           setSelectValues(timeSelect, timeOptions, "Select time");
@@ -1990,6 +1989,27 @@
         option.disabled = !!item.disabled;
         selectElement.appendChild(option);
       });
+    }
+
+    function getLocalTodayIsoDate() {
+      var now = new Date();
+      return now.getFullYear() + "-" + toTwoDigits(now.getMonth() + 1) + "-" + toTwoDigits(now.getDate());
+    }
+
+    function parseClockMinutes(value) {
+      var text = to24Hour(value);
+      var parts = text.split(":");
+      if (parts.length !== 2) {
+        return null;
+      }
+
+      var hour = parseInt(parts[0], 10);
+      var minute = parseInt(parts[1], 10);
+      if (isNaN(hour) || isNaN(minute)) {
+        return null;
+      }
+
+      return (hour * 60) + minute;
     }
 
     function to24Hour(value) {
@@ -2344,6 +2364,7 @@
           var statusInput = container.querySelector('[data-filter="status"]');
           var startInput = container.querySelector('[data-filter="start"]');
           var endInput = container.querySelector('[data-filter="end"]');
+          var todayValue = getLocalTodayIsoDate();
           if (customerInput) {
             customerInput.value = "";
           }
@@ -2351,12 +2372,13 @@
             statusInput.value = "all";
           }
           if (startInput) {
-            startInput.value = "@defaultDate";
+            startInput.value = todayValue;
           }
           if (endInput) {
-            endInput.value = "@endDate";
+            endInput.value = todayValue;
           }
           applyTableFilters(container);
+          updateRangeAndReload(todayValue, todayValue);
         });
       }
 
