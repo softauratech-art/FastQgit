@@ -1720,15 +1720,16 @@
                 var slotValue = slot.slotBegin || "";
                 var totalMinutes = parseClockMinutes(slotValue);
                 var isPast = minimumFutureMinutes !== null && totalMinutes !== null && totalMinutes < minimumFutureMinutes;
-                return { value: slotValue, label: slotValue, disabled: isPast };
+                return isPast ? null : { value: slotValue, label: slotValue };
+              }).filter(function (slot) {
+                return !!slot;
               }).sort(function (a, b) {
                 return (parseClockMinutes(a.value) || 0) - (parseClockMinutes(b.value) || 0);
               })
             : [];
           setSelectValues(timeSelect, timeOptions, "Select time");
-          var firstEnabled = timeOptions.find(function (option) { return !option.disabled; });
-          if (firstEnabled) {
-            timeSelect.value = firstEnabled.value;
+          if (timeOptions.length > 0) {
+            timeSelect.value = timeOptions[0].value;
           }
           return validateCustomerTimeSelection(prefix);
         })
