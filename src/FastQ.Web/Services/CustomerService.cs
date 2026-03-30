@@ -146,6 +146,8 @@ namespace FastQ.Web.Services
                 return Result<Appointment>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<Appointment>.Fail("Phone is required.");
+            if (string.IsNullOrWhiteSpace(contactType))
+                return Result<Appointment>.Fail("Contact type is required.");
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
@@ -182,7 +184,7 @@ namespace FastQ.Web.Services
                 ServiceId = parsedServiceId,
                 RefCriteria = refCriteria,
                 RefValue = referenceValue,
-                ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
+                ContactType = contactType.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
                 Status = AppointmentStatus.Scheduled,
@@ -233,6 +235,8 @@ namespace FastQ.Web.Services
                 return Result<long>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<long>.Fail("Phone is required.");
+            if (string.IsNullOrWhiteSpace(contactType))
+                return Result<long>.Fail("Contact type is required.");
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
@@ -254,7 +258,7 @@ namespace FastQ.Web.Services
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
                 RefCriteria = refCriteria,
                 RefValue = referenceValue,
-                ContactType = string.IsNullOrWhiteSpace(contactType) ? "IP" : contactType.Trim(),
+                ContactType = contactType.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 Status = AppointmentStatus.Arrived,
@@ -309,8 +313,8 @@ namespace FastQ.Web.Services
                 //LocationName = location?.Name ?? "Unknown",
                 QueueName = queue?.Name ?? "Unknown",
                 Status = appt.Status.ToString(),
-                ScheduledForUtc = appt.ScheduledForUtc.ToString("u"),
-                UpdatedUtc = appt.UpdatedUtc.ToString("u"),
+                ScheduledForUtc = (appt.ScheduledForUtc.Kind == DateTimeKind.Utc ? appt.ScheduledForUtc.ToLocalTime() : appt.ScheduledForUtc).ToString("yyyy-MM-dd h:mm tt"),
+                UpdatedUtc = (appt.UpdatedUtc.Kind == DateTimeKind.Utc ? appt.UpdatedUtc.ToLocalTime() : appt.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt"),
             };
 
             bool IsWaiting(Appointment a) => a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived;
@@ -570,12 +574,12 @@ namespace FastQ.Web.Services
                     return Result.Fail("Selected service is not valid for this queue.");
 
                 var contactCode = (contactType ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(contactCode))
-                {
-                    var contactCodes = ReadOptionCodes(detailsJson?["contactoptions"], "type_key");
-                    if (contactCodes.Count > 0 && !contactCodes.Contains(contactCode))
-                        return Result.Fail("Selected contact type is not valid for this queue.");
-                }
+                if (string.IsNullOrWhiteSpace(contactCode))
+                    return Result.Fail("Contact type is required.");
+
+                var contactCodes = ReadOptionCodes(detailsJson?["contactoptions"], "type_key");
+                if (contactCodes.Count > 0 && !contactCodes.Contains(contactCode))
+                    return Result.Fail("Selected contact type is not valid for this queue.");
 
                 var refCode = (refValue ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(refCode))

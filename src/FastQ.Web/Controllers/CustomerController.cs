@@ -58,6 +58,16 @@ namespace FastQ.Web.Controllers
                 return View();
             }
 
+            if (string.IsNullOrWhiteSpace(contactType))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Contact type is required." });
+                }
+                ViewBag.Error = "Contact type is required.";
+                return View();
+            }
+
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
             {
                 if (Request.IsAjaxRequest())
@@ -91,7 +101,7 @@ namespace FastQ.Web.Controllers
                 resolvedCustomerName,
                 phone,
                 contactType,
-                localStart.ToUniversalTime(),
+                localStart,
                 notes,
                 meetingUrl,
                 "web");
@@ -195,7 +205,7 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = "Start time is required." }, JsonRequestBehavior.AllowGet);
 
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
-            var res = _service.ValidateCustomerTimeSelection(email, phone, localStart.ToUniversalTime());
+            var res = _service.ValidateCustomerTimeSelection(email, phone, localStart);
             return Json(new { ok = res.Ok, error = res.Ok ? null : res.Error }, JsonRequestBehavior.AllowGet);
         }
 

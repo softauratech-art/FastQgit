@@ -63,18 +63,12 @@ namespace FastQ.Web.Services
 
         public IList<Queue> ListQueues()
         {
-            //return _queues.ListAll();
-            return _queues.ListByEntity(null, new AuthService().GetLoggedInWindowsUser());
+            return ListEligibleQueues();
         }
 
         public IList<Queue> ListTransferQueues(long? locationId)
         {
-            if (locationId.HasValue && locationId.Value > 0)
-            {
-                return _queues.ListByEntity(locationId.Value, new AuthService().GetLoggedInWindowsUser());
-            }
-
-            return _queues.ListByEntity(null, new AuthService().GetLoggedInWindowsUser());
+            return ListEligibleQueues(locationId);
         }
 
         public IList<Tuple<long, string>> ListTransferServices(long queueId)
@@ -166,7 +160,7 @@ namespace FastQ.Web.Services
         {
             var date = utcDate.Date;
             return _appts.ListAll()
-                .Where(a => a.ScheduledForUtc.Date == date)
+                .Where(a => ToLocalDisplayTime(a.ScheduledForUtc).Date == date)
                 .ToList();
         }
 
@@ -181,14 +175,15 @@ namespace FastQ.Web.Services
                 customerMap.TryGetValue(a.CustomerId, out var customer);
 
                 var contact = GetContactMethodText(a.ContactType);
+                var localScheduled = ToLocalDisplayTime(a.ScheduledForUtc);
 
                 return new ProviderAppointmentRow
                 {
                     AppointmentId = a.Id,
                     QueueId = a.QueueId,
                     ScheduledForUtc = a.ScheduledForUtc,
-                    StartTimeText = a.ScheduledForUtc.ToString("h:mm tt"),
-                    StartDateText = a.ScheduledForUtc.ToString("MMM dd, yyyy"),
+                    StartTimeText = localScheduled.ToString("h:mm tt"),
+                    StartDateText = localScheduled.ToString("MMM dd, yyyy"),
                     QueueName = queue?.Name ?? "Unknown Queue",
                     ServiceType = queue?.Name != null ? $"Questions: {queue.Name}" : "Questions: General",
                     CustomerName = customer?.Name ?? "Unknown",
@@ -239,14 +234,15 @@ namespace FastQ.Web.Services
                 var serviceType = !string.IsNullOrWhiteSpace(r.ServiceName)
                     ? r.ServiceName
                     : (!string.IsNullOrWhiteSpace(r.QueueName) ? $"Questions: {r.QueueName}" : "Questions: General");
+                var localScheduled = ToLocalDisplayTime(r.ScheduledForUtc);
 
                 return new ProviderAppointmentRow
                 {
                     AppointmentId = r.AppointmentId,
                     QueueId = r.QueueId,
                     ScheduledForUtc = r.ScheduledForUtc,
-                    StartTimeText = r.ScheduledForUtc.ToString("h:mm tt"),
-                    StartDateText = r.ScheduledForUtc.ToString("MMM dd, yyyy"),
+                    StartTimeText = localScheduled.ToString("h:mm tt"),
+                    StartDateText = localScheduled.ToString("MMM dd, yyyy"),
                     QueueName = r.QueueName ?? "Unknown Queue",
                     ServiceType = serviceType,
                     CustomerName = string.IsNullOrWhiteSpace(r.CustomerName) ? "Unknown" : r.CustomerName,
@@ -329,8 +325,8 @@ namespace FastQ.Web.Services
                     CustomerId = a.CustomerId,
                     CustomerPhone = c?.Phone ?? "",
                     Status = a.Status.ToString(),
-                    ScheduledForUtc = a.ScheduledForUtc.ToString("u"),
-                    UpdatedUtc = a.UpdatedUtc.ToString("u")
+                    ScheduledForUtc = ToLocalDisplayTime(a.ScheduledForUtc).ToString("yyyy-MM-dd h:mm tt"),
+                    UpdatedUtc = ToLocalDisplayTime(a.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt")
                 });
             }
 
@@ -343,8 +339,8 @@ namespace FastQ.Web.Services
                     CustomerId = a.CustomerId,
                     CustomerPhone = c?.Phone ?? "",
                     Status = a.Status.ToString(),
-                    ScheduledForUtc = a.ScheduledForUtc.ToString("u"),
-                    UpdatedUtc = a.UpdatedUtc.ToString("u")
+                    ScheduledForUtc = ToLocalDisplayTime(a.ScheduledForUtc).ToString("yyyy-MM-dd h:mm tt"),
+                    UpdatedUtc = ToLocalDisplayTime(a.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt")
                 });
             }
 
@@ -357,12 +353,37 @@ namespace FastQ.Web.Services
                     CustomerId = a.CustomerId,
                     CustomerPhone = c?.Phone ?? "",
                     Status = a.Status.ToString(),
-                    ScheduledForUtc = a.ScheduledForUtc.ToString("u"),
-                    UpdatedUtc = a.UpdatedUtc.ToString("u")
+                    ScheduledForUtc = ToLocalDisplayTime(a.ScheduledForUtc).ToString("yyyy-MM-dd h:mm tt"),
+                    UpdatedUtc = ToLocalDisplayTime(a.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt")
                 });
             }
 
             return dto;
+        }
+
+        private static DateTime ToLocalDisplayTime(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : value;
+        }
+
+        private IList<Queue> ListEligibleQueues(long? requestedEntityId = null)
+        {
+            var auth = new AuthService();
+            var sessionEntityId = auth.GetSessionEntityId();
+            var effectiveEntityId = sessionEntityId > 0
+                ? (long?)sessionEntityId
+                : (requestedEntityId.HasValue && requestedEntityId.Value > 0 ? requestedEntityId : (long?)null);
+
+            if (!effectiveEntityId.HasValue || effectiveEntityId.Value <= 0)
+            {
+                return new List<Queue>();
+            }
+
+            var userId = auth.GetLoggedInWindowsUser();
+            return _queues.ListByEntity(effectiveEntityId.Value, userId)
+                .Where(q => q != null && q.ActiveFlag && !q.EmpOnly)
+                .OrderBy(q => q.Name)
+                .ToList();
         }
 
         public Result HandleProviderAction(string action, char srcType, long appointmentId, string providerId)

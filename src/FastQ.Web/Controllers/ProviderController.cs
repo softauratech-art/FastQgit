@@ -239,7 +239,7 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = "Start time is required." }, JsonRequestBehavior.AllowGet);
 
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
-            var res = _customerService.ValidateCustomerTimeSelection(email, phone, localStart.ToUniversalTime());
+            var res = _customerService.ValidateCustomerTimeSelection(email, phone, localStart);
             return Json(new { ok = res.Ok, error = res.Ok ? null : res.Error }, JsonRequestBehavior.AllowGet);
         }
 
@@ -292,6 +292,8 @@ namespace FastQ.Web.Controllers
                 : customerName.Trim();
             if (string.IsNullOrWhiteSpace(resolvedCustomerName))
                 return Json(new { ok = false, error = "First name and last name are required." });
+            if (string.IsNullOrWhiteSpace(contactType))
+                return Json(new { ok = false, error = "Contact type is required." });
 
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." });
@@ -312,7 +314,7 @@ namespace FastQ.Web.Controllers
                 resolvedCustomerName,
                 phone,
                 contactType,
-                localStart.ToUniversalTime(),
+                localStart,
                 notes,
                 meetingUrl,
                 _auth.GetLoggedInWindowsUser());
@@ -336,6 +338,8 @@ namespace FastQ.Web.Controllers
                 : customerName.Trim();
             if (string.IsNullOrWhiteSpace(resolvedCustomerName))
                 return Json(new { ok = false, error = "First name and last name are required." });
+            if (string.IsNullOrWhiteSpace(contactType))
+                return Json(new { ok = false, error = "Contact type is required." });
 
             var res = _customerService.CreateWalkin(
                 qId,

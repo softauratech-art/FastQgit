@@ -48,7 +48,7 @@ namespace FastQ.Web.Services
             }
 
             var counts = rows
-                .GroupBy(r => r.ScheduledForUtc.Date)
+                .GroupBy(r => r.ScheduledForLocal.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
             var model = new AdminDashboardViewModel
@@ -66,8 +66,8 @@ namespace FastQ.Web.Services
                     .ToList(),
                 CalendarDays = BuildCalendarDays(monthStart, selected, counts),
                 SelectedDayAppointments = rows
-                    .Where(r => r.ScheduledForUtc.Date == selected)
-                    .OrderBy(r => r.ScheduledForUtc)
+                    .Where(r => r.ScheduledForLocal.Date == selected)
+                    .OrderBy(r => r.ScheduledForLocal)
                     .ToList()
             };
 
@@ -180,7 +180,7 @@ namespace FastQ.Web.Services
                 StampUser = row.StampUser,
                 EntryKind = entryKind,
                 ScheduledForUtc = row.ScheduledForUtc,
-                ScheduledForLocal = row.ScheduledForUtc,
+                ScheduledForLocal = row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc,
                 Notes = "Use Info to add meeting details or notes.",
                 MeetingUrl = string.Empty
             };

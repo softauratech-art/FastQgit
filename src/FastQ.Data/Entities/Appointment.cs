@@ -41,18 +41,17 @@ namespace FastQ.Data.Entities
             {
                 if (StartTime.HasValue)
                 {
-                    return DateTime.SpecifyKind(ApptDateUtc.Date + StartTime.Value, DateTimeKind.Utc);
+                    return DateTime.SpecifyKind(ApptDateUtc.Date + StartTime.Value, DateTimeKind.Local);
                 }
 
-                return DateTime.SpecifyKind(ApptDateUtc, DateTimeKind.Utc);
+                return DateTime.SpecifyKind(ApptDateUtc, DateTimeKind.Local);
             }
             set
             {
-                var utc = DateTime.SpecifyKind(value, DateTimeKind.Utc);
-                ApptDateUtc = utc.Date;
-                StartTime = utc.TimeOfDay;
+                var local = DateTime.SpecifyKind(value, DateTimeKind.Local);
+                ApptDateUtc = local.Date;
+                StartTime = local.TimeOfDay;
             }
         }
     }
 }
-

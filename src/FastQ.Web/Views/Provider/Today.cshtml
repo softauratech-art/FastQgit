@@ -10,15 +10,15 @@
     var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
     var appointmentRows = Model.Appointments ?? new List<ProviderAppointmentRow>();
     var statusOptions = Enum.GetNames(typeof(AppointmentStatus));
-    var defaultDate = (ViewBag.StartDate as string) ?? DateTime.UtcNow.ToString("yyyy-MM-dd");
+    var defaultDate = (ViewBag.StartDate as string) ?? DateTime.Now.ToString("yyyy-MM-dd");
     var endDate = (ViewBag.EndDate as string) ?? defaultDate;
     var actionName = (ViewContext.RouteData.Values["action"] as string) ?? "Today";
     DateTime parsedStart;
-    var startDateValue = DateTime.TryParseExact(defaultDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedStart)
+    var startDateValue = DateTime.TryParseExact(defaultDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedStart)
         ? parsedStart.Date
-        : DateTime.UtcNow.Date;
+        : DateTime.Now.Date;
     DateTime parsedEnd;
-    var endDateValue = DateTime.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedEnd)
+    var endDateValue = DateTime.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedEnd)
         ? parsedEnd.Date
         : startDateValue;
     if (endDateValue < startDateValue)
@@ -522,7 +522,7 @@
                             var row = walkinRows[i];
                             var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
                             var rowStatus = row.Status.ToString();
-                            var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
+                            var rowDate = (row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc).ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
@@ -639,7 +639,7 @@
                             var row = appointmentRows[i];
                             var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
                             var rowStatus = row.Status.ToString();
-                            var rowDate = row.ScheduledForUtc.ToString("yyyy-MM-dd");
+                            var rowDate = (row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc).ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
@@ -871,7 +871,7 @@
             </div>
             <div class="route-form-row">
                 <label for="addApptContactType">Contact Type</label>
-                <select id="addApptContactType" class="route-input">
+                <select id="addApptContactType" class="route-input" required>
                     <option value="">Select contact type</option>
                 </select>
             </div>
@@ -971,7 +971,7 @@
             </div>
             <div class="route-form-row">
                 <label for="addWalkinContactType">Contact Type</label>
-                <select id="addWalkinContactType" class="route-input">
+                <select id="addWalkinContactType" class="route-input" required>
                     <option value="">Select contact type</option>
                 </select>
             </div>
@@ -3324,8 +3324,8 @@
         var apptHasReferenceValue = apptRefMeta.useAddressFields
           ? !!(payload.streetNumber && payload.streetName)
           : !!payload.permitNumber;
-        if (!payload.queueId || !payload.refValue || !apptHasReferenceValue || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
-          showModalFeedback("addAppointmentModal", "Queue, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
+        if (!payload.queueId || !payload.contactType || !payload.refValue || !apptHasReferenceValue || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+          showModalFeedback("addAppointmentModal", "Queue, contact type, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
           return;
         }
 
@@ -3379,8 +3379,8 @@
         var walkinHasReferenceValue = walkinRefMeta.useAddressFields
           ? !!(payload.streetNumber && payload.streetName)
           : !!payload.permitNumber;
-        if (!payload.queueId || !payload.refValue || !walkinHasReferenceValue || !payload.email || !payload.customerName || !payload.phone) {
-          showModalFeedback("addWalkinModal", "Queue, reference, reference value, email, first name, last name, and phone are required.", true);
+        if (!payload.queueId || !payload.contactType || !payload.refValue || !walkinHasReferenceValue || !payload.email || !payload.customerName || !payload.phone) {
+          showModalFeedback("addWalkinModal", "Queue, contact type, reference, reference value, email, first name, last name, and phone are required.", true);
           return;
         }
 

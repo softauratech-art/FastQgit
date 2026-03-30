@@ -60,14 +60,12 @@ namespace FastQ.Web.Services
 
         public IList<Queue> ListQueuesByLocation(long locationId)
         {
-            //return _queues.ListByLocation(locationId);
-            return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser());
+            return ListEligibleQueues(locationId);
         }
 
         public IList<Queue> ListQueues(long? locationId)
         {
-            //return locationId.HasValue ? _queues.ListByLocation(locationId.Value) : _queues.ListAll()
-            return _queues.ListByEntity(locationId, new AuthService().GetLoggedInWindowsUser()); 
+            return ListEligibleQueues(locationId);
         }
 
         public IList<Customer> ListAllCustomers()
@@ -116,6 +114,25 @@ namespace FastQ.Web.Services
             }
 
             return stale.Count;
+        }
+
+        private IList<Queue> ListEligibleQueues(long? requestedEntityId = null)
+        {
+            var auth = new AuthService();
+            var sessionEntityId = auth.GetSessionEntityId();
+            var effectiveEntityId = sessionEntityId > 0
+                ? (long?)sessionEntityId
+                : (requestedEntityId.HasValue && requestedEntityId.Value > 0 ? requestedEntityId : (long?)null);
+
+            if (!effectiveEntityId.HasValue || effectiveEntityId.Value <= 0)
+            {
+                return new List<Queue>();
+            }
+
+            return _queues.ListByEntity(effectiveEntityId.Value, auth.GetLoggedInWindowsUser())
+                .Where(q => q != null && q.ActiveFlag && !q.EmpOnly)
+                .OrderBy(q => q.Name)
+                .ToList();
         }
     }
 }

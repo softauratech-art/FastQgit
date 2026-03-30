@@ -37,7 +37,7 @@ namespace FastQ.Web.Controllers
             if (hasQueue)
                 appointments = appointments.Where(a => a.QueueId == qId).ToList();
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var dayStart = now.Date;
             var dayEnd = dayStart.AddDays(1);
 

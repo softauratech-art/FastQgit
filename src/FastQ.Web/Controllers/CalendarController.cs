@@ -100,6 +100,14 @@ namespace FastQ.Web.Controllers
                 }
                 return CalendarError(displayMonth, selected, "Phone is required.");
             }
+            if (string.IsNullOrWhiteSpace(contactType))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Contact type is required." });
+                }
+                return CalendarError(displayMonth, selected, "Contact type is required.");
+            }
 
             if (!DateTime.TryParseExact(appointmentDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
             {
@@ -132,7 +140,7 @@ namespace FastQ.Web.Controllers
                 resolvedCustomerName,
                 phone,
                 contactType,
-                localStart.ToUniversalTime(),
+                localStart,
                 notes,
                 meetingUrl);
 
@@ -218,6 +226,14 @@ namespace FastQ.Web.Controllers
                     return Json(new { ok = false, error = "First name and last name are required." });
                 }
                 return CalendarError(displayMonth, selected, "Customer name is required.");
+            }
+            if (string.IsNullOrWhiteSpace(contactType))
+            {
+                if (Request.IsAjaxRequest())
+                {
+                    return Json(new { ok = false, error = "Contact type is required." });
+                }
+                return CalendarError(displayMonth, selected, "Contact type is required.");
             }
 
             var res = _service.CreateWalkin(
