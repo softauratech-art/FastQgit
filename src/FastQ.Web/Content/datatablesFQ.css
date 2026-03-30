@@ -16,3 +16,6 @@ div.dt-container select.dt-input {
     border-radius: 10px !important;
     height: 30px;
 }
+.dt-search input {
+    font-size: small;
+}

@@ -1,0 +1,187 @@
+<div id="addAppointmentModal" class="calendar-modal-backdrop modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addAppointmentModalTitle">
+    <div class="modal route-modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="addAppointmentModalTitle">Add New Appointment</h5>
+            <button class="btn small ghost" type="button" data-modal-close="addAppointmentModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="addAppointmentModal"></div>
+            <div class="route-form-row">
+                <label for="addApptQueueId">Queue</label>
+                <select id="addApptQueueId" class="route-input">
+                    <option value="">Select queue</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptServiceId">Service</label>
+                <select id="addApptServiceId" class="route-input">
+                    <option value="">Select service</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptContactType">Contact Type</label>
+                <select id="addApptContactType" class="route-input" required>
+                    <option value="">Select contact type</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptRefValue">Reference</label>
+                <select id="addApptRefValue" class="route-input">
+                    <option value="">Select reference</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label id="addApptPermitNumberLabel" for="addApptPermitNumber">Reference Value</label>
+                <div id="addApptReferenceValueWrap">
+                    <input id="addApptPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
+                    <div id="addApptPermitStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row is-hidden" id="addApptAddressRow">
+                <label>Address</label>
+                <div>
+                    <div class="action-bar">
+                        <input id="addApptStreetNumber" class="route-input" type="text" placeholder="Street number" />
+                        <input id="addApptStreetName" class="route-input" type="text" placeholder="Street name" />
+                        <input id="addApptStreetType" class="route-input" type="text" placeholder="Street type" />
+                    </div>
+                    <div id="addApptAddressStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptEmail">Email</label>
+                <div>
+                    <div class="lookup-input-wrap" id="addApptEmailWrap">
+                        <input id="addApptEmail" class="route-input" type="email" />
+                        <span class="lookup-spinner" aria-hidden="true"></span>
+                    </div>
+                    <div id="addApptEmailStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptFirstName">First Name</label>
+                <input id="addApptFirstName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptLastName">Last Name</label>
+                <input id="addApptLastName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptPhone">Phone</label>
+                <input id="addApptPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptDate">Date</label>
+                <select id="addApptDate" class="route-input">
+                    <option value="">Select date</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptTime">Start Time</label>
+                <select id="addApptTime" class="route-input">
+                    <option value="">Select time</option>
+                </select>
+            </div>
+            <div class="route-form-row" id="addApptMeetingUrlRow" style="display:none;">
+                <label for="addApptMeetingUrl">Meeting URL</label>
+                <input id="addApptMeetingUrl" class="route-input" type="url" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptNotes">Notes</label>
+                <textarea id="addApptNotes" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="addAppointmentModal">Cancel</button>
+            <button class="btn primary" type="button" id="saveAddAppointment">Save Appointment</button>
+        </div>
+    </div>
+</div>
+
+<div id="addWalkinModal" class="calendar-modal-backdrop modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addWalkinModalTitle">
+    <div class="modal route-modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="addWalkinModalTitle">Add Customer to Queue</h5>
+            <button class="btn small ghost" type="button" data-modal-close="addWalkinModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="addWalkinModal"></div>
+            <div class="route-form-row">
+                <label for="addWalkinQueueId">Queue</label>
+                <select id="addWalkinQueueId" class="route-input">
+                    <option value="">Select queue</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinServiceId">Service</label>
+                <select id="addWalkinServiceId" class="route-input">
+                    <option value="">Select service</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinContactType">Contact Type</label>
+                <select id="addWalkinContactType" class="route-input" required>
+                    <option value="">Select contact type</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinRefValue">Reference</label>
+                <select id="addWalkinRefValue" class="route-input">
+                    <option value="">Select reference</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label id="addWalkinPermitNumberLabel" for="addWalkinPermitNumber">Reference Value</label>
+                <div id="addWalkinReferenceValueWrap">
+                    <input id="addWalkinPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
+                    <div id="addWalkinPermitStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row is-hidden" id="addWalkinAddressRow">
+                <label>Address</label>
+                <div>
+                    <div class="action-bar">
+                        <input id="addWalkinStreetNumber" class="route-input" type="text" placeholder="Street number" />
+                        <input id="addWalkinStreetName" class="route-input" type="text" placeholder="Street name" />
+                        <input id="addWalkinStreetType" class="route-input" type="text" placeholder="Street type" />
+                    </div>
+                    <div id="addWalkinAddressStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinEmail">Email</label>
+                <div>
+                    <div class="lookup-input-wrap" id="addWalkinEmailWrap">
+                        <input id="addWalkinEmail" class="route-input" type="email" />
+                        <span class="lookup-spinner" aria-hidden="true"></span>
+                    </div>
+                    <div id="addWalkinEmailStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinFirstName">First Name</label>
+                <input id="addWalkinFirstName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinLastName">Last Name</label>
+                <input id="addWalkinLastName" class="route-input" type="text" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinPhone">Phone</label>
+                <input id="addWalkinPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row" id="addWalkinMeetingUrlRow" style="display:none;">
+                <label for="addWalkinMeetingUrl">Meeting URL</label>
+                <input id="addWalkinMeetingUrl" class="route-input" type="url" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinNotes">Notes</label>
+                <textarea id="addWalkinNotes" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="addWalkinModal">Cancel</button>
+            <button class="btn primary" type="button" id="saveAddWalkin">Add to Queue</button>
+        </div>
+    </div>
+</div>

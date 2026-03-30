@@ -83,10 +83,7 @@ namespace FastQ.Web.Services
             /* Inspect the Session-User-Object for roles and permissions */
 
             bool result= false;
-            var httpContext = HttpContext.Current;
-            if (httpContext.Session?["fq_user"] == null)  return false;
-            FastQ.Data.Entities.User ousr = (FastQ.Data.Entities.User)httpContext.Session["fq_user"];
-
+            FastQ.Data.Entities.User ousr = GetCurrentUser();
             int eid = new AuthService().GetSessionEntityId();            
 
             // Allow only if User has active access to This entity
@@ -117,10 +114,7 @@ namespace FastQ.Web.Services
 
         public bool IsAdminForQueue(long qid)
         {
-            var httpContext = HttpContext.Current;
-            if (httpContext.Session?["fq_user"] == null) return false;
-
-            FastQ.Data.Entities.User ousr = (FastQ.Data.Entities.User)httpContext.Session["fq_user"];
+            FastQ.Data.Entities.User ousr = GetCurrentUser();
             return (ousr.Queues.FirstOrDefault(l => l.QueueId == qid && l.QueueAdminFlag == true) != null);
         }
 

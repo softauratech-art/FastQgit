@@ -40,7 +40,7 @@ namespace FastQ.Data.Db
 
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
-                DataAccess.AddParam(cmd, "p_queueId", oqueue.Id, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_queueid", oqueue.Id, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_locationid", oqueue.LocationId, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_name", oqueue.Name, DbType.String);
                 DataAccess.AddParam(cmd, "p_namees", oqueue.NameEs, DbType.String);
@@ -77,7 +77,7 @@ namespace FastQ.Data.Db
             string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETEQUEUE";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
-                DataAccess.AddParam(cmd, "p_scheduleid", id, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_queueid", id, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
                 DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String).Direction = ParameterDirection.Output;
                 cmd.Parameters["p_outmsg"].Size = 4000;

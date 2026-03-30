@@ -14,14 +14,9 @@
             <div class="topbar-title">Manage Queues</div>
             <div class="topbar-sub">Add and manage Queues and Schedules</div>
         </div>
-        <div class="top-actions">
-            <div>
-            </div>
-        </div>
     }
 
-    @{
-        // Optional: add a class for styling (e.g., making it red)
+    @{  //Handle messages from DELETE action
         if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
         {
             <div class="alert alert-danger">
@@ -38,8 +33,6 @@
     }
 
     <div class="card">
-        @*@Html.ActionLink("Create New", "Edit", 0, new { @class = "btn primary" })*@
-
         <table id="Qdata" class="table table-striped">
             <thead>
                 <tr>
@@ -104,7 +97,7 @@
                 pageLength: 50, // Sets the default to 50 rows
                 columnDefs: [
                     { "targets": [6], "orderable": false },
-                    { width: 110, targets: 0 },
+                    { width: 80, targets: 0 },
                     { width: 110, targets: 2 },
                     { width: 110, targets: 3 }
                 ],

@@ -645,260 +645,7 @@
     </aside>
 </div>
 
-<div id="addAppointmentModal" class="calendar-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addAppointmentTitle">
-    <div class="calendar-modal">
-        <div class="calendar-modal-header">
-            <div>
-                <h3 id="addAppointmentTitle">Add New Appointment</h3>
-                <div class="muted">Staff-assisted booking aligned to the selected calendar day.</div>
-            </div>
-            <button type="button" class="btn small ghost" data-modal-close="addAppointmentModal">Close</button>
-        </div>
-
-        @using (Html.BeginForm("AddAppointment", "Calendar", FormMethod.Post))
-        {
-            @Html.AntiForgeryToken()
-            <div class="calendar-modal-body">
-                <input type="hidden" name="month" value="@Model.DisplayMonth.ToString("yyyy-MM-01")" />
-                <input type="hidden" id="customerNameValue" name="customerName" value="" />
-
-                <div class="calendar-form-grid">
-                    <div class="calendar-field">
-                        <label for="queueId">Queue</label>
-                        <select id="queueId" name="queueId" required>
-                            <option value="">Select a queue</option>
-                            @foreach (var queue in Model.QueueOptions)
-                            {
-                                <option value="@queue.Value">@queue.Text</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="serviceId">Service</label>
-                        <select id="serviceId" name="serviceId">
-                            <option value="">Select service</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="contactType">Contact Type</label>
-                        <select id="contactType" name="contactType" required>
-                            <option value="">Select contact type</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="refValue">Reference</label>
-                        <select id="refValue" name="refValue">
-                            <option value="">Select reference</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label id="permitNumberLabel" for="permitNumber">Reference Value</label>
-                        <div id="referenceValueWrap">
-                            <input id="permitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
-                            <div id="permitNumberStatus" class="helper-text"></div>
-                        </div>
-                    </div>
-                    <div class="calendar-field full is-hidden" id="addressFieldRow">
-                        <label>Address</label>
-                        <div class="calendar-form-grid">
-                            <div class="calendar-field">
-                                <label for="streetNumber">Street Number</label>
-                                <input id="streetNumber" name="streetNumber" type="text" />
-                            </div>
-                            <div class="calendar-field">
-                                <label for="streetName">Street Name</label>
-                                <input id="streetName" name="streetName" type="text" />
-                            </div>
-                            <div class="calendar-field">
-                                <label for="streetType">Street Type</label>
-                                <input id="streetType" name="streetType" type="text" />
-                            </div>
-                        </div>
-                        <div id="addressStatus" class="helper-text"></div>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="email">Email</label>
-                        <div class="lookup-input-wrap" id="emailWrap">
-                            <input id="email" name="email" type="email" required />
-                            <span class="lookup-spinner" aria-hidden="true"></span>
-                        </div>
-                        <div id="emailStatus" class="helper-text"></div>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="firstName">First Name</label>
-                        <input id="firstName" name="firstName" type="text" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="lastName">Last Name</label>
-                        <input id="lastName" name="lastName" type="text" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="phone">Phone</label>
-                        <input id="phone" name="phone" type="tel" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="appointmentDate">Date</label>
-                        <select id="appointmentDate" name="appointmentDate" required>
-                            <option value="">Select date</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="startTime">Start Time</label>
-                        <select id="startTime" name="startTime" required>
-                            <option value="">Select time</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field full" id="meetingUrlField" style="display:none;">
-                        <label for="meetingUrl">Meeting URL</label>
-                        <input id="meetingUrl" name="meetingUrl" type="url" />
-                    </div>
-
-                    <div class="calendar-field full">
-                        <label for="notes">Notes</label>
-                        <textarea id="notes" name="notes" placeholder="Purpose, prep notes, or internal handoff context"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="calendar-modal-footer">
-                <button type="button" class="btn ghost" data-modal-close="addAppointmentModal">Cancel</button>
-                <button type="submit" class="btn secondary">Save Appointment</button>
-            </div>
-        }
-    </div>
-</div>
-
-<div id="addWalkinModal" class="calendar-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="addWalkinTitle">
-    <div class="calendar-modal">
-        <div class="calendar-modal-header">
-            <div>
-                <h3 id="addWalkinTitle">Add Walk-In</h3>
-                <div class="muted">Create a same-day queue entry directly from the calendar.</div>
-            </div>
-            <button type="button" class="btn small ghost" data-modal-close="addWalkinModal">Close</button>
-        </div>
-
-        @using (Html.BeginForm("AddWalkin", "Calendar", FormMethod.Post))
-        {
-            @Html.AntiForgeryToken()
-            <div class="calendar-modal-body">
-                <input type="hidden" name="month" value="@Model.DisplayMonth.ToString("yyyy-MM-01")" />
-                <input type="hidden" name="selectedDate" value="@modalDate.ToString("yyyy-MM-dd")" />
-                <input type="hidden" id="walkinCustomerNameValue" name="customerName" value="" />
-
-                <div class="calendar-form-grid">
-                    <div class="calendar-field">
-                        <label for="walkinQueueId">Queue</label>
-                        <select id="walkinQueueId" name="queueId" required>
-                            <option value="">Select a queue</option>
-                            @foreach (var queue in Model.QueueOptions)
-                            {
-                                <option value="@queue.Value">@queue.Text</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinServiceId">Service</label>
-                        <select id="walkinServiceId" name="serviceId">
-                            <option value="">Select service</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinContactType">Contact Type</label>
-                        <select id="walkinContactType" name="contactType" required>
-                            <option value="">Select contact type</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinRefValue">Reference</label>
-                        <select id="walkinRefValue" name="refValue">
-                            <option value="">Select reference</option>
-                        </select>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label id="walkinPermitNumberLabel" for="walkinPermitNumber">Reference Value</label>
-                        <div id="walkinReferenceValueWrap">
-                            <input id="walkinPermitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
-                            <div id="walkinPermitNumberStatus" class="helper-text"></div>
-                        </div>
-                    </div>
-                    <div class="calendar-field full is-hidden" id="walkinAddressFieldRow">
-                        <label>Address</label>
-                        <div class="calendar-form-grid">
-                            <div class="calendar-field">
-                                <label for="walkinStreetNumber">Street Number</label>
-                                <input id="walkinStreetNumber" name="streetNumber" type="text" />
-                            </div>
-                            <div class="calendar-field">
-                                <label for="walkinStreetName">Street Name</label>
-                                <input id="walkinStreetName" name="streetName" type="text" />
-                            </div>
-                            <div class="calendar-field">
-                                <label for="walkinStreetType">Street Type</label>
-                                <input id="walkinStreetType" name="streetType" type="text" />
-                            </div>
-                        </div>
-                        <div id="walkinAddressStatus" class="helper-text"></div>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinEmail">Email</label>
-                        <div class="lookup-input-wrap" id="walkinEmailWrap">
-                            <input id="walkinEmail" name="email" type="email" required />
-                            <span class="lookup-spinner" aria-hidden="true"></span>
-                        </div>
-                        <div id="walkinEmailStatus" class="helper-text"></div>
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinFirstName">First Name</label>
-                        <input id="walkinFirstName" name="firstName" type="text" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinLastName">Last Name</label>
-                        <input id="walkinLastName" name="lastName" type="text" required />
-                    </div>
-
-                    <div class="calendar-field">
-                        <label for="walkinPhone">Phone</label>
-                        <input id="walkinPhone" name="phone" type="tel" required />
-                    </div>
-
-                    <div class="calendar-field full" id="walkinMeetingUrlField" style="display:none;">
-                        <label for="walkinMeetingUrl">Meeting URL</label>
-                        <input id="walkinMeetingUrl" name="meetingUrl" type="url" />
-                    </div>
-
-                    <div class="calendar-field full">
-                        <label for="walkinNotes">Notes</label>
-                        <textarea id="walkinNotes" name="notes" placeholder="Walk-in intake notes or routing context"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="calendar-modal-footer">
-                <button type="button" class="btn ghost" data-modal-close="addWalkinModal">Cancel</button>
-                <button type="submit" class="btn secondary">Save Walk-In</button>
-            </div>
-        }
-    </div>
-</div>
+@Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 <div id="meetingModal" class="calendar-modal-backdrop modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
     <div class="modal">
@@ -1024,6 +771,8 @@
         (function () {
             var reopenOnError = @(Model.FeedbackIsError ? "true" : "false");
             var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
+            var addAppointmentUrl = "@Url.Action("AddAppointment", "Provider")";
+            var addWalkinUrl = "@Url.Action("AddWalkin", "Provider")";
             var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
             var endServiceUrl = "@Url.Action("EndService", "Provider")";
             var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
@@ -1040,15 +789,15 @@
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
             var activeEntryQueueDetails = {
-                "": null,
-                "walkin": null
+                addAppt: null,
+                addWalkin: null
             };
             var permitValidationState = {
-                appointment: { seq: 0, pending: false, valid: false, message: "" },
-                walkin: { seq: 0, pending: false, valid: false, message: "" }
+                addAppt: { seq: 0, pending: false, valid: false, message: "" },
+                addWalkin: { seq: 0, pending: false, valid: false, message: "" }
             };
             var timeSelectionState = {
-                appointment: { seq: 0, pending: false, valid: true, message: "" }
+                addAppt: { seq: 0, pending: false, valid: true, message: "" }
             };
             var permitValidationTimers = {};
             var customerLookupTimers = {};
@@ -1060,6 +809,7 @@
                     return;
                 }
                 modal.classList.add("show");
+                clearModalFeedback(id);
             }
 
             function closeModal(id) {
@@ -1068,6 +818,33 @@
                     return;
                 }
                 modal.classList.remove("show");
+                clearModalFeedback(id);
+            }
+
+            function getModalFeedbackElement(id) {
+                return document.querySelector('[data-modal-feedback="' + id + '"]');
+            }
+
+            function clearModalFeedback(id) {
+                var el = getModalFeedbackElement(id);
+                if (!el) {
+                    return;
+                }
+                el.textContent = "";
+                el.classList.remove("show");
+                el.classList.remove("error");
+                el.classList.remove("success");
+            }
+
+            function showModalFeedback(id, message, isError) {
+                var el = getModalFeedbackElement(id);
+                if (!el) {
+                    return;
+                }
+                el.textContent = message || "";
+                el.classList.add("show");
+                el.classList.toggle("error", !!isError);
+                el.classList.toggle("success", !isError);
             }
 
             function queueLiveSync() {
@@ -1263,10 +1040,9 @@
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
                 syncReferenceInputMeta(prefix);
-                if (prefix === "") {
-                    populateEntryModalDateOptions(details);
-                    populateEntryModalTimeOptions(details, document.getElementById("appointmentDate") ? document.getElementById("appointmentDate").value : "");
-                    syncMeetingField();
+                syncMeetingUrlField(prefix);
+                if (prefix === "addAppt") {
+                    populateEntryModalDateTime(prefix, details);
                 }
             }
 
@@ -1274,6 +1050,9 @@
                 if (!queueCode) {
                     activeEntryQueueDetails[prefix] = null;
                     populateEntryModalOptions(prefix, null);
+                    if (prefix === "addAppt") {
+                        populateEntryModalDateTime(prefix, null);
+                    }
                     return Promise.resolve();
                 }
 
@@ -1286,6 +1065,26 @@
                     .catch(function () {
                         activeEntryQueueDetails[prefix] = null;
                         populateEntryModalOptions(prefix, null);
+                        if (prefix === "addAppt") {
+                            populateEntryModalDateTime(prefix, null);
+                        }
+                    });
+            }
+
+            function loadEntryModalQueues(prefix) {
+                var queueSelect = document.getElementById(prefix + "QueueId");
+                if (!queueSelect) {
+                    return Promise.resolve();
+                }
+
+                return getJson(getTransferQueuesUrl)
+                    .then(function (res) {
+                        setSelectOptions(queueSelect, res && res.ok ? res.data : [], "Select queue");
+                        return loadEntryModalQueueDetails(prefix, queueSelect.value || "");
+                    })
+                    .catch(function () {
+                        setSelectOptions(queueSelect, [], "Select queue");
+                        return loadEntryModalQueueDetails(prefix, "");
                     });
             }
 
@@ -1372,6 +1171,7 @@
                     var option = document.createElement("option");
                     option.value = item.value;
                     option.textContent = item.label;
+                    option.disabled = !!item.disabled;
                     selectElement.appendChild(option);
                 });
             }
@@ -1461,7 +1261,7 @@
             }
 
             function populateEntryModalDateOptions(details) {
-                var dateSelect = document.getElementById("appointmentDate");
+                var dateSelect = document.getElementById("addApptDate");
                 if (!dateSelect) {
                     return;
                 }
@@ -1473,12 +1273,21 @@
                 }
             }
 
+            function populateEntryModalDateTime(prefix, details) {
+                if (prefix !== "addAppt") {
+                    return Promise.resolve();
+                }
+
+                populateEntryModalDateOptions(details);
+                return refreshEntryModalTimeOptions(prefix);
+            }
+
             function populateEntryModalTimeOptions(details, selectedDateValue) {
-                var timeSelect = document.getElementById("startTime");
+                var timeSelect = document.getElementById("addApptTime");
                 if (!timeSelect) {
                     return Promise.resolve();
                 }
-                var queueSelect = document.getElementById("queueId");
+                var queueSelect = document.getElementById("addApptQueueId");
                 var queueId = queueSelect ? (queueSelect.value || "") : "";
                 if (!queueId || !selectedDateValue) {
                     setSelectValues(timeSelect, [], "Select time");
@@ -1487,23 +1296,39 @@
 
                 return getJson(getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(queueId) + "&theDate=" + encodeURIComponent(selectedDateValue))
                     .then(function (res) {
+                        var selectedDate = new Date(selectedDateValue + "T00:00:00");
+                        var minimumFutureMinutes = getMinimumFutureMinutes(selectedDate);
                         var options = res && res.ok
                             ? (res.data || []).map(function (slot) {
-                                return { value: slot.slotBegin || "", label: slot.slotBegin || "" };
+                                var slotValue = slot.slotBegin || "";
+                                var totalMinutes = parseClockMinutes(slotValue);
+                                var isPast = minimumFutureMinutes !== null && totalMinutes !== null && totalMinutes < minimumFutureMinutes;
+                                return isPast ? null : { value: slotValue, label: slotValue };
+                            }).filter(function (slot) {
+                                return !!slot;
                             }).sort(function (a, b) {
-                                return Date.parse("1970-01-01T" + to24Hour(a.value) + ":00") - Date.parse("1970-01-01T" + to24Hour(b.value) + ":00");
+                                return (parseClockMinutes(a.value) || 0) - (parseClockMinutes(b.value) || 0);
                             })
                             : [];
                         setSelectValues(timeSelect, options, "Select time");
                         if (options.length > 0) {
                             timeSelect.value = options[0].value;
                         }
-                        return validateCustomerTimeSelection("appointment");
+                        return validateCustomerTimeSelection("addAppt");
                     })
                     .catch(function () {
                         setSelectValues(timeSelect, [], "Select time");
-                        setTimeSelectionState("appointment", false, false, "Could not load available time slots.");
+                        setTimeSelectionState("addAppt", false, false, "Could not load available time slots.");
                     });
+            }
+
+            function refreshEntryModalTimeOptions(prefix) {
+                if (prefix !== "addAppt") {
+                    return Promise.resolve();
+                }
+
+                var dateSelect = document.getElementById("addApptDate");
+                return populateEntryModalTimeOptions(activeEntryQueueDetails[prefix], dateSelect ? (dateSelect.value || "") : "");
             }
 
             function setTimeSelectionState(kind, pending, valid, message) {
@@ -1514,14 +1339,14 @@
             }
 
             function validateCustomerTimeSelection(kind) {
-                if (kind !== "appointment") {
+                if (kind !== "addAppt") {
                     return Promise.resolve(true);
                 }
 
-                var emailInput = document.getElementById("email");
-                var phoneInput = document.getElementById("phone");
-                var dateInput = document.getElementById("appointmentDate");
-                var timeInput = document.getElementById("startTime");
+                var emailInput = document.getElementById("addApptEmail");
+                var phoneInput = document.getElementById("addApptPhone");
+                var dateInput = document.getElementById("addApptDate");
+                var timeInput = document.getElementById("addApptTime");
                 var email = emailInput ? (emailInput.value || "").trim() : "";
                 var phone = phoneInput ? (phoneInput.value || "").trim() : "";
                 var appointmentDate = dateInput ? (dateInput.value || "").trim() : "";
@@ -1714,6 +1539,31 @@
                 return [firstName || "", lastName || ""].join(" ").trim();
             }
 
+            function clearAddEntryModal(prefix) {
+                var fields = [
+                    "QueueId", "ServiceId", "ContactType", "RefValue", "PermitNumber",
+                    "StreetNumber", "StreetName", "StreetType",
+                    "Email", "FirstName", "LastName", "Phone", "MeetingUrl", "Notes"
+                ];
+
+                fields.forEach(function (suffix) {
+                    var input = document.getElementById(prefix + suffix);
+                    if (input) {
+                        input.value = "";
+                    }
+                });
+
+                activeEntryQueueDetails[prefix] = null;
+                populateEntryModalOptions(prefix, null);
+                if (prefix === "addAppt") {
+                    populateEntryModalDateTime(prefix, null);
+                }
+                setCustomerLookupState(prefix, false, null);
+                resetPermitValidation(prefix);
+                syncReferenceInputMeta(prefix);
+                syncMeetingUrlField(prefix);
+            }
+
             function setFieldDisabled(id, disabled) {
                 var input = document.getElementById(id);
                 if (input) {
@@ -1724,20 +1574,20 @@
             }
 
             function getCustomerLookupFieldIds(prefix) {
-                if (prefix === "walkin") {
+                if (prefix === "addWalkin") {
                     return {
-                        firstNameId: "walkinFirstName",
-                        lastNameId: "walkinLastName",
-                        phoneId: "walkinPhone",
-                        emailStatusId: "walkinEmailStatus"
+                        firstNameId: "addWalkinFirstName",
+                        lastNameId: "addWalkinLastName",
+                        phoneId: "addWalkinPhone",
+                        emailStatusId: "addWalkinEmailStatus"
                     };
                 }
 
                 return {
-                    firstNameId: "firstName",
-                    lastNameId: "lastName",
-                    phoneId: "phone",
-                    emailStatusId: "emailStatus"
+                    firstNameId: "addApptFirstName",
+                    lastNameId: "addApptLastName",
+                    phoneId: "addApptPhone",
+                    emailStatusId: "addApptEmailStatus"
                 };
             }
 
@@ -1752,8 +1602,8 @@
             }
 
             function setCustomerLookupLoading(prefix, loading) {
-                var wrap = document.getElementById(prefix === "walkin" ? "walkinEmailWrap" : "emailWrap");
-                var status = document.getElementById(prefix === "walkin" ? "walkinEmailStatus" : "emailStatus");
+                var wrap = document.getElementById(prefix === "addWalkin" ? "addWalkinEmailWrap" : "addApptEmailWrap");
+                var status = document.getElementById(prefix === "addWalkin" ? "addWalkinEmailStatus" : "addApptEmailStatus");
                 if (wrap) {
                     wrap.classList.toggle("is-loading", !!loading);
                 }
@@ -1766,7 +1616,7 @@
             function setCustomerLookupState(prefix, found, data) {
                 setCustomerLookupLoading(prefix, false);
                 var ids = getCustomerLookupFieldIds(prefix);
-                var emailId = prefix === "walkin" ? "walkinEmail" : "email";
+                var emailId = prefix === "addWalkin" ? "addWalkinEmail" : "addApptEmail";
                 var email = document.getElementById(emailId);
                 var firstName = document.getElementById(ids.firstNameId);
                 var lastName = document.getElementById(ids.lastNameId);
@@ -1797,7 +1647,7 @@
                     clearTimeout(customerLookupTimers[timerKey]);
                     customerLookupTimers[timerKey] = 0;
                 }
-                var emailInput = document.getElementById(prefix === "walkin" ? "walkinEmail" : "email");
+                var emailInput = document.getElementById(prefix === "addWalkin" ? "addWalkinEmail" : "addApptEmail");
                 if (!emailInput) {
                     return;
                 }
@@ -1841,31 +1691,31 @@
             }
 
             function getPermitFieldConfig(kind) {
-                var isWalkin = kind === "walkin";
-                var refId = isWalkin ? "walkinRefValue" : "refValue";
+                var isWalkin = kind === "addWalkin";
+                var refId = isWalkin ? "addWalkinRefValue" : "addApptRefValue";
                 var meta = getReferenceFieldMeta((document.getElementById(refId) && document.getElementById(refId).value) || "");
                 return isWalkin
                     ? {
-                        inputId: "walkinPermitNumber",
-                        referenceWrapId: "walkinReferenceValueWrap",
-                        statusId: meta.useAddressFields ? "walkinAddressStatus" : "walkinPermitNumberStatus",
-                        labelId: "walkinPermitNumberLabel",
-                        refId: "walkinRefValue",
-                        addressRowId: "walkinAddressFieldRow",
-                        streetNumberId: "walkinStreetNumber",
-                        streetNameId: "walkinStreetName",
-                        streetTypeId: "walkinStreetType"
+                        inputId: "addWalkinPermitNumber",
+                        referenceWrapId: "addWalkinReferenceValueWrap",
+                        statusId: meta.useAddressFields ? "addWalkinAddressStatus" : "addWalkinPermitStatus",
+                        labelId: "addWalkinPermitNumberLabel",
+                        refId: "addWalkinRefValue",
+                        addressRowId: "addWalkinAddressRow",
+                        streetNumberId: "addWalkinStreetNumber",
+                        streetNameId: "addWalkinStreetName",
+                        streetTypeId: "addWalkinStreetType"
                     }
                     : {
-                        inputId: "permitNumber",
-                        referenceWrapId: "referenceValueWrap",
-                        statusId: meta.useAddressFields ? "addressStatus" : "permitNumberStatus",
-                        labelId: "permitNumberLabel",
-                        refId: "refValue",
-                        addressRowId: "addressFieldRow",
-                        streetNumberId: "streetNumber",
-                        streetNameId: "streetName",
-                        streetTypeId: "streetType"
+                        inputId: "addApptPermitNumber",
+                        referenceWrapId: "addApptReferenceValueWrap",
+                        statusId: meta.useAddressFields ? "addApptAddressStatus" : "addApptPermitStatus",
+                        labelId: "addApptPermitNumberLabel",
+                        refId: "addApptRefValue",
+                        addressRowId: "addApptAddressRow",
+                        streetNumberId: "addApptStreetNumber",
+                        streetNameId: "addApptStreetName",
+                        streetTypeId: "addApptStreetType"
                     };
             }
 
@@ -2185,221 +2035,237 @@
                 });
             });
 
-            var contactType = document.getElementById("contactType");
-            var walkinContactType = document.getElementById("walkinContactType");
-            var queueIdSelect = document.getElementById("queueId");
-            var walkinQueueIdSelect = document.getElementById("walkinQueueId");
-            var meetingUrlField = document.getElementById("meetingUrlField");
-            var meetingUrl = document.getElementById("meetingUrl");
-            var walkinMeetingUrlField = document.getElementById("walkinMeetingUrlField");
-            var walkinMeetingUrl = document.getElementById("walkinMeetingUrl");
-            var addAppointmentForm = document.querySelector('#addAppointmentModal form');
-            var addWalkinForm = document.querySelector('#addWalkinModal form');
-
-            function syncMeetingField(contactSelect, field, input) {
-                if (!contactSelect || !field) {
-                    return;
-                }
-
-                var isVirtual = contactSelect.value === "Virtual" || contactSelect.value === "OM";
-                field.style.display = isVirtual ? "flex" : "none";
-                if (input) {
-                    input.required = isVirtual;
-                    if (!isVirtual) {
-                        input.value = "";
+            document.querySelectorAll("[data-modal-open]").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var modalId = btn.getAttribute("data-modal-open");
+                    if (modalId === "addAppointmentModal") {
+                        clearAddEntryModal("addAppt");
+                        loadEntryModalQueues("addAppt").then(function () {
+                            openModal(modalId);
+                        });
+                        return;
                     }
-                }
+                    if (modalId === "addWalkinModal") {
+                        clearAddEntryModal("addWalkin");
+                        loadEntryModalQueues("addWalkin").then(function () {
+                            openModal(modalId);
+                        });
+                        return;
+                    }
+                    openModal(modalId);
+                });
+            });
+
+            var addApptQueueId = document.getElementById("addApptQueueId");
+            if (addApptQueueId) {
+                addApptQueueId.addEventListener("change", function () {
+                    loadEntryModalQueueDetails("addAppt", addApptQueueId.value || "");
+                });
+            }
+            var addApptDate = document.getElementById("addApptDate");
+            if (addApptDate) {
+                addApptDate.addEventListener("change", function () {
+                    refreshEntryModalTimeOptions("addAppt");
+                });
+            }
+            var addApptTime = document.getElementById("addApptTime");
+            if (addApptTime) {
+                addApptTime.addEventListener("change", function () { validateCustomerTimeSelection("addAppt"); });
             }
 
-            if (contactType) {
-                contactType.addEventListener("change", function () {
-                    syncMeetingField(contactType, meetingUrlField, meetingUrl);
+            var addApptContactType = document.getElementById("addApptContactType");
+            if (addApptContactType) {
+                addApptContactType.addEventListener("change", function () {
+                    syncMeetingUrlField("addAppt");
                 });
-                syncMeetingField(contactType, meetingUrlField, meetingUrl);
+                syncMeetingUrlField("addAppt");
             }
-            if (walkinContactType) {
-                walkinContactType.addEventListener("change", function () {
-                    syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
-                });
-                syncMeetingField(walkinContactType, walkinMeetingUrlField, walkinMeetingUrl);
-            }
-            var emailInput = document.getElementById("email");
-            if (emailInput) {
-                emailInput.addEventListener("input", function () { queueCustomerLookupByEmail(""); });
-            }
-            if (queueIdSelect) {
-                queueIdSelect.addEventListener("change", function () {
-                    loadEntryModalQueueDetails("", queueIdSelect.value || "");
-                });
-                if (queueIdSelect.value) {
-                    loadEntryModalQueueDetails("", queueIdSelect.value);
-                } else {
-                    populateEntryModalOptions("", null);
-                }
-            }
-            var appointmentDateSelect = document.getElementById("appointmentDate");
-            if (appointmentDateSelect) {
-                appointmentDateSelect.addEventListener("change", function () {
-                    populateEntryModalTimeOptions(activeEntryQueueDetails[""], appointmentDateSelect.value || "");
-                });
-            }
-            var appointmentTimeSelect = document.getElementById("startTime");
-            if (appointmentTimeSelect) {
-                appointmentTimeSelect.addEventListener("change", function () { validateCustomerTimeSelection("appointment"); });
-            }
-            var refValueSelect = document.getElementById("refValue");
-            if (refValueSelect) {
-                refValueSelect.addEventListener("change", function () {
-                    var input = document.getElementById("permitNumber");
+            var addApptRefValue = document.getElementById("addApptRefValue");
+            if (addApptRefValue) {
+                addApptRefValue.addEventListener("change", function () {
+                    var input = document.getElementById("addApptPermitNumber");
                     if (input) {
                         input.value = "";
                     }
-                    ["streetNumber", "streetName", "streetType"].forEach(function (id) {
+                    ["addApptStreetNumber", "addApptStreetName", "addApptStreetType"].forEach(function (id) {
                         var field = document.getElementById(id);
                         if (field) {
                             field.value = "";
                         }
                     });
-                    syncReferenceInputMeta("appointment");
+                    syncReferenceInputMeta("addAppt");
                 });
-                syncReferenceInputMeta("appointment");
+                syncReferenceInputMeta("addAppt");
             }
-            if (walkinQueueIdSelect) {
-                walkinQueueIdSelect.addEventListener("change", function () {
-                    loadEntryModalQueueDetails("walkin", walkinQueueIdSelect.value || "");
-                });
-                if (walkinQueueIdSelect.value) {
-                    loadEntryModalQueueDetails("walkin", walkinQueueIdSelect.value);
-                } else {
-                    populateEntryModalOptions("walkin", null);
+
+            var addApptEmail = document.getElementById("addApptEmail");
+            if (addApptEmail) {
+                addApptEmail.addEventListener("input", function () { queueCustomerLookupByEmail("addAppt"); });
+            }
+            var addApptPermitNumber = document.getElementById("addApptPermitNumber");
+            if (addApptPermitNumber) {
+                addApptPermitNumber.addEventListener("input", function () { validatePermitNumber("addAppt", false); });
+                addApptPermitNumber.addEventListener("blur", function () { validatePermitNumber("addAppt", true); });
+            }
+            ["addApptStreetNumber", "addApptStreetName", "addApptStreetType"].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (!input) {
+                    return;
                 }
+                input.addEventListener("input", function () { validatePermitNumber("addAppt", false); });
+                input.addEventListener("blur", function () { validatePermitNumber("addAppt", true); });
+            });
+
+            var addWalkinQueueId = document.getElementById("addWalkinQueueId");
+            if (addWalkinQueueId) {
+                addWalkinQueueId.addEventListener("change", function () {
+                    loadEntryModalQueueDetails("addWalkin", addWalkinQueueId.value || "");
+                });
             }
-            var walkinEmailInput = document.getElementById("walkinEmail");
-            if (walkinEmailInput) {
-                walkinEmailInput.addEventListener("input", function () { queueCustomerLookupByEmail("walkin"); });
+
+            var addWalkinContactType = document.getElementById("addWalkinContactType");
+            if (addWalkinContactType) {
+                addWalkinContactType.addEventListener("change", function () {
+                    syncMeetingUrlField("addWalkin");
+                });
+                syncMeetingUrlField("addWalkin");
             }
-            var walkinRefValueSelect = document.getElementById("walkinRefValue");
-            if (walkinRefValueSelect) {
-                walkinRefValueSelect.addEventListener("change", function () {
-                    var input = document.getElementById("walkinPermitNumber");
+            var addWalkinRefValue = document.getElementById("addWalkinRefValue");
+            if (addWalkinRefValue) {
+                addWalkinRefValue.addEventListener("change", function () {
+                    var input = document.getElementById("addWalkinPermitNumber");
                     if (input) {
                         input.value = "";
                     }
-                    ["walkinStreetNumber", "walkinStreetName", "walkinStreetType"].forEach(function (id) {
+                    ["addWalkinStreetNumber", "addWalkinStreetName", "addWalkinStreetType"].forEach(function (id) {
                         var field = document.getElementById(id);
                         if (field) {
                             field.value = "";
                         }
                     });
-                    syncReferenceInputMeta("walkin");
+                    syncReferenceInputMeta("addWalkin");
                 });
-                syncReferenceInputMeta("walkin");
+                syncReferenceInputMeta("addWalkin");
             }
-            var permitNumberInput = document.getElementById("permitNumber");
-            if (permitNumberInput) {
-                permitNumberInput.addEventListener("input", function () { validatePermitNumber("appointment", false); });
-                permitNumberInput.addEventListener("blur", function () { validatePermitNumber("appointment", true); });
-            }
-            ["streetNumber", "streetName", "streetType"].forEach(function (id) {
-                var input = document.getElementById(id);
-                if (!input) {
-                    return;
-                }
-                input.addEventListener("input", function () { validatePermitNumber("appointment", false); });
-                input.addEventListener("blur", function () { validatePermitNumber("appointment", true); });
-            });
-            var walkinPermitNumberInput = document.getElementById("walkinPermitNumber");
-            if (walkinPermitNumberInput) {
-                walkinPermitNumberInput.addEventListener("input", function () { validatePermitNumber("walkin", false); });
-                walkinPermitNumberInput.addEventListener("blur", function () { validatePermitNumber("walkin", true); });
-            }
-            ["walkinStreetNumber", "walkinStreetName", "walkinStreetType"].forEach(function (id) {
-                var input = document.getElementById(id);
-                if (!input) {
-                    return;
-                }
-                input.addEventListener("input", function () { validatePermitNumber("walkin", false); });
-                input.addEventListener("blur", function () { validatePermitNumber("walkin", true); });
-            });
-            if (addAppointmentForm) {
-                addAppointmentForm.addEventListener("submit", function (event) {
-                    event.preventDefault();
-                    var hiddenCustomerName = document.getElementById("customerNameValue");
-                    if (hiddenCustomerName) {
-                        hiddenCustomerName.value = buildCustomerName(
-                            document.getElementById("firstName") ? document.getElementById("firstName").value : "",
-                            document.getElementById("lastName") ? document.getElementById("lastName").value : "");
-                    }
-                    validatePermitNumber("appointment", true).then(function (isValid) {
-                        if (!isValid) {
-                            window.alert(permitValidationState.appointment.message || "Reference value is invalid.");
-                            return;
-                        }
-                        if (timeSelectionState.appointment && timeSelectionState.appointment.pending) {
-                            window.alert("Customer availability validation is still in progress.");
-                            return;
-                        }
-                        if (timeSelectionState.appointment && !timeSelectionState.appointment.valid) {
-                            window.alert(timeSelectionState.appointment.message || "Customer already has an appointment at this time.");
-                            return;
-                        }
 
-                        var formData = new FormData(addAppointmentForm);
-                        fetch(addAppointmentForm.action, {
-                            method: "POST",
-                            headers: { "X-Requested-With": "XMLHttpRequest" },
-                            credentials: "same-origin",
-                            body: new URLSearchParams(formData)
-                        })
-                            .then(function (res) { return res.json(); })
-                            .then(function (res) {
-                                if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "Could not add appointment.");
-                                    return;
-                                }
-                                closeModal("addAppointmentModal");
-                                queueLiveSync();
-                            })
-                            .catch(function () {
-                                window.alert("Could not add appointment.");
-                            });
+            var addWalkinEmail = document.getElementById("addWalkinEmail");
+            if (addWalkinEmail) {
+                addWalkinEmail.addEventListener("input", function () { queueCustomerLookupByEmail("addWalkin"); });
+            }
+            var addWalkinPermitNumber = document.getElementById("addWalkinPermitNumber");
+            if (addWalkinPermitNumber) {
+                addWalkinPermitNumber.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
+                addWalkinPermitNumber.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
+            }
+            ["addWalkinStreetNumber", "addWalkinStreetName", "addWalkinStreetType"].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (!input) {
+                    return;
+                }
+                input.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
+                input.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
+            });
+
+            var saveAddAppointment = document.getElementById("saveAddAppointment");
+            if (saveAddAppointment) {
+                saveAddAppointment.addEventListener("click", function () {
+                    var payload = {
+                        queueId: document.getElementById("addApptQueueId") ? document.getElementById("addApptQueueId").value : "",
+                        serviceId: document.getElementById("addApptServiceId") ? document.getElementById("addApptServiceId").value : "",
+                        contactType: document.getElementById("addApptContactType") ? document.getElementById("addApptContactType").value : "",
+                        refValue: document.getElementById("addApptRefValue") ? document.getElementById("addApptRefValue").value : "",
+                        permitNumber: document.getElementById("addApptPermitNumber") ? document.getElementById("addApptPermitNumber").value : "",
+                        streetNumber: document.getElementById("addApptStreetNumber") ? document.getElementById("addApptStreetNumber").value : "",
+                        streetName: document.getElementById("addApptStreetName") ? document.getElementById("addApptStreetName").value : "",
+                        streetType: document.getElementById("addApptStreetType") ? document.getElementById("addApptStreetType").value : "",
+                        email: document.getElementById("addApptEmail") ? document.getElementById("addApptEmail").value : "",
+                        customerName: buildCustomerName(
+                            document.getElementById("addApptFirstName") ? document.getElementById("addApptFirstName").value : "",
+                            document.getElementById("addApptLastName") ? document.getElementById("addApptLastName").value : ""),
+                        phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
+                        appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
+                        startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
+                        meetingUrl: document.getElementById("addApptMeetingUrl") ? document.getElementById("addApptMeetingUrl").value : "",
+                        notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
+                    };
+
+                    var apptRefMeta = getReferenceFieldMeta(payload.refValue);
+                    var apptHasReferenceValue = apptRefMeta.useAddressFields
+                        ? !!(payload.streetNumber && payload.streetName)
+                        : !!payload.permitNumber;
+                    if (!payload.queueId || !payload.contactType || !payload.refValue || !apptHasReferenceValue || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
+                        showModalFeedback("addAppointmentModal", "Queue, contact type, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
+                        return;
+                    }
+
+                    validatePermitNumber("addAppt", true).then(function (isValid) {
+                        if (!isValid) {
+                            showModalFeedback("addAppointmentModal", permitValidationState.addAppt.message || "Reference value is invalid.", true);
+                            return;
+                        }
+                        if (timeSelectionState.addAppt && timeSelectionState.addAppt.pending) {
+                            showModalFeedback("addAppointmentModal", "Customer availability validation is still in progress.", true);
+                            return;
+                        }
+                        if (timeSelectionState.addAppt && !timeSelectionState.addAppt.valid) {
+                            showModalFeedback("addAppointmentModal", timeSelectionState.addAppt.message || "Customer already has an appointment at this time.", true);
+                            return;
+                        }
+                        postForm(addAppointmentUrl, payload).then(function (res) {
+                            if (!res || !res.ok) {
+                                showModalFeedback("addAppointmentModal", res && res.error ? res.error : "Could not add appointment.", true);
+                                return;
+                            }
+                            closeModal("addAppointmentModal");
+                            queueLiveSync();
+                        });
                     });
                 });
             }
-            if (addWalkinForm) {
-                addWalkinForm.addEventListener("submit", function (event) {
-                    event.preventDefault();
-                    var hiddenCustomerName = document.getElementById("walkinCustomerNameValue");
-                    if (hiddenCustomerName) {
-                        hiddenCustomerName.value = buildCustomerName(
-                            document.getElementById("walkinFirstName") ? document.getElementById("walkinFirstName").value : "",
-                            document.getElementById("walkinLastName") ? document.getElementById("walkinLastName").value : "");
+
+            var saveAddWalkin = document.getElementById("saveAddWalkin");
+            if (saveAddWalkin) {
+                saveAddWalkin.addEventListener("click", function () {
+                    var payload = {
+                        queueId: document.getElementById("addWalkinQueueId") ? document.getElementById("addWalkinQueueId").value : "",
+                        serviceId: document.getElementById("addWalkinServiceId") ? document.getElementById("addWalkinServiceId").value : "",
+                        contactType: document.getElementById("addWalkinContactType") ? document.getElementById("addWalkinContactType").value : "",
+                        refValue: document.getElementById("addWalkinRefValue") ? document.getElementById("addWalkinRefValue").value : "",
+                        permitNumber: document.getElementById("addWalkinPermitNumber") ? document.getElementById("addWalkinPermitNumber").value : "",
+                        streetNumber: document.getElementById("addWalkinStreetNumber") ? document.getElementById("addWalkinStreetNumber").value : "",
+                        streetName: document.getElementById("addWalkinStreetName") ? document.getElementById("addWalkinStreetName").value : "",
+                        streetType: document.getElementById("addWalkinStreetType") ? document.getElementById("addWalkinStreetType").value : "",
+                        email: document.getElementById("addWalkinEmail") ? document.getElementById("addWalkinEmail").value : "",
+                        customerName: buildCustomerName(
+                            document.getElementById("addWalkinFirstName") ? document.getElementById("addWalkinFirstName").value : "",
+                            document.getElementById("addWalkinLastName") ? document.getElementById("addWalkinLastName").value : ""),
+                        phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
+                        meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
+                        notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
+                    };
+
+                    var walkinRefMeta = getReferenceFieldMeta(payload.refValue);
+                    var walkinHasReferenceValue = walkinRefMeta.useAddressFields
+                        ? !!(payload.streetNumber && payload.streetName)
+                        : !!payload.permitNumber;
+                    if (!payload.queueId || !payload.contactType || !payload.refValue || !walkinHasReferenceValue || !payload.email || !payload.customerName || !payload.phone) {
+                        showModalFeedback("addWalkinModal", "Queue, contact type, reference, reference value, email, first name, last name, and phone are required.", true);
+                        return;
                     }
-                    validatePermitNumber("walkin", true).then(function (isValid) {
+
+                    validatePermitNumber("addWalkin", true).then(function (isValid) {
                         if (!isValid) {
-                            window.alert(permitValidationState.walkin.message || "Reference value is invalid.");
+                            showModalFeedback("addWalkinModal", permitValidationState.addWalkin.message || "Reference value is invalid.", true);
                             return;
                         }
-
-                        var formData = new FormData(addWalkinForm);
-                        fetch(addWalkinForm.action, {
-                            method: "POST",
-                            headers: { "X-Requested-With": "XMLHttpRequest" },
-                            credentials: "same-origin",
-                            body: new URLSearchParams(formData)
-                        })
-                            .then(function (res) { return res.json(); })
-                            .then(function (res) {
-                                if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "Could not add walk-in.");
-                                    return;
-                                }
-                                closeModal("addWalkinModal");
-                                queueLiveSync();
-                            })
-                            .catch(function () {
-                                window.alert("Could not add walk-in.");
-                            });
+                        postForm(addWalkinUrl, payload).then(function (res) {
+                            if (!res || !res.ok) {
+                                showModalFeedback("addWalkinModal", res && res.error ? res.error : "Could not add walk-in.", true);
+                                return;
+                            }
+                            closeModal("addWalkinModal");
+                            queueLiveSync();
+                        });
                     });
                 });
             }

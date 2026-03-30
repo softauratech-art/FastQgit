@@ -1,11 +1,9 @@
-using FastQ.Data.Common;
-using FastQ.Data.Db;
-using FastQ.Data.Repositories;
-using FastQ.Web.Models.Admin;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
+using FastQ.Data.Db;
+using FastQ.Data.Repositories;
+using FastQ.Web.Models.Admin;
 
 namespace FastQ.Web.Services
 {
@@ -25,11 +23,7 @@ namespace FastQ.Web.Services
             _users = users;
         }
         public IList<UserVM> ListUsers()
-        {
-            //if (HttpContext.Current.Session["fq_this_entity"]  == null  ||
-            //        !Int32.TryParse(HttpContext.Current.Session["fq_this_entity"].ToString(), out _stampuserentity))
-            //    throw new Exception("Entity is missing for this session"); 
-            
+        {            
             return TransformToModelList();
         }
 
@@ -38,17 +32,9 @@ namespace FastQ.Web.Services
             try
             {
                 var usr = _users.Get(userid, _stampuser);
-                return new UserVM
-                {
-                    FirstName = usr.FirstName,
-                    LastName = usr.LastName,
-                    UserId = usr.UserId,
-                    Title = usr.Title,
-                    OtherLanguage = usr.Language,
-                    IsActive = usr.ActiveFlag,
-                    //todo IsAdmin = usr.AdminFlag,
-                    Email = usr.Email
-                };
+                bool configadmin = usr.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag;
+
+                return TransformToModel(usr);
             }
             catch (Exception ex)
             {
@@ -56,44 +42,51 @@ namespace FastQ.Web.Services
             }
         }
 
-        public Result HandleUserAction(string action, string json)
-        {
-            //action = (action ?? string.Empty).Trim().ToLowerInvariant();
-            //return action switch
-            //{
-            //    "update" => UpdateUser( json),
-            //    "delete" => DeleteUser( json),
-            //    "create" => CreateUser( json),
-            //    _ => Result.Fail("Unknown action")
-            //};
-
-            return Result.Fail("Not Implemented");
+        private UserVM TransformToModel(Data.Entities.User userentity) {
+            return new UserVM
+            {
+                FirstName = userentity.FirstName,
+                LastName = userentity.LastName,
+                UserId = userentity.UserId,
+                Title = userentity.Title,
+                OtherLanguage = userentity.Language,
+                IsActive = userentity.ActiveFlag,
+                Email = userentity.Email,
+                IsAdmin = userentity.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag,
+                Permissions = userentity.Queues.Where(q => q.EntityId == _sessionentity && q.QueueActiveFlag == true).ToList()
+            };
         }
-
         public IList<UserVM> TransformToModelList()
         {
             if (string.IsNullOrWhiteSpace(_stampuser))
-            {
                 return new List<UserVM>();
-            }
                         
             var rows = _users.ListAll(_sessionentity, _stampuser);
-
             return rows.Select(r =>
-            {               
-                return new UserVM
-                {
-                    FirstName = r.FirstName,
-                    LastName = r.LastName,
-                    UserId = r.UserId,
-                    Title = r.Title,
-                    OtherLanguage = r.Language,
-                    IsActive = r.ActiveFlag,
-                    //todo IsAdmin = r.AdminFlag,
-                    Email = r.Email             
-                };
+            {
+                return TransformToModel(r);
             }).OrderBy(r => r.LastName).ToList();
         }
 
+        public void AddOrUpdateUser(string action, UserVM uvm, string hostqueues, string providerqueues, string reporterqueues, string queueadminqueues)
+        {
+            List<Data.Entities.UserEntity> entities = [];
+            entities.Add(new Data.Entities.UserEntity { EntityId = _sessionentity, ConfigAdminFlag = uvm.IsAdmin, ActiveFlag = uvm.IsActive });
+            
+            _users.AddOrUpdateUser(action, 
+                                    new Data.Entities.User {
+                                        UserId = uvm.UserId, FirstName = uvm.FirstName, LastName = uvm.LastName, 
+                                        Email = uvm.Email, Phone = uvm.Phone, ActiveFlag = uvm.IsActive, 
+                                        Title = uvm.Title, Language = uvm.OtherLanguage, BusinessEntities = entities
+                                    }, 
+                                    _sessionentity,                        
+                                    hostqueues, providerqueues, reporterqueues, queueadminqueues,
+                                    _stampuser);
+        }
+
+        public void Delete(string uid)
+        {
+            _users.Delete(uid, _stampuser);
+        }
     }
 }

@@ -1,11 +1,12 @@
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
+//using Microsoft.AspNet.SignalR.Messaging;
 using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
-//using Oracle.ManagedDataAccess.Client;
 
 
 namespace FastQ.Data.Db
@@ -51,42 +52,42 @@ namespace FastQ.Data.Db
             }
         }
 
-        public void Add(User ouser)
-        {
-            var first = "";
-            var last = "";
-            if (!string.IsNullOrWhiteSpace(ouser.FirstName)) first = ouser.FirstName;
-            if (!string.IsNullOrWhiteSpace(ouser.LastName)) last = ouser.LastName;
-            var email = string.IsNullOrWhiteSpace(ouser.Email) ? $"{ouser}@placeholder.local" : ouser.Email;
-            var stampUser = string.IsNullOrWhiteSpace(ouser.StampUser) ? "fastq" : ouser.StampUser;
-            var activeFlag = ouser.ActiveFlag ? "Y" : "N";
-            var adminFlag = false; // ouser.AdminFlag ? "Y" : "N";
+        //public void Add(User ouser)
+        //{
+        //    var first = "";
+        //    var last = "";
+        //    if (!string.IsNullOrWhiteSpace(ouser.FirstName)) first = ouser.FirstName;
+        //    if (!string.IsNullOrWhiteSpace(ouser.LastName)) last = ouser.LastName;
+        //    var email = string.IsNullOrWhiteSpace(ouser.Email) ? $"{ouser}@placeholder.local" : ouser.Email;
+        //    var stampUser = string.IsNullOrWhiteSpace(ouser.StampUser) ? "fastq" : ouser.StampUser;
+        //    var activeFlag = ouser.ActiveFlag ? "Y" : "N";
+        //    var adminFlag = false; // ouser.AdminFlag ? "Y" : "N";
 
-            using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"INSERT INTO FQUSERS
-                    (USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, PASSWORD, TITLE, STAMPDATE, STAMPUSER)
-                  VALUES
-                    (:userId, :fname, :lname, :email, :phone, :language, :activeFlag, :adminFlag, :password, :title, SYSDATE, :stampUser)"))
-            {
-                DataAccess.AddParam(cmd, "userId", ouser.ToString(), DbType.String);
-                DataAccess.AddParam(cmd, "fname", first, DbType.String);
-                DataAccess.AddParam(cmd, "lname", last, DbType.String);
-                DataAccess.AddParam(cmd, "email", email, DbType.String);
-                DataAccess.AddParam(cmd, "phone", ouser.Phone ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "language", ouser.Language ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
-                DataAccess.AddParam(cmd, "adminFlag", adminFlag, DbType.String);
-                //DataAccess.AddParam(cmd, "password", ouser.Password ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "password", string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "title", ouser.Title ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
-                cmd.ExecuteNonQuery();
-            }        
-        }
+        //    using (var conn = DataAccess.Open())
+        //    using (var cmd = DataAccess.CreateCommand(conn,
+        //        @"INSERT INTO FQUSERS
+        //            (USER_ID, FNAME, LNAME, EMAIL, PHONE, LANGUAGE, ACTIVEFLAG, ADMINFLAG, PASSWORD, TITLE, STAMPDATE, STAMPUSER)
+        //          VALUES
+        //            (:userId, :fname, :lname, :email, :phone, :language, :activeFlag, :adminFlag, :password, :title, SYSDATE, :stampUser)"))
+        //    {
+        //        DataAccess.AddParam(cmd, "userId", ouser.ToString(), DbType.String);
+        //        DataAccess.AddParam(cmd, "fname", first, DbType.String);
+        //        DataAccess.AddParam(cmd, "lname", last, DbType.String);
+        //        DataAccess.AddParam(cmd, "email", email, DbType.String);
+        //        DataAccess.AddParam(cmd, "phone", ouser.Phone ?? string.Empty, DbType.String);
+        //        DataAccess.AddParam(cmd, "language", ouser.Language ?? string.Empty, DbType.String);
+        //        DataAccess.AddParam(cmd, "activeFlag", activeFlag, DbType.String);
+        //        DataAccess.AddParam(cmd, "adminFlag", adminFlag, DbType.String);
+        //        //DataAccess.AddParam(cmd, "password", ouser.Password ?? string.Empty, DbType.String);
+        //        DataAccess.AddParam(cmd, "password", string.Empty, DbType.String);
+        //        DataAccess.AddParam(cmd, "title", ouser.Title ?? string.Empty, DbType.String);
+        //        DataAccess.AddParam(cmd, "stampUser", stampUser, DbType.String);
+        //        cmd.ExecuteNonQuery();
+        //    }        
+        //}
 
-        public void Update(User ouser)
-        {
+        //public void Update(User ouser)
+        //{
             //if (!IdMapper.TryToLong(customer.Id, out var customerId))
             //    throw new InvalidOperationException("Customer Id is not mapped to a numeric ID.");
 
@@ -120,7 +121,7 @@ namespace FastQ.Data.Db
             //    OracleDb.AddParam(cmd, "customerId", customerId, DbType.Int64);
             //    cmd.ExecuteNonQuery();
             //}
-        }
+        //}
 
         public IList<User> ListAll(Int32 entityid, string stampuser)
         {
@@ -175,10 +176,11 @@ namespace FastQ.Data.Db
                 Phone = record["PHONE"]?.ToString() ?? string.Empty,
                 Language = record["LANGUAGE"]?.ToString() ?? string.Empty,
                 ActiveFlag = activeFlag,
-                //todo AdminFlag = adminFlag,
+                // AdminFlag set in BusinessWEntities collection for each entity
                 Title = record["TITLE"]?.ToString() ?? string.Empty,
                 StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
-                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
+                //StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
+                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Local),
                 Queues = GetUserQueuePermissions(userIdText, stampuser),
                 BusinessEntities = GetUserEntities(userIdText, stampuser)
             };
@@ -260,6 +262,52 @@ namespace FastQ.Data.Db
             }
         }
 
+        public void AddOrUpdateUser(string action, User ouser, long entityid, string hostqueues, string providerqueues, string reporterqueues, string queueadminqueues, string stampuser)
+        {
+            using var conn = DataAccess.Open();
+            string sp_name = "fqowner.FQ_UPSERTUSER";
+            using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
+            {
+                DataAccess.AddParam(cmd, "p_action", action, DbType.String); 
+                DataAccess.AddParam(cmd, "p_userid", ouser.UserId, DbType.String);
+                DataAccess.AddParam(cmd, "p_entityid", entityid, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_firstname", ouser.FirstName, DbType.String);
+                DataAccess.AddParam(cmd, "p_lastname", ouser.LastName, DbType.String);
+                DataAccess.AddParam(cmd, "p_title", ouser.Title, DbType.String);
+                DataAccess.AddParam(cmd, "p_email", ouser.Email, DbType.String);
+                DataAccess.AddParam(cmd, "p_phone", ouser.Phone, DbType.String);
+                DataAccess.AddParam(cmd, "p_language", ouser.Language, DbType.String);
+                DataAccess.AddParam(cmd, "p_activeflag", ouser.ActiveFlag ? "Y" : "N", DbType.String);
+                DataAccess.AddParam(cmd, "p_configadminflag", ouser.BusinessEntities[0].ConfigAdminFlag ? "Y" : "N", DbType.String);
+                DataAccess.AddParam(cmd, "p_hostqueues", hostqueues, DbType.String);
+                DataAccess.AddParam(cmd, "p_providerqueues", providerqueues, DbType.String); 
+                DataAccess.AddParam(cmd, "p_reporterqueues", reporterqueues, DbType.String); 
+                DataAccess.AddParam(cmd, "p_queueadminqueues", queueadminqueues, DbType.String);
+                DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
+                DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String).Direction = ParameterDirection.Output;
+                cmd.Parameters["p_outmsg"].Size = 4000;
+                cmd.ExecuteNonQuery();
+                string dberr = cmd.Parameters["p_outmsg"].Value as string;
+                if (!string.IsNullOrEmpty(dberr)) throw new InvalidOperationException("DB Error: " + dberr);
+            }
+        }
+
+        public void Delete(string uid, string stampuser)
+        {
+            using var conn = DataAccess.Open();
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETEUSER";
+            using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
+            {
+                DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
+                DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
+                DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String).Direction = ParameterDirection.Output;
+                cmd.Parameters["p_outmsg"].Size = 4000;
+                cmd.ExecuteNonQuery();
+                var dberr = cmd.Parameters["p_outmsg"].Value as string;
+                if (dberr != null) throw new InvalidOperationException(dberr);
+            }
+        }
+
         public IList<UserQueuePermission> GetActionQueuePermissions(string uid)
         {
             var list = new List<UserQueuePermission>();
@@ -295,15 +343,5 @@ namespace FastQ.Data.Db
 
             return list;
         }
-
-        //private static string ReadRawString(IDataRecord record, string field)
-        //{
-        //    var ordinal = record.GetOrdinal(field);
-        //    if (record.IsDBNull(ordinal)) return string.Empty;
-        //    var bytes = (byte[])record.GetValue(ordinal);
-        //    return System.Text.Encoding.UTF8.GetString(bytes);
-        //}
-
-
     }
 }

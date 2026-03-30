@@ -45,9 +45,6 @@ namespace FastQ.Data.Entities
         public bool QueueAdminFlag { get; set; }
 
         public bool QueueActiveFlag { get; set; }
-
-        //TODO: Add other fields
-
     }
 }
 

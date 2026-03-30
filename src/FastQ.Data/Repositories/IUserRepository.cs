@@ -6,10 +6,11 @@ namespace FastQ.Data.Repositories
 {
     public interface IUserRepository
     {
-        User Get(string uid, string stampuser);        
-        void Add(User ouser);
-        void Update(User ouser);
-        IList<User> ListAll(Int32 entityid, string stampuser);
-        IList<UserQueuePermission> GetActionQueuePermissions(string uid);
+        User Get(string uid, string stampuser);
+        void AddOrUpdateUser(string action, User ouser, long entityid, string hostqueues, string providerqueues, string reporterqueues, string queueadminqueues, string stampuser);
+ 		IList<User> ListAll(Int32 entityid, string stampuser);        
+		public void Delete(string uid, string stampuser);
+		IList<UserQueuePermission> GetActionQueuePermissions(string uid);
     }
 }
+
