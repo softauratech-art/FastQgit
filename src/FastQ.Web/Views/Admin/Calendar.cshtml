@@ -697,8 +697,10 @@
 
                     <div class="calendar-field">
                         <label id="permitNumberLabel" for="permitNumber">Reference Value</label>
-                        <input id="permitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
-                        <div id="permitNumberStatus" class="helper-text"></div>
+                        <div id="referenceValueWrap">
+                            <input id="permitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
+                            <div id="permitNumberStatus" class="helper-text"></div>
+                        </div>
                     </div>
                     <div class="calendar-field full is-hidden" id="addressFieldRow">
                         <label>Address</label>
@@ -716,6 +718,7 @@
                                 <input id="streetType" name="streetType" type="text" />
                             </div>
                         </div>
+                        <div id="addressStatus" class="helper-text"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -829,8 +832,10 @@
 
                     <div class="calendar-field">
                         <label id="walkinPermitNumberLabel" for="walkinPermitNumber">Reference Value</label>
-                        <input id="walkinPermitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
-                        <div id="walkinPermitNumberStatus" class="helper-text"></div>
+                        <div id="walkinReferenceValueWrap">
+                            <input id="walkinPermitNumber" name="permitNumber" type="text" required placeholder="Enter reference value" />
+                            <div id="walkinPermitNumberStatus" class="helper-text"></div>
+                        </div>
                     </div>
                     <div class="calendar-field full is-hidden" id="walkinAddressFieldRow">
                         <label>Address</label>
@@ -848,6 +853,7 @@
                                 <input id="walkinStreetType" name="streetType" type="text" />
                             </div>
                         </div>
+                        <div id="walkinAddressStatus" class="helper-text"></div>
                     </div>
 
                     <div class="calendar-field">
@@ -980,6 +986,7 @@
             <input id="routeMode" type="hidden" value="" />
             <input id="routeSrcType" type="hidden" value="" />
             <input id="routeSrcId" type="hidden" value="" />
+            <input id="routeCompletionNotes" type="hidden" value="" />
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
@@ -995,7 +1002,12 @@
             <button class="btn small ghost" type="button" data-modal-close="endServiceModal">Close</button>
         </div>
         <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="endServiceModal"></div>
             <p>Does the customer need any additional service today?</p>
+            <div class="route-form-row">
+                <label for="endServiceCompletionNotes">Notes</label>
+                <textarea id="endServiceCompletionNotes" rows="3"></textarea>
+            </div>
             <input id="endServiceSrcId" type="hidden" value="" />
             <input id="endServiceSrcType" type="hidden" value="" />
         </div>
@@ -1612,10 +1624,11 @@
                 });
             }
 
-            function openRouteModal(mode, appointmentId, srcType) {
+            function openRouteModal(mode, appointmentId, srcType, completionNotes) {
                 var routeMode = document.getElementById("routeMode");
                 var routeSrcType = document.getElementById("routeSrcType");
                 var routeSrcId = document.getElementById("routeSrcId");
+                var routeCompletionNotes = document.getElementById("routeCompletionNotes");
                 var targetKind = document.getElementById("routeTargetKind");
                 var targetQueueId = document.getElementById("routeTargetQueueId");
                 var targetServiceId = document.getElementById("routeTargetServiceId");
@@ -1631,6 +1644,7 @@
                 routeMode.value = mode;
                 routeSrcType.value = srcType;
                 routeSrcId.value = appointmentId;
+                if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
                 targetKind.value = srcType === "A" ? "A" : "W";
                 if (targetQueueId) targetQueueId.value = "";
                 if (targetServiceId) targetServiceId.value = "";
@@ -1648,15 +1662,17 @@
             function openEndServiceModal(appointmentId, srcType) {
                 var srcIdInput = document.getElementById("endServiceSrcId");
                 var srcTypeInput = document.getElementById("endServiceSrcType");
+                var completionNotesInput = document.getElementById("endServiceCompletionNotes");
                 if (!srcIdInput || !srcTypeInput) {
                     return;
                 }
                 srcIdInput.value = appointmentId;
                 srcTypeInput.value = srcType;
+                if (completionNotesInput) completionNotesInput.value = "";
                 openModal("endServiceModal");
             }
 
-            function submitEndOnly(appointmentId, srcType) {
+            function submitEndOnly(appointmentId, srcType, completionNotes) {
                 return postForm(endServiceUrl, {
                     appointmentId: appointmentId,
                     srcType: srcType,
@@ -1666,7 +1682,8 @@
                     targetKind: "",
                     targetDate: "",
                     refValue: "",
-                    notes: ""
+                    notes: "",
+                    completionNotes: completionNotes || ""
                 });
             }
 
@@ -1830,6 +1847,7 @@
                 return isWalkin
                     ? {
                         inputId: "walkinPermitNumber",
+                        referenceWrapId: "walkinReferenceValueWrap",
                         statusId: meta.useAddressFields ? "walkinAddressStatus" : "walkinPermitNumberStatus",
                         labelId: "walkinPermitNumberLabel",
                         refId: "walkinRefValue",
@@ -1840,6 +1858,7 @@
                     }
                     : {
                         inputId: "permitNumber",
+                        referenceWrapId: "referenceValueWrap",
                         statusId: meta.useAddressFields ? "addressStatus" : "permitNumberStatus",
                         labelId: "permitNumberLabel",
                         refId: "refValue",
@@ -1876,6 +1895,7 @@
                 var input = document.getElementById(cfg.inputId);
                 var label = document.getElementById(cfg.labelId);
                 var addressRow = document.getElementById(cfg.addressRowId);
+                var referenceWrap = document.getElementById(cfg.referenceWrapId);
                 if (!input) {
                     return;
                 }
@@ -1884,9 +1904,11 @@
                     label.textContent = meta.label;
                 }
                 input.placeholder = meta.placeholder;
-                input.parentNode.classList.toggle("is-hidden", !!meta.useAddressFields);
                 if (addressRow) {
                     addressRow.classList.toggle("is-hidden", !meta.useAddressFields);
+                }
+                if (referenceWrap) {
+                    referenceWrap.classList.toggle("is-hidden", !!meta.useAddressFields);
                 }
                 setPermitValidationState(kind, false, false, "");
             }
@@ -2006,6 +2028,9 @@
                 }
                 if (actionName === "end") {
                     return status === "inservice";
+                }
+                if (actionName === "transfer") {
+                    return status === "scheduled" || status === "arrived" || status === "inservice";
                 }
                 if (actionName === "remove") {
                     return !finished;
@@ -2384,20 +2409,26 @@
                     var choice = btn.getAttribute("data-end-choice");
                     var srcIdInput = document.getElementById("endServiceSrcId");
                     var srcTypeInput = document.getElementById("endServiceSrcType");
+                    var completionNotesInput = document.getElementById("endServiceCompletionNotes");
                     var appointmentId = srcIdInput ? srcIdInput.value : "";
                     var srcType = srcTypeInput ? srcTypeInput.value : "";
+                    var completionNotes = completionNotesInput ? completionNotesInput.value : "";
                     if (!appointmentId || !srcType) {
                         closeModal("endServiceModal");
+                        return;
+                    }
+                    if (!completionNotes || !completionNotes.trim()) {
+                        window.alert("Notes are required.");
                         return;
                     }
 
                     if (choice === "end-add") {
                         closeModal("endServiceModal");
-                        openRouteModal("end-add", appointmentId, srcType);
+                        openRouteModal("end-add", appointmentId, srcType, completionNotes);
                         return;
                     }
 
-                    submitEndOnly(appointmentId, srcType)
+                    submitEndOnly(appointmentId, srcType, completionNotes)
                         .then(function (res) {
                             if (!res || !res.ok) {
                                 window.alert(res && res.error ? res.error : "End service failed.");
@@ -2469,6 +2500,7 @@
                     var routeMode = document.getElementById("routeMode");
                     var routeSrcType = document.getElementById("routeSrcType");
                     var routeSrcId = document.getElementById("routeSrcId");
+                    var routeCompletionNotes = document.getElementById("routeCompletionNotes");
                     var targetKindInput = document.getElementById("routeTargetKind");
                     var targetQueueIdInput = document.getElementById("routeTargetQueueId");
                     var targetServiceIdInput = document.getElementById("routeTargetServiceId");
@@ -2480,6 +2512,7 @@
                     var mode = routeMode ? routeMode.value : "";
                     var srcType = routeSrcType ? routeSrcType.value : "";
                     var appointmentId = routeSrcId ? routeSrcId.value : "";
+                    var completionNotes = routeCompletionNotes ? routeCompletionNotes.value : "";
                     var targetKind = targetKindInput ? targetKindInput.value : "";
                     var targetQueueId = targetQueueIdInput ? targetQueueIdInput.value : "";
                     var targetServiceId = targetServiceIdInput ? targetServiceIdInput.value : "";
@@ -2491,6 +2524,10 @@
 
                     if (!appointmentId || !srcType || !targetQueueId) {
                         window.alert("Source and target queue are required.");
+                        return;
+                    }
+                    if (mode === "end-add" && (!completionNotes || !completionNotes.trim())) {
+                        window.alert("Notes are required.");
                         return;
                     }
                     if (targetKind === "A" && (!targetDate || !targetTime)) {
@@ -2530,7 +2567,8 @@
                             targetKind: targetKind,
                             targetDate: targetDateTime || "",
                             refValue: refValue || "",
-                            notes: notes || ""
+                            notes: notes || "",
+                            completionNotes: completionNotes || ""
                         })
                             .then(function (res) {
                                 if (!res || !res.ok) {

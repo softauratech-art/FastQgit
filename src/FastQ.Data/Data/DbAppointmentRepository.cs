@@ -341,7 +341,12 @@ namespace FastQ.Data.Db
                         {
                             var joinTime = ReadDateTime(reader, "JOIN_TIME");
                             var createdOn = ReadDateTime(reader, "CREATEDON");
-                            var baseTime = joinTime ?? createdOn ?? DateTime.Now;
+                            var stampDate = ReadDateTime(reader, "STAMPDATE");
+                            var baseTime = joinTime ?? createdOn ?? stampDate ?? DateTime.Now;
+                            if (!HasTimeOfDay(baseTime) && stampDate.HasValue && HasTimeOfDay(stampDate.Value))
+                            {
+                                baseTime = baseTime.Date + stampDate.Value.TimeOfDay;
+                            }
                             scheduled = DateTime.SpecifyKind(baseTime, DateTimeKind.Local);
                         }
                         else
@@ -578,6 +583,11 @@ namespace FastQ.Data.Db
             }
 
             return null;
+        }
+
+        private static bool HasTimeOfDay(DateTime value)
+        {
+            return value.TimeOfDay != TimeSpan.Zero;
         }
 
         private static TimeSpan? ReadInterval(IDataRecord record, string field)

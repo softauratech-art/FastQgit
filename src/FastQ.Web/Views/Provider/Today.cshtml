@@ -2426,6 +2426,9 @@
       if (actionName === "end") {
         return status === "inservice";
       }
+      if (actionName === "transfer") {
+        return status === "scheduled" || status === "arrived" || status === "inservice";
+      }
       if (actionName === "remove") {
         return !finished;
       }
@@ -2933,6 +2936,10 @@
           closeModal("endServiceModal");
           return;
         }
+        if (!completionNotes || !completionNotes.trim()) {
+          showModalFeedback("endServiceModal", "Notes are required.", true);
+          return;
+        }
 
         if (choice === "end-add") {
           closeModal("endServiceModal");
@@ -3109,6 +3116,10 @@
 
         if (!appointmentId || !srcType || !targetQueueId) {
           showModalFeedback("serviceRouteModal", "Source and target queue are required.", true);
+          return;
+        }
+        if (mode === "end-add" && (!completionNotes || !completionNotes.trim())) {
+          showModalFeedback("serviceRouteModal", "Notes are required.", true);
           return;
         }
         if (targetKind === "A" && (!targetDate || !targetTime)) {

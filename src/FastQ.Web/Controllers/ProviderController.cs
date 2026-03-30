@@ -495,6 +495,8 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = endPermissionError });
 
             var wantsAdditional = string.Equals((additionalService ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(completionNotes))
+                return Json(new { ok = false, error = "Notes are required." });
 
             long parsedQueue;
             long? queueId = long.TryParse(targetQueueId, out parsedQueue) ? parsedQueue : (long?)null;
