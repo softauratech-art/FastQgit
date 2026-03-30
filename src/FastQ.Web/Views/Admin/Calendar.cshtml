@@ -1046,13 +1046,11 @@
                 }
             }
 
-            function loadEntryModalQueueDetails(prefix, queueCode) {
+            function loadEntryQueueDetails(prefix, queueCode) {
                 if (!queueCode) {
                     activeEntryQueueDetails[prefix] = null;
                     populateEntryModalOptions(prefix, null);
-                    if (prefix === "addAppt") {
-                        populateEntryModalDateTime(prefix, null);
-                    }
+                    populateEntryModalDateTime(prefix, null);
                     return Promise.resolve();
                 }
 
@@ -1061,17 +1059,16 @@
                         var details = res && res.ok ? res.data : null;
                         activeEntryQueueDetails[prefix] = details;
                         populateEntryModalOptions(prefix, details);
+                        populateEntryModalDateTime(prefix, details);
                     })
                     .catch(function () {
                         activeEntryQueueDetails[prefix] = null;
                         populateEntryModalOptions(prefix, null);
-                        if (prefix === "addAppt") {
-                            populateEntryModalDateTime(prefix, null);
-                        }
+                        populateEntryModalDateTime(prefix, null);
                     });
             }
 
-            function loadEntryModalQueues(prefix) {
+            function loadEntryQueues(prefix) {
                 var queueSelect = document.getElementById(prefix + "QueueId");
                 if (!queueSelect) {
                     return Promise.resolve();
@@ -1080,11 +1077,9 @@
                 return getJson(getTransferQueuesUrl)
                     .then(function (res) {
                         setSelectOptions(queueSelect, res && res.ok ? res.data : [], "Select queue");
-                        return loadEntryModalQueueDetails(prefix, queueSelect.value || "");
                     })
                     .catch(function () {
                         setSelectOptions(queueSelect, [], "Select queue");
-                        return loadEntryModalQueueDetails(prefix, "");
                     });
             }
 
@@ -1690,33 +1685,19 @@
                 }, 700);
             }
 
-            function getPermitFieldConfig(kind) {
-                var isWalkin = kind === "addWalkin";
-                var refId = isWalkin ? "addWalkinRefValue" : "addApptRefValue";
-                var meta = getReferenceFieldMeta((document.getElementById(refId) && document.getElementById(refId).value) || "");
-                return isWalkin
-                    ? {
-                        inputId: "addWalkinPermitNumber",
-                        referenceWrapId: "addWalkinReferenceValueWrap",
-                        statusId: meta.useAddressFields ? "addWalkinAddressStatus" : "addWalkinPermitStatus",
-                        labelId: "addWalkinPermitNumberLabel",
-                        refId: "addWalkinRefValue",
-                        addressRowId: "addWalkinAddressRow",
-                        streetNumberId: "addWalkinStreetNumber",
-                        streetNameId: "addWalkinStreetName",
-                        streetTypeId: "addWalkinStreetType"
-                    }
-                    : {
-                        inputId: "addApptPermitNumber",
-                        referenceWrapId: "addApptReferenceValueWrap",
-                        statusId: meta.useAddressFields ? "addApptAddressStatus" : "addApptPermitStatus",
-                        labelId: "addApptPermitNumberLabel",
-                        refId: "addApptRefValue",
-                        addressRowId: "addApptAddressRow",
-                        streetNumberId: "addApptStreetNumber",
-                        streetNameId: "addApptStreetName",
-                        streetTypeId: "addApptStreetType"
-                    };
+            function syncMeetingUrlField(prefix) {
+                var contactType = document.getElementById(prefix + "ContactType");
+                var meetingRow = document.getElementById(prefix + "MeetingUrlRow");
+                var meetingUrl = document.getElementById(prefix + "MeetingUrl");
+                if (!contactType || !meetingRow || !meetingUrl) {
+                    return;
+                }
+                var isVirtual = contactType.value === "OM";
+                meetingRow.style.display = isVirtual ? "grid" : "none";
+                meetingUrl.required = isVirtual;
+                if (!isVirtual) {
+                    meetingUrl.value = "";
+                }
             }
 
             function getReferenceFieldMeta(code) {
@@ -1734,22 +1715,20 @@
                 }
             }
 
-            function getSelectedReferenceCode(kind) {
-                var cfg = getPermitFieldConfig(kind);
-                var refSelect = document.getElementById(cfg.refId);
+            function getSelectedReferenceCode(prefix) {
+                var refSelect = document.getElementById(prefix + "RefValue");
                 return refSelect ? (refSelect.value || "").trim() : "";
             }
 
-            function syncReferenceInputMeta(kind) {
-                var cfg = getPermitFieldConfig(kind);
-                var input = document.getElementById(cfg.inputId);
-                var label = document.getElementById(cfg.labelId);
-                var addressRow = document.getElementById(cfg.addressRowId);
-                var referenceWrap = document.getElementById(cfg.referenceWrapId);
+            function syncReferenceInputMeta(prefix) {
+                var input = document.getElementById(prefix + "PermitNumber");
+                var label = document.getElementById(prefix + "PermitNumberLabel");
+                var addressRow = document.getElementById(prefix + "AddressRow");
+                var referenceWrap = document.getElementById(prefix + "ReferenceValueWrap");
                 if (!input) {
                     return;
                 }
-                var meta = getReferenceFieldMeta(getSelectedReferenceCode(kind));
+                var meta = getReferenceFieldMeta(getSelectedReferenceCode(prefix));
                 if (label) {
                     label.textContent = meta.label;
                 }
@@ -1760,18 +1739,35 @@
                 if (referenceWrap) {
                     referenceWrap.classList.toggle("is-hidden", !!meta.useAddressFields);
                 }
-                setPermitValidationState(kind, false, false, "");
+                resetPermitValidation(prefix);
             }
 
-            function setPermitValidationState(kind, pending, valid, message) {
-                permitValidationState[kind] = permitValidationState[kind] || { seq: 0, pending: false, valid: false, message: "" };
-                permitValidationState[kind].pending = !!pending;
-                permitValidationState[kind].valid = !!valid;
-                permitValidationState[kind].message = message || "";
+            function getAddressFieldIds(prefix) {
+                return {
+                    streetNumberId: prefix + "StreetNumber",
+                    streetNameId: prefix + "StreetName",
+                    streetTypeId: prefix + "StreetType",
+                    statusId: prefix + "AddressStatus"
+                };
+            }
 
-                var cfg = getPermitFieldConfig(kind);
-                var status = document.getElementById(cfg.statusId);
-                var input = document.getElementById(cfg.inputId);
+            function getPermitValidationIds(prefix) {
+                var meta = getReferenceFieldMeta(getSelectedReferenceCode(prefix));
+                return {
+                    inputId: prefix + "PermitNumber",
+                    statusId: prefix + (meta.useAddressFields ? "AddressStatus" : "PermitStatus")
+                };
+            }
+
+            function setPermitValidationState(prefix, pending, valid, message) {
+                permitValidationState[prefix] = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
+                permitValidationState[prefix].pending = !!pending;
+                permitValidationState[prefix].valid = !!valid;
+                permitValidationState[prefix].message = message || "";
+
+                var ids = getPermitValidationIds(prefix);
+                var status = document.getElementById(ids.statusId);
+                var input = document.getElementById(ids.inputId);
                 if (status) {
                     status.textContent = message || "";
                     status.style.color = pending ? "#6b7280" : (valid ? "#15803d" : "#b91c1c");
@@ -1781,69 +1777,80 @@
                 }
             }
 
-            function validatePermitNumber(kind, immediate) {
-                var cfg = getPermitFieldConfig(kind);
-                var input = document.getElementById(cfg.inputId);
+            function resetPermitValidation(prefix) {
+                permitValidationState[prefix] = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
+                permitValidationState[prefix].seq += 1;
+                setPermitValidationState(prefix, false, false, "");
+                if (permitValidationTimers[prefix]) {
+                    clearTimeout(permitValidationTimers[prefix]);
+                    permitValidationTimers[prefix] = 0;
+                }
+            }
+
+            function validatePermitNumber(prefix, immediate) {
+                var ids = getPermitValidationIds(prefix);
+                var input = document.getElementById(ids.inputId);
                 if (!input) {
                     return Promise.resolve(true);
                 }
 
                 var referenceValue = (input.value || "").trim();
-                var streetNumberInput = document.getElementById(cfg.streetNumberId);
-                var streetNameInput = document.getElementById(cfg.streetNameId);
-                var streetTypeInput = document.getElementById(cfg.streetTypeId);
+                var addressIds = getAddressFieldIds(prefix);
+                var streetNumberInput = document.getElementById(addressIds.streetNumberId);
+                var streetNameInput = document.getElementById(addressIds.streetNameId);
+                var streetTypeInput = document.getElementById(addressIds.streetTypeId);
                 var streetNumber = streetNumberInput ? (streetNumberInput.value || "").trim() : "";
                 var streetName = streetNameInput ? (streetNameInput.value || "").trim() : "";
                 var streetType = streetTypeInput ? (streetTypeInput.value || "").trim() : "";
-                var meta = getReferenceFieldMeta(getSelectedReferenceCode(kind));
+                var meta = getReferenceFieldMeta(getSelectedReferenceCode(prefix));
                 if (meta.useAddressFields) {
                     if (!streetNumber) {
-                        setPermitValidationState(kind, false, false, "Street number is required.");
+                        setPermitValidationState(prefix, false, false, "Street number is required.");
                         return Promise.resolve(false);
                     }
                     if (!streetName) {
-                        setPermitValidationState(kind, false, false, "Street name is required.");
+                        setPermitValidationState(prefix, false, false, "Street name is required.");
                         return Promise.resolve(false);
                     }
                 } else if (!referenceValue) {
-                    setPermitValidationState(kind, false, false, meta.label + " is required.");
+                    setPermitValidationState(prefix, false, false, meta.label + " is required.");
                     return Promise.resolve(false);
                 }
                 if (!meta.validatePermit && !meta.useAddressFields) {
-                    setPermitValidationState(kind, false, true, "");
+                    setPermitValidationState(prefix, false, true, "");
                     return Promise.resolve(true);
                 }
 
-                var state = permitValidationState[kind] || { seq: 0, pending: false, valid: false, message: "" };
+                var state = permitValidationState[prefix] || { seq: 0, pending: false, valid: false, message: "" };
                 state.seq += 1;
-                permitValidationState[kind] = state;
+                permitValidationState[prefix] = state;
                 var requestSeq = state.seq;
                 var invalidLabel = meta.label || "Reference";
-                setPermitValidationState(kind, true, false, meta.useAddressFields ? "Validating address..." : ("Validating " + invalidLabel.toLowerCase() + "..."));
+                setPermitValidationState(prefix, true, false, meta.useAddressFields ? "Validating address..." : ("Validating " + invalidLabel.toLowerCase() + "..."));
 
                 var run = function () {
                     return getJson(validateReferenceUrl
-                        + "?referenceType=" + encodeURIComponent(getSelectedReferenceCode(kind))
+                        + "?referenceType=" + encodeURIComponent(getSelectedReferenceCode(prefix))
                         + "&enterValue=" + encodeURIComponent(referenceValue)
                         + "&streetNumber=" + encodeURIComponent(streetNumber)
                         + "&streetName=" + encodeURIComponent(streetName)
                         + "&streetType=" + encodeURIComponent(streetType))
                         .then(function (res) {
-                            if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
+                            if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
                                 return false;
                             }
                             if (res && (res.ok || res.success)) {
-                                setPermitValidationState(kind, false, true, meta.useAddressFields ? "Address validated." : (invalidLabel + " validated."));
+                                setPermitValidationState(prefix, false, true, meta.useAddressFields ? "Address validated." : (invalidLabel + " validated."));
                                 return true;
                             }
-                            setPermitValidationState(kind, false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : (invalidLabel + " is invalid.")));
+                            setPermitValidationState(prefix, false, false, res && (res.error || res.message) ? (res.error || res.message) : (meta.useAddressFields ? "Address is invalid." : (invalidLabel + " is invalid.")));
                             return false;
                         })
                         .catch(function () {
-                            if (!permitValidationState[kind] || permitValidationState[kind].seq !== requestSeq) {
+                            if (!permitValidationState[prefix] || permitValidationState[prefix].seq !== requestSeq) {
                                 return false;
                             }
-                            setPermitValidationState(kind, false, false, meta.useAddressFields ? "Could not validate address." : ("Could not validate " + invalidLabel.toLowerCase() + "."));
+                            setPermitValidationState(prefix, false, false, meta.useAddressFields ? "Could not validate address." : ("Could not validate " + invalidLabel.toLowerCase() + "."));
                             return false;
                         });
                 };
@@ -1853,10 +1860,10 @@
                 }
 
                 return new Promise(function (resolve) {
-                    if (permitValidationTimers[kind]) {
-                        clearTimeout(permitValidationTimers[kind]);
+                    if (permitValidationTimers[prefix]) {
+                        clearTimeout(permitValidationTimers[prefix]);
                     }
-                    permitValidationTimers[kind] = setTimeout(function () {
+                    permitValidationTimers[prefix] = setTimeout(function () {
                         run().then(resolve);
                     }, 350);
                 });
@@ -1980,12 +1987,6 @@
                 });
             }
 
-            document.querySelectorAll("[data-modal-open]").forEach(function (btn) {
-                btn.addEventListener("click", function () {
-                    openModal(btn.getAttribute("data-modal-open"));
-                });
-            });
-
             document.querySelectorAll("[data-calendar-shift]").forEach(function (btn) {
                 btn.addEventListener("click", function () {
                     var shift = parseInt(btn.getAttribute("data-calendar-shift") || "0", 10);
@@ -2040,14 +2041,14 @@
                     var modalId = btn.getAttribute("data-modal-open");
                     if (modalId === "addAppointmentModal") {
                         clearAddEntryModal("addAppt");
-                        loadEntryModalQueues("addAppt").then(function () {
+                        loadEntryQueues("addAppt").then(function () {
                             openModal(modalId);
                         });
                         return;
                     }
                     if (modalId === "addWalkinModal") {
                         clearAddEntryModal("addWalkin");
-                        loadEntryModalQueues("addWalkin").then(function () {
+                        loadEntryQueues("addWalkin").then(function () {
                             openModal(modalId);
                         });
                         return;
@@ -2059,7 +2060,7 @@
             var addApptQueueId = document.getElementById("addApptQueueId");
             if (addApptQueueId) {
                 addApptQueueId.addEventListener("change", function () {
-                    loadEntryModalQueueDetails("addAppt", addApptQueueId.value || "");
+                    loadEntryQueueDetails("addAppt", addApptQueueId.value || "");
                 });
             }
             var addApptDate = document.getElementById("addApptDate");
@@ -2119,7 +2120,7 @@
             var addWalkinQueueId = document.getElementById("addWalkinQueueId");
             if (addWalkinQueueId) {
                 addWalkinQueueId.addEventListener("change", function () {
-                    loadEntryModalQueueDetails("addWalkin", addWalkinQueueId.value || "");
+                    loadEntryQueueDetails("addWalkin", addWalkinQueueId.value || "");
                 });
             }
 
