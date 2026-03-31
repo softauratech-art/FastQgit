@@ -2362,7 +2362,7 @@
                         return;
                     }
                     if (!completionNotes || !completionNotes.trim()) {
-                        window.alert("Notes are required.");
+                        showModalFeedback("endServiceModal", "Notes are required.", true);
                         return;
                     }
 
@@ -2375,7 +2375,7 @@
                     submitEndOnly(appointmentId, srcType, completionNotes)
                         .then(function (res) {
                             if (!res || !res.ok) {
-                                window.alert(res && res.error ? res.error : "End service failed.");
+                                showModalFeedback("endServiceModal", res && res.error ? res.error : "End service failed.", true);
                                 return;
                             }
                             closeModal("endServiceModal");
@@ -2406,7 +2406,7 @@
                     postForm(saveServiceInfoUrl, payload)
                         .then(function (res) {
                             if (!res || !res.ok) {
-                                window.alert(res && res.error ? res.error : "Save failed.");
+                                showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
                                 return;
                             }
                             closeModal("meetingModal");
@@ -2467,15 +2467,15 @@
                     var targetDateTime = buildRouteTargetDateTime(targetDate, targetTime);
 
                     if (!appointmentId || !srcType || !targetQueueId) {
-                        window.alert("Source and target queue are required.");
+                        showModalFeedback("serviceRouteModal", "Source and target queue are required.", true);
                         return;
                     }
                     if (mode === "end-add" && (!completionNotes || !completionNotes.trim())) {
-                        window.alert("Notes are required.");
+                        showModalFeedback("serviceRouteModal", "Notes are required.", true);
                         return;
                     }
                     if (targetKind === "A" && (!targetDate || !targetTime)) {
-                        window.alert("Target date and time are required for appointment target.");
+                        showModalFeedback("serviceRouteModal", "Target date and time are required for appointment target.", true);
                         return;
                     }
 
@@ -2489,10 +2489,10 @@
                             targetDate: targetDateTime || "",
                             refValue: refValue || "",
                             notes: notes || ""
-                        })
+                            })
                             .then(function (res) {
                                 if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "Transfer failed.");
+                                    showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Transfer failed.", true);
                                     return;
                                 }
                                 closeModal("serviceRouteModal");
@@ -2513,13 +2513,16 @@
                             refValue: refValue || "",
                             notes: notes || "",
                             completionNotes: completionNotes || ""
-                        })
+                            })
                             .then(function (res) {
                                 if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "End and add failed.");
+                                    showModalFeedback("serviceRouteModal", res && res.error ? res.error : "End and add failed.", true);
                                     return;
                                 }
                                 closeModal("serviceRouteModal");
+                                if (res.warning) {
+                                    window.alert(res.warning);
+                                }
                                 queueLiveSync();
                             });
                     }

@@ -1,4 +1,5 @@
 @using FastQ.Web.Services
+@using System.Web
 @{
     Layout = null;
     var providerTodayUrl = Url.Action("Today", "Provider");
@@ -13,6 +14,9 @@
     var entities = Request.Cookies["fq_user_entities"] == null ? "" : Request.Cookies["fq_user_entities"].Value;
     var isSessionTimeout = (Session["fq_current_entity"] == null || Session["fq_current_entity"].ToString() == "0");
     var returnURL = Request["path"] == null ? "/" : Request["path"];
+    var appRelativeReturnUrl = string.IsNullOrWhiteSpace(returnURL)
+        ? Url.Content("~/")
+        : Url.Content("~" + (returnURL.StartsWith("/") ? returnURL : "/" + returnURL));
 }
 <!DOCTYPE html>
 <html>
@@ -247,7 +251,7 @@
                         foreach (var item in entities.Split(',').ToList())
                         {
                             var eid = item.Split(':')[0];
-                            <a href="@returnURL?eid=@eid" class="btn secondary btn-action-edit" style="margin-right:10px">@item.Split(':')[1]</a>
+                            <a href="@(appRelativeReturnUrl + (appRelativeReturnUrl.Contains("?") ? "&" : "?") + "eid=" + eid)" class="btn secondary btn-action-edit" style="margin-right:10px">@item.Split(':')[1]</a>
                         }
                     }
                  }
