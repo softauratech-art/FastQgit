@@ -771,8 +771,8 @@
         (function () {
             var reopenOnError = @(Model.FeedbackIsError ? "true" : "false");
             var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
-            var addAppointmentUrl = "@Url.Action("AddAppointment", "Calendar")";
-            var addWalkinUrl = "@Url.Action("AddWalkin", "Calendar")";
+            var addAppointmentUrl = "@Url.Action("AddAppointment", "Provider")";
+            var addWalkinUrl = "@Url.Action("AddWalkin", "Provider")";
             var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
             var endServiceUrl = "@Url.Action("EndService", "Provider")";
             var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
@@ -875,7 +875,21 @@
                     headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
                     credentials: "same-origin",
                     body: new URLSearchParams(data).toString()
-                }).then(function (r) { return r.json(); });
+                }).then(function (r) {
+                    return r.text().then(function (text) {
+                        try {
+                            return JSON.parse(text);
+                        } catch (err) {
+                            console.error("Calendar postForm JSON parse failed.", {
+                                url: url,
+                                status: r.status,
+                                bodyPreview: (text || "").slice(0, 500),
+                                error: err
+                            });
+                            throw err;
+                        }
+                    });
+                });
             }
 
             function getJson(url) {
