@@ -785,6 +785,7 @@
             var validateReferenceUrl = "@Url.Action("ValidateReference", "Calendar")";
             var validateCustomerTimeUrl = "@Url.Action("ValidateCustomerTimeSelection", "Calendar")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
+            var selectedCalendarDate = "@modalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)";
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
@@ -1316,14 +1317,22 @@
                     return Promise.resolve();
                 }
 
+                var currentDateValue = dateSelect.getAttribute("data-current-value") || dateSelect.value || "";
                 var dateOptions = getScheduleDateOptions(details);
                 setSelectValues(dateSelect, dateOptions, "Select date");
 
                 var selectedDate = "";
                 if (dateOptions.length > 0) {
-                    selectedDate = dateOptions[0].value;
+                    if (currentDateValue && dateOptions.some(function (o) { return o.value === currentDateValue; })) {
+                        selectedDate = currentDateValue;
+                    } else if (selectedCalendarDate && dateOptions.some(function (o) { return o.value === selectedCalendarDate; })) {
+                        selectedDate = selectedCalendarDate;
+                    } else {
+                        selectedDate = dateOptions[0].value;
+                    }
                     dateSelect.value = selectedDate;
                 }
+                dateSelect.setAttribute("data-current-value", selectedDate);
 
                 return refreshEntryModalTimeOptions(prefix);
             }
@@ -1385,6 +1394,7 @@
                 }
                 var queueId = queueSelect ? (queueSelect.value || "") : "";
                 var selectedDate = dateSelect.value || "";
+                dateSelect.setAttribute("data-current-value", selectedDate);
                 if (!queueId || !selectedDate) {
                     setSelectValues(timeSelect, [], "Select time");
                     return Promise.resolve();

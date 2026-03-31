@@ -665,6 +665,9 @@ namespace FastQ.Data.Db
                         ? (JToken)new JValue(appointment.ServiceId.Value)
                         : JValue.CreateNull(),
                     ["CONTACTTYPE"] = appointment.ContactType,
+                    ["MEETINGURL"] = string.IsNullOrWhiteSpace(appointment.MeetingUrl)
+                        ? JValue.CreateNull()
+                        : (JToken)new JValue(appointment.MeetingUrl.Trim()),
                     ["MOREINFO"] = appointment.MoreInfo,
                     ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy", CultureInfo.InvariantCulture).ToUpperInvariant(),
                     ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay),
