@@ -387,14 +387,14 @@
             </div>
         </div>
     </div>
-    <button class="icon-btn" type="button" aria-label="Support">
+    <button class="icon-btn" type="button" aria-label="Support" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 11a8 8 0 0 1 16 0v5"></path>
             <path d="M4 16a2 2 0 0 0 2 2h2v-5H6a2 2 0 0 0-2 2Z"></path>
             <path d="M20 16a2 2 0 0 1-2 2h-2v-5h2a2 2 0 0 1 2 2Z"></path>
         </svg>
     </button>
-    <button class="icon-btn" type="button" aria-label="User menu">
+    <button class="icon-btn" type="button" aria-label="User menu" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="8" r="3.5"></circle>
             <path d="M5 20c1.5-4 12.5-4 14 0"></path>
@@ -559,7 +559,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancelled</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
                                     </div>
                                 </td>
                             </tr>
@@ -676,7 +676,7 @@
                                                 data-phone="@row.Phone">
                                             Info
                                         </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancelled</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
                                     </div>
                                 </td>
                             </tr>
@@ -929,7 +929,6 @@
       setSelectOptions(document.getElementById(prefix + "ContactType"), details && details.contactOptions ? details.contactOptions : [], "Select contact type");
       setSelectOptions(document.getElementById(prefix + "RefValue"), details && details.refOptions ? details.refOptions : [], "Select reference");
       syncReferenceInputMeta(prefix);
-      syncMeetingUrlField(prefix);
     }
 
     function loadEntryQueueDetails(prefix, queueCode) {
@@ -989,7 +988,6 @@
       setCustomerLookupState(prefix, false, null);
       resetPermitValidation(prefix);
       syncReferenceInputMeta(prefix);
-      syncMeetingUrlField(prefix);
     }
 
     function getReferenceFieldMeta(code) {
@@ -1270,21 +1268,6 @@
         customerLookupTimers[timerKey] = 0;
         lookupCustomerByEmail(prefix);
       }, 700);
-    }
-
-    function syncMeetingUrlField(prefix) {
-      var contactType = document.getElementById(prefix + "ContactType");
-      var meetingRow = document.getElementById(prefix + "MeetingUrlRow");
-      var meetingUrl = document.getElementById(prefix + "MeetingUrl");
-      if (!contactType || !meetingRow || !meetingUrl) {
-        return;
-      }
-      var isVirtual = contactType.value === "OM";
-      meetingRow.style.display = isVirtual ? "grid" : "none";
-      meetingUrl.required = isVirtual;
-      if (!isVirtual) {
-        meetingUrl.value = "";
-      }
     }
 
     function parseIsoDurationToMinutes(text) {
@@ -3032,9 +3015,7 @@
     var addApptContactType = document.getElementById("addApptContactType");
     if (addApptContactType) {
       addApptContactType.addEventListener("change", function () {
-        syncMeetingUrlField("addAppt");
       });
-      syncMeetingUrlField("addAppt");
     }
     var addApptRefValue = document.getElementById("addApptRefValue");
     if (addApptRefValue) {
@@ -3082,9 +3063,7 @@
     var addWalkinContactType = document.getElementById("addWalkinContactType");
     if (addWalkinContactType) {
       addWalkinContactType.addEventListener("change", function () {
-        syncMeetingUrlField("addWalkin");
       });
-      syncMeetingUrlField("addWalkin");
     }
     var addWalkinRefValue = document.getElementById("addWalkinRefValue");
     if (addWalkinRefValue) {
@@ -3141,7 +3120,7 @@
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
           startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
-          meetingUrl: document.getElementById("addApptMeetingUrl") ? document.getElementById("addApptMeetingUrl").value : "",
+          meetingUrl: "",
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
 
@@ -3196,7 +3175,7 @@
             document.getElementById("addWalkinFirstName") ? document.getElementById("addWalkinFirstName").value : "",
             document.getElementById("addWalkinLastName") ? document.getElementById("addWalkinLastName").value : ""),
           phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
-          meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
+          meetingUrl: "",
           notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
         };
 

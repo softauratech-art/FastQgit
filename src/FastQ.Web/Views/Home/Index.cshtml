@@ -1,7 +1,4 @@
 @using FastQ.Web.Services
-@{
-    var providerTodayUrl = Url.Action("Today", "Provider");
-}
 
 @section PageHeader {
     <div>
@@ -28,7 +25,7 @@
             <span class="pill">Real-time queue</span>
         </div>
         <p class="muted">Manage arrivals, service start, completion, and transfers while customers see every change.</p>
-        <a class="btn secondary" href="@providerTodayUrl">Go to Provider Today</a>
+        <a class="btn secondary" href="@Url.Action("Today", "Provider")">Go to Provider Today</a>
     </div>
     <div class="card">
         <div class="card-header">
@@ -36,7 +33,7 @@
             <span class="pill">Queue settings</span>
         </div>
         <p class="muted">Manage queue configuration, review provider roster, and run maintenance actions.</p>
-        <a class="btn secondary" href="/Admin/Dashboard">Open Admin</a>
+        <a class="btn secondary" href="@Url.Action("Dashboard", "Admin")">Open Admin</a>
     </div>
     <div class="card">
         <div class="card-header">
@@ -44,7 +41,7 @@
             <span class="pill">Live metrics</span>
         </div>
         <p class="muted">Track provider activity, cancellations, and daily performance with live updates.</p>
-        <a class="btn secondary" href="/Reporting/Overview">Open Reporting</a>
+        <a class="btn secondary" href="@Url.Action("Overview", "Reporting")">Open Reporting</a>
     </div>
 
 </div>

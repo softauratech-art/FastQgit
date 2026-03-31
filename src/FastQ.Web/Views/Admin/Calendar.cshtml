@@ -632,7 +632,7 @@
                                     data-phone="@item.Phone">
                                 Info
                             </button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancelled</button>
+                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
                         </div>
                     </div>
                 }
@@ -1055,7 +1055,6 @@
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
                 syncReferenceInputMeta(prefix);
-                syncMeetingUrlField(prefix);
                 if (prefix === "addAppt") {
                     populateEntryModalDateTime(prefix, details);
                 }
@@ -1643,7 +1642,6 @@
                 setCustomerLookupState(prefix, false, null);
                 resetPermitValidation(prefix);
                 syncReferenceInputMeta(prefix);
-                syncMeetingUrlField(prefix);
             }
 
             function setFieldDisabled(id, disabled) {
@@ -1770,21 +1768,6 @@
                     customerLookupTimers[timerKey] = 0;
                     lookupCustomerByEmail(prefix);
                 }, 700);
-            }
-
-            function syncMeetingUrlField(prefix) {
-                var contactType = document.getElementById(prefix + "ContactType");
-                var meetingRow = document.getElementById(prefix + "MeetingUrlRow");
-                var meetingUrl = document.getElementById(prefix + "MeetingUrl");
-                if (!contactType || !meetingRow || !meetingUrl) {
-                    return;
-                }
-                var isVirtual = contactType.value === "OM";
-                meetingRow.style.display = isVirtual ? "grid" : "none";
-                meetingUrl.required = isVirtual;
-                if (!isVirtual) {
-                    meetingUrl.value = "";
-                }
             }
 
             function getReferenceFieldMeta(code) {
@@ -2164,9 +2147,7 @@
             var addApptContactType = document.getElementById("addApptContactType");
             if (addApptContactType) {
                 addApptContactType.addEventListener("change", function () {
-                    syncMeetingUrlField("addAppt");
                 });
-                syncMeetingUrlField("addAppt");
             }
             var addApptRefValue = document.getElementById("addApptRefValue");
             if (addApptRefValue) {
@@ -2214,9 +2195,7 @@
             var addWalkinContactType = document.getElementById("addWalkinContactType");
             if (addWalkinContactType) {
                 addWalkinContactType.addEventListener("change", function () {
-                    syncMeetingUrlField("addWalkin");
                 });
-                syncMeetingUrlField("addWalkin");
             }
             var addWalkinRefValue = document.getElementById("addWalkinRefValue");
             if (addWalkinRefValue) {
@@ -2273,7 +2252,7 @@
                         phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
                         appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
                         startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
-                        meetingUrl: document.getElementById("addApptMeetingUrl") ? document.getElementById("addApptMeetingUrl").value : "",
+                        meetingUrl: "",
                         notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
                     };
 
@@ -2328,7 +2307,7 @@
                             document.getElementById("addWalkinFirstName") ? document.getElementById("addWalkinFirstName").value : "",
                             document.getElementById("addWalkinLastName") ? document.getElementById("addWalkinLastName").value : ""),
                         phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
-                        meetingUrl: document.getElementById("addWalkinMeetingUrl") ? document.getElementById("addWalkinMeetingUrl").value : "",
+                        meetingUrl: "",
                         notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
                     };
 

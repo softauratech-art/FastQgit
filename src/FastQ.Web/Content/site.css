@@ -351,7 +351,7 @@ form {
     border-radius: 12px;
     border: 1px solid var(--border);
     background: #fff;
-    min-width: 220px;
+    min-width: 360px;
 }
 
 .search-wrap input {

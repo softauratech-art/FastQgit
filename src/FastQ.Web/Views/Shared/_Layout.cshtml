@@ -1,5 +1,4 @@
 @using FastQ.Web.Services
-@using System.Web
 @{
     Layout = null;
     var providerTodayUrl = Url.Action("Today", "Provider");
@@ -13,10 +12,10 @@
     var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
     var entities = Request.Cookies["fq_user_entities"] == null ? "" : Request.Cookies["fq_user_entities"].Value;
     var isSessionTimeout = (Session["fq_current_entity"] == null || Session["fq_current_entity"].ToString() == "0");
-    var returnURL = Request["path"] == null ? "/" : Request["path"];
-    var appRelativeReturnUrl = string.IsNullOrWhiteSpace(returnURL)
-        ? Url.Content("~/")
-        : Url.Content("~" + (returnURL.StartsWith("/") ? returnURL : "/" + returnURL));
+    var returnURL = Request["path"] == null ? @Url.Action("Index", "Home") : Request["path"];
+    //var appRelativeReturnUrl = string.IsNullOrWhiteSpace(returnURL)
+    //    ? Url.Content("~/")
+    //    : Url.Content("~" + (returnURL.StartsWith("/") ? returnURL : "/" + returnURL));
 }
 <!DOCTYPE html>
 <html>
@@ -91,7 +90,7 @@
         <aside class="drawer">
             <div class="brand">
                 <div class="brand-top">
-                    <a href="/" class="logo-container">
+                    <a href="@Url.Content("~")" class="logo-container">
                         <img src="~/Content/logo-wd.png" alt="Logo" class="logo">
                     </a>
                     @*<div class="Xlogo-mark"></div>*@
@@ -156,7 +155,7 @@
                                 <i class="bi bi-people"></i>
                                 <span class="nav-text">Users</span>
                             </a>
-                            <a class="nav-link" href="/">
+                            <a class="nav-link" href="ComingSoon.html" target="_blank">
                                 <i class="bi bi-people"></i>
                                 <span class="nav-text">Holidays</span>
                             </a>
@@ -251,7 +250,7 @@
                         foreach (var item in entities.Split(',').ToList())
                         {
                             var eid = item.Split(':')[0];
-                            <a href="@(appRelativeReturnUrl + (appRelativeReturnUrl.Contains("?") ? "&" : "?") + "eid=" + eid)" class="btn secondary btn-action-edit" style="margin-right:10px">@item.Split(':')[1]</a>
+                            <a href="@returnURL?eid=@eid" class="btn secondary btn-action-edit" style="margin-right:10px">@item.Split(':')[1]</a>
                         }
                     }
                  }
@@ -292,27 +291,17 @@
                 toggle.setAttribute("aria-label", collapsed ? "Expand navigation" : "Collapse navigation");
             });
 
-            //// Highlight the active link based on URL
-            //const currentPath = location.pathname;
-            //const navLinks = document.querySelectorAll('.nav-link');
-            //navLinks.forEach(l => {
-            //    l.classList.remove('active');
-            //    if (l.pathname === currentPath) {
-            //        l.classList.add('active');
-            //    }
-            //});
-
             // Get all navigation links
             const navLinks = document.querySelectorAll('.nav-link');
             const currentPath = window.location.pathname;
             navLinks.forEach(link => {
                 link.classList.remove('active');
                 const linkPath = new URL(link.href).pathname;
-                if (currentPath.startsWith(linkPath) && linkPath !== "/") {
+                if (currentPath.startsWith(linkPath) && linkPath != @Url.Content("~/")) {
                     link.classList.add('active');
                 }
                 // Special handling for the root path if needed, to avoid matching everything
-                if (linkPath === "/" && currentPath === "/") {
+                if (linkPath == @Url.Content("~/") && currentPath == @Url.Content("~/")) {
                     link.classList.add('active');
                 }
             });
@@ -377,7 +366,7 @@
             if (state == "True" || state == "true")
                 document.getElementById('timeoutModal').classList.add('show');
         }
-        var newsession = "@(isSessionTimeout && entities.Length > 1)";   
+        var newsession = "@(isSessionTimeout && entities.Length > 1)";
         showTimeoutModal(newsession);
 
 </script>

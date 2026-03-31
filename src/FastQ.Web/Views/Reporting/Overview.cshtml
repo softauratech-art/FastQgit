@@ -13,12 +13,6 @@
     </div>
 }
 
-@*<div class="card">
-    <div class="eyebrow">Reporting</div>
-    <h2 class="page-title">Daily summary and provider activity</h2>
-    <p class="lead"></p>
-</div>*@
-
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Filters</h3>
@@ -90,7 +84,7 @@
             refresh: function () {
                 var queueId = document.getElementById("reportQueue").value;
                 $("#reportMsg").removeClass("error ok").text("Loading...");
-                $.getJSON("/Reporting/ReportingSnapshot", { locationId: window.FASTQ_CONTEXT.locationId, queueId: queueId })
+                $.getJSON("@Url.Action("ReportingSnapshot", "Reporting")", { locationId: window.FASTQ_CONTEXT.locationId, queueId: queueId })
                     .done(function (res) {
                         if (!res || !res.ok) {
                             $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");

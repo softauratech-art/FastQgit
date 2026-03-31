@@ -105,14 +105,14 @@
                             <div class="switch-group" style="border-bottom: none;">
                                 <label class="switch-label">Spanish</label>
                                 <label class="switch">
-                                    <input type="checkbox" value="ES" name="Language" id="OtherLanguageES"  @(Model.OtherLanguage.Contains("ES") ? "checked" : "")  />
+                                    <input type="checkbox" value="ES" name="Language" id="OtherLanguageES"  @(Model.OtherLanguage != null && Model.OtherLanguage.Contains("ES") ? "checked" : "")  />
                                     <span class="slider"></span>
                                 </label>
                             </div>
                             <div class="switch-group" style="border-bottom:">
                                 <label class = "switch-label">Creole</label>
                                 <label class="switch">
-                                    <input type="checkbox" value="CP" name="Language" id="OtherLanguageCP"  @(Model.OtherLanguage.Contains("CP") ? "checked" : "") />
+                                    <input type="checkbox" value="CP" name="Language" id="OtherLanguageCP"  @(Model.OtherLanguage != null && Model.OtherLanguage.Contains("CP") ? "checked" : "") />
                                     <span class="slider"></span>
                                 </label>
                             </div>

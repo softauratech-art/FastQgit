@@ -573,6 +573,20 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
     IF SQL%ROWCOUNT = 0 THEN
       RAISE_APPLICATION_ERROR(-20001, 'No service transaction found for source.');
     END IF;
+
+    IF p_src_type = 'A' THEN
+      UPDATE APPOINTMENTS
+         SET MEETINGURL_HOST = p_webex_url,
+             STAMPUSER = NVL(p_stampuser, 'web'),
+             STAMPDATE = SYSDATE
+       WHERE APPOINTMENT_ID = p_src_id;
+    ELSIF p_src_type = 'W' THEN
+      UPDATE WALKINS
+         SET MEETINGURL_HOST = p_webex_url,
+             STAMPUSER = NVL(p_stampuser, 'web'),
+             STAMPDATE = SYSDATE
+       WHERE WALKIN_ID = p_src_id;
+    END IF;
   END SAVE_SERVICE_INFO;
 END FQ_PROCS;
 /

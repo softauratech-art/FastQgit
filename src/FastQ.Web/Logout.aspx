@@ -30,7 +30,7 @@
             <nav class="drawer-nav">
                 <div class="nav-section">
                     <div class="nav-title">Overview</div>
-                    <a class="nav-link active" href="/" title="Dashboard" aria-label="Dashboard">
+                    <a class="nav-link active" href="Home" title="Dashboard" aria-label="Dashboard">
                         <i class="bi bi-house"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
