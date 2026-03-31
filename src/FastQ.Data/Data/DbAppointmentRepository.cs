@@ -378,7 +378,7 @@ namespace FastQ.Data.Db
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
                             ContactType = ReadField(reader, "CONTACTTYPE"),
                             RefValue = ReadField(reader, "REF_VALUE"),
-                            MeetingUrl = ReadField(reader, "MEETINGURL"),
+                            MeetingUrl = ReadMeetingUrl(reader),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });
@@ -468,6 +468,17 @@ namespace FastQ.Data.Db
             return false;
         }
 
+        private static string ReadMeetingUrl(IDataRecord record)
+        {
+            var hostUrl = ReadField(record, "MEETINGURL_HOST");
+            if (!string.IsNullOrWhiteSpace(hostUrl))
+            {
+                return hostUrl;
+            }
+
+            return ReadField(record, "MEETINGURL");
+        }
+
         private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> locationByQueue)
         {
             var apptId = Convert.ToInt64(record["APPOINTMENT_ID"]);
@@ -500,7 +511,7 @@ namespace FastQ.Data.Db
                 EndTime = endTime,
                 Status = status,
                 ConfirmationCode = record["CONFCODE"]?.ToString(),
-                MeetingUrl = record["MEETINGURL"]?.ToString(),
+                MeetingUrl = ReadMeetingUrl(record),
                 LanguagePreference = record["LANGUAGE_PREF"]?.ToString(),
                 CreatedBy = record["CREATEDBY"]?.ToString(),
                 CreatedOnUtc = DateTime.SpecifyKind(createdOn, DateTimeKind.Utc),
