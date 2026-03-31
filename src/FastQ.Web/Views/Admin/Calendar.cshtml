@@ -1061,7 +1061,13 @@
                         populateEntryModalOptions(prefix, details);
                         populateEntryModalDateTime(prefix, details);
                     })
-                    .catch(function () {
+                    .catch(function (err) {
+                        console.error("Calendar add-entry queue details load failed.", {
+                            prefix: prefix,
+                            queueCode: queueCode,
+                            url: getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode),
+                            error: err
+                        });
                         activeEntryQueueDetails[prefix] = null;
                         populateEntryModalOptions(prefix, null);
                         populateEntryModalDateTime(prefix, null);
@@ -1078,7 +1084,12 @@
                     .then(function (res) {
                         setSelectOptions(queueSelect, res && res.ok ? res.data : [], "Select queue");
                     })
-                    .catch(function () {
+                    .catch(function (err) {
+                        console.error("Calendar add-entry queue list load failed.", {
+                            prefix: prefix,
+                            url: getTransferQueuesUrl,
+                            error: err
+                        });
                         setSelectOptions(queueSelect, [], "Select queue");
                     });
             }
@@ -1269,20 +1280,30 @@
             }
 
             function populateEntryModalDateTime(prefix, details) {
-                if (prefix !== "addAppt") {
+                var dateSelect = document.getElementById(prefix + "Date");
+                var timeSelect = document.getElementById(prefix + "Time");
+                if (!dateSelect || !timeSelect) {
                     return Promise.resolve();
                 }
 
-                populateEntryModalDateOptions(details);
+                var dateOptions = getScheduleDateOptions(details);
+                setSelectValues(dateSelect, dateOptions, "Select date");
+
+                var selectedDate = "";
+                if (dateOptions.length > 0) {
+                    selectedDate = dateOptions[0].value;
+                    dateSelect.value = selectedDate;
+                }
+
                 return refreshEntryModalTimeOptions(prefix);
             }
 
-            function populateEntryModalTimeOptions(details, selectedDateValue) {
-                var timeSelect = document.getElementById("addApptTime");
+            function populateEntryModalTimeOptions(prefix, details, selectedDateValue) {
+                var timeSelect = document.getElementById(prefix + "Time");
                 if (!timeSelect) {
                     return Promise.resolve();
                 }
-                var queueSelect = document.getElementById("addApptQueueId");
+                var queueSelect = document.getElementById(prefix + "QueueId");
                 var queueId = queueSelect ? (queueSelect.value || "") : "";
                 if (!queueId || !selectedDateValue) {
                     setSelectValues(timeSelect, [], "Select time");
@@ -1291,9 +1312,9 @@
 
                 return getJson(getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(queueId) + "&theDate=" + encodeURIComponent(selectedDateValue))
                     .then(function (res) {
-                        var selectedDate = new Date(selectedDateValue + "T00:00:00");
-                        var minimumFutureMinutes = getMinimumFutureMinutes(selectedDate);
-                        var options = res && res.ok
+                        var selectedDateValueObj = new Date(selectedDateValue + "T00:00:00");
+                        var minimumFutureMinutes = getMinimumFutureMinutes(selectedDateValueObj);
+                        var timeOptions = res && res.ok
                             ? (res.data || []).map(function (slot) {
                                 var slotValue = slot.slotBegin || "";
                                 var totalMinutes = parseClockMinutes(slotValue);
@@ -1305,26 +1326,40 @@
                                 return (parseClockMinutes(a.value) || 0) - (parseClockMinutes(b.value) || 0);
                             })
                             : [];
-                        setSelectValues(timeSelect, options, "Select time");
-                        if (options.length > 0) {
-                            timeSelect.value = options[0].value;
+                        setSelectValues(timeSelect, timeOptions, "Select time");
+                        if (timeOptions.length > 0) {
+                            timeSelect.value = timeOptions[0].value;
                         }
-                        return validateCustomerTimeSelection("addAppt");
+                        return validateCustomerTimeSelection(prefix);
                     })
-                    .catch(function () {
+                    .catch(function (err) {
+                        console.error("Calendar add-entry time slot load failed.", {
+                            prefix: prefix,
+                            queueId: queueId,
+                            selectedDate: selectedDateValue,
+                            url: getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(queueId) + "&theDate=" + encodeURIComponent(selectedDateValue),
+                            error: err
+                        });
                         setSelectValues(timeSelect, [], "Select time");
-                        setTimeSelectionState("addAppt", false, false, "Could not load available time slots.");
+                        setTimeSelectionState(prefix, false, false, "Could not load available time slots.");
                         showModalFeedback("addAppointmentModal", "Could not load available time slots.", true);
                     });
             }
 
             function refreshEntryModalTimeOptions(prefix) {
-                if (prefix !== "addAppt") {
+                var queueSelect = document.getElementById(prefix + "QueueId");
+                var dateSelect = document.getElementById(prefix + "Date");
+                var timeSelect = document.getElementById(prefix + "Time");
+                if (!dateSelect || !timeSelect) {
                     return Promise.resolve();
                 }
-
-                var dateSelect = document.getElementById("addApptDate");
-                return populateEntryModalTimeOptions(activeEntryQueueDetails[prefix], dateSelect ? (dateSelect.value || "") : "");
+                var queueId = queueSelect ? (queueSelect.value || "") : "";
+                var selectedDate = dateSelect.value || "";
+                if (!queueId || !selectedDate) {
+                    setSelectValues(timeSelect, [], "Select time");
+                    return Promise.resolve();
+                }
+                return populateEntryModalTimeOptions(prefix, activeEntryQueueDetails[prefix], selectedDate);
             }
 
             function setTimeSelectionState(prefix, pending, valid, message) {
@@ -1376,7 +1411,13 @@
                         showModalFeedback("addAppointmentModal", message, true);
                         return false;
                     })
-                    .catch(function () {
+                    .catch(function (err) {
+                        console.error("Calendar add-entry customer time validation failed.", {
+                            prefix: prefix,
+                            dateValue: dateValue,
+                            timeValue: timeValue,
+                            error: err
+                        });
                         if (!timeSelectionState[prefix] || timeSelectionState[prefix].seq !== requestSeq) {
                             return false;
                         }
