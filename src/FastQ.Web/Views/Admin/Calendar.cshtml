@@ -1192,6 +1192,22 @@
                 return value < 10 ? "0" + value : String(value);
             }
 
+            function parseClockMinutes(value) {
+                var text = to24Hour(value);
+                var parts = text.split(":");
+                if (parts.length !== 2) {
+                    return null;
+                }
+
+                var hour = parseInt(parts[0], 10);
+                var minute = parseInt(parts[1], 10);
+                if (isNaN(hour) || isNaN(minute)) {
+                    return null;
+                }
+
+                return (hour * 60) + minute;
+            }
+
             function getScheduleDateOptions(details) {
                 var options = [];
                 var schedules = details && details.schedules ? details.schedules : [];
