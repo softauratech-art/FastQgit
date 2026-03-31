@@ -1314,6 +1314,7 @@
                     .catch(function () {
                         setSelectValues(timeSelect, [], "Select time");
                         setTimeSelectionState("addAppt", false, false, "Could not load available time slots.");
+                        showModalFeedback("addAppointmentModal", "Could not load available time slots.", true);
                     });
             }
 
@@ -1326,56 +1327,61 @@
                 return populateEntryModalTimeOptions(activeEntryQueueDetails[prefix], dateSelect ? (dateSelect.value || "") : "");
             }
 
-            function setTimeSelectionState(kind, pending, valid, message) {
-                timeSelectionState[kind] = timeSelectionState[kind] || { seq: 0, pending: false, valid: true, message: "" };
-                timeSelectionState[kind].pending = !!pending;
-                timeSelectionState[kind].valid = !!valid;
-                timeSelectionState[kind].message = message || "";
+            function setTimeSelectionState(prefix, pending, valid, message) {
+                timeSelectionState[prefix] = timeSelectionState[prefix] || { seq: 0, pending: false, valid: true, message: "" };
+                timeSelectionState[prefix].pending = !!pending;
+                timeSelectionState[prefix].valid = !!valid;
+                timeSelectionState[prefix].message = message || "";
             }
 
-            function validateCustomerTimeSelection(kind) {
-                if (kind !== "addAppt") {
+            function validateCustomerTimeSelection(prefix) {
+                if (prefix !== "addAppt") {
                     return Promise.resolve(true);
                 }
 
-                var emailInput = document.getElementById("addApptEmail");
-                var phoneInput = document.getElementById("addApptPhone");
-                var dateInput = document.getElementById("addApptDate");
-                var timeInput = document.getElementById("addApptTime");
-                var email = emailInput ? (emailInput.value || "").trim() : "";
-                var phone = phoneInput ? (phoneInput.value || "").trim() : "";
-                var appointmentDate = dateInput ? (dateInput.value || "").trim() : "";
-                var startTime = timeInput ? (timeInput.value || "").trim() : "";
-                if (!appointmentDate || !startTime || (!email && !phone)) {
-                    setTimeSelectionState(kind, false, true, "");
+                var email = document.getElementById(prefix + "Email");
+                var phone = document.getElementById(prefix + "Phone");
+                var date = document.getElementById(prefix + "Date");
+                var time = document.getElementById(prefix + "Time");
+                var emailValue = email ? (email.value || "").trim() : "";
+                var phoneValue = phone ? (phone.value || "").trim() : "";
+                var dateValue = date ? (date.value || "").trim() : "";
+                var timeValue = time ? (time.value || "").trim() : "";
+                if (!dateValue || !timeValue || (!emailValue && !phoneValue)) {
+                    setTimeSelectionState(prefix, false, true, "");
+                    clearModalFeedback("addAppointmentModal");
                     return Promise.resolve(true);
                 }
 
-                timeSelectionState[kind] = timeSelectionState[kind] || { seq: 0, pending: false, valid: true, message: "" };
-                timeSelectionState[kind].seq += 1;
-                var requestSeq = timeSelectionState[kind].seq;
-                setTimeSelectionState(kind, true, false, "Checking customer availability...");
+                timeSelectionState[prefix] = timeSelectionState[prefix] || { seq: 0, pending: false, valid: true, message: "" };
+                timeSelectionState[prefix].seq += 1;
+                var requestSeq = timeSelectionState[prefix].seq;
+                setTimeSelectionState(prefix, true, false, "Checking customer availability...");
                 return getJson(validateCustomerTimeUrl
-                    + "?email=" + encodeURIComponent(email)
-                    + "&phone=" + encodeURIComponent(phone)
-                    + "&appointmentDate=" + encodeURIComponent(appointmentDate)
-                    + "&startTime=" + encodeURIComponent(startTime))
+                    + "?email=" + encodeURIComponent(emailValue)
+                    + "&phone=" + encodeURIComponent(phoneValue)
+                    + "&appointmentDate=" + encodeURIComponent(dateValue)
+                    + "&startTime=" + encodeURIComponent(timeValue))
                     .then(function (res) {
-                        if (!timeSelectionState[kind] || timeSelectionState[kind].seq !== requestSeq) {
+                        if (!timeSelectionState[prefix] || timeSelectionState[prefix].seq !== requestSeq) {
                             return false;
                         }
                         if (res && res.ok) {
-                            setTimeSelectionState(kind, false, true, "");
+                            setTimeSelectionState(prefix, false, true, "");
+                            clearModalFeedback("addAppointmentModal");
                             return true;
                         }
-                        setTimeSelectionState(kind, false, false, res && res.error ? res.error : "Customer already has an appointment at this time.");
+                        var message = res && res.error ? res.error : "Customer already has an appointment at this time.";
+                        setTimeSelectionState(prefix, false, false, message);
+                        showModalFeedback("addAppointmentModal", message, true);
                         return false;
                     })
                     .catch(function () {
-                        if (!timeSelectionState[kind] || timeSelectionState[kind].seq !== requestSeq) {
+                        if (!timeSelectionState[prefix] || timeSelectionState[prefix].seq !== requestSeq) {
                             return false;
                         }
-                        setTimeSelectionState(kind, false, false, "Could not validate customer availability.");
+                        setTimeSelectionState(prefix, false, false, "Could not validate customer availability.");
+                        showModalFeedback("addAppointmentModal", "Could not validate customer availability.", true);
                         return false;
                     });
             }
