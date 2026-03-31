@@ -771,19 +771,19 @@
         (function () {
             var reopenOnError = @(Model.FeedbackIsError ? "true" : "false");
             var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
-            var addAppointmentUrl = "@Url.Action("AddAppointment", "Provider")";
-            var addWalkinUrl = "@Url.Action("AddWalkin", "Provider")";
+            var addAppointmentUrl = "@Url.Action("AddAppointment", "Calendar")";
+            var addWalkinUrl = "@Url.Action("AddWalkin", "Calendar")";
             var transferUrl = "@Url.Action("TransferAppointment", "Provider")";
             var endServiceUrl = "@Url.Action("EndService", "Provider")";
             var saveServiceInfoUrl = "@Url.Action("SaveServiceInfo", "Provider")";
             var getTransferQueuesUrl = "@Url.Action("GetTransferQueues", "Provider")";
             var getTransferServicesUrl = "@Url.Action("GetTransferServices", "Provider")";
-            var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Provider")";
-            var getQueueOpenSlotsUrl = "@Url.Action("GetQueueOpenSlots", "Provider")";
-            var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Provider")";
+            var getQueueDetailsUrl = "@Url.Action("GetQueueDetails", "Calendar")";
+            var getQueueOpenSlotsUrl = "@Url.Action("GetQueueOpenSlots", "Calendar")";
+            var lookupCustomerByEmailUrl = "@Url.Action("LookupCustomerByEmail", "Calendar")";
             var validatePermitUrl = "@Url.Action("ValidatePermit", "Provider")";
-            var validateReferenceUrl = "@Url.Action("ValidateReference", "Provider")";
-            var validateCustomerTimeUrl = "@Url.Action("ValidateCustomerTimeSelection", "Provider")";
+            var validateReferenceUrl = "@Url.Action("ValidateReference", "Calendar")";
+            var validateCustomerTimeUrl = "@Url.Action("ValidateCustomerTimeSelection", "Calendar")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;

@@ -4,6 +4,8 @@ using System.Web.Mvc;
 using FastQ.Web.Attributes;
 using FastQ.Web.Helpers;
 using FastQ.Web.Services;
+using System.Diagnostics;
+using System.Linq;
 
 namespace FastQ.Web.Controllers
 {
@@ -11,11 +13,15 @@ namespace FastQ.Web.Controllers
     public class CalendarController : Controller
     {
         private readonly CalendarService _service;
+        private readonly ProviderService _providerService;
+        private readonly CustomerService _customerService;
         private readonly AuthService _auth;
 
         public CalendarController()
         {
             _service = new CalendarService();
+            _providerService = new ProviderService();
+            _customerService = new CustomerService();
             _auth = new AuthService();
         }
 
@@ -36,6 +42,113 @@ namespace FastQ.Web.Controllers
             ViewBag.ProviderId = userId ?? string.Empty;
             ViewBag.ServiceAccess = _auth.GetServicePageAccess();
             return View("~/Views/Admin/Calendar.cshtml", model);
+        }
+
+        [HttpGet]
+        public JsonResult GetQueueDetails(string queueId)
+        {
+            if (!long.TryParse(queueId, out var parsedQueueId) || parsedQueueId <= 0)
+                return Json(new { ok = false, error = "queueId is required" }, JsonRequestBehavior.AllowGet);
+
+            var details = _providerService.GetQueueDetailOptions(parsedQueueId);
+            if (details == null)
+            {
+                Trace.TraceWarning("Calendar.GetQueueDetails queueId={0}: service returned null details.", parsedQueueId);
+                return Json(new { ok = false, error = "Queue details not found" }, JsonRequestBehavior.AllowGet);
+            }
+
+            return Json(new
+            {
+                ok = true,
+                data = new
+                {
+                    queueId = details.QueueId,
+                    services = details.Services.Select(s => new { code = s.Code, name = s.Name }).ToList(),
+                    contactOptions = details.ContactOptions.Select(c => new { code = c.Code, name = c.Name }).ToList(),
+                    refOptions = details.RefOptions.Select(r => new { code = r.Code, name = r.Name }).ToList(),
+                    schedules = details.Schedules.Select(s => new
+                    {
+                        scheduleId = s.ScheduleId,
+                        dateBegin = s.DateBegin,
+                        dateEnd = s.DateEnd,
+                        openTime = s.OpenTime,
+                        closeTime = s.CloseTime,
+                        intervalTime = s.IntervalTime,
+                        weeklySch = s.WeeklySchedule,
+                        availableResources = s.AvailableResources
+                    }).ToList()
+                }
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetQueueOpenSlots(string queueId, string theDate)
+        {
+            if (!long.TryParse(queueId, out var parsedQueueId) || parsedQueueId <= 0)
+                return Json(new { ok = false, error = "queueId is required" }, JsonRequestBehavior.AllowGet);
+            if (!DateTime.TryParseExact((theDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                return Json(new { ok = false, error = "theDate is required" }, JsonRequestBehavior.AllowGet);
+
+            var slots = _customerService.GetQueueOpenSlots(parsedQueueId, parsedDate)
+                .OrderBy(s => s.SlotBegin)
+                .Select(s => new
+                {
+                    theDate = s.TheDate.ToString("yyyy-MM-dd"),
+                    queueId = s.QueueId,
+                    slotBegin = s.SlotBegin,
+                    slotEnd = s.SlotEnd,
+                    weeklySch = s.WeeklySchedule,
+                    intervalTime = s.IntervalTime,
+                    availableResources = s.AvailableResources
+                })
+                .ToList();
+
+            return Json(new { ok = true, data = slots }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult ValidateCustomerTimeSelection(string email, string phone, string appointmentDate, string startTime)
+        {
+            if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                return Json(new { ok = false, error = "Appointment date is required." }, JsonRequestBehavior.AllowGet);
+            if (!TryParseStartTime(startTime, out var parsedTime))
+                return Json(new { ok = false, error = "Start time is required." }, JsonRequestBehavior.AllowGet);
+
+            var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
+            var res = _customerService.ValidateCustomerTimeSelection(email, phone, localStart);
+            return Json(new { ok = res.Ok, error = res.Ok ? null : res.Error }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult LookupCustomerByEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return Json(new { ok = false, error = "email is required" }, JsonRequestBehavior.AllowGet);
+
+            var customer = _customerService.GetCustomerByEmail(email);
+            if (customer == null)
+                return Json(new { ok = true, found = false }, JsonRequestBehavior.AllowGet);
+
+            return Json(new
+            {
+                ok = true,
+                found = true,
+                data = new
+                {
+                    id = customer.Id,
+                    firstName = customer.FirstName ?? string.Empty,
+                    lastName = customer.LastName ?? string.Empty,
+                    phone = customer.Phone ?? string.Empty,
+                    email = customer.Email ?? string.Empty
+                }
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]
+        public JsonResult ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)
+        {
+            var res = _customerService.ValidateReference(referenceType, enterValue, streetNumber, streetName, streetType);
+            return Json(new { success = res.Ok, message = res.Ok ? "Validation Succeeded..." : res.Error, ok = res.Ok, error = res.Ok ? null : res.Error }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
