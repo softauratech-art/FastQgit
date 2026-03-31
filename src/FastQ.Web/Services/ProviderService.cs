@@ -193,7 +193,7 @@ namespace FastQ.Web.Services
                     ContactMethod = contact,
                     ContactTypeCode = a.ContactType,
                     RefValue = a.RefValue,
-                    MeetingUrl = a.MeetingUrl,
+                    MeetingUrl = NormalizeMeetingUrl(a.MeetingUrl),
                     StampUser = a.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
@@ -252,10 +252,31 @@ namespace FastQ.Web.Services
                     ContactMethod = GetContactMethodText(r.ContactType),
                     ContactTypeCode = r.ContactType,
                     RefValue = r.RefValue,
-                    MeetingUrl = r.MeetingUrl,
+                    MeetingUrl = NormalizeMeetingUrl(r.MeetingUrl),
                     StampUser = r.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
+        }
+
+        private static string NormalizeMeetingUrl(string value)
+        {
+            var trimmed = (value ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return string.Empty;
+            }
+
+            if (trimmed.StartsWith("//"))
+            {
+                return "https:" + trimmed;
+            }
+
+            if (trimmed.Contains("://"))
+            {
+                return trimmed;
+            }
+
+            return "https://" + trimmed.TrimStart('/');
         }
 
         public long? GetSourceQueueId(char srcType, long sourceId)
