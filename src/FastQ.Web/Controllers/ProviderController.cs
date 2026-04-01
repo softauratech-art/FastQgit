@@ -280,7 +280,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string languagePreference, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -315,6 +315,7 @@ namespace FastQ.Web.Controllers
                 phone,
                 contactType,
                 localStart,
+                languagePreference,
                 notes,
                 meetingUrl,
                 _auth.GetLoggedInWindowsUser());
@@ -326,7 +327,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string meetingUrl, string notes)
+        public JsonResult AddWalkin(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string languagePreference, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -353,6 +354,7 @@ namespace FastQ.Web.Controllers
                 resolvedCustomerName,
                 phone,
                 contactType,
+                languagePreference,
                 meetingUrl,
                 notes,
                 _auth.GetLoggedInWindowsUser());
@@ -415,7 +417,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string refValue, string notes)
+        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string refValue, string notes, string sourceAction)
         {
             if (!long.TryParse(appointmentId, out var srcId) || !long.TryParse(targetQueueId, out var queueId))
                 return Json(new { ok = false, error = "appointmentId and targetQueueId are required numeric values" });
@@ -423,10 +425,25 @@ namespace FastQ.Web.Controllers
             var normalizedSrc = string.IsNullOrWhiteSpace(srcType) ? "A" : srcType.Trim().ToUpperInvariant();
             if (normalizedSrc != "A" && normalizedSrc != "W")
                 return Json(new { ok = false, error = "srcType must be A or W" });
+            var normalizedSourceAction = string.IsNullOrWhiteSpace(sourceAction) ? "TRANSFER" : sourceAction.Trim().ToUpperInvariant();
+            if (normalizedSourceAction != "TRANSFER" && normalizedSourceAction != "REMOVE" && normalizedSourceAction != "END")
+                return Json(new { ok = false, error = "sourceAction must be TRANSFER, REMOVE, or END" });
             var sourceQueueId = _service.GetSourceQueueId(normalizedSrc[0], srcId);
             var transferPermissionError = ValidateActionPermission("transfer", sourceQueueId);
             if (!string.IsNullOrWhiteSpace(transferPermissionError))
                 return Json(new { ok = false, error = transferPermissionError });
+            if (normalizedSourceAction == "REMOVE")
+            {
+                var removePermissionError = ValidateActionPermission("remove", sourceQueueId);
+                if (!string.IsNullOrWhiteSpace(removePermissionError))
+                    return Json(new { ok = false, error = removePermissionError });
+            }
+            else if (normalizedSourceAction == "END")
+            {
+                var endPermissionError = ValidateActionPermission("end", sourceQueueId);
+                if (!string.IsNullOrWhiteSpace(endPermissionError))
+                    return Json(new { ok = false, error = endPermissionError });
+            }
 
             var normalizedTarget = string.IsNullOrWhiteSpace(targetKind) ? normalizedSrc : targetKind.Trim().ToUpperInvariant();
             if (normalizedTarget != "A" && normalizedTarget != "W")
@@ -469,7 +486,8 @@ namespace FastQ.Web.Controllers
                 TargetDateUtc = targetDateUtc,
                 RefValue = refValue,
                 Notes = notes,
-                StampUser = _auth.GetLoggedInWindowsUser()
+                StampUser = _auth.GetLoggedInWindowsUser(),
+                SourceAction = normalizedSourceAction
             };
 
             var res = _service.TransferSource(req);

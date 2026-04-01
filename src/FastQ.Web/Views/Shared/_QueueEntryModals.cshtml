@@ -19,9 +19,19 @@
                 </select>
             </div>
             <div class="route-form-row">
-                <label for="addApptContactType">Contact Type</label>
+                <label for="addApptDate">Date</label>
+                <input id="addApptDate" class="route-input" type="date" />
+            </div>
+            <div class="route-form-row">
+                <label for="addApptTime">Start Time</label>
+                <select id="addApptTime" class="route-input">
+                    <option value="">Select time</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptContactType">Appointment Type</label>
                 <select id="addApptContactType" class="route-input" required>
-                    <option value="">Select contact type</option>
+                    <option value="">Select appointment type</option>
                 </select>
             </div>
             <div class="route-form-row">
@@ -31,14 +41,14 @@
                 </select>
             </div>
             <div class="route-form-row">
-                <label id="addApptPermitNumberLabel" for="addApptPermitNumber">Reference Value</label>
+                <label id="addApptPermitNumberLabel" for="addApptPermitNumber">Describe</label>
                 <div id="addApptReferenceValueWrap">
-                    <input id="addApptPermitNumber" class="route-input" type="text" placeholder="Enter reference value" />
+                    <input id="addApptPermitNumber" class="route-input" type="text" placeholder="Enter description" />
                     <div id="addApptPermitStatus" class="helper-text"></div>
                 </div>
             </div>
             <div class="route-form-row is-hidden" id="addApptAddressRow">
-                <label>Address</label>
+                <label>Describe</label>
                 <div>
                     <div class="action-bar">
                         <input id="addApptStreetNumber" class="route-input" type="text" placeholder="Street number" />
@@ -46,16 +56,6 @@
                         <input id="addApptStreetType" class="route-input" type="text" placeholder="Street type" />
                     </div>
                     <div id="addApptAddressStatus" class="helper-text"></div>
-                </div>
-            </div>
-            <div class="route-form-row">
-                <label for="addApptEmail">Email</label>
-                <div>
-                    <div class="lookup-input-wrap" id="addApptEmailWrap">
-                        <input id="addApptEmail" class="route-input" type="email" />
-                        <span class="lookup-spinner" aria-hidden="true"></span>
-                    </div>
-                    <div id="addApptEmailStatus" class="helper-text"></div>
                 </div>
             </div>
             <div class="route-form-row">
@@ -67,23 +67,30 @@
                 <input id="addApptLastName" class="route-input" type="text" />
             </div>
             <div class="route-form-row">
-                <label for="addApptPhone">Phone</label>
+                <label for="addApptPhone">Mobile Number</label>
                 <input id="addApptPhone" class="route-input" type="tel" />
             </div>
             <div class="route-form-row">
-                <label for="addApptDate">Date</label>
-                <select id="addApptDate" class="route-input">
-                    <option value="">Select date</option>
+                <label for="addApptEmail">Email Address</label>
+                <div>
+                    <div class="lookup-input-wrap" id="addApptEmailWrap">
+                        <input id="addApptEmail" class="route-input" type="email" />
+                        <span class="lookup-spinner" aria-hidden="true"></span>
+                    </div>
+                    <div id="addApptEmailStatus" class="helper-text"></div>
+                </div>
+            </div>
+            <div class="route-form-row">
+                <label for="addApptLanguagePreference">Language Preference</label>
+                <select id="addApptLanguagePreference" class="route-input">
+                    <option value="">Select language</option>
+                    <option value="EN">English</option>
+                    <option value="ES">Spanish</option>
+                    <option value="CP">Creole</option>
                 </select>
             </div>
             <div class="route-form-row">
-                <label for="addApptTime">Start Time</label>
-                <select id="addApptTime" class="route-input">
-                    <option value="">Select time</option>
-                </select>
-            </div>
-            <div class="route-form-row">
-                <label for="addApptNotes">Notes</label>
+                <label for="addApptNotes">Comments</label>
                 <textarea id="addApptNotes" rows="3"></textarea>
             </div>
         </div>
@@ -165,6 +172,15 @@
             <div class="route-form-row">
                 <label for="addWalkinPhone">Phone</label>
                 <input id="addWalkinPhone" class="route-input" type="tel" />
+            </div>
+            <div class="route-form-row">
+                <label for="addWalkinLanguagePreference">Language Preference</label>
+                <select id="addWalkinLanguagePreference" class="route-input">
+                    <option value="">Select language</option>
+                    <option value="EN">English</option>
+                    <option value="ES">Spanish</option>
+                    <option value="CP">Creole</option>
+                </select>
             </div>
             <div class="route-form-row">
                 <label for="addWalkinNotes">Notes</label>

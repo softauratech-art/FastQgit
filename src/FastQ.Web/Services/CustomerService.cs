@@ -129,6 +129,7 @@ namespace FastQ.Web.Services
             string phone,
             string contactType,
             DateTime scheduledForUtc,
+            string languagePreference,
             string notes,
             string meetingUrl,
             string stampUser)
@@ -187,6 +188,7 @@ namespace FastQ.Web.Services
                 ContactType = contactType.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
+                LanguagePreference = NormalizeLanguagePreference(languagePreference),
                 Status = AppointmentStatus.Scheduled,
                 CreatedBy = user,
                 StampUser = user,
@@ -218,6 +220,7 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
+            string languagePreference,
             string meetingUrl,
             string notes,
             string stampUser)
@@ -261,6 +264,7 @@ namespace FastQ.Web.Services
                 ContactType = contactType.Trim(),
                 MeetingUrl = string.IsNullOrWhiteSpace(meetingUrl) ? null : meetingUrl.Trim(),
                 MoreInfo = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+                LanguagePreference = NormalizeLanguagePreference(languagePreference),
                 Status = AppointmentStatus.Arrived,
                 CreatedBy = user,
                 StampUser = user,
@@ -276,6 +280,17 @@ namespace FastQ.Web.Services
             _rt.QueueChanged(walkin.LocationId, walkin.QueueId);
 
             return Result<long>.Success(newId);
+        }
+
+        private static string NormalizeLanguagePreference(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim().ToUpperInvariant();
+            if (normalized == "EN" || normalized == "ES" || normalized == "CP")
+            {
+                return normalized;
+            }
+
+            return null;
         }
 
         public Result Cancel(long appointmentId)

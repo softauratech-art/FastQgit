@@ -87,6 +87,7 @@ namespace FastQ.Web.Services
             string phone,
             string contactType,
             DateTime scheduledForUtc,
+            string languagePreference,
             string notes,
             string meetingUrl)
         {
@@ -103,6 +104,7 @@ namespace FastQ.Web.Services
                 phone,
                 contactType,
                 scheduledForUtc,
+                languagePreference,
                 notes,
                 meetingUrl,
                 "web");
@@ -120,6 +122,7 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
+            string languagePreference,
             string meetingUrl,
             string notes)
         {
@@ -135,6 +138,7 @@ namespace FastQ.Web.Services
                 customerName,
                 phone,
                 contactType,
+                languagePreference,
                 meetingUrl,
                 notes,
                 "web");

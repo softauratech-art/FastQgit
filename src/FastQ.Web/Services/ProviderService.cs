@@ -443,6 +443,7 @@ namespace FastQ.Web.Services
             public string RefValue { get; set; }
             public string Notes { get; set; }
             public string StampUser { get; set; }
+            public string SourceAction { get; set; }
         }
 
         public sealed class CloseAndAddRequest
@@ -467,6 +468,9 @@ namespace FastQ.Web.Services
 
             var srcType = char.ToUpperInvariant(request.SrcType);
             if (srcType != 'A' && srcType != 'W') return Result<long>.Fail("Source type must be A or W.");
+            var sourceAction = string.IsNullOrWhiteSpace(request.SourceAction) ? "TRANSFER" : request.SourceAction.Trim().ToUpperInvariant();
+            if (sourceAction != "TRANSFER" && sourceAction != "REMOVE" && sourceAction != "END")
+                return Result<long>.Fail("Source action must be TRANSFER, REMOVE, or END.");
 
             var targetKind = char.ToUpperInvariant(request.TargetKind);
             if (targetKind != 'A' && targetKind != 'W') return Result<long>.Fail("Target kind must be A or W.");
@@ -496,11 +500,13 @@ namespace FastQ.Web.Services
                 request.RefValue,
                 request.Notes,
                 stampUser,
-                "TRANSFER");
+                sourceAction);
 
             if (sourceAppt != null)
             {
-                sourceAppt.Status = AppointmentStatus.TransferredOut;
+                sourceAppt.Status = sourceAction == "REMOVE"
+                    ? AppointmentStatus.Cancelled
+                    : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
                 sourceAppt.UpdatedUtc = _clock.UtcNow;
                 sourceAppt.StampDateUtc = _clock.UtcNow;
                 _rt.AppointmentChanged(sourceAppt);

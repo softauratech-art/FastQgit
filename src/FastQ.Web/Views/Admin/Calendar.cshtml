@@ -769,6 +769,30 @@
     </div>
 </div>
 
+<div id="cancelServiceModal" class="calendar-modal-backdrop modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelServiceModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="cancelServiceModalTitle">Cancel Service</h5>
+            <button class="btn small ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="cancelServiceModal"></div>
+            <p>Does the customer need to be cancelled only, or cancelled and transferred?</p>
+            <div class="route-form-row">
+                <label for="cancelServiceNotes">Cancellation Notes</label>
+                <textarea id="cancelServiceNotes" rows="3"></textarea>
+            </div>
+            <input id="cancelServiceSrcId" type="hidden" value="" />
+            <input id="cancelServiceSrcType" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
+            <button class="btn secondary" type="button" data-cancel-choice="cancel-only">Cancel Only</button>
+            <button class="btn primary" type="button" data-cancel-choice="cancel-transfer">Cancel + Transfer</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         (function () {
@@ -1284,6 +1308,21 @@
                 return value < 10 ? "0" + value : String(value);
             }
 
+            function toIsoDate(dateValue) {
+                return dateValue.getFullYear() + "-" + toTwoDigits(dateValue.getMonth() + 1) + "-" + toTwoDigits(dateValue.getDate());
+            }
+
+            function getEntryDateWindowLimits() {
+                var minDate = new Date();
+                minDate.setHours(0, 0, 0, 0);
+                var maxDate = new Date(minDate.getTime());
+                maxDate.setMonth(maxDate.getMonth() + 6);
+                return {
+                    min: toIsoDate(minDate),
+                    max: toIsoDate(maxDate)
+                };
+            }
+
             function parseClockMinutes(value) {
                 var text = to24Hour(value);
                 var parts = text.split(":");
@@ -1306,26 +1345,51 @@
                 var seen = {};
                 var base = new Date();
                 base.setHours(0, 0, 0, 0);
-                for (var i = 0; i < 31; i++) {
+                var maxDate = new Date(base.getTime());
+                maxDate.setMonth(maxDate.getMonth() + 6);
+                while (base <= maxDate) {
                     var dateValue = new Date(base.getTime());
-                    dateValue.setDate(base.getDate() + i);
                     var active = schedules.some(function (schedule) {
                         return isScheduleActiveOnDate(schedule, dateValue);
                     });
-                    if (!active) {
-                        continue;
+                    if (active) {
+                        var value = toIsoDate(dateValue);
+                        if (!seen[value]) {
+                            seen[value] = true;
+                            options.push({
+                                value: value,
+                                label: formatRouteDateLabel(dateValue)
+                            });
+                        }
                     }
-                    var value = dateValue.toISOString().slice(0, 10);
-                    if (seen[value]) {
-                        continue;
-                    }
-                    seen[value] = true;
-                    options.push({
-                        value: value,
-                        label: formatRouteDateLabel(dateValue)
-                    });
+                    base.setDate(base.getDate() + 1);
                 }
                 return options;
+            }
+
+            function configureEntryModalDateInput(dateInput, dateOptions, preferredDateValue) {
+                if (!dateInput) {
+                    return "";
+                }
+
+                var limits = getEntryDateWindowLimits();
+                dateInput.setAttribute("min", limits.min);
+                dateInput.setAttribute("max", limits.max);
+
+                var selectedDate = "";
+                if (dateOptions.length > 0) {
+                    if (preferredDateValue && dateOptions.some(function (o) { return o.value === preferredDateValue; })) {
+                        selectedDate = preferredDateValue;
+                    } else if (selectedCalendarDate && dateOptions.some(function (o) { return o.value === selectedCalendarDate; })) {
+                        selectedDate = selectedCalendarDate;
+                    } else {
+                        selectedDate = dateOptions[0].value;
+                    }
+                }
+
+                dateInput.value = selectedDate;
+                dateInput.setAttribute("data-current-value", selectedDate);
+                return selectedDate;
             }
 
             function getScheduleTimeOptions(details, selectedDateValue) {
@@ -1381,10 +1445,7 @@
                 }
 
                 var options = getScheduleDateOptions(details);
-                setSelectValues(dateSelect, options, "Select date");
-                if (options.length > 0) {
-                    dateSelect.value = options[0].value;
-                }
+                configureEntryModalDateInput(dateSelect, options, dateSelect.value || "");
             }
 
             function populateEntryModalDateTime(prefix, details) {
@@ -1396,20 +1457,7 @@
 
                 var currentDateValue = dateSelect.getAttribute("data-current-value") || dateSelect.value || "";
                 var dateOptions = getScheduleDateOptions(details);
-                setSelectValues(dateSelect, dateOptions, "Select date");
-
-                var selectedDate = "";
-                if (dateOptions.length > 0) {
-                    if (currentDateValue && dateOptions.some(function (o) { return o.value === currentDateValue; })) {
-                        selectedDate = currentDateValue;
-                    } else if (selectedCalendarDate && dateOptions.some(function (o) { return o.value === selectedCalendarDate; })) {
-                        selectedDate = selectedCalendarDate;
-                    } else {
-                        selectedDate = dateOptions[0].value;
-                    }
-                    dateSelect.value = selectedDate;
-                }
-                dateSelect.setAttribute("data-current-value", selectedDate);
+                configureEntryModalDateInput(dateSelect, dateOptions, currentDateValue);
 
                 return refreshEntryModalTimeOptions(prefix);
             }
@@ -1475,6 +1523,15 @@
                 if (!queueId || !selectedDate) {
                     setSelectValues(timeSelect, [], "Select time");
                     return Promise.resolve();
+                }
+                if (prefix === "addAppt") {
+                    var availableDates = getScheduleDateOptions(activeEntryQueueDetails[prefix]);
+                    if (!availableDates.some(function (o) { return o.value === selectedDate; })) {
+                        setSelectValues(timeSelect, [], "Select time");
+                        setTimeSelectionState(prefix, false, false, "Selected date is not available.");
+                        showModalFeedback("addAppointmentModal", "Selected date is not available.", true);
+                        return Promise.resolve();
+                    }
                 }
                 return populateEntryModalTimeOptions(prefix, activeEntryQueueDetails[prefix], selectedDate);
             }
@@ -1656,6 +1713,19 @@
                 openModal("endServiceModal");
             }
 
+            function openCancelServiceModal(appointmentId, srcType) {
+                var srcIdInput = document.getElementById("cancelServiceSrcId");
+                var srcTypeInput = document.getElementById("cancelServiceSrcType");
+                var notesInput = document.getElementById("cancelServiceNotes");
+                if (!srcIdInput || !srcTypeInput) {
+                    return;
+                }
+                srcIdInput.value = appointmentId;
+                srcTypeInput.value = srcType;
+                if (notesInput) notesInput.value = "";
+                openModal("cancelServiceModal");
+            }
+
             function submitEndOnly(appointmentId, srcType, completionNotes) {
                 return postForm(endServiceUrl, {
                     appointmentId: appointmentId,
@@ -1702,7 +1772,7 @@
                 var fields = [
                     "QueueId", "ServiceId", "ContactType", "RefValue", "PermitNumber",
                     "StreetNumber", "StreetName", "StreetType",
-                    "Email", "FirstName", "LastName", "Phone", "MeetingUrl", "Notes"
+                    "Email", "FirstName", "LastName", "Phone", "MeetingUrl", "LanguagePreference", "Notes"
                 ];
 
                 fields.forEach(function (suffix) {
@@ -2083,6 +2153,11 @@
                             return;
                         }
 
+                        if (action === "remove") {
+                            openCancelServiceModal(appointmentId, srcType);
+                            return;
+                        }
+
                         postForm(providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
                             .then(function (res) {
                                 if (!res || !res.ok) {
@@ -2331,6 +2406,7 @@
                         phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
                         appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
                         startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
+                        languagePreference: document.getElementById("addApptLanguagePreference") ? document.getElementById("addApptLanguagePreference").value : "",
                         meetingUrl: "",
                         notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
                     };
@@ -2386,6 +2462,7 @@
                             document.getElementById("addWalkinFirstName") ? document.getElementById("addWalkinFirstName").value : "",
                             document.getElementById("addWalkinLastName") ? document.getElementById("addWalkinLastName").value : ""),
                         phone: document.getElementById("addWalkinPhone") ? document.getElementById("addWalkinPhone").value : "",
+                        languagePreference: document.getElementById("addWalkinLanguagePreference") ? document.getElementById("addWalkinLanguagePreference").value : "",
                         meetingUrl: "",
                         notes: document.getElementById("addWalkinNotes") ? document.getElementById("addWalkinNotes").value : ""
                     };
@@ -2449,6 +2526,42 @@
                             closeModal("endServiceModal");
                             queueLiveSync();
                         });
+                });
+            });
+
+            document.querySelectorAll("[data-cancel-choice]").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var choice = btn.getAttribute("data-cancel-choice");
+                    var srcIdInput = document.getElementById("cancelServiceSrcId");
+                    var srcTypeInput = document.getElementById("cancelServiceSrcType");
+                    var notesInput = document.getElementById("cancelServiceNotes");
+                    var appointmentId = srcIdInput ? srcIdInput.value : "";
+                    var srcType = srcTypeInput ? srcTypeInput.value : "";
+                    var notes = notesInput ? notesInput.value : "";
+                    if (!appointmentId || !srcType) {
+                        closeModal("cancelServiceModal");
+                        return;
+                    }
+
+                    if (choice === "cancel-transfer") {
+                        closeModal("cancelServiceModal");
+                        openRouteModal("cancel-transfer", appointmentId, srcType, notes);
+                        return;
+                    }
+
+                    postForm(providerActionUrl, {
+                        action: "remove",
+                        appointmentId: appointmentId,
+                        srcType: srcType,
+                        notes: notes || ""
+                    }).then(function (res) {
+                        if (!res || !res.ok) {
+                            showModalFeedback("cancelServiceModal", res && res.error ? res.error : "Cancel failed.", true);
+                            return;
+                        }
+                        closeModal("cancelServiceModal");
+                        queueLiveSync();
+                    });
                 });
             });
 
@@ -2565,6 +2678,29 @@
                             .then(function (res) {
                                 if (!res || !res.ok) {
                                     showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Transfer failed.", true);
+                                    return;
+                                }
+                                closeModal("serviceRouteModal");
+                                queueLiveSync();
+                            });
+                        return;
+                    }
+
+                    if (mode === "cancel-transfer") {
+                        postForm(transferUrl, {
+                            appointmentId: appointmentId,
+                            srcType: srcType,
+                            targetQueueId: targetQueueId,
+                            targetKind: targetKind,
+                            targetServiceId: targetServiceId || "",
+                            targetDate: targetDateTime || "",
+                            refValue: refValue || "",
+                            notes: notes || "",
+                            sourceAction: "REMOVE"
+                        })
+                            .then(function (res) {
+                                if (!res || !res.ok) {
+                                    showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and transfer failed.", true);
                                     return;
                                 }
                                 closeModal("serviceRouteModal");
