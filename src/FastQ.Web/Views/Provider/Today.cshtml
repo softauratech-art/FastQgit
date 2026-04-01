@@ -556,7 +556,9 @@
                                                 data-time="@row.StartTimeText"
                                                 data-title="@row.ServiceType"
                                                 data-customer="@row.CustomerName"
-                                                data-phone="@row.Phone">
+                                                data-phone="@row.Phone"
+                                                data-meeting-url="@row.MeetingUrl"
+                                                data-notes="@row.Notes">
                                             Info
                                         </button>
                                         <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
@@ -673,7 +675,9 @@
                                                 data-time="@row.StartTimeText"
                                                 data-title="@row.ServiceType"
                                                 data-customer="@row.CustomerName"
-                                                data-phone="@row.Phone">
+                                                data-phone="@row.Phone"
+                                                data-meeting-url="@row.MeetingUrl"
+                                                data-notes="@row.Notes">
                                             Info
                                         </button>
                                         <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
@@ -929,6 +933,48 @@
           ok: false,
           error: "Network error. Please try again."
         };
+      });
+    }
+
+    function normalizeMeetingUrl(value) {
+      var trimmed = (value || "").trim();
+      if (!trimmed) {
+        return "";
+      }
+
+      if (trimmed.indexOf("//") === 0) {
+        return "https:" + trimmed;
+      }
+
+      if (trimmed.indexOf("://") >= 0) {
+        return trimmed;
+      }
+
+      return "https://" + trimmed.replace(/^\/+/, "");
+    }
+
+    function updateTodayMeetingLinkUi(appointmentId, srcType, rawUrl, notes) {
+      var normalizedSrcType = (srcType || "A").toUpperCase();
+      var normalizedUrl = normalizeMeetingUrl(rawUrl);
+
+      document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
+        link.setAttribute("data-meeting-url", rawUrl || "");
+        link.setAttribute("data-notes", notes || "");
+      });
+
+      document.querySelectorAll('tr.accordion-toggle[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (row) {
+        var cells = row.querySelectorAll("td");
+        if (!cells || cells.length < 9) {
+          return;
+        }
+
+        var joinCell = cells[8];
+        if (!normalizedUrl) {
+          joinCell.innerHTML = "";
+          return;
+        }
+
+        joinCell.innerHTML = '<a class="btn small ghost" href="' + normalizedUrl.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">Join Meeting</a>';
       });
     }
 
@@ -2855,8 +2901,9 @@
           if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
           if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
           if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
-          if (urlInput) urlInput.value = "";
-          if (notesInput) notesInput.value = "";
+          if (urlInput) urlInput.value = link.getAttribute("data-meeting-url") || "";
+          if (notesInput) notesInput.value = link.getAttribute("data-notes") || "";
+          clearModalFeedback("meetingModal");
 
           openModal("meetingModal");
         });
@@ -2888,6 +2935,7 @@
               showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
               return;
             }
+            updateTodayMeetingLinkUi(appointmentId, srcType, payload.webexUrl || "", payload.notes || "");
             closeModal("meetingModal");
           });
       });

@@ -923,6 +923,61 @@
                 }).then(function (r) { return r.json(); });
             }
 
+            function normalizeMeetingUrl(value) {
+                var trimmed = (value || "").trim();
+                if (!trimmed) {
+                    return "";
+                }
+
+                if (trimmed.indexOf("//") === 0) {
+                    return "https:" + trimmed;
+                }
+
+                if (trimmed.indexOf("://") >= 0) {
+                    return trimmed;
+                }
+
+                return "https://" + trimmed.replace(/^\/+/, "");
+            }
+
+            function updateCalendarMeetingLinkUi(appointmentId, srcType, rawUrl, notes) {
+                var normalizedSrcType = (srcType || "A").toUpperCase();
+                var normalizedUrl = normalizeMeetingUrl(rawUrl);
+
+                document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
+                    link.setAttribute("data-meeting-url", rawUrl || "");
+                    link.setAttribute("data-notes", notes || "");
+                });
+
+                document.querySelectorAll('.agenda-item[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (card) {
+                    var linkRow = card.querySelector(".agenda-detail a");
+                    var linkContainer = linkRow ? linkRow.parentElement : null;
+
+                    if (!normalizedUrl) {
+                        if (linkContainer) {
+                            linkContainer.remove();
+                        }
+                    } else if (linkRow) {
+                        linkRow.setAttribute("href", normalizedUrl);
+                    } else {
+                        var detail = document.createElement("div");
+                        detail.className = "agenda-detail";
+                        detail.innerHTML = '<a href="' + normalizedUrl.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">Open meeting link</a>';
+                        var notesRow = card.querySelector(".agenda-notes");
+                        if (notesRow) {
+                            card.insertBefore(detail, notesRow);
+                        } else {
+                            card.appendChild(detail);
+                        }
+                    }
+
+                    var notesRow = card.querySelector(".agenda-notes");
+                    if (notesRow) {
+                        notesRow.textContent = notes || "Use Info to add meeting details or notes.";
+                    }
+                });
+            }
+
             function setSelectOptions(selectElement, items, placeholderText) {
                 if (!selectElement) {
                     return;
@@ -2422,10 +2477,7 @@
                                 showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
                                 return;
                             }
-                            document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + srcType + '"]').forEach(function (link) {
-                                link.setAttribute("data-meeting-url", payload.webexUrl || "");
-                                link.setAttribute("data-notes", payload.notes || "");
-                            });
+                            updateCalendarMeetingLinkUi(appointmentId, srcType, payload.webexUrl || "", payload.notes || "");
                             closeModal("meetingModal");
                         })
                         .catch(function () {

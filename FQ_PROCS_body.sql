@@ -546,7 +546,10 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
     p_stampuser  IN VARCHAR2
   )
   AS
-    v_notes VARCHAR2(1000);
+    v_notes          VARCHAR2(1000);
+    v_queueid        NUMBER(9);
+    v_serviceid      NUMBER(9);
+    v_transactionid  NUMBER(9);
   BEGIN
     v_notes := SUBSTR(
       CASE WHEN p_webex_url IS NOT NULL THEN 'WEBEX_URL=' || p_webex_url || '; ' ELSE '' END ||
@@ -554,24 +557,57 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
       1, 1000
     );
 
-    UPDATE SERVICETRANSACTIONS st
-       SET st.SERVICE_NOTES = v_notes,
-           st.STAMPUSER     = NVL(p_stampuser, 'web'),
-           st.STAMPDATE     = SYSDATE
-     WHERE st.TRANSACTION_ID = (
-       SELECT transaction_id
-         FROM (
-           SELECT transaction_id
-             FROM SERVICETRANSACTIONS
-            WHERE SRC_TYPE = p_src_type
-              AND SRC_ID   = p_src_id
-            ORDER BY STAMPDATE DESC, TRANSACTION_ID DESC
-         )
-       WHERE ROWNUM = 1
-     );
+    BEGIN
+      CASE p_src_type
+        WHEN 'A' THEN
+          SELECT QUEUE_ID, SERVICE_ID
+            INTO v_queueid, v_serviceid
+            FROM APPOINTMENTS
+           WHERE APPOINTMENT_ID = p_src_id;
+        WHEN 'W' THEN
+          SELECT QUEUE_ID, SERVICE_ID
+            INTO v_queueid, v_serviceid
+            FROM WALKINS
+           WHERE WALKIN_ID = p_src_id;
+        ELSE
+          RAISE_APPLICATION_ERROR(-20002, 'Invalid source type.');
+      END CASE;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Source record not found.');
+    END;
 
-    IF SQL%ROWCOUNT = 0 THEN
-      RAISE_APPLICATION_ERROR(-20001, 'No service transaction found for source.');
+    BEGIN
+      SELECT transaction_id
+        INTO v_transactionid
+        FROM (
+          SELECT transaction_id
+            FROM SERVICETRANSACTIONS
+           WHERE SRC_TYPE = p_src_type
+             AND SRC_ID   = p_src_id
+           ORDER BY STAMPDATE DESC, TRANSACTION_ID DESC
+        )
+       WHERE ROWNUM = 1;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        v_transactionid := NULL;
+    END;
+
+    IF v_transactionid IS NULL THEN
+      v_transactionid := SVCTRANSSEQ.NEXTVAL;
+
+      INSERT INTO SERVICETRANSACTIONS
+        (TRANSACTION_ID, SRC_TYPE, SRC_ID, QUEUE_ID, SERVICE_ID,
+         STATUS, SERVICE_NOTES, STAMPUSER, STAMPDATE)
+      VALUES
+        (v_transactionid, p_src_type, p_src_id, v_queueid, v_serviceid,
+         'INFO', v_notes, NVL(p_stampuser, 'web'), SYSDATE);
+    ELSE
+      UPDATE SERVICETRANSACTIONS st
+         SET st.SERVICE_NOTES = v_notes,
+             st.STAMPUSER     = NVL(p_stampuser, 'web'),
+             st.STAMPDATE     = SYSDATE
+       WHERE st.TRANSACTION_ID = v_transactionid;
     END IF;
 
     IF p_src_type = 'A' THEN
