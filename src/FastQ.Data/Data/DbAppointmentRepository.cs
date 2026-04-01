@@ -379,6 +379,7 @@ namespace FastQ.Data.Db
                             ContactType = ReadField(reader, "CONTACTTYPE"),
                             RefValue = ReadField(reader, "REF_VALUE"),
                             MeetingUrl = ReadMeetingUrl(reader),
+                            Notes = ReadField(reader, "MOREINFO"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });

@@ -629,7 +629,9 @@
                                     data-time="@item.StartTimeText"
                                     data-title="@item.ServiceType"
                                     data-customer="@item.CustomerName"
-                                    data-phone="@item.Phone">
+                                    data-phone="@item.Phone"
+                                    data-meeting-url="@item.MeetingUrl"
+                                    data-notes="@item.Notes">
                                 Info
                             </button>
                             <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
@@ -654,6 +656,7 @@
             <button class="btn small ghost" type="button" data-modal-close="meetingModal">Close</button>
         </div>
         <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
             <p>Meeting Id: <span id="mid"></span></p>
             <p>
                 Meeting Date: <span id="meetingDate"></span><br />
@@ -879,17 +882,37 @@
                 }).then(function (r) {
                     return r.text().then(function (text) {
                         try {
-                            return JSON.parse(text);
+                            var parsed = JSON.parse(text);
+                            if (!r.ok && parsed && parsed.ok !== false) {
+                                parsed.ok = false;
+                            }
+                            return parsed;
                         } catch (err) {
+                            var fallbackMessage = "Request failed.";
+                            if (r.status) {
+                                fallbackMessage = "Request failed (" + r.status + " " + (r.statusText || "Error") + ").";
+                            }
                             console.error("Calendar postForm JSON parse failed.", {
                                 url: url,
                                 status: r.status,
                                 bodyPreview: (text || "").slice(0, 500),
                                 error: err
                             });
-                            throw err;
+                            return {
+                                ok: false,
+                                error: fallbackMessage
+                            };
                         }
                     });
+                }).catch(function (err) {
+                    console.error("Calendar postForm request failed.", {
+                        url: url,
+                        error: err
+                    });
+                    return {
+                        ok: false,
+                        error: "Network error. Please try again."
+                    };
                 });
             }
 
@@ -2049,8 +2072,9 @@
                         if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
                         if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
                         if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
-                        if (urlInput) urlInput.value = "";
-                        if (notesInput) notesInput.value = "";
+                        if (urlInput) urlInput.value = link.getAttribute("data-meeting-url") || "";
+                        if (notesInput) notesInput.value = link.getAttribute("data-notes") || "";
+                        clearModalFeedback("meetingModal");
 
                         openModal("meetingModal");
                     });
@@ -2398,7 +2422,14 @@
                                 showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
                                 return;
                             }
+                            document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + srcType + '"]').forEach(function (link) {
+                                link.setAttribute("data-meeting-url", payload.webexUrl || "");
+                                link.setAttribute("data-notes", payload.notes || "");
+                            });
                             closeModal("meetingModal");
+                        })
+                        .catch(function () {
+                            showModalFeedback("meetingModal", "Save failed.", true);
                         });
                 });
             }

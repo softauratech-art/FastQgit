@@ -895,7 +895,41 @@
         headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
         credentials: "same-origin",
         body: new URLSearchParams(data).toString()
-      }).then(function (r) { return r.json(); });
+      }).then(function (r) {
+        return r.text().then(function (text) {
+          try {
+            var parsed = JSON.parse(text);
+            if (!r.ok && parsed && parsed.ok !== false) {
+              parsed.ok = false;
+            }
+            return parsed;
+          } catch (err) {
+            var fallbackMessage = "Request failed.";
+            if (r.status) {
+              fallbackMessage = "Request failed (" + r.status + " " + (r.statusText || "Error") + ").";
+            }
+            console.error("Today postForm JSON parse failed.", {
+              url: url,
+              status: r.status,
+              bodyPreview: (text || "").slice(0, 500),
+              error: err
+            });
+            return {
+              ok: false,
+              error: fallbackMessage
+            };
+          }
+        });
+      }).catch(function (err) {
+        console.error("Today postForm request failed.", {
+          url: url,
+          error: err
+        });
+        return {
+          ok: false,
+          error: "Network error. Please try again."
+        };
+      });
     }
 
     function getJson(url) {

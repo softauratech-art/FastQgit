@@ -55,10 +55,21 @@ namespace FastQ.Web.Services
         public Result SaveServiceInfo(long appointmentId, char srcType, string webexUrl, string notes, string stampUser)
         {
             var srcId = appointmentId;
-
-            var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
-            _serviceTransactions.SaveServiceInfo(srcType, srcId, webexUrl, notes, user);
-            return Result.Success();
+            try
+            {
+                var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
+                _serviceTransactions.SaveServiceInfo(
+                    srcType,
+                    srcId,
+                    string.IsNullOrWhiteSpace(webexUrl) ? null : webexUrl.Trim(),
+                    string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+                    user);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail(ex.Message);
+            }
         }
 
         public IList<Queue> ListQueues()
@@ -253,6 +264,7 @@ namespace FastQ.Web.Services
                     ContactTypeCode = r.ContactType,
                     RefValue = r.RefValue,
                     MeetingUrl = NormalizeMeetingUrl(r.MeetingUrl),
+                    Notes = string.IsNullOrWhiteSpace(r.Notes) ? string.Empty : r.Notes.Trim(),
                     StampUser = r.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();

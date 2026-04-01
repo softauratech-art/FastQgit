@@ -19,6 +19,7 @@ namespace FastQ.Web.Models
         public string ContactTypeCode { get; set; }
         public string RefValue { get; set; }
         public string MeetingUrl { get; set; }
+        public string Notes { get; set; }
         public string StampUser { get; set; }
         public DateTime ScheduledForUtc { get; set; }
     }

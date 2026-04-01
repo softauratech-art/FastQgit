@@ -181,7 +181,7 @@ namespace FastQ.Web.Services
                 EntryKind = entryKind,
                 ScheduledForUtc = row.ScheduledForUtc,
                 ScheduledForLocal = row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc,
-                Notes = "Use Info to add meeting details or notes.",
+                Notes = string.IsNullOrWhiteSpace(row.Notes) ? "Use Info to add meeting details or notes." : row.Notes,
                 MeetingUrl = row.MeetingUrl
             };
         }
