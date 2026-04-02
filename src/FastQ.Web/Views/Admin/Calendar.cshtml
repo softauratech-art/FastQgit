@@ -406,6 +406,56 @@
         }
 
         .entry-date-picker {
+            position: relative;
+            display: grid;
+            gap: 8px;
+        }
+
+        .entry-date-picker-trigger {
+            position: relative;
+        }
+
+        .entry-date-picker-trigger .route-input {
+            padding-right: 44px;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .entry-date-picker-toggle {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border: 0;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .entry-date-picker-toggle:hover {
+            background: #e0e7ff;
+        }
+
+        .entry-date-picker-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 20;
+            width: min(320px, 100%);
+            padding: 12px;
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+        }
+
+        .entry-date-picker.is-open .entry-date-picker-panel {
             display: grid;
             gap: 8px;
         }
@@ -920,6 +970,7 @@
                     return;
                 }
                 modal.classList.remove("show");
+                closeEntryDatePicker("addAppt");
                 clearModalFeedback(id);
             }
 
@@ -1465,6 +1516,71 @@
                 status.style.color = isError ? "#b91c1c" : "#5b5b5b";
             }
 
+            function formatEntryDateDisplay(value) {
+                if (!value) {
+                    return "";
+                }
+
+                var parts = value.split("-");
+                if (parts.length !== 3) {
+                    return value;
+                }
+
+                return parts[2] + "/" + parts[1] + "/" + parts[0];
+            }
+
+            function parseEntryDateDisplay(value) {
+                var match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(value || "");
+                if (!match) {
+                    return "";
+                }
+
+                var day = parseInt(match[1], 10);
+                var month = parseInt(match[2], 10);
+                var year = parseInt(match[3], 10);
+                var candidate = new Date(year, month - 1, day);
+                if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
+                    return "";
+                }
+
+                return toIsoDate(candidate);
+            }
+
+            function setEntryDateDisplay(prefix, value) {
+                var displayInput = document.getElementById(prefix + "DateDisplay");
+                if (!displayInput) {
+                    return;
+                }
+
+                displayInput.value = formatEntryDateDisplay(value);
+            }
+
+            function openEntryDatePicker(prefix) {
+                var picker = document.getElementById(prefix + "DatePicker");
+                var displayInput = document.getElementById(prefix + "DateDisplay");
+                if (!picker) {
+                    return;
+                }
+
+                picker.classList.add("is-open");
+                if (displayInput) {
+                    displayInput.setAttribute("aria-expanded", "true");
+                }
+            }
+
+            function closeEntryDatePicker(prefix) {
+                var picker = document.getElementById(prefix + "DatePicker");
+                var displayInput = document.getElementById(prefix + "DateDisplay");
+                if (!picker) {
+                    return;
+                }
+
+                picker.classList.remove("is-open");
+                if (displayInput) {
+                    displayInput.setAttribute("aria-expanded", "false");
+                }
+            }
+
             function setEntryDateValue(prefix, selectedDate, suppressChange) {
                 var input = document.getElementById(prefix + "Date");
                 if (!input) {
@@ -1474,11 +1590,75 @@
                 var currentValue = input.value || "";
                 input.value = selectedDate || "";
                 input.setAttribute("data-current-value", selectedDate || "");
+                setEntryDateDisplay(prefix, selectedDate || "");
                 renderEntryCalendar(prefix);
 
                 if (!suppressChange && currentValue !== (selectedDate || "")) {
+                    closeEntryDatePicker(prefix);
                     input.dispatchEvent(new Event("change", { bubbles: true }));
                 }
+            }
+
+            function handleEntryDateDisplayInput(prefix) {
+                var displayInput = document.getElementById(prefix + "DateDisplay");
+                if (!displayInput) {
+                    return;
+                }
+
+                var parsedDate = parseEntryDateDisplay(displayInput.value || "");
+                if (!parsedDate) {
+                    return;
+                }
+
+                var state = getEntryCalendarState(prefix);
+                state.monthStart = startOfMonth(new Date(parsedDate + "T00:00:00"));
+                renderEntryCalendar(prefix);
+            }
+
+            function handleEntryDateDisplayCommit(prefix) {
+                var displayInput = document.getElementById(prefix + "DateDisplay");
+                var timeSelect = document.getElementById(prefix + "Time");
+                if (!displayInput) {
+                    return;
+                }
+
+                var rawValue = (displayInput.value || "").trim();
+                if (!rawValue) {
+                    setEntryDateValue(prefix, "", true);
+                    if (timeSelect) {
+                        setSelectValues(timeSelect, [], "Select time");
+                    }
+                    setTimeSelectionState(prefix, false, false, "Date is required.");
+                    setEntryDateStatus(prefix, "Date is required.", true);
+                    return;
+                }
+
+                var parsedDate = parseEntryDateDisplay(rawValue);
+                if (!parsedDate) {
+                    setEntryDateValue(prefix, "", true);
+                    if (timeSelect) {
+                        setSelectValues(timeSelect, [], "Select time");
+                    }
+                    setTimeSelectionState(prefix, false, false, "Enter date as dd/mm/yyyy.");
+                    setEntryDateStatus(prefix, "Enter date as dd/mm/yyyy.", true);
+                    return;
+                }
+
+                var state = getEntryCalendarState(prefix);
+                if (state.enabledDates[parsedDate] !== true) {
+                    state.monthStart = startOfMonth(new Date(parsedDate + "T00:00:00"));
+                    renderEntryCalendar(prefix);
+                    setEntryDateValue(prefix, "", true);
+                    if (timeSelect) {
+                        setSelectValues(timeSelect, [], "Select time");
+                    }
+                    setTimeSelectionState(prefix, false, false, "Selected date is not available.");
+                    setEntryDateStatus(prefix, "Selected date is not available.", true);
+                    return;
+                }
+
+                setEntryDateStatus(prefix, "", false);
+                setEntryDateValue(prefix, parsedDate, false);
             }
 
             function renderEntryCalendar(prefix) {
@@ -2571,6 +2751,38 @@
                     refreshEntryModalTimeOptions("addAppt");
                 });
             }
+            var addApptDateDisplay = document.getElementById("addApptDateDisplay");
+            if (addApptDateDisplay) {
+                addApptDateDisplay.addEventListener("click", function () {
+                    openEntryDatePicker("addAppt");
+                });
+                addApptDateDisplay.addEventListener("focus", function () {
+                    openEntryDatePicker("addAppt");
+                });
+                addApptDateDisplay.addEventListener("input", function () {
+                    handleEntryDateDisplayInput("addAppt");
+                });
+                addApptDateDisplay.addEventListener("blur", function () {
+                    handleEntryDateDisplayCommit("addAppt");
+                });
+                addApptDateDisplay.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleEntryDateDisplayCommit("addAppt");
+                    }
+                });
+            }
+            var addApptDateToggle = document.getElementById("addApptDateToggle");
+            if (addApptDateToggle) {
+                addApptDateToggle.addEventListener("click", function () {
+                    var picker = document.getElementById("addApptDatePicker");
+                    if (picker && picker.classList.contains("is-open")) {
+                        closeEntryDatePicker("addAppt");
+                    } else {
+                        openEntryDatePicker("addAppt");
+                    }
+                });
+            }
             var addApptDatePrev = document.getElementById("addApptDatePrev");
             if (addApptDatePrev) {
                 addApptDatePrev.addEventListener("click", function () {
@@ -2579,6 +2791,15 @@
                     loadEntryCalendarMonth("addAppt", state.monthStart, "");
                 });
             }
+            document.addEventListener("click", function (event) {
+                var picker = document.getElementById("addApptDatePicker");
+                if (!picker || !picker.classList.contains("is-open")) {
+                    return;
+                }
+                if (!picker.contains(event.target)) {
+                    closeEntryDatePicker("addAppt");
+                }
+            });
             var addApptDateNext = document.getElementById("addApptDateNext");
             if (addApptDateNext) {
                 addApptDateNext.addEventListener("click", function () {

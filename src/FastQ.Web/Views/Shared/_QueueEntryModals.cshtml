@@ -22,21 +22,29 @@
                 <label for="addApptDate">Date</label>
                 <div class="entry-date-picker" id="addApptDatePicker">
                     <input id="addApptDate" type="hidden" />
-                    <div class="entry-date-picker-header">
-                        <button id="addApptDatePrev" class="btn small ghost" type="button" aria-label="Previous month">Prev</button>
-                        <div id="addApptDateMonthLabel" class="entry-date-picker-month">Select a date</div>
-                        <button id="addApptDateNext" class="btn small ghost" type="button" aria-label="Next month">Next</button>
+                    <div class="entry-date-picker-trigger">
+                        <input id="addApptDateDisplay" class="route-input" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" aria-haspopup="dialog" aria-expanded="false" />
+                        <button id="addApptDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Choose appointment date">
+                            <i class="bi bi-calendar3" aria-hidden="true"></i>
+                        </button>
                     </div>
-                    <div class="entry-date-picker-weekdays" aria-hidden="true">
-                        <span>Sun</span>
-                        <span>Mon</span>
-                        <span>Tue</span>
-                        <span>Wed</span>
-                        <span>Thu</span>
-                        <span>Fri</span>
-                        <span>Sat</span>
+                    <div id="addApptDatePanel" class="entry-date-picker-panel" role="dialog" aria-modal="false" aria-labelledby="addApptDateMonthLabel">
+                        <div class="entry-date-picker-header">
+                            <button id="addApptDatePrev" class="btn small ghost" type="button" aria-label="Previous month">Prev</button>
+                            <div id="addApptDateMonthLabel" class="entry-date-picker-month">Select a date</div>
+                            <button id="addApptDateNext" class="btn small ghost" type="button" aria-label="Next month">Next</button>
+                        </div>
+                        <div class="entry-date-picker-weekdays" aria-hidden="true">
+                            <span>Sun</span>
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                        </div>
+                        <div id="addApptDateCalendar" class="entry-date-picker-grid" role="grid" aria-labelledby="addApptDateMonthLabel"></div>
                     </div>
-                    <div id="addApptDateCalendar" class="entry-date-picker-grid" role="grid" aria-labelledby="addApptDateMonthLabel"></div>
                     <div id="addApptDateStatus" class="helper-text">Only dates with open slots are selectable.</div>
                 </div>
             </div>
