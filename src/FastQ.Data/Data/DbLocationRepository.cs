@@ -18,9 +18,9 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT LOCATION_ID, LOCNAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
-                  FROM VALIDLOCATIONS
-                  WHERE LOCATION_ID = :locationId"))
+                @"SELECT ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
+                  FROM VALIDENTITIES
+                  WHERE ENTITY_ID = :locationId"))
             {
                 DataAccess.AddParam(cmd, "locationId", id, DbType.Int64);
                 using (var reader = cmd.ExecuteReader())
@@ -37,7 +37,7 @@ namespace FastQ.Data.Db
                 var locationId = location.Id;
                 if (locationId <= 0)
                 {
-                    using (var cmd = DataAccess.CreateCommand(conn, "SELECT NVL(MAX(LOCATION_ID),0) + 1 FROM fqowner.VALIDLOCATIONS"))
+                    using (var cmd = DataAccess.CreateCommand(conn, "SELECT NVL(MAX(ENTITY_ID),0) + 1 FROM fqowner.VALIDENTITIES"))
                     {
                         locationId = Convert.ToInt64(cmd.ExecuteScalar());
                     }
@@ -45,8 +45,8 @@ namespace FastQ.Data.Db
                 }
 
                 using (var cmd = DataAccess.CreateCommand(conn,
-                    @"INSERT INTO VALIDLOCATIONS
-                        (LOCATION_ID, LOCNAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG)
+                    @"INSERT INTO VALIDENTITIES
+                        (ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG)
                       VALUES
                         (:locationId, :name, :address, :phone, :opensAt, :closesAt, :description, :activeFlag)"))
                 {
@@ -71,15 +71,15 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"UPDATE VALIDLOCATIONS
-                  SET LOCNAME = :name,
+                @"UPDATE VALIDENTITIES
+                  SET ENTITY_NAME = :name,
                       ADDRESS = :address,
                       PHONE = :phone,
                       OPENS_AT = :opensAt,
                       CLOSES_AT = :closesAt,
                       DESCRIPTION = :description,
                       ACTIVEFLAG = :activeFlag
-                  WHERE LOCATION_ID = :locationId"))
+                  WHERE ENTITY_ID = :locationId"))
             {
                 DataAccess.AddParam(cmd, "name", location.Name ?? string.Empty, DbType.String);
                 DataAccess.AddParam(cmd, "address", location.Address ?? string.Empty, DbType.String);
@@ -98,8 +98,8 @@ namespace FastQ.Data.Db
             var list = new List<Location>();
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT LOCATION_ID, LOCNAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
-                  FROM VALIDLOCATIONS"))
+                @"SELECT ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
+                  FROM VALIDENTITIES"))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -113,14 +113,14 @@ namespace FastQ.Data.Db
 
         private static Location MapLocation(IDataRecord record)
         {
-            var locationId = Convert.ToInt64(record["LOCATION_ID"]);
+            var locationId = ReadInt64(record, "ENTITY_ID", "LOCATION_ID");
             var opensAt = record["OPENS_AT"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(record["OPENS_AT"]);
             var closesAt = record["CLOSES_AT"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(record["CLOSES_AT"]);
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
             return new Location
             {
                 Id = locationId,
-                Name = record["LOCNAME"]?.ToString() ?? string.Empty,
+                Name = ReadString(record, "ENTITY_NAME", "LOCNAME"),
                 Address = record["ADDRESS"]?.ToString() ?? string.Empty,
                 Phone = record["PHONE"]?.ToString() ?? string.Empty,
                 OpensAt = opensAt,
@@ -130,6 +130,51 @@ namespace FastQ.Data.Db
                 TimeZoneId = "UTC"
             };
         }
+
+        private static long ReadInt64(IDataRecord record, params string[] fieldNames)
+        {
+            foreach (var fieldName in fieldNames)
+            {
+                for (var i = 0; i < record.FieldCount; i++)
+                {
+                    if (!string.Equals(record.GetName(i), fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (record.IsDBNull(i))
+                    {
+                        return 0;
+                    }
+
+                    return Convert.ToInt64(record.GetValue(i));
+                }
+            }
+
+            return 0;
+        }
+
+        private static string ReadString(IDataRecord record, params string[] fieldNames)
+        {
+            foreach (var fieldName in fieldNames)
+            {
+                for (var i = 0; i < record.FieldCount; i++)
+                {
+                    if (!string.Equals(record.GetName(i), fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (record.IsDBNull(i))
+                    {
+                        return string.Empty;
+                    }
+
+                    return record.GetValue(i)?.ToString() ?? string.Empty;
+                }
+            }
+
+            return string.Empty;
+        }
     }
 }
-

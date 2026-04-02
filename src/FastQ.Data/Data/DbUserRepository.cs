@@ -216,7 +216,7 @@ namespace FastQ.Data.Db
                                     ProviderFlag = (reader["provider_flag"]?.ToString() ?? "Y") == "Y",
                                     ReporterFlag = (reader["reporter_Flag"]?.ToString() ?? "Y") == "Y",
                                     QueueAdminFlag = (reader["queueadmin_Flag"]?.ToString() ?? "Y") == "Y",
-                                    EntityId  =  Convert.ToInt32(reader["LOCATION_ID"]?.ToString()),
+                                    EntityId  =  ReadInt32(reader, "ENTITY_ID", "LOCATION_ID"),
                                     QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"
                             });
                         }
@@ -330,7 +330,7 @@ namespace FastQ.Data.Db
                             UserId = uid,
                             QueueId = Convert.ToInt64(reader["QUEUE_ID"]?.ToString()),
                             QueueName = reader["NAME"]?.ToString() ?? string.Empty,
-                            EntityId = Convert.ToInt32(reader["LOCATION_ID"]?.ToString()),
+                            EntityId = ReadInt32(reader, "ENTITY_ID", "LOCATION_ID"),
                             HostFlag = (reader["HOST_FLAG"]?.ToString() ?? "N") == "Y",
                             ProviderFlag = (reader["PROVIDER_FLAG"]?.ToString() ?? "N") == "Y",
                             ReporterFlag = (reader["REPORTER_FLAG"]?.ToString() ?? "N") == "Y",
@@ -342,6 +342,29 @@ namespace FastQ.Data.Db
             }
 
             return list;
+        }
+
+        private static int ReadInt32(IDataRecord record, params string[] fieldNames)
+        {
+            foreach (var fieldName in fieldNames)
+            {
+                for (var i = 0; i < record.FieldCount; i++)
+                {
+                    if (!string.Equals(record.GetName(i), fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (record.IsDBNull(i))
+                    {
+                        return 0;
+                    }
+
+                    return Convert.ToInt32(record.GetValue(i));
+                }
+            }
+
+            return 0;
         }
     }
 }

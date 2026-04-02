@@ -182,7 +182,7 @@ namespace FastQ.Data.Db
         public IList<Appointment> ListByLocation(long locationId)
         {
             if (locationId <= 0) return new List<Appointment>();
-            return ListByFilter("q.LOCATION_ID = :locationId", cmd => DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64));
+            return ListByFilter("q.ENTITY_ID = :locationId", cmd => DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64));
         }
 
         public IList<Appointment> ListAll()
@@ -525,6 +525,11 @@ namespace FastQ.Data.Db
 
         private static long ResolveLocationId(IDataRecord record, long queueId, IDictionary<long, long> locationByQueue)
         {
+            if (TryGetLong(record, "ENTITY_ID", out var entityId))
+            {
+                return entityId;
+            }
+
             if (TryGetLong(record, "LOCATION_ID", out var locationId))
             {
                 return locationId;
@@ -801,7 +806,9 @@ namespace FastQ.Data.Db
                     while (reader.Read())
                     {
                         var queueId = Convert.ToInt64(reader["QUEUE_ID"]);
-                        var locationId = Convert.ToInt64(reader["LOCATION_ID"]);
+                        var locationId = TryGetLong(reader, "ENTITY_ID", out var entityId)
+                            ? entityId
+                            : Convert.ToInt64(reader["LOCATION_ID"]);
                         map[queueId] = locationId;
                     }
                 }
@@ -849,7 +856,8 @@ namespace FastQ.Data.Db
             {
                 cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_CUSTOMER");
             }
-            else if (string.Equals(whereClause, "q.LOCATION_ID = :locationId", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(whereClause, "q.ENTITY_ID = :locationId", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(whereClause, "q.LOCATION_ID = :locationId", StringComparison.OrdinalIgnoreCase))
             {
                 cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_LOCATION");
             }

@@ -176,7 +176,7 @@ namespace FastQ.Data.Db
         private static Entities.Queue MapQueue(IDataRecord record)
         {
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
-            var locationId = Convert.ToInt64(record["LOCATION_ID"]);
+            var locationId = ReadInt64(record, "ENTITY_ID", "LOCATION_ID");
             var leadMinText = record["LEAD_TIME_MIN"]?.ToString();
             var leadMaxText = record["LEAD_TIME_MAX"]?.ToString();
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
@@ -207,6 +207,29 @@ namespace FastQ.Data.Db
             //if (int.TryParse(leadMaxText, out var leadMax)) queue.Config.MaxDaysAhead = leadMax;
 
             return queue;
+        }
+
+        private static long ReadInt64(IDataRecord record, params string[] fieldNames)
+        {
+            foreach (var fieldName in fieldNames)
+            {
+                for (var i = 0; i < record.FieldCount; i++)
+                {
+                    if (!string.Equals(record.GetName(i), fieldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (record.IsDBNull(i))
+                    {
+                        return 0;
+                    }
+
+                    return Convert.ToInt64(record.GetValue(i));
+                }
+            }
+
+            return 0;
         }
 
         private static Entities.Queue MapQueueDetails(IDataRecord record)
@@ -433,4 +456,3 @@ namespace FastQ.Data.Db
         #endregion
     }
 }
-
