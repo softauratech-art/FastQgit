@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using FastQ.Data.Entities;
 
@@ -6,8 +6,8 @@ namespace FastQ.Web.Models
 {
     public class AdminDashboardViewModel
     {
-        public long LocationId { get; set; }
-        public string LocationName { get; set; }
+        public long EntityId { get; set; }
+        public string EntityName { get; set; }
         public DateTime DisplayMonth { get; set; }
         public DateTime SelectedDate { get; set; }
         public IList<AdminAppointmentRow> TodayAppointments { get; set; } = new List<AdminAppointmentRow>();

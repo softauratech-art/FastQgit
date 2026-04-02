@@ -109,7 +109,7 @@ var FastQHome = {
 
   renderProfile: function() {
     $("#homeProfileTitle").text(this.profile.name || "Guest");
-    var contactText = "Email: " + (this.profile.email || "not set") + " · Phone: " + (this.profile.phone || "not set");
+    var contactText = "Email: " + (this.profile.email || "not set") + " Â· Phone: " + (this.profile.phone || "not set");
     $("#homeProfileSubtitle").text(contactText);
   },
 
@@ -163,7 +163,7 @@ var FastQHome = {
               id: d.AppointmentId,
               queueId: d.QueueId,
               queueName: d.QueueName || "Queue",
-              locationId: d.LocationId,
+              entityId: d.EntityId,
               status: d.Status,
               scheduledUtc: d.ScheduledForUtc,
               updatedUtc: d.UpdatedUtc,

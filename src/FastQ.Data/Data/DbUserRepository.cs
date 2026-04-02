@@ -216,7 +216,7 @@ namespace FastQ.Data.Db
                                     ProviderFlag = (reader["provider_flag"]?.ToString() ?? "Y") == "Y",
                                     ReporterFlag = (reader["reporter_Flag"]?.ToString() ?? "Y") == "Y",
                                     QueueAdminFlag = (reader["queueadmin_Flag"]?.ToString() ?? "Y") == "Y",
-                                    EntityId  =  ReadInt32(reader, "ENTITY_ID", "LOCATION_ID"),
+                                    EntityId  =  ReadInt32(reader, "ENTITY_ID"),
                                     QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"
                             });
                         }
@@ -330,7 +330,7 @@ namespace FastQ.Data.Db
                             UserId = uid,
                             QueueId = Convert.ToInt64(reader["QUEUE_ID"]?.ToString()),
                             QueueName = reader["NAME"]?.ToString() ?? string.Empty,
-                            EntityId = ReadInt32(reader, "ENTITY_ID", "LOCATION_ID"),
+                            EntityId = ReadInt32(reader, "ENTITY_ID"),
                             HostFlag = (reader["HOST_FLAG"]?.ToString() ?? "N") == "Y",
                             ProviderFlag = (reader["PROVIDER_FLAG"]?.ToString() ?? "N") == "Y",
                             ReporterFlag = (reader["REPORTER_FLAG"]?.ToString() ?? "N") == "Y",

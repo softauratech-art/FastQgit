@@ -55,7 +55,7 @@ namespace FastQ.Data.Db
         //    return list;
         //}
 
-        private static Provider MapProvider(IDataRecord record, long locationId)
+        private static Provider MapProvider(IDataRecord record, long entityId)
         {
             var userIdText = record["USER_ID"]?.ToString() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(userIdText)) return null;
@@ -68,7 +68,7 @@ namespace FastQ.Data.Db
             return new Provider
             {
                 Id = userIdText,
-                LocationId = locationId,
+                EntityId = entityId,
                 FirstName = first,
                 LastName = last,
                 Email = record["EMAIL"]?.ToString() ?? string.Empty,
@@ -98,4 +98,3 @@ namespace FastQ.Data.Db
         }
     }
 }
-

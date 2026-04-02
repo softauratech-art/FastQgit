@@ -3,10 +3,10 @@ namespace FastQ.Web.Models
     public class AppointmentSnapshotDto
     {
         public long AppointmentId { get; set; }
-        public long LocationId { get; set; }
+        public long EntityId { get; set; }
         public long QueueId { get; set; }
 
-        public string LocationName { get; set; }
+        public string EntityName { get; set; }
         public string QueueName { get; set; }
 
         public string Status { get; set; }
@@ -17,5 +17,4 @@ namespace FastQ.Web.Models
         public int WaitingCount { get; set; }
     }
 }
-
 

@@ -13,7 +13,7 @@ namespace FastQ.Data.Repositories
 
         IList<Appointment> ListByQueue(long queueId);
         IList<Appointment> ListByCustomer(long customerId);
-        IList<Appointment> ListByLocation(long locationId);
+        IList<Appointment> ListByEntity(long entityId);
         IList<Appointment> ListAll();
         IList<QueueOpenSlot> GetQueueOpenSlots(long queueId, DateTime dateLocal);
         IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc);

@@ -25,14 +25,14 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public JsonResult ReportingSnapshot(string locationId, string queueId)
+        public JsonResult ReportingSnapshot(string entityId, string queueId)
         {
-            long locId;
+            long parsedEntityId;
             long qId;
-            var hasLocation = long.TryParse(locationId, out locId);
+            var hasEntity = long.TryParse(entityId, out parsedEntityId);
             var hasQueue = long.TryParse(queueId, out qId);
 
-            var appointments = _service.ListAppointments(hasLocation ? (long?)locId : null).ToList();
+            var appointments = _service.ListAppointments(hasEntity ? (long?)parsedEntityId : null).ToList();
 
             if (hasQueue)
                 appointments = appointments.Where(a => a.QueueId == qId).ToList();
@@ -47,7 +47,7 @@ namespace FastQ.Web.Controllers
             var cancelledToday = appointments.Count(a => a.UpdatedUtc >= dayStart && a.UpdatedUtc < dayEnd &&
                                                        (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem));
 
-            var providers = _service.ListProviders(hasLocation ? (long?)locId : null);
+            var providers = _service.ListProviders(hasEntity ? (long?)parsedEntityId : null);
 
             var providerRows = providers.Select(p => new
             {
@@ -60,7 +60,7 @@ namespace FastQ.Web.Controllers
                                                    (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
             }).ToList();
 
-            var queues = _service.ListQueues(hasLocation ? (long?)locId : null);
+            var queues = _service.ListQueues(hasEntity ? (long?)parsedEntityId : null);
 
             var queueRows = queues.Select(q => new
             {

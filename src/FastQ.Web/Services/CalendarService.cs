@@ -55,7 +55,7 @@ namespace FastQ.Web.Services
             {
                 DisplayMonth = monthStart,
                 SelectedDate = selected,
-                LocationName = string.IsNullOrWhiteSpace(userId) ? "Assigned provider schedule" : userId,
+                EntityName = string.IsNullOrWhiteSpace(userId) ? "Assigned provider schedule" : userId,
                 QueueOptions = _providerService.ListQueues()
                     .OrderBy(q => q.Name)
                     .Select(q => new AdminOptionItem

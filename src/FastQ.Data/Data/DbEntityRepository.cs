@@ -6,13 +6,13 @@ using FastQ.Data.Repositories;
 
 namespace FastQ.Data.Db
 {
-    public sealed class DbLocationRepository : ILocationRepository
+    public sealed class DbEntityRepository : IEntityRepository
     {
-        public DbLocationRepository()
+        public DbEntityRepository()
         {
         }
 
-        public Location Get(long id)
+        public Entity Get(long id)
         {
             if (id <= 0) return null;
 
@@ -20,54 +20,54 @@ namespace FastQ.Data.Db
             using (var cmd = DataAccess.CreateCommand(conn,
                 @"SELECT ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
                   FROM VALIDENTITIES
-                  WHERE ENTITY_ID = :locationId"))
+                  WHERE ENTITY_ID = :entityId"))
             {
-                DataAccess.AddParam(cmd, "locationId", id, DbType.Int64);
+                DataAccess.AddParam(cmd, "entityId", id, DbType.Int64);
                 using (var reader = cmd.ExecuteReader())
                 {
-                    return reader.Read() ? MapLocation(reader) : null;
+                    return reader.Read() ? MapEntity(reader) : null;
                 }
             }
         }
 
-        public void Add(Location location)
+        public void Add(Entity entity)
         {
             using (var conn = DataAccess.Open())
             {
-                var locationId = location.Id;
-                if (locationId <= 0)
+                var entityId = entity.Id;
+                if (entityId <= 0)
                 {
                     using (var cmd = DataAccess.CreateCommand(conn, "SELECT NVL(MAX(ENTITY_ID),0) + 1 FROM fqowner.VALIDENTITIES"))
                     {
-                        locationId = Convert.ToInt64(cmd.ExecuteScalar());
+                        entityId = Convert.ToInt64(cmd.ExecuteScalar());
                     }
-                    location.Id = locationId;
+                    entity.Id = entityId;
                 }
 
                 using (var cmd = DataAccess.CreateCommand(conn,
                     @"INSERT INTO VALIDENTITIES
                         (ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG)
                       VALUES
-                        (:locationId, :name, :address, :phone, :opensAt, :closesAt, :description, :activeFlag)"))
+                        (:entityId, :name, :address, :phone, :opensAt, :closesAt, :description, :activeFlag)"))
                 {
-                    DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "name", location.Name ?? string.Empty, DbType.String);
-                    DataAccess.AddParam(cmd, "address", location.Address ?? string.Empty, DbType.String);
-                    DataAccess.AddParam(cmd, "phone", location.Phone ?? string.Empty, DbType.String);
-                    DataAccess.AddParam(cmd, "opensAt", location.OpensAt, DbType.DateTime);
-                    DataAccess.AddParam(cmd, "closesAt", location.ClosesAt, DbType.DateTime);
-                    DataAccess.AddParam(cmd, "description", location.Description ?? string.Empty, DbType.String);
-                    DataAccess.AddParam(cmd, "activeFlag", location.ActiveFlag ? "Y" : "N", DbType.String);
+                    DataAccess.AddParam(cmd, "entityId", entityId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "name", entity.Name ?? string.Empty, DbType.String);
+                    DataAccess.AddParam(cmd, "address", entity.Address ?? string.Empty, DbType.String);
+                    DataAccess.AddParam(cmd, "phone", entity.Phone ?? string.Empty, DbType.String);
+                    DataAccess.AddParam(cmd, "opensAt", entity.OpensAt, DbType.DateTime);
+                    DataAccess.AddParam(cmd, "closesAt", entity.ClosesAt, DbType.DateTime);
+                    DataAccess.AddParam(cmd, "description", entity.Description ?? string.Empty, DbType.String);
+                    DataAccess.AddParam(cmd, "activeFlag", entity.ActiveFlag ? "Y" : "N", DbType.String);
                     cmd.ExecuteNonQuery();
                 }
             }
         }
 
-        public void Update(Location location)
+        public void Update(Entity entity)
         {
-            var locationId = location.Id;
-            if (locationId <= 0)
-                throw new InvalidOperationException("Location Id must be a numeric ID.");
+            var entityId = entity.Id;
+            if (entityId <= 0)
+                throw new InvalidOperationException("Entity Id must be a numeric ID.");
 
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
@@ -79,23 +79,23 @@ namespace FastQ.Data.Db
                       CLOSES_AT = :closesAt,
                       DESCRIPTION = :description,
                       ACTIVEFLAG = :activeFlag
-                  WHERE ENTITY_ID = :locationId"))
+                  WHERE ENTITY_ID = :entityId"))
             {
-                DataAccess.AddParam(cmd, "name", location.Name ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "address", location.Address ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "phone", location.Phone ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "opensAt", location.OpensAt, DbType.DateTime);
-                DataAccess.AddParam(cmd, "closesAt", location.ClosesAt, DbType.DateTime);
-                DataAccess.AddParam(cmd, "description", location.Description ?? string.Empty, DbType.String);
-                DataAccess.AddParam(cmd, "activeFlag", location.ActiveFlag ? "Y" : "N", DbType.String);
-                DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64);
+                DataAccess.AddParam(cmd, "name", entity.Name ?? string.Empty, DbType.String);
+                DataAccess.AddParam(cmd, "address", entity.Address ?? string.Empty, DbType.String);
+                DataAccess.AddParam(cmd, "phone", entity.Phone ?? string.Empty, DbType.String);
+                DataAccess.AddParam(cmd, "opensAt", entity.OpensAt, DbType.DateTime);
+                DataAccess.AddParam(cmd, "closesAt", entity.ClosesAt, DbType.DateTime);
+                DataAccess.AddParam(cmd, "description", entity.Description ?? string.Empty, DbType.String);
+                DataAccess.AddParam(cmd, "activeFlag", entity.ActiveFlag ? "Y" : "N", DbType.String);
+                DataAccess.AddParam(cmd, "entityId", entityId, DbType.Int64);
                 cmd.ExecuteNonQuery();
             }
         }
 
-        public IList<Location> ListAll()
+        public IList<Entity> ListAll()
         {
-            var list = new List<Location>();
+            var list = new List<Entity>();
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateCommand(conn,
                 @"SELECT ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
@@ -104,23 +104,23 @@ namespace FastQ.Data.Db
             {
                 while (reader.Read())
                 {
-                    list.Add(MapLocation(reader));
+                    list.Add(MapEntity(reader));
                 }
             }
 
             return list;
         }
 
-        private static Location MapLocation(IDataRecord record)
+        private static Entity MapEntity(IDataRecord record)
         {
-            var locationId = ReadInt64(record, "ENTITY_ID", "LOCATION_ID");
+            var entityId = ReadInt64(record, "ENTITY_ID");
             var opensAt = record["OPENS_AT"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(record["OPENS_AT"]);
             var closesAt = record["CLOSES_AT"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(record["CLOSES_AT"]);
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
-            return new Location
+            return new Entity
             {
-                Id = locationId,
-                Name = ReadString(record, "ENTITY_NAME", "LOCNAME"),
+                Id = entityId,
+                Name = ReadString(record, "ENTITY_NAME"),
                 Address = record["ADDRESS"]?.ToString() ?? string.Empty,
                 Phone = record["PHONE"]?.ToString() ?? string.Empty,
                 OpensAt = opensAt,

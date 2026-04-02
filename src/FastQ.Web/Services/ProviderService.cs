@@ -77,9 +77,9 @@ namespace FastQ.Web.Services
             return ListEligibleQueues();
         }
 
-        public IList<Queue> ListTransferQueues(long? locationId)
+        public IList<Queue> ListTransferQueues(long? entityId)
         {
-            return ListEligibleQueues(locationId);
+            return ListEligibleQueues(entityId);
         }
 
         public IList<Tuple<long, string>> ListTransferServices(long queueId)
@@ -320,9 +320,9 @@ namespace FastQ.Web.Services
             };
         }
 
-        public QueueSnapshotDto GetQueueSnapshot(long locationId, long queueId)
+        public QueueSnapshotDto GetQueueSnapshot(long entityId, long queueId)
         {
-            //var location = _locations.Get(locationId);
+            //var location = _locations.Get(entityId);
             var queue = _queues.Get(queueId);
 
             var all = _appts.ListByQueue(queueId)
@@ -340,9 +340,9 @@ namespace FastQ.Web.Services
 
             var dto = new QueueSnapshotDto
             {
-                LocationId = locationId,
+                EntityId = entityId,
                 QueueId = queueId,
-                //LocationName = location?.Name ?? "Unknown",
+                //EntityName = location?.Name ?? "Unknown",
                 QueueName = queue?.Name ?? "Unknown",
                 WaitingCount = waiting.Count,
                 InServiceCount = inService.Count,
@@ -510,10 +510,10 @@ namespace FastQ.Web.Services
                 sourceAppt.UpdatedUtc = _clock.UtcNow;
                 sourceAppt.StampDateUtc = _clock.UtcNow;
                 _rt.AppointmentChanged(sourceAppt);
-                _rt.QueueChanged(sourceAppt.LocationId, sourceAppt.QueueId);
+                _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
             }
 
-            _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
+            _rt.QueueChanged(targetQueue.EntityId, targetQueue.Id);
             return Result<long>.Success(newSrcId);
         }
 
@@ -562,7 +562,7 @@ namespace FastQ.Web.Services
                     appt.UpdatedUtc = _clock.UtcNow;
                     appt.StampDateUtc = _clock.UtcNow;
                     _rt.AppointmentChanged(appt);
-                    _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                    _rt.QueueChanged(appt.EntityId, appt.QueueId);
                 }
             }
 
@@ -571,7 +571,7 @@ namespace FastQ.Web.Services
                 var targetQueue = _queues.Get(request.TargetQueueId.Value);
                 if (targetQueue != null)
                 {
-                    _rt.QueueChanged(targetQueue.LocationId, targetQueue.Id);
+                    _rt.QueueChanged(targetQueue.EntityId, targetQueue.Id);
                 }
             }
 
@@ -595,7 +595,7 @@ namespace FastQ.Web.Services
                 _appts.Update(a);
 
                 _rt.AppointmentChanged(a);
-                _rt.QueueChanged(a.LocationId, a.QueueId);
+                _rt.QueueChanged(a.EntityId, a.QueueId);
             }
 
             return stale.Count;
@@ -626,7 +626,7 @@ namespace FastQ.Web.Services
                 appt.StampDateUtc = now;
 
                 _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
 
             return Result.Success();
@@ -657,7 +657,7 @@ namespace FastQ.Web.Services
                 appt.StampDateUtc = now;
 
                 _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
 
             return Result.Success();
@@ -687,7 +687,7 @@ namespace FastQ.Web.Services
                 appt.StampDateUtc = now;
 
                 _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
 
             return Result.Success();
@@ -718,7 +718,7 @@ namespace FastQ.Web.Services
                 appt.StampDateUtc = now;
 
                 _rt.AppointmentChanged(appt);
-                _rt.QueueChanged(appt.LocationId, appt.QueueId);
+                _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
 
             return Result.Success();

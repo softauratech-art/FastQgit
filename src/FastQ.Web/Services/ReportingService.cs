@@ -28,23 +28,23 @@ namespace FastQ.Web.Services
             _queues = queues;
         }
 
-        public IList<Appointment> ListAppointments(long? locationId)
+        public IList<Appointment> ListAppointments(long? entityId)
         {
-            return locationId.HasValue ? _appts.ListByLocation(locationId.Value) : _appts.ListAll();
+            return entityId.HasValue ? _appts.ListByEntity(entityId.Value) : _appts.ListAll();
         }
 
-        public IList<Provider> ListProviders(long? locationId)
+        public IList<Provider> ListProviders(long? entityId)
         {
-            return locationId.HasValue ? _providers.ListByEntity(locationId.Value) : [];
+            return entityId.HasValue ? _providers.ListByEntity(entityId.Value) : [];
         }
 
-        public IList<Queue> ListQueues(long? locationId)
+        public IList<Queue> ListQueues(long? entityId)
         {
             var auth = new AuthService();
             var sessionEntityId = auth.GetSessionEntityId();
             var effectiveEntityId = sessionEntityId > 0
                 ? (long?)sessionEntityId
-                : (locationId.HasValue && locationId.Value > 0 ? locationId : (long?)null);
+                : (entityId.HasValue && entityId.Value > 0 ? entityId : (long?)null);
 
             if (!effectiveEntityId.HasValue || effectiveEntityId.Value <= 0)
             {

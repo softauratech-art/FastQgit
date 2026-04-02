@@ -18,14 +18,14 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             {
-                var locationByQueue = LoadQueueLocations(conn);
+                var entityByQueue = LoadQueueEntities(conn);
                 using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPT_DETAILS"))
                 {
                     DataAccess.AddParam(cmd, "p_apptid", id, DbType.Int64);
                     DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                     using (var reader = cmd.ExecuteReader())
                     {
-                        return reader.Read() ? MapAppointment(reader, locationByQueue) : null;
+                        return reader.Read() ? MapAppointment(reader, entityByQueue) : null;
                     }
                 }
             }
@@ -179,10 +179,10 @@ namespace FastQ.Data.Db
             return ListByFilter("a.CUSTOMER_ID = :customerId", cmd => DataAccess.AddParam(cmd, "customerId", customerId, DbType.Int64));
         }
 
-        public IList<Appointment> ListByLocation(long locationId)
+        public IList<Appointment> ListByEntity(long entityId)
         {
-            if (locationId <= 0) return new List<Appointment>();
-            return ListByFilter("q.ENTITY_ID = :locationId", cmd => DataAccess.AddParam(cmd, "locationId", locationId, DbType.Int64));
+            if (entityId <= 0) return new List<Appointment>();
+            return ListByFilter("q.ENTITY_ID = :entityId", cmd => DataAccess.AddParam(cmd, "entityId", entityId, DbType.Int64));
         }
 
         public IList<Appointment> ListAll()
@@ -480,12 +480,12 @@ namespace FastQ.Data.Db
             return ReadField(record, "MEETINGURL");
         }
 
-        private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> locationByQueue)
+        private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> entityByQueue)
         {
             var apptId = Convert.ToInt64(record["APPOINTMENT_ID"]);
             var customerId = Convert.ToInt64(record["CUSTOMER_ID"]);
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
-            var locationId = ResolveLocationId(record, queueId, locationByQueue);
+            var entityId = ResolveEntityId(record, queueId, entityByQueue);
             var apptDate = record["APPT_DATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["APPT_DATE"]);
             var startTime = ReadInterval(record, "START_TIME");
             var endTime = ReadInterval(record, "END_TIME");
@@ -501,7 +501,7 @@ namespace FastQ.Data.Db
                 Id = apptId,
                 CustomerId = customerId,
                 QueueId = queueId,
-                LocationId = locationId,
+                EntityId = entityId,
                 ServiceId = serviceId,
                 RefCriteria = record["REF_CRITERIA"]?.ToString(),
                 RefValue = record["REF_VALUE"]?.ToString(),
@@ -523,19 +523,14 @@ namespace FastQ.Data.Db
             };
         }
 
-        private static long ResolveLocationId(IDataRecord record, long queueId, IDictionary<long, long> locationByQueue)
+        private static long ResolveEntityId(IDataRecord record, long queueId, IDictionary<long, long> entityByQueue)
         {
             if (TryGetLong(record, "ENTITY_ID", out var entityId))
             {
                 return entityId;
             }
 
-            if (TryGetLong(record, "LOCATION_ID", out var locationId))
-            {
-                return locationId;
-            }
-
-            if (locationByQueue != null && locationByQueue.TryGetValue(queueId, out var mappedId))
+            if (entityByQueue != null && entityByQueue.TryGetValue(queueId, out var mappedId))
             {
                 return mappedId;
             }
@@ -794,26 +789,58 @@ namespace FastQ.Data.Db
             return id.Value;
         }
 
-        private static Dictionary<long, long> LoadQueueLocations(DbConnection conn)
+        private static Dictionary<long, long> LoadQueueEntities(DbConnection conn)
         {
             var map = new Dictionary<long, long>();
             using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUES"))
             {
-                DataAccess.AddParam(cmd, "p_location", null, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_entity_id", null, DbType.Int64);
                 DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
                         var queueId = Convert.ToInt64(reader["QUEUE_ID"]);
-                        var locationId = TryGetLong(reader, "ENTITY_ID", out var entityId)
-                            ? entityId
-                            : Convert.ToInt64(reader["LOCATION_ID"]);
-                        map[queueId] = locationId;
+                        var entityId = Convert.ToInt64(reader["ENTITY_ID"]);
+                        map[queueId] = entityId;
                     }
                 }
             }
             return map;
+        }
+
+        private static bool IsEntityFilter(string whereClause)
+        {
+            return string.Equals(whereClause, "q.ENTITY_ID = :entityId", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(whereClause, "q.ENTITY_ID = :entityId", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static DbCommand CreateListCommand(DbConnection conn, string whereClause, Action<DbCommand> addParams)
+        {
+            DbCommand cmd;
+            if (string.Equals(whereClause, "a.QUEUE_ID = :queueId", StringComparison.OrdinalIgnoreCase))
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_QUEUE");
+            }
+            else if (string.Equals(whereClause, "a.CUSTOMER_ID = :customerId", StringComparison.OrdinalIgnoreCase))
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_CUSTOMER");
+            }
+            else if (IsEntityFilter(whereClause))
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_ENTITY");
+            }
+            else
+            {
+                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_ALL_APPTS");
+            }
+
+            addParams?.Invoke(cmd);
+            RenameParameterIfPresent(cmd, "queueId", "p_queueid");
+            RenameParameterIfPresent(cmd, "customerId", "p_customerid");
+            RenameParameterIfPresent(cmd, "entityId", "p_entityid");
+            DataAccess.AddOutRefCursor(cmd, "p_cur");
+            return cmd;
         }
 
         private static bool ToOracleBool(object value)
@@ -845,34 +872,6 @@ namespace FastQ.Data.Db
             return false;
         }
 
-        private static DbCommand CreateListCommand(DbConnection conn, string whereClause, Action<DbCommand> addParams)
-        {
-            DbCommand cmd;
-            if (string.Equals(whereClause, "a.QUEUE_ID = :queueId", StringComparison.OrdinalIgnoreCase))
-            {
-                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_QUEUE");
-            }
-            else if (string.Equals(whereClause, "a.CUSTOMER_ID = :customerId", StringComparison.OrdinalIgnoreCase))
-            {
-                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_CUSTOMER");
-            }
-            else if (string.Equals(whereClause, "q.ENTITY_ID = :locationId", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(whereClause, "q.LOCATION_ID = :locationId", StringComparison.OrdinalIgnoreCase))
-            {
-                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPTS_BY_LOCATION");
-            }
-            else
-            {
-                cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_ALL_APPTS");
-            }
-
-            addParams?.Invoke(cmd);
-            RenameParameterIfPresent(cmd, "queueId", "p_queueid");
-            RenameParameterIfPresent(cmd, "customerId", "p_customerid");
-            RenameParameterIfPresent(cmd, "locationId", "p_locationid");
-            DataAccess.AddOutRefCursor(cmd, "p_cur");
-            return cmd;
-        }
 
         private static void RenameParameterIfPresent(DbCommand cmd, string fromName, string toName)
         {

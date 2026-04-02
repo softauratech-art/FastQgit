@@ -55,7 +55,7 @@ namespace FastQ.Web.Services
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
-        public Result<Appointment> BookFirstAvailable(long locationId, long queueId, string phone, string email, bool smsOptIn, string name = null)
+        public Result<Appointment> BookFirstAvailable(long entityId, long queueId, string phone, string email, bool smsOptIn, string name = null)
         {
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<Appointment>.Fail("Phone is required.");
@@ -66,16 +66,14 @@ namespace FastQ.Web.Services
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<Appointment>.Fail("Queue not found.");
 
-            if (locationId <= 0)
+            if (entityId <= 0)
             {
-                locationId = queue.LocationId;
+                entityId = queue.EntityId;
             }
 
-            //var location = _locations.Get(locationId);
-            var location = "";
-            if (location == null) return Result<Appointment>.Fail("Location not found.");
+            //var entity = _entities.Get(entityId);
 
-            if (queue.LocationId != locationId) return Result<Appointment>.Fail("Queue not found for this location.");
+            if (queue.EntityId != entityId) return Result<Appointment>.Fail("Queue not found for this entity.");
 
             var customer = GetOrCreateCustomer(name, email, phone, smsOptIn, "web", now);
 
@@ -95,7 +93,7 @@ namespace FastQ.Web.Services
             var appt = new Appointment
             {
                 Id = 0,
-                LocationId = locationId,
+                EntityId = entityId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 ScheduledForUtc = candidate,
@@ -111,7 +109,7 @@ namespace FastQ.Web.Services
             _appts.Add(appt);
 
             _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(locationId, queueId);
+            _rt.QueueChanged(entityId, queueId);
 
             return Result<Appointment>.Success(appt);
         }
@@ -174,7 +172,7 @@ namespace FastQ.Web.Services
             var appt = new Appointment
             {
                 Id = 0,
-                LocationId = queue.LocationId,
+                EntityId = queue.EntityId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 CustomerEmail = customer.Email,
@@ -203,7 +201,7 @@ namespace FastQ.Web.Services
             var insertedAppt = _appts.Get(appt.Id) ?? appt;
             SendAppointmentConfirmation(insertedAppt, queue, customerName, parsedServiceId);
             _rt.AppointmentChanged(insertedAppt);
-            _rt.QueueChanged(insertedAppt.LocationId, insertedAppt.QueueId);
+            _rt.QueueChanged(insertedAppt.EntityId, insertedAppt.QueueId);
 
             return Result<Appointment>.Success(insertedAppt);
         }
@@ -255,7 +253,7 @@ namespace FastQ.Web.Services
             var walkin = new Appointment
             {
                 Id = 0,
-                LocationId = queue.LocationId,
+                EntityId = queue.EntityId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
@@ -277,7 +275,7 @@ namespace FastQ.Web.Services
 
             var newId = _appts.AddWalkin(walkin);
             _rt.AppointmentChanged(walkin);
-            _rt.QueueChanged(walkin.LocationId, walkin.QueueId);
+            _rt.QueueChanged(walkin.EntityId, walkin.QueueId);
 
             return Result<long>.Success(newId);
         }
@@ -307,7 +305,7 @@ namespace FastQ.Web.Services
             _appts.Update(appt);
 
             _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(appt.LocationId, appt.QueueId);
+            _rt.QueueChanged(appt.EntityId, appt.QueueId);
 
             return Result.Success();
         }
@@ -317,15 +315,15 @@ namespace FastQ.Web.Services
             var appt = _appts.Get(appointmentId);
             if (appt == null) return null;
 
-            //var location = _locations.Get(appt.LocationId);
+            //var location = _locations.Get(appt.EntityId);
             var queue = _queues.Get(appt.QueueId);
 
             var snapshot = new AppointmentSnapshotDto
             {
                 AppointmentId = appt.Id,
-                LocationId = appt.LocationId,
+                EntityId = appt.EntityId,
                 QueueId = appt.QueueId,
-                //LocationName = location?.Name ?? "Unknown",
+                //EntityName = location?.Name ?? "Unknown",
                 QueueName = queue?.Name ?? "Unknown",
                 Status = appt.Status.ToString(),
                 ScheduledForUtc = (appt.ScheduledForUtc.Kind == DateTimeKind.Utc ? appt.ScheduledForUtc.ToLocalTime() : appt.ScheduledForUtc).ToString("yyyy-MM-dd h:mm tt"),

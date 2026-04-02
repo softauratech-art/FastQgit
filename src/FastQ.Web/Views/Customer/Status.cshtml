@@ -47,7 +47,7 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Status timeline</h3>
-        <p class="card-subtitle">Scheduled · Check-in · Start · Transfer · Remove</p>
+        <p class="card-subtitle">Scheduled Â· Check-in Â· Start Â· Transfer Â· Remove</p>
     </div>
     <div id="statusTimeline" class="stepper"></div>
 </div>
@@ -84,7 +84,7 @@ var FastQStatus = {
         FastQStatus.renderTimeline(d.Status);
 
         // Update context so fastq.live.js joins location/queue too (for more events)
-        window.FASTQ_CONTEXT.locationId = d.LocationId;
+        window.FASTQ_CONTEXT.entityId = d.EntityId;
         window.FASTQ_CONTEXT.queueId = d.QueueId;
 
         $("#msg").addClass("ok").text("Up to date.");

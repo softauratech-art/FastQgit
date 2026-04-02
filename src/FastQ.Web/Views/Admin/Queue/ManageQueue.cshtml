@@ -1,4 +1,4 @@
-﻿@model FastQ.Web.Models.Admin.QueueVM
+@model FastQ.Web.Models.Admin.QueueVM
 @using FastQ.Web.Helpers
 
 @{
@@ -51,7 +51,7 @@
         <div class="grid-3">
             <div class="card">
                 @Html.HiddenFor(model => model.Id)
-                @Html.HiddenFor(model => model.LocationId)
+                @Html.HiddenFor(model => model.EntityId)
                 <div class="card-body">
                     <div class="card-title"><i class="bi bi-card-heading"></i>Identity & Translations</div>
                     <div class="form-group">

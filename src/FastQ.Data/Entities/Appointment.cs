@@ -5,7 +5,7 @@ namespace FastQ.Data.Entities
     public class Appointment
     {
         public long Id { get; set; }
-        public long LocationId { get; set; }
+        public long EntityId { get; set; }
         public long QueueId { get; set; }
         public long CustomerId { get; set; }
         public string CustomerEmail { get; set; }

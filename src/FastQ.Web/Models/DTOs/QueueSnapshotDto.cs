@@ -14,9 +14,9 @@ namespace FastQ.Web.Models
 
     public class QueueSnapshotDto
     {
-        public long LocationId { get; set; }
+        public long EntityId { get; set; }
         public long QueueId { get; set; }
-        public string LocationName { get; set; }
+        public string EntityName { get; set; }
         public string QueueName { get; set; }
 
         public int WaitingCount { get; set; }
@@ -28,5 +28,4 @@ namespace FastQ.Web.Models
         public List<AppointmentRowDto> Done { get; set; } = new List<AppointmentRowDto>();
     }
 }
-
 

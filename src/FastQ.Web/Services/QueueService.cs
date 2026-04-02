@@ -47,7 +47,7 @@ namespace FastQ.Web.Services
                 NameCP = item.NameCp,
                 NameES = item.NameEs,
                 Id = item.Id,
-                LocationId = item.LocationId,
+                EntityId = item.EntityId,
                 ActiveFlag = item.ActiveFlag,
                 LeadTimeMin = item.LeadTimeMin,
                 LeadTimeMax = item.LeadTimeMax,
@@ -70,7 +70,7 @@ namespace FastQ.Web.Services
             Int64 newid = _queues.AddOrUpdateQueue(new Queue
             {
                 Id = qvm.Id,
-                LocationId = qvm.LocationId,
+                EntityId = qvm.EntityId,
                 Name = qvm.Name,
                 NameCp = qvm.NameCP,
                 NameEs = qvm.NameES,
@@ -133,7 +133,7 @@ namespace FastQ.Web.Services
                     NameCP = r.NameCp,
                     NameES = r.NameEs,
                     Id = r.Id,
-                    LocationId = r.LocationId,
+                    EntityId = r.EntityId,
                     ActiveFlag = r.ActiveFlag,
                     LeadTimeMin = r.LeadTimeMin,
                     LeadTimeMax = r.LeadTimeMax,
@@ -290,7 +290,7 @@ namespace FastQ.Web.Services
         //    JArray jsonArray = JArray.Parse(json);
         //    List<QueueScheduleVM> items = new List<QueueScheduleVM>();
         //    //""services"":[  {""service_id"":10004,""service_name"":""Pick "",""service_name_es"":""Recogida"",""service_name_cp"":""Ranmase/depoze""},
-        //    //                {""service_id"":10005,""service_name"":""Questions: general (Residential)"",""service_name_es"":""Preguntas)"",""service_name_cp"":""Kesyon: sy�l)""}]
+        //    //                {""service_id"":10005,""service_name"":""Questions: general (Residential)"",""service_name_es"":""Preguntas)"",""service_name_cp"":""Kesyon: syÃ¯Â¿Â½l)""}]
 
         //    //schedules"":[{""schedule_id"":2,""date_begin"":""2026-01-01T00:00:00"",""date_end"":""2026-12-31T00:00:00"",""open_time"":""PT11H"",""close_time"":""PT14H"",""interval_time"":""PT1H"",""weekly_sch"":""24"",""available_resources"":2},
         //    //             {""schedule_id"":6,""date_begin"":""2026-01-01T00:00:00"",""date_end"":""2026-12-31T00:00:00"",""open_time"":""PT13H"",""close_time"":""PT15H30M"",""interval_time"":""PT1H"",""weekly_sch"":""3"",""available_resources"":1}]

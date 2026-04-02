@@ -1,4 +1,4 @@
-﻿
+
 @model FastQ.Web.Models.Admin.UserVM
 @{
     ViewBag.Title = "User Settings";
@@ -134,7 +134,7 @@
                         </thead>
                         <tbody>
                             @{
-                                var qlist = new FastQ.Web.Services.QueueService().ListQueues().Where(e => e.LocationId == new FastQ.Web.Services.AuthService().GetSessionEntityId()).OrderBy(q => q.Name);
+                                var qlist = new FastQ.Web.Services.QueueService().ListQueues().Where(e => e.EntityId == new FastQ.Web.Services.AuthService().GetSessionEntityId()).OrderBy(q => q.Name);
                                 foreach (FastQ.Web.Models.Admin.QueueVM q in qlist)
                                 {
 

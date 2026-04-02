@@ -41,7 +41,7 @@ namespace FastQ.Data.Db
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_queueid", oqueue.Id, DbType.Int64);
-                DataAccess.AddParam(cmd, "p_locationid", oqueue.LocationId, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_entityid", oqueue.EntityId, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_name", oqueue.Name, DbType.String);
                 DataAccess.AddParam(cmd, "p_namees", oqueue.NameEs, DbType.String);
                 DataAccess.AddParam(cmd, "p_namecp", oqueue.NameCp, DbType.String);
@@ -101,7 +101,7 @@ namespace FastQ.Data.Db
             using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_MYQUEUES"))
             {
                 DataAccess.AddParam(cmd, "p_userid", stampuser, DbType.String);
-                DataAccess.AddParam(cmd, "p_location", entityid, DbType.Int64);
+                DataAccess.AddParam(cmd, "p_entityid", entityid, DbType.Int64);
                 DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -176,7 +176,7 @@ namespace FastQ.Data.Db
         private static Entities.Queue MapQueue(IDataRecord record)
         {
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
-            var locationId = ReadInt64(record, "ENTITY_ID", "LOCATION_ID");
+            var entityId = ReadInt64(record, "ENTITY_ID");
             var leadMinText = record["LEAD_TIME_MIN"]?.ToString();
             var leadMaxText = record["LEAD_TIME_MAX"]?.ToString();
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
@@ -189,7 +189,7 @@ namespace FastQ.Data.Db
             var queue = new Queue
             {
                 Id = queueId,
-                LocationId = locationId,
+                EntityId = entityId,
                 Name = record["NAME"]?.ToString() ?? string.Empty,
                 NameEs = record["NAME_ES"]?.ToString() ?? string.Empty,
                 NameCp = record["NAME_CP"]?.ToString() ?? string.Empty,
@@ -248,11 +248,11 @@ namespace FastQ.Data.Db
 
             var queue = new Entities.Queue
             {
-                Name = jo["name"].ToString(),
-                NameCp = jo["name_cp"].ToString(),
-                NameEs = jo["name_es"].ToString(),
-                Id = Convert.ToInt64(jo["queue_id"].ToString()),
-                LocationId = Convert.ToInt64(jo["location_id"].ToString()),
+                Name = ReadJsonString(jo, "name", "entity_name"),
+                NameCp = ReadJsonString(jo, "name_cp"),
+                NameEs = ReadJsonString(jo, "name_es"),
+                Id = ReadJsonInt64(jo, "queue_id"),
+                EntityId = ReadJsonInt64(jo, "entity_id"),
                 ActiveFlag = (jo["configOptions"]["activeflag"]?.ToString() ?? "N") == "Y",
                 LeadTimeMin = jo["configOptions"]["lead_time_min"].ToString(),
                 LeadTimeMax = jo["configOptions"]["lead_time_max"].ToString(),
@@ -268,6 +268,41 @@ namespace FastQ.Data.Db
             };
 
             return queue;
+        }
+
+        private static long ReadJsonInt64(JObject data, params string[] propertyNames)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                var token = data[propertyName];
+                if (token == null || token.Type == JTokenType.Null)
+                {
+                    continue;
+                }
+
+                if (long.TryParse(token.ToString(), out var value))
+                {
+                    return value;
+                }
+            }
+
+            return 0;
+        }
+
+        private static string ReadJsonString(JObject data, params string[] propertyNames)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                var token = data[propertyName];
+                if (token == null || token.Type == JTokenType.Null)
+                {
+                    continue;
+                }
+
+                return token.ToString();
+            }
+
+            return string.Empty;
         }
 
         private static IList<QSchedule> MapSchedules(string data)

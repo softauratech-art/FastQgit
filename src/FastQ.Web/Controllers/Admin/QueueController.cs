@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -44,7 +44,7 @@ namespace FastQ.Web.Controllers.Admin
         {
             //If id=0 For-Insert
             if (id == 0)
-                return View(controllerpath + "ManageQueue", new QueueVM { Id = 0, LocationId = 1 });
+                return View(controllerpath + "ManageQueue", new QueueVM { Id = 0, EntityId = 1 });
 
             //else For-Update
             var oQueue = _service.GetQueue(id);

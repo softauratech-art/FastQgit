@@ -5,7 +5,7 @@ namespace FastQ.Data.Entities
     public class Queue
     {
         public long Id { get; set; }
-        public long LocationId { get; set; }
+        public long EntityId { get; set; }
         public string Name { get; set; }
         public string NameEs { get; set; }
         public string NameCp { get; set; }
@@ -26,4 +26,3 @@ namespace FastQ.Data.Entities
         public IList<QSchedule> Schedules { get; set; }
     }
 }
-

@@ -117,21 +117,21 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetQueueSnapshot(string locationId, string queueId)
+        public JsonResult GetQueueSnapshot(string entityId, string queueId)
         {
-            if (!long.TryParse(locationId, out var locId) || !long.TryParse(queueId, out var qId))
-                return Json(new { ok = false, error = "locationId and queueId are required" }, JsonRequestBehavior.AllowGet);
+            if (!long.TryParse(entityId, out var parsedEntityId) || !long.TryParse(queueId, out var qId))
+                return Json(new { ok = false, error = "entityId and queueId are required" }, JsonRequestBehavior.AllowGet);
 
-            var dto = _service.GetQueueSnapshot(locId, qId);
+            var dto = _service.GetQueueSnapshot(parsedEntityId, qId);
             return Json(new { ok = true, data = dto }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
-        public JsonResult GetTransferQueues(string locationId)
+        public JsonResult GetTransferQueues(string entityId)
         {
-            long parsedLocationId;
-            long? location = long.TryParse(locationId, out parsedLocationId) ? parsedLocationId : (long?)null;
-            var queues = _service.ListTransferQueues(location)
+            long parsedEntityId;
+            long? selectedEntityId = long.TryParse(entityId, out parsedEntityId) ? parsedEntityId : (long?)null;
+            var queues = _service.ListTransferQueues(selectedEntityId)
                 .Select(q => new
                 {
                     code = q.Id.ToString(CultureInfo.InvariantCulture),

@@ -5,8 +5,8 @@ namespace FastQ.Web.Hubs
 {
     public class QueueHub : Hub
     {
-        public Task JoinLocation(string locationId)
-            => Groups.Add(Context.ConnectionId, $"loc:{locationId}");
+        public Task JoinEntity(string entityId)
+            => Groups.Add(Context.ConnectionId, $"ent:{entityId}");
 
         public Task JoinQueue(string queueId)
             => Groups.Add(Context.ConnectionId, $"queue:{queueId}");

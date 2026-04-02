@@ -5,7 +5,7 @@ namespace FastQ.Data.Entities
     public class Provider
     {
         public string Id { get; set; }
-        public long LocationId { get; set; }
+        public long EntityId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Email { get; set; }
@@ -38,4 +38,3 @@ namespace FastQ.Data.Entities
         }
     }
 }
-

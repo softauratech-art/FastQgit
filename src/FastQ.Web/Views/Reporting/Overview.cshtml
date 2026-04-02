@@ -77,14 +77,14 @@
 @section Scripts {
     <script>
         window.FASTQ_CONTEXT = {
-            locationId: @(new FastQ.Web.Services.AuthService().GetSessionEntityId())
+            entityId: @(new FastQ.Web.Services.AuthService().GetSessionEntityId())
         };
 
         var FastQReport = {
             refresh: function () {
                 var queueId = document.getElementById("reportQueue").value;
                 $("#reportMsg").removeClass("error ok").text("Loading...");
-                $.getJSON("@Url.Action("ReportingSnapshot", "Reporting")", { locationId: window.FASTQ_CONTEXT.locationId, queueId: queueId })
+                $.getJSON("@Url.Action("ReportingSnapshot", "Reporting")", { entityId: window.FASTQ_CONTEXT.entityId, queueId: queueId })
                     .done(function (res) {
                         if (!res || !res.ok) {
                             $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");

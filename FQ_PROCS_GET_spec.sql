@@ -1,12 +1,12 @@
 CREATE OR REPLACE PACKAGE FQ_PROCS_GET AS
-  PROCEDURE GET_LOCATION (
-    p_locationid IN VARCHAR2,
+  PROCEDURE GET_ENTITY (
+    p_entityid IN VARCHAR2,
     p_cur OUT Ref_Cursor_Types.ref_cursor
   );
 
   PROCEDURE GET_MYQUEUES (
     p_userid IN VARCHAR2,
-    p_locationid IN NUMBER,
+    p_entityid IN NUMBER,
     p_cur OUT Ref_Cursor_Types.ref_cursor
   );
 
@@ -86,8 +86,8 @@ CREATE OR REPLACE PACKAGE FQ_PROCS_GET AS
     p_cur OUT Ref_Cursor_Types.ref_cursor
   );
 
-  PROCEDURE GET_APPTS_BY_LOCATION (
-    p_locationid IN NUMBER,
+  PROCEDURE GET_APPTS_BY_ENTITY (
+    p_entityid IN NUMBER,
     p_cur OUT Ref_Cursor_Types.ref_cursor
   );
 
@@ -138,7 +138,7 @@ CREATE OR REPLACE PACKAGE FQ_PROCS_GET AS
   );
 
   PROCEDURE GET_QUEUES (
-    p_location IN INT,
+    p_entity_id IN INT,
     p_ref_cursor OUT Ref_Cursor_Types.ref_cursor
   );
 

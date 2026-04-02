@@ -2,20 +2,20 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS_GET AS
 --*******************************************************
 -- 2025.12.31   PREDDY      Created package
 --*******************************************************
-PROCEDURE GET_LOCATION (
-    p_locationid       IN   VARCHAR2,
+PROCEDURE GET_ENTITY (
+    p_entityid         IN   VARCHAR2,
     p_cur              OUT  Ref_Cursor_Types.ref_cursor
 )
 AS
 BEGIN
  OPEN p_cur FOR
-    SELECT * FROM VALIDLOCATIONS
-    WHERE location_id = p_locationid;
+    SELECT * FROM VALIDENTITIES
+    WHERE entity_id = p_entityid;
 END;
 
 PROCEDURE GET_MYQUEUES (
     p_userid       IN   VARCHAR2,
-    p_locationid   IN   NUMBER,
+    p_entityid     IN   NUMBER,
     p_cur          OUT  Ref_Cursor_Types.ref_cursor
 )
 AS
@@ -24,7 +24,7 @@ BEGIN
     SELECT * FROM VALIDQUEUES q
         INNER JOIN USER_PERMISSIONS p ON p.queue_id = q.queue_id
     WHERE p.user_id = p_userid
-        AND LOCATION_ID = NVL(p_locationid, LOCATION_ID);
+        AND ENTITY_ID = NVL(p_entityid, ENTITY_ID);
 END;
 
 PROCEDURE GET_QUEUE_DETAILS (
@@ -197,7 +197,7 @@ BEGIN
     SELECT DISTINCT
         q.queue_id,
         q.name,
-        q.location_id,
+        q.entity_id,
         q.activeflag,
         p.provider_flag,
         p.host_flag,
@@ -256,10 +256,10 @@ BEGIN
     IF UPPER(isAdmin) = 'Y' THEN
      OPEN p_cur FOR
      SELECT u.* FROM fq_users u
-        INNER JOIN USER_LOCATIONS l ON u.user_id = l.user_id
-     WHERE l.location_id IN
-        (select distinct Location_id
-            from user_locations ul where user_id = lower(p_stampuser)
+        INNER JOIN USER_ENTITIES e ON u.user_id = e.user_id
+     WHERE e.entity_id IN
+        (select distinct entity_id
+            from user_entities ue where user_id = lower(p_stampuser)
         );
     ELSE
         p_message := 'You do not have access to User Accouts';
@@ -280,14 +280,14 @@ BEGIN
     FROM FQ_USERS WHERE LOWER(user_id) = LOWER(p_stampuser)
         and NVL(ActiveFlag, 'N') = 'Y';
 
-    SELECT COUNT(location_id) INTO iCount
-    FROM user_locations
+    SELECT COUNT(entity_id) INTO iCount
+    FROM user_entities
     WHERE lower(user_id) = lower(p_userid)
-        AND location_id IN (SELECT location_id FROM user_locations WHERE lower(user_id) = lower(p_stampuser));
+        AND entity_id IN (SELECT entity_id FROM user_entities WHERE lower(user_id) = lower(p_stampuser));
 
     IF UPPER(isAdmin) = 'Y' AND iCount > 0 THEN
          OPEN p_cur FOR
-             SELECT p.USER_ID, q.QUEUE_ID, q.NAME, LOCATION_ID, q.ACTIVEFLAG,
+             SELECT p.USER_ID, q.QUEUE_ID, q.NAME, ENTITY_ID, q.ACTIVEFLAG,
                         r.ROLE_ID, r.ROLE_DESC
                 FROM validqueues q
                     INNER JOIN user_permissions p on p.queue_id = q.queue_id
@@ -312,10 +312,10 @@ BEGIN
     FROM FQ_USERS WHERE LOWER(user_id) = LOWER(p_stampuser)
         and NVL(ActiveFlag, 'N') = 'Y';
 
-    SELECT COUNT(location_id) INTO iCount
-    FROM user_locations
+    SELECT COUNT(entity_id) INTO iCount
+    FROM user_entities
     WHERE lower(user_id) = lower(p_userid)
-        AND location_id IN (SELECT location_id FROM user_locations WHERE lower(user_id) = lower(p_stampuser));
+        AND entity_id IN (SELECT entity_id FROM user_entities WHERE lower(user_id) = lower(p_stampuser));
 
     IF UPPER(isAdmin) = 'Y' AND iCount > 0 THEN
          OPEN p_cur FOR
@@ -326,15 +326,62 @@ BEGIN
     END IF;
 END;
 
+PROCEDURE GET_APPTS_BY_QUEUE (
+    p_queueid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+)
+AS
+BEGIN
+ OPEN p_cur FOR
+    SELECT FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id), A.*
+    FROM APPOINTMENTS A
+    WHERE A.QUEUE_ID = p_queueid;
+END;
+
+PROCEDURE GET_APPTS_BY_CUSTOMER (
+    p_customerid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+)
+AS
+BEGIN
+ OPEN p_cur FOR
+    SELECT FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id), A.*
+    FROM APPOINTMENTS A
+    WHERE A.CUSTOMER_ID = p_customerid;
+END;
+
+PROCEDURE GET_APPTS_BY_ENTITY (
+    p_entityid IN NUMBER,
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+)
+AS
+BEGIN
+ OPEN p_cur FOR
+    SELECT FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id), A.*
+    FROM APPOINTMENTS A
+        INNER JOIN VALIDQUEUES Q ON Q.QUEUE_ID = A.QUEUE_ID
+    WHERE Q.ENTITY_ID = p_entityid;
+END;
+
+PROCEDURE GET_ALL_APPTS (
+    p_cur OUT Ref_Cursor_Types.ref_cursor
+)
+AS
+BEGIN
+ OPEN p_cur FOR
+    SELECT FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id), A.*
+    FROM APPOINTMENTS A;
+END;
+
 PROCEDURE GET_QUEUES (
-    p_location     IN   INT,
+    p_entity_id    IN   INT,
     p_ref_cursor   OUT  Ref_Cursor_Types.ref_cursor
 )
 AS
 BEGIN
  OPEN p_ref_cursor FOR
     SELECT * FROM VALIDQUEUES
-    WHERE LOCATION_ID = NVL(p_location, LOCATION_ID)
+    WHERE ENTITY_ID = NVL(p_entity_id, ENTITY_ID)
         AND NVL(ACTIVEFLAG, 'N') = 'Y';
 END;
 

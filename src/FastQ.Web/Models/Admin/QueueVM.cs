@@ -1,4 +1,4 @@
-﻿
+
 using FastQ.Data.Entities;
 using Microsoft.Ajax.Utilities;
 using System;
@@ -17,7 +17,7 @@ namespace FastQ.Web.Models.Admin
         public long Id { get; set; }
         
         [DisplayName("Entity")]
-        public long LocationId { get; set; }
+        public long EntityId { get; set; }
 
         [Required(ErrorMessage = "Name is required")]
 

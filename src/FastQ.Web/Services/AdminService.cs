@@ -58,14 +58,14 @@ namespace FastQ.Web.Services
         //    return _locations.ListAll();
         //}
 
-        public IList<Queue> ListQueuesByLocation(long locationId)
+        public IList<Queue> ListQueuesByEntity(long entityId)
         {
-            return ListEligibleQueues(locationId);
+            return ListEligibleQueues(entityId);
         }
 
-        public IList<Queue> ListQueues(long? locationId)
+        public IList<Queue> ListQueues(long? entityId)
         {
-            return ListEligibleQueues(locationId);
+            return ListEligibleQueues(entityId);
         }
 
         public IList<Customer> ListAllCustomers()
@@ -73,14 +73,14 @@ namespace FastQ.Web.Services
             return _customers.ListAll();
         }
 
-        public IList<Appointment> ListAppointmentsByLocation(long locationId)
+        public IList<Appointment> ListAppointmentsByEntity(long entityId)
         {
-            return _appts.ListByLocation(locationId);
+            return _appts.ListByEntity(entityId);
         }
 
-        public IList<Provider> ListProviders(long? locationId)
+        public IList<Provider> ListProviders(long? entityId)
         {
-            return locationId.HasValue ? _providers.ListByEntity(locationId.Value) : [];
+            return entityId.HasValue ? _providers.ListByEntity(entityId.Value) : [];
         }
 
         public Queue GetQueue(long queueId)
@@ -110,7 +110,7 @@ namespace FastQ.Web.Services
                 _appts.Update(a);
 
                 _rt.AppointmentChanged(a);
-                _rt.QueueChanged(a.LocationId, a.QueueId);
+                _rt.QueueChanged(a.EntityId, a.QueueId);
             }
 
             return stale.Count;

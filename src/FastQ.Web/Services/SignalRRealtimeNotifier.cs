@@ -11,28 +11,28 @@ namespace FastQ.Web.Services
         private static IHubContext Hub => GlobalHost.ConnectionManager.GetHubContext<QueueHub>();
         private const int IdPreviewLength = 8;
 
-        public void QueueChanged(long locationId, long queueId)
+        public void QueueChanged(long entityId, long queueId)
         {
-            var loc = locationId.ToString();
-            var q = queueId.ToString();
+            var entityKey = entityId.ToString();
+            var queueKey = queueId.ToString();
 
-            Hub.Clients.Group($"loc:{loc}").queueUpdated(loc, q);
-            Hub.Clients.Group($"queue:{q}").queueUpdated(loc, q);
+            Hub.Clients.Group($"ent:{entityKey}").queueUpdated(entityKey, queueKey);
+            Hub.Clients.Group($"queue:{queueKey}").queueUpdated(entityKey, queueKey);
             // Provider dashboard is cross-queue; broadcast to all clients so every board can refresh.
-            Hub.Clients.All.queueUpdated(loc, q);
+            Hub.Clients.All.queueUpdated(entityKey, queueKey);
         }
 
         public void AppointmentChanged(Appointment appointment)
         {
             var apptId = appointment.Id.ToString();
-            var loc = appointment.LocationId.ToString();
-            var q = appointment.QueueId.ToString();
+            var entityKey = appointment.EntityId.ToString();
+            var queueKey = appointment.QueueId.ToString();
             var providerId = appointment.ProviderId?.ToString() ?? string.Empty;
 
             Hub.Clients.Group($"appt:{apptId}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
-            // location + queue listeners can also choose to react
-            Hub.Clients.Group($"loc:{loc}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
-            Hub.Clients.Group($"queue:{q}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            // entity + queue listeners can also choose to react
+            Hub.Clients.Group($"ent:{entityKey}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
+            Hub.Clients.Group($"queue:{queueKey}").appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
             // Providers are not always joined to groups; broadcast status as well.
             Hub.Clients.All.appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
 
@@ -67,4 +67,3 @@ namespace FastQ.Web.Services
         }
     }
 }
-

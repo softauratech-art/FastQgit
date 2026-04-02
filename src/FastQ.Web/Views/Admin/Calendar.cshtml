@@ -597,7 +597,7 @@
     <aside class="agenda-panel">
         <div class="agenda-header">
             <h3>@Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)</h3>
-            <p>@(string.IsNullOrWhiteSpace(Model.LocationName) ? "Primary location" : Model.LocationName)</p>
+            <p>@(string.IsNullOrWhiteSpace(Model.EntityName) ? "Primary entity" : Model.EntityName)</p>
         </div>
 
         @if (Model.SelectedDayAppointments.Any())
