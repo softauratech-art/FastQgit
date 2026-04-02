@@ -279,7 +279,7 @@
     <script src="~/signalr/hubs"></script>
     <script src="@Url.Content("~/Scripts/fastq.live.js")"></script>
     @RenderSection("Scripts", required: false)
-    <script>
+<script>
         (function () {
             var toggle = document.querySelector(".nav-toggle");
             if (!toggle) {
@@ -294,14 +294,15 @@
             // Get all navigation links
             const navLinks = document.querySelectorAll('.nav-link');
             const currentPath = window.location.pathname;
+            const relativePath = "@Url.Content("~/")";
             navLinks.forEach(link => {
                 link.classList.remove('active');
                 const linkPath = new URL(link.href).pathname;
-                if (currentPath.startsWith(linkPath) && linkPath != @Url.Content("~/")) {
+                if (currentPath.startsWith(linkPath) && linkPath != relativePath) {
                     link.classList.add('active');
                 }
                 // Special handling for the root path if needed, to avoid matching everything
-                if (linkPath == @Url.Content("~/") && currentPath == @Url.Content("~/")) {
+                if (linkPath == relativePath && currentPath == relativePath) {
                     link.classList.add('active');
                 }
             });

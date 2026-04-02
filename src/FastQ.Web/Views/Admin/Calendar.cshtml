@@ -405,6 +405,72 @@
             color: #5b5b5b;
         }
 
+        .entry-date-picker {
+            display: grid;
+            gap: 8px;
+        }
+
+        .entry-date-picker-header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .entry-date-picker-month {
+            text-align: center;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .entry-date-picker-weekdays,
+        .entry-date-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .entry-date-picker-weekdays span {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .entry-date-cell {
+            min-height: 38px;
+            padding: 0;
+            border: 1px solid #dbe4f0;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #0f172a;
+            font: inherit;
+            font-weight: 600;
+        }
+
+        .entry-date-cell.is-muted {
+            visibility: hidden;
+        }
+
+        .entry-date-cell:disabled {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .entry-date-cell.is-selected {
+            background: #0f766e;
+            border-color: #0f766e;
+            color: #ffffff;
+        }
+
+        .entry-date-cell.is-today:not(.is-selected) {
+            border-color: #0f766e;
+            color: #0f766e;
+        }
+
         .autofilled-lock {
             background: #f3f4f6 !important;
             color: #6b7280;
@@ -830,6 +896,14 @@
             var permitValidationTimers = {};
             var customerLookupTimers = {};
             var customerLookupRequestSeq = {};
+            var entryCalendarState = {
+                addAppt: {
+                    monthStart: null,
+                    enabledDates: {},
+                    loadedMonths: {},
+                    requestToken: 0
+                }
+            };
 
             function openModal(id) {
                 var modal = document.getElementById(id);
@@ -1157,9 +1231,6 @@
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
                 syncReferenceInputMeta(prefix);
-                if (prefix === "addAppt") {
-                    populateEntryModalDateTime(prefix, details);
-                }
             }
 
             function loadEntryQueueDetails(prefix, queueCode) {
@@ -1339,57 +1410,259 @@
                 return (hour * 60) + minute;
             }
 
-            function getScheduleDateOptions(details) {
-                var options = [];
-                var schedules = details && details.schedules ? details.schedules : [];
-                var seen = {};
-                var base = new Date();
-                base.setHours(0, 0, 0, 0);
-                var maxDate = new Date(base.getTime());
-                maxDate.setMonth(maxDate.getMonth() + 6);
-                while (base <= maxDate) {
-                    var dateValue = new Date(base.getTime());
-                    var active = schedules.some(function (schedule) {
-                        return isScheduleActiveOnDate(schedule, dateValue);
-                    });
-                    if (active) {
-                        var value = toIsoDate(dateValue);
-                        if (!seen[value]) {
-                            seen[value] = true;
-                            options.push({
-                                value: value,
-                                label: formatRouteDateLabel(dateValue)
-                            });
-                        }
-                    }
-                    base.setDate(base.getDate() + 1);
-                }
-                return options;
+            function getEntryCalendarBounds() {
+                var limits = getEntryDateWindowLimits();
+                return {
+                    min: new Date(limits.min + "T00:00:00"),
+                    max: new Date(limits.max + "T00:00:00")
+                };
             }
 
-            function configureEntryModalDateInput(dateInput, dateOptions, preferredDateValue) {
-                if (!dateInput) {
-                    return "";
+            function startOfMonth(dateValue) {
+                return new Date(dateValue.getFullYear(), dateValue.getMonth(), 1);
+            }
+
+            function addMonths(dateValue, count) {
+                return new Date(dateValue.getFullYear(), dateValue.getMonth() + count, 1);
+            }
+
+            function getEntryCalendarMonthLabel(dateValue) {
+                var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                return months[dateValue.getMonth()] + " " + dateValue.getFullYear();
+            }
+
+            function getEntryCalendarMonthKey(dateValue) {
+                return dateValue.getFullYear() + "-" + toTwoDigits(dateValue.getMonth() + 1);
+            }
+
+            function getEntryCalendarState(prefix) {
+                if (!entryCalendarState[prefix]) {
+                    entryCalendarState[prefix] = {
+                        monthStart: null,
+                        enabledDates: {},
+                        loadedMonths: {},
+                        requestToken: 0
+                    };
+                }
+                return entryCalendarState[prefix];
+            }
+
+            function resetEntryCalendarState(prefix) {
+                entryCalendarState[prefix] = {
+                    monthStart: null,
+                    enabledDates: {},
+                    loadedMonths: {},
+                    requestToken: 0
+                };
+            }
+
+            function setEntryDateStatus(prefix, message, isError) {
+                var status = document.getElementById(prefix + "DateStatus");
+                if (!status) {
+                    return;
+                }
+                status.textContent = message || "";
+                status.style.color = isError ? "#b91c1c" : "#5b5b5b";
+            }
+
+            function setEntryDateValue(prefix, selectedDate, suppressChange) {
+                var input = document.getElementById(prefix + "Date");
+                if (!input) {
+                    return;
                 }
 
-                var limits = getEntryDateWindowLimits();
-                dateInput.setAttribute("min", limits.min);
-                dateInput.setAttribute("max", limits.max);
+                var currentValue = input.value || "";
+                input.value = selectedDate || "";
+                input.setAttribute("data-current-value", selectedDate || "");
+                renderEntryCalendar(prefix);
 
-                var selectedDate = "";
-                if (dateOptions.length > 0) {
-                    if (preferredDateValue && dateOptions.some(function (o) { return o.value === preferredDateValue; })) {
-                        selectedDate = preferredDateValue;
-                    } else if (selectedCalendarDate && dateOptions.some(function (o) { return o.value === selectedCalendarDate; })) {
-                        selectedDate = selectedCalendarDate;
-                    } else {
-                        selectedDate = dateOptions[0].value;
+                if (!suppressChange && currentValue !== (selectedDate || "")) {
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+            }
+
+            function renderEntryCalendar(prefix) {
+                var state = getEntryCalendarState(prefix);
+                var calendar = document.getElementById(prefix + "DateCalendar");
+                var monthLabel = document.getElementById(prefix + "DateMonthLabel");
+                var prevButton = document.getElementById(prefix + "DatePrev");
+                var nextButton = document.getElementById(prefix + "DateNext");
+                var input = document.getElementById(prefix + "Date");
+                if (!calendar || !monthLabel || !input) {
+                    return;
+                }
+
+                var bounds = getEntryCalendarBounds();
+                var monthStart = state.monthStart || startOfMonth(bounds.min);
+                state.monthStart = monthStart;
+                monthLabel.textContent = getEntryCalendarMonthLabel(monthStart);
+
+                if (prevButton) {
+                    prevButton.disabled = monthStart <= startOfMonth(bounds.min);
+                }
+                if (nextButton) {
+                    nextButton.disabled = monthStart >= startOfMonth(bounds.max);
+                }
+
+                calendar.innerHTML = "";
+                var firstWeekday = monthStart.getDay();
+                for (var blankIndex = 0; blankIndex < firstWeekday; blankIndex++) {
+                    var blankCell = document.createElement("span");
+                    blankCell.className = "entry-date-cell is-muted";
+                    blankCell.setAttribute("aria-hidden", "true");
+                    calendar.appendChild(blankCell);
+                }
+
+                var monthKey = getEntryCalendarMonthKey(monthStart);
+                var monthLoaded = !!state.loadedMonths[monthKey];
+                var selectedDate = input.value || "";
+                var todayIso = toIsoDate(new Date());
+                var daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+
+                for (var day = 1; day <= daysInMonth; day++) {
+                    var dateValue = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+                    var isoDate = toIsoDate(dateValue);
+                    var isInRange = dateValue >= bounds.min && dateValue <= bounds.max;
+                    var isEnabled = isInRange && state.enabledDates[isoDate] === true;
+                    var button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "entry-date-cell";
+                    button.textContent = String(day);
+                    button.disabled = !isEnabled;
+                    if (isoDate === selectedDate) {
+                        button.classList.add("is-selected");
+                    }
+                    if (isoDate === todayIso) {
+                        button.classList.add("is-today");
+                    }
+                    if (isEnabled) {
+                        button.addEventListener("click", (function (value) {
+                            return function () {
+                                setEntryDateStatus(prefix, "", false);
+                                setEntryDateValue(prefix, value, false);
+                            };
+                        })(isoDate));
+                    }
+                    calendar.appendChild(button);
+                }
+
+                if (!monthLoaded) {
+                    setEntryDateStatus(prefix, "Loading open-slot dates...", false);
+                }
+            }
+
+            function monthHasSelectableSlots(prefix, monthStart) {
+                var state = getEntryCalendarState(prefix);
+                var monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+                for (var day = 1; day <= monthEnd.getDate(); day++) {
+                    var isoDate = toIsoDate(new Date(monthStart.getFullYear(), monthStart.getMonth(), day));
+                    if (state.enabledDates[isoDate] === true) {
+                        return true;
                     }
                 }
+                return false;
+            }
 
-                dateInput.value = selectedDate;
-                dateInput.setAttribute("data-current-value", selectedDate);
-                return selectedDate;
+            function getFirstEnabledDateInMonth(prefix, monthStart) {
+                var state = getEntryCalendarState(prefix);
+                var monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+                for (var day = 1; day <= monthEnd.getDate(); day++) {
+                    var isoDate = toIsoDate(new Date(monthStart.getFullYear(), monthStart.getMonth(), day));
+                    if (state.enabledDates[isoDate] === true) {
+                        return isoDate;
+                    }
+                }
+                return "";
+            }
+
+            function hasSelectableSlotForDate(dateIso, slots) {
+                var minimumFutureMinutes = getMinimumFutureMinutes(new Date(dateIso + "T00:00:00"));
+                return (slots || []).some(function (slot) {
+                    var slotValue = slot.slotBegin || "";
+                    var totalMinutes = parseClockMinutes(slotValue);
+                    return totalMinutes !== null && (minimumFutureMinutes === null || totalMinutes >= minimumFutureMinutes);
+                });
+            }
+
+            function loadEntryCalendarMonth(prefix, monthStart, preferredDateValue) {
+                var queueSelect = document.getElementById(prefix + "QueueId");
+                var queueId = queueSelect ? (queueSelect.value || "") : "";
+                var input = document.getElementById(prefix + "Date");
+                var state = getEntryCalendarState(prefix);
+                if (!queueId) {
+                    resetEntryCalendarState(prefix);
+                    if (input) {
+                        input.value = "";
+                        input.setAttribute("data-current-value", "");
+                    }
+                    renderEntryCalendar(prefix);
+                    return Promise.resolve();
+                }
+
+                state.monthStart = startOfMonth(monthStart);
+                renderEntryCalendar(prefix);
+
+                var requestToken = ++state.requestToken;
+                var bounds = getEntryCalendarBounds();
+                var lastDay = new Date(state.monthStart.getFullYear(), state.monthStart.getMonth() + 1, 0);
+                var requests = [];
+
+                for (var day = 1; day <= lastDay.getDate(); day++) {
+                    var dateValue = new Date(state.monthStart.getFullYear(), state.monthStart.getMonth(), day);
+                    if (dateValue < bounds.min || dateValue > bounds.max) {
+                        continue;
+                    }
+
+                    var isoDate = toIsoDate(dateValue);
+                    requests.push((function (requestedDate) {
+                        return getJson(getQueueOpenSlotsUrl + "?queueId=" + encodeURIComponent(queueId) + "&theDate=" + encodeURIComponent(requestedDate))
+                            .then(function (res) {
+                                return {
+                                    date: requestedDate,
+                                    enabled: !!(res && res.ok && hasSelectableSlotForDate(requestedDate, res.data || []))
+                                };
+                            })
+                            .catch(function () {
+                                return { date: requestedDate, enabled: false };
+                            });
+                    })(isoDate));
+                }
+
+                return Promise.all(requests).then(function (results) {
+                    if (state.requestToken !== requestToken) {
+                        return;
+                    }
+
+                    results.forEach(function (item) {
+                        state.enabledDates[item.date] = item.enabled;
+                    });
+                    state.loadedMonths[getEntryCalendarMonthKey(state.monthStart)] = true;
+                    renderEntryCalendar(prefix);
+
+                    var activeInput = document.getElementById(prefix + "Date");
+                    var selectedDate = activeInput ? (activeInput.value || "") : "";
+                    var resolvedPreferredDate = preferredDateValue || selectedDate || "";
+                    if (resolvedPreferredDate && state.enabledDates[resolvedPreferredDate] === true) {
+                        setEntryDateStatus(prefix, "", false);
+                        setEntryDateValue(prefix, resolvedPreferredDate, true);
+                    } else if (!selectedDate || state.enabledDates[selectedDate] !== true) {
+                        var firstEnabledDate = getFirstEnabledDateInMonth(prefix, state.monthStart);
+                        if (firstEnabledDate) {
+                            setEntryDateStatus(prefix, "", false);
+                            setEntryDateValue(prefix, firstEnabledDate, false);
+                            return;
+                        }
+                    }
+
+                    if (!monthHasSelectableSlots(prefix, state.monthStart)) {
+                        setEntryDateValue(prefix, "", true);
+                        setSelectValues(document.getElementById(prefix + "Time"), [], "Select time");
+                        setTimeSelectionState(prefix, false, false, "No open slots are available for this month.");
+                        setEntryDateStatus(prefix, "No open-slot dates are available in this month.", true);
+                    } else {
+                        setEntryDateStatus(prefix, "Only dates with open slots are selectable.", false);
+                    }
+                });
             }
 
             function getScheduleTimeOptions(details, selectedDateValue) {
@@ -1438,28 +1711,32 @@
                 return options;
             }
 
-            function populateEntryModalDateOptions(details) {
-                var dateSelect = document.getElementById("addApptDate");
-                if (!dateSelect) {
-                    return;
-                }
-
-                var options = getScheduleDateOptions(details);
-                configureEntryModalDateInput(dateSelect, options, dateSelect.value || "");
-            }
-
             function populateEntryModalDateTime(prefix, details) {
                 var dateSelect = document.getElementById(prefix + "Date");
                 var timeSelect = document.getElementById(prefix + "Time");
                 if (!dateSelect || !timeSelect) {
                     return Promise.resolve();
                 }
+                if (prefix !== "addAppt") {
+                    return Promise.resolve();
+                }
 
-                var currentDateValue = dateSelect.getAttribute("data-current-value") || dateSelect.value || "";
-                var dateOptions = getScheduleDateOptions(details);
-                configureEntryModalDateInput(dateSelect, dateOptions, currentDateValue);
+                var preferredDateValue = dateSelect.getAttribute("data-current-value") || dateSelect.value || selectedCalendarDate || "";
+                var state = getEntryCalendarState(prefix);
+                if (!state.monthStart) {
+                    var initialDate = preferredDateValue ? new Date(preferredDateValue + "T00:00:00") : new Date();
+                    state.monthStart = startOfMonth(initialDate);
+                }
 
-                return refreshEntryModalTimeOptions(prefix);
+                if (!details) {
+                    setEntryDateValue(prefix, "", true);
+                    setSelectValues(timeSelect, [], "Select time");
+                    setEntryDateStatus(prefix, "Select queue to load open-slot dates.", false);
+                    renderEntryCalendar(prefix);
+                    return Promise.resolve();
+                }
+
+                return loadEntryCalendarMonth(prefix, state.monthStart, preferredDateValue);
             }
 
             function populateEntryModalTimeOptions(prefix, details, selectedDateValue) {
@@ -1525,8 +1802,8 @@
                     return Promise.resolve();
                 }
                 if (prefix === "addAppt") {
-                    var availableDates = getScheduleDateOptions(activeEntryQueueDetails[prefix]);
-                    if (!availableDates.some(function (o) { return o.value === selectedDate; })) {
+                    var state = getEntryCalendarState(prefix);
+                    if (state.enabledDates[selectedDate] !== true) {
                         setSelectValues(timeSelect, [], "Select time");
                         setTimeSelectionState(prefix, false, false, "Selected date is not available.");
                         showModalFeedback("addAppointmentModal", "Selected date is not available.", true);
@@ -1783,6 +2060,7 @@
                 });
 
                 activeEntryQueueDetails[prefix] = null;
+                resetEntryCalendarState(prefix);
                 populateEntryModalOptions(prefix, null);
                 if (prefix === "addAppt") {
                     populateEntryModalDateTime(prefix, null);
@@ -2291,6 +2569,22 @@
             if (addApptDate) {
                 addApptDate.addEventListener("change", function () {
                     refreshEntryModalTimeOptions("addAppt");
+                });
+            }
+            var addApptDatePrev = document.getElementById("addApptDatePrev");
+            if (addApptDatePrev) {
+                addApptDatePrev.addEventListener("click", function () {
+                    var state = getEntryCalendarState("addAppt");
+                    state.monthStart = addMonths(state.monthStart || startOfMonth(new Date()), -1);
+                    loadEntryCalendarMonth("addAppt", state.monthStart, "");
+                });
+            }
+            var addApptDateNext = document.getElementById("addApptDateNext");
+            if (addApptDateNext) {
+                addApptDateNext.addEventListener("click", function () {
+                    var state = getEntryCalendarState("addAppt");
+                    state.monthStart = addMonths(state.monthStart || startOfMonth(new Date()), 1);
+                    loadEntryCalendarMonth("addAppt", state.monthStart, "");
                 });
             }
             var addApptTime = document.getElementById("addApptTime");
