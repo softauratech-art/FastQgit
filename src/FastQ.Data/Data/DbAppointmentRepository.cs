@@ -342,12 +342,9 @@ namespace FastQ.Data.Db
                             var joinTime = ReadDateTime(reader, "JOIN_TIME");
                             var createdOn = ReadDateTime(reader, "CREATEDON");
                             var stampDate = ReadDateTime(reader, "STAMPDATE");
-                            var baseTime = joinTime ?? createdOn ?? stampDate ?? DateTime.Now;
-                            if (!HasTimeOfDay(baseTime) && stampDate.HasValue && HasTimeOfDay(stampDate.Value))
-                            {
-                                baseTime = baseTime.Date + stampDate.Value.TimeOfDay;
-                            }
-                            scheduled = DateTime.SpecifyKind(baseTime, DateTimeKind.Local);
+                            scheduled = DateTime.SpecifyKind(
+                                ComposeWalkinScheduledTime(joinTime, createdOn, stampDate),
+                                DateTimeKind.Local);
                         }
                         else
                         {
@@ -596,6 +593,42 @@ namespace FastQ.Data.Db
             }
 
             return null;
+        }
+
+        private static DateTime ComposeWalkinScheduledTime(DateTime? joinTime, DateTime? createdOn, DateTime? stampDate)
+        {
+            if (joinTime.HasValue && createdOn.HasValue && joinTime.Value.Date != createdOn.Value.Date)
+            {
+                return createdOn.Value.Date + joinTime.Value.TimeOfDay;
+            }
+
+            if (joinTime.HasValue && HasTimeOfDay(joinTime.Value))
+            {
+                return joinTime.Value;
+            }
+
+            if (createdOn.HasValue)
+            {
+                var created = createdOn.Value;
+                if (joinTime.HasValue && HasTimeOfDay(joinTime.Value))
+                {
+                    return created.Date + joinTime.Value.TimeOfDay;
+                }
+
+                if (stampDate.HasValue && HasTimeOfDay(stampDate.Value) && !HasTimeOfDay(created))
+                {
+                    return created.Date + stampDate.Value.TimeOfDay;
+                }
+
+                return created;
+            }
+
+            if (stampDate.HasValue)
+            {
+                return stampDate.Value;
+            }
+
+            return DateTime.Now;
         }
 
         private static bool HasTimeOfDay(DateTime value)
