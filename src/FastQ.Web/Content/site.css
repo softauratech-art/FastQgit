@@ -441,6 +441,12 @@ form {
     gap: 16px;
 }
 
+.grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
 .stat {
     padding: 14px 16px;
     border-radius: var(--radius-sm);
@@ -1085,6 +1091,19 @@ border-color: #c3e6cb;
     border-color: #f5c6cb;
 }
 
+.validation-summary-error {
+    /* Styles for when it has content */
+    display: block;
+    padding: 10px;
+    font-size: 14px;
+}
+
+    .validation-summary-error:empty {
+        display: none; /* Hides if no content */
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
 
 @keyframes fadeUp {
     from {

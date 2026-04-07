@@ -27,7 +27,7 @@ namespace FastQ.Data.Entities
     }
     public class UserEntity
     {
-        public int EntityId { get; set; }
+        public long EntityId { get; set; }
         public string EntityName { get; set; }
         public bool ConfigAdminFlag { get; set; } = false;
         public bool ActiveFlag { get; set; } = true;
@@ -37,7 +37,7 @@ namespace FastQ.Data.Entities
         public string UserId { get; set; }
         public long QueueId { get; set; }
 
-        public int EntityId { get; set; }
+        public long EntityId { get; set; }
         public string QueueName { get; set; }
         public bool HostFlag { get; set; }
         public bool ProviderFlag { get; set; }

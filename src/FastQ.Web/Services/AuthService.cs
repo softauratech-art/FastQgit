@@ -62,7 +62,7 @@ namespace FastQ.Web.Services
             }
             else
             {
-                int? eid = GetSessionEntityId();
+                long? eid = GetSessionEntityId();
                 if (eid == 0)
                 {
                     if (HttpContext.Current.Session?["fq_user"] != null && HttpContext.Current.Session?["fq_user"] is Data.Entities.User)
@@ -219,47 +219,5 @@ namespace FastQ.Web.Services
 
             return null;
         }
-
-        #region OBSOLETE
-        //public string GetLoggedInWindowsUser()
-        //{
-        //    var envUserName = string.Empty;
-        //    var windowsIdentityName = string.Empty;
-        //    var logonIdentityName = string.Empty;
-        //    var httpIdentityName = string.Empty;
-        //    var ntid = string.Empty;
-
-        //    try
-        //    {
-        //        envUserName = Environment.UserName ?? string.Empty;
-        //        windowsIdentityName = WindowsIdentity.GetCurrent()?.Name ?? string.Empty;
-        //        logonIdentityName = HttpContext.Current?.Request?.LogonUserIdentity?.Name ?? string.Empty;
-        //        httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;
-
-        //        httpIdentityName = ExtractAccountName(httpIdentityName);
-        //        logonIdentityName = ExtractAccountName(logonIdentityName);
-
-        //        if (!string.IsNullOrWhiteSpace(windowsIdentityName) && !windowsIdentityName.Contains("IIS APPPOOL"))
-        //        {
-        //            ntid = envUserName;
-        //        }
-        //        else if (!string.IsNullOrWhiteSpace(logonIdentityName) && !logonIdentityName.Contains("NT AUTHORITY"))
-        //        {
-        //            ntid = logonIdentityName;
-        //        }
-        //        else
-        //        {
-        //            ntid = httpIdentityName;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Trace.TraceError("AuthService.GetLoggedInWindowsUser failed: {0}", ex);
-        //    }
-
-        //    return ntid;
-        //}
-        #endregion
-
     }
 }

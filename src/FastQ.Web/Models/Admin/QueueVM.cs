@@ -1,4 +1,3 @@
-
 using FastQ.Data.Entities;
 using Microsoft.Ajax.Utilities;
 using System;
@@ -29,6 +28,12 @@ namespace FastQ.Web.Models.Admin
         [Required(ErrorMessage = "Creole Translation is required")]
         [DisplayName("Creole")] 
         public string NameCP { get; set; }
+
+        [Required(ErrorMessage = "Address is required")]
+        [DisplayName("Address / Location")]
+        public string Address { get; set; }
+
+        public string Phone { get; set; }
 
         [DisplayName("Is Active?")]
         public bool ActiveFlag { get; set; }

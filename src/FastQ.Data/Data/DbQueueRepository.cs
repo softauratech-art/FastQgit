@@ -45,6 +45,8 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_name", oqueue.Name, DbType.String);
                 DataAccess.AddParam(cmd, "p_namees", oqueue.NameEs, DbType.String);
                 DataAccess.AddParam(cmd, "p_namecp", oqueue.NameCp, DbType.String);
+                DataAccess.AddParam(cmd, "p_address", oqueue.Address, DbType.String);
+                DataAccess.AddParam(cmd, "p_phone", oqueue.Phone, DbType.String);
                 DataAccess.AddParam(cmd, "p_activeflag", oqueue.ActiveFlag ? "Y" : "N", DbType.String);
                 DataAccess.AddParam(cmd, "p_emponly", oqueue.EmpOnly ? "Y" : "N", DbType.String);
                 DataAccess.AddParam(cmd, "p_hasguidelines", oqueue.HasGuidelines ? "Y" : "N", DbType.String);
@@ -176,7 +178,7 @@ namespace FastQ.Data.Db
         private static Entities.Queue MapQueue(IDataRecord record)
         {
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
-            var entityId = ReadInt64(record, "ENTITY_ID");
+            var entityId = Convert.ToInt64(record["ENTITY_ID"]);
             var leadMinText = record["LEAD_TIME_MIN"]?.ToString();
             var leadMaxText = record["LEAD_TIME_MAX"]?.ToString();
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
@@ -193,6 +195,8 @@ namespace FastQ.Data.Db
                 Name = record["NAME"]?.ToString() ?? string.Empty,
                 NameEs = record["NAME_ES"]?.ToString() ?? string.Empty,
                 NameCp = record["NAME_CP"]?.ToString() ?? string.Empty,
+                Address = record["ADDRESS"]?.ToString() ?? string.Empty,
+                Phone = record["PHONE"]?.ToString() ?? string.Empty,
                 LeadTimeMin = leadMinText,
                 LeadTimeMax = leadMaxText,
                 ActiveFlag = activeFlag,
@@ -207,29 +211,6 @@ namespace FastQ.Data.Db
             //if (int.TryParse(leadMaxText, out var leadMax)) queue.Config.MaxDaysAhead = leadMax;
 
             return queue;
-        }
-
-        private static long ReadInt64(IDataRecord record, params string[] fieldNames)
-        {
-            foreach (var fieldName in fieldNames)
-            {
-                for (var i = 0; i < record.FieldCount; i++)
-                {
-                    if (!string.Equals(record.GetName(i), fieldName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    if (record.IsDBNull(i))
-                    {
-                        return 0;
-                    }
-
-                    return Convert.ToInt64(record.GetValue(i));
-                }
-            }
-
-            return 0;
         }
 
         private static Entities.Queue MapQueueDetails(IDataRecord record)
@@ -248,9 +229,11 @@ namespace FastQ.Data.Db
 
             var queue = new Entities.Queue
             {
-                Name = ReadJsonString(jo, "name", "entity_name"),
+                Name = ReadJsonString(jo, "name"),
                 NameCp = ReadJsonString(jo, "name_cp"),
                 NameEs = ReadJsonString(jo, "name_es"),
+                Address = ReadJsonString(jo, "address"),
+                Phone = ReadJsonString(jo, "phone"),
                 Id = ReadJsonInt64(jo, "queue_id"),
                 EntityId = ReadJsonInt64(jo, "entity_id"),
                 ActiveFlag = (jo["configOptions"]["activeflag"]?.ToString() ?? "N") == "Y",

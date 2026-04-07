@@ -25,10 +25,10 @@
                         <span class="@(item.ActiveFlag ? "status-dot" : "inactive-dot")" ></span>                        
                     </td>
                     <td nowrap style="text-align:right;">
-                        <button onclick="showInPopup('@Url.Action("EditService", "Queue",new {id=item.Id})','Update Service')" class="btn small btn-sm btn-outline-primary border-0">
+                        <button onclick="showInPopup('@Url.Action("EditService", "Queue",new {id=item.Id})','Update Service')" class="btn small ghost btn-action-edit">
                             <i class="bi bi-pencil"></i> Edit
                         </button>
-                        <button class="btnDeleteSvc btn small btn-sm btn-outline-danger border-0"
+                        <button class="btnDeleteSvc btn small ghost btn-action-delete"
                                 data-secname="ServiceSection"
                                 data-id="@item.Id"
                                 data-action='@Url.Action("DeleteService", "Queue",new {id=item.Id})'>

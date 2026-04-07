@@ -174,7 +174,8 @@ namespace FastQ.Web.Controllers.Admin
             string[] queuepermsfld = ["host", "provider", "reporter", "queueadmin"];
             foreach (string key in queuepermsfld)
             {
-                string[] ids = fc[key].Split(',');
+                if (fc[key] == null) continue;
+                string[] ids = fc[key]?.Split(',');
                 foreach (string id in ids)
                 {
                     long qid = long.Parse(id);

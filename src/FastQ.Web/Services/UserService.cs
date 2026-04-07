@@ -11,7 +11,7 @@ namespace FastQ.Web.Services
     {
         private readonly IUserRepository _users;
         private readonly string _stampuser = new AuthService().GetLoggedInWindowsUser();
-        private Int32 _sessionentity  = new AuthService().GetSessionEntityId();
+        private long _sessionentity  = new AuthService().GetSessionEntityId();
         public UserService()
            : this(
                DbRepositoryFactory.CreateUserRepository())

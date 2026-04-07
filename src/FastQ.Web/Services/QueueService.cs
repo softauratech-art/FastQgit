@@ -46,6 +46,8 @@ namespace FastQ.Web.Services
                 Name = item.Name,
                 NameCP = item.NameCp,
                 NameES = item.NameEs,
+                Address = item.Address,
+                Phone = item.Phone,
                 Id = item.Id,
                 EntityId = item.EntityId,
                 ActiveFlag = item.ActiveFlag,
@@ -74,6 +76,8 @@ namespace FastQ.Web.Services
                 Name = qvm.Name,
                 NameCp = qvm.NameCP,
                 NameEs = qvm.NameES,
+                Address = qvm.Address,
+                Phone = qvm.Phone,
                 ActiveFlag = qvm.ActiveFlag,
                 LeadTimeMin = qvm.LeadTimeMin,
                 LeadTimeMax = qvm.LeadTimeMax,
@@ -132,6 +136,8 @@ namespace FastQ.Web.Services
                     Name = r.Name,
                     NameCP = r.NameCp,
                     NameES = r.NameEs,
+                    Address = r.Address,
+                    Phone = r.Phone,
                     Id = r.Id,
                     EntityId = r.EntityId,
                     ActiveFlag = r.ActiveFlag,
@@ -240,83 +246,5 @@ namespace FastQ.Web.Services
             _queues.DeleteQSchedule(scheduleid, _stampuser);
         }
 
-
-
-        #region obsolete
-        //public QueueVM MapEntityToModel(Data.Entities.Queue er)
-        //{
-        //    return new QueueVM
-        //    {
-        //        Name = er.Name,
-        //        NameCP = er.NameCP,
-        //        NameES = er.NameES,
-        //        Id = er.Id,
-        //        ActiveFlag = er.ActiveFlag,
-        //        LeadTimeMin = er.LeadTimeMin,
-        //        LeadTimeMax = er.LeadTimeMin,
-        //        EmpOnly = er.EmpOnly,
-        //        HideInKiosk = er.HideInKiosk,
-        //        HideInMonitor = er.HideInMonitor
-        //    };
-        //}
-        //public IList<QueueVM> TransformToModelList()
-        //{
-        //    if (string.IsNullOrWhiteSpace(_stampuser))
-        //    {
-        //        return new List<QueueVM>();
-        //    }
-
-        //    //var rows = _queues.ListAll(_stampuserentity, _stampuser);
-        //    var rows = new List<QueueVM>();
-        //    return rows.Select(r =>
-        //    {               
-        //        return new QueueVM
-        //        {
-        //            Name = er.Name,
-        //            NameCP = er.NameCP,
-        //            NameES = er.NameES,
-        //            Id = er.Id,
-        //            ActiveFlag = er.ActiveFlag,
-        //            LeadTimeMin = er.LeadTimeMin,
-        //            LeadTimeMax = er.LeadTimeMin,
-        //            EmpOnly = er.EmpOnly,
-        //            HideInKiosk = er.HideInKiosk,
-        //            HideInMonitor = er.HideInMonitor
-        //        };
-        //    }).OrderBy(r => er.Name).ToList();
-        //}
-        //private IList<QueueScheduleVM> GetSchedules(string json)
-        //{
-        //    JArray jsonArray = JArray.Parse(json);
-        //    List<QueueScheduleVM> items = new List<QueueScheduleVM>();
-        //    //""services"":[  {""service_id"":10004,""service_name"":""Pick "",""service_name_es"":""Recogida"",""service_name_cp"":""Ranmase/depoze""},
-        //    //                {""service_id"":10005,""service_name"":""Questions: general (Residential)"",""service_name_es"":""Preguntas)"",""service_name_cp"":""Kesyon: syÃ¯Â¿Â½l)""}]
-
-        //    //schedules"":[{""schedule_id"":2,""date_begin"":""2026-01-01T00:00:00"",""date_end"":""2026-12-31T00:00:00"",""open_time"":""PT11H"",""close_time"":""PT14H"",""interval_time"":""PT1H"",""weekly_sch"":""24"",""available_resources"":2},
-        //    //             {""schedule_id"":6,""date_begin"":""2026-01-01T00:00:00"",""date_end"":""2026-12-31T00:00:00"",""open_time"":""PT13H"",""close_time"":""PT15H30M"",""interval_time"":""PT1H"",""weekly_sch"":""3"",""available_resources"":1}]
-
-        //    foreach (JObject item in jsonArray)
-        //    {
-        //        // Access values using keys
-        //        var ovm = new QueueScheduleVM
-        //        {
-        //            //QueueId  = item.GetValue("lead_time_min").ToString(),
-        //            Id = Convert.ToInt64(item.GetValue("schedule_id").ToString()),
-        //            BeginDate = Convert.ToDateTime(item.GetValue("date_begin")),
-        //            EndDate = Convert.ToDateTime(item.GetValue("date_end").ToString()),
-        //            CloseTime = item.GetValue("close_time").ToString(),
-        //            OpenTime = item.GetValue("open_time").ToString(),
-        //            Duration = item.GetValue("interval_time").ToString(),
-        //            ResourcesAvailable = Convert.ToInt16(item.GetValue("available_resources").ToString()),
-        //            WeeklySchedule = item.GetValue("weekly_sch").ToString()
-        //        };
-
-        //        items.Add(ovm);
-        //    }
-        //    return items;
-        //    //return new List<QueueScheduleVM>();        
-
-        //}
-        #endregion
     }
 }

@@ -9,6 +9,8 @@ namespace FastQ.Data.Entities
         public string Name { get; set; }
         public string NameEs { get; set; }
         public string NameCp { get; set; }
+        public string Address { get; set; }
+        public string Phone { get; set; }
         public bool ActiveFlag { get; set; } = true;
         public bool EmpOnly { get; set; }
         public bool HideInKiosk { get; set; }

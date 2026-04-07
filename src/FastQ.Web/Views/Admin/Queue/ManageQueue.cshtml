@@ -41,23 +41,23 @@
     Html.Validate("QueueVM");
     <section class="section-configuration card">
         <div class="configuration-header">
-            <h2>Configuration</h2>
+            <h2>Configuration @(Model.Id == 0 ? "" : " for Queue " + Model.Id.ToString())</h2>
             <div class="primary-actions">
                 <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "Queue")"/>
                 <input type="submit" value="Save Config" class="btn-save" />
             </div>
         </div>
 
-        <div class="grid-3">
+        <div class="grid-4">
             <div class="card">
                 @Html.HiddenFor(model => model.Id)
                 @Html.HiddenFor(model => model.EntityId)
                 <div class="card-body">
                     <div class="card-title"><i class="bi bi-card-heading"></i>Identity & Translations</div>
-                    <div class="form-group">
-                        @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
-                        @Html.DisplayFor(model => model.Id)
-                    </div>
+                    @*<div class="form-group">
+                    @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
+                    @Html.DisplayFor(model => model.Id)
+                </div>*@
                     <div class="form-group mt-2">
                         @Html.LabelFor(model => model.Name, "Name (Primary English)", new { @class = "form-label control-label" })
                         @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
@@ -75,7 +75,6 @@
                     </div>
                 </div>
             </div>
-
 
             <div class="card">
                 <div class="card-body">
@@ -134,16 +133,16 @@
                             </label>
                         </div>
                         @*<div class="form-check form-switch">
-                                @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
-                                @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
-                            </div>*@
+                        @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
+                        @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
+                    </div>*@
                     </div>
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-body">
-                    <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>                    
+                    <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>
                     <div class="form-group mt-2">
                         @Html.LabelFor(model => model.LeadTimeMin, "Min. Lead Time", htmlAttributes: new { @class = "control-label" })
                         @Html.DropDownListFor(model => model.LeadTimeMin, Model.GetLeadTimes("LeadTimeMin"), "- Select-", new { @style = "font-size:0.9em" })
@@ -188,6 +187,22 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-info-circle"></i>Location & Phone</div>
+                    <div class="form-group mt-2">
+                        @Html.Label("Address", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.Address, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.Address, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                    <div class="form-group mt-2">
+                        @Html.Label("Phone", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.EditorFor(model => model.Phone, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 }
@@ -334,7 +349,7 @@
             }
 
             showErrors = (errors) => {
-                $(".validation - summary - erros").empty();
+                $(".validation-summary-error").empty();
                 var errlist = $('<ul></ul>');
                 for (var key in errors) {
                     if (errros.hasOwnProperty(key)) {
@@ -343,7 +358,7 @@
                         });
                     }
                 }
-                $(".validation - summary - erros").append(errlist);
+                $(".validation-summary-error").append(errlist);
             }
 
             postQchildForm = (form) => {
@@ -358,7 +373,8 @@
                         .then(response => {
                             if (!response.ok) {
                                 errcode = response.status;
-                                throw new Error(`Server responded with ${response.status}`);
+                                return response.json().then(err => { throw err; });
+                                //throw new Error(`Server responded with ${response.errors} ${errorData.message}`);
                             }
                             // Return the response as plain text (HTML string)
                             return response.text();
@@ -370,10 +386,11 @@
                             $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
                         })
                         .catch(error => {
-                            if (errcode == 400)
-                                $('#form-modal .validation-summary-error').html(`Please fill out all fields`);
+                            if (errcode == 400) {
+                                $('#form-modal .validation-summary-error').html(`${error.message} Please fill out all fields.`);
+                            }
                             else
-                                $('#form-modal .validation-summary-error').html(`Update Failed ${error}`);
+                                $('#form-modal .validation-summary-error').html(`${error.message} ${error.errors}`);
                             //was:$('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
                         });
 

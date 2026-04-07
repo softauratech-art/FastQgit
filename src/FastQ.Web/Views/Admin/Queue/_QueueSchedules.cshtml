@@ -32,10 +32,10 @@
 
                 <td nowrap style="text-align:right;">
                     <button onclick="showInPopup('@Url.Action("EditSchedule", "Queue",new {id=item.Id})','Update Schedule')"
-                            class="btn small btn-sm btn-outline-primary border-0">
+                            class="btn small ghost btn-action-edit">
                         <i class="bi bi-pencil"></i> Edit
                     </button>
-                    <button class="btnDeleteSch btn small btn-sm btn-outline-danger border-0"
+                    <button class="btnDeleteSch btn small ghost btn-action-delete"
                             data-secname="ScheduleSection"
                             data-id="@item.Id"
                             data-action='@Url.Action("DeleteSchedule", "Queue",new {id=item.Id})'>

@@ -85,6 +85,7 @@ namespace FastQ.Web.Controllers.Admin
                 }
 
                 ViewBag.ErrorMessage = "Validation failed. Please check the details.";
+                ReloadSchedulesServices(ovm);
                 return View(controllerpath + "ManageQueue", ovm);
             }
             catch (Exception ex) 
@@ -92,6 +93,15 @@ namespace FastQ.Web.Controllers.Admin
                 ViewBag.ErrorMessage = "An error occurred while processing your request. " + ex.Message;
                 return View(controllerpath + "ManageQueue", ovm);
             }
+        }
+
+        private void ReloadSchedulesServices(QueueVM ovm)
+        {
+            var oqueue = _service.GetQueue(ovm.Id);
+            if (oqueue == null) return;
+            
+            ovm.Schedules = oqueue.Schedules;
+            ovm.Services = oqueue.Services;
         }
 
         // GET: Queue/Delete/10001
@@ -109,6 +119,7 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         #endregion Queue-Base-Record
+
 
         #region Schedule actions
         // GET: Queue/EditSchedule(Insert)
@@ -170,13 +181,9 @@ namespace FastQ.Web.Controllers.Admin
             else
             {
                 // If invalid, return the partial view again with validation errors
-                //return PartialView(controllerpath + "_ScheduleEditor", ovm);
-                //throw new Exception("Validation Error");
-
                 Response.StatusCode = 400;
-                //return Json(new { success = false, message = "Validation Failed", error = "Vaidation error" });
-
-                return Json(new { ok = false, message = "Validation Failed", errors = ModelState.ToDictionary(k => k.Key, v => v.Value.Errors.Select(e => e.ErrorMessage).ToList()) });
+                var jsonresp = Json(new { success = false, message = "Validation Failed", errors = ModelState.ToDictionary(k => k.Key, v => v.Value.Errors.Select(e => e.ErrorMessage).ToList()) });
+                return jsonresp; // Json(new { success = false, message = "Validation Failed", errors = ModelState.ToDictionary(k => k.Key, v => v.Value.Errors.Select(e => e.ErrorMessage).ToList()) });
 
             }
         }
@@ -217,15 +224,15 @@ namespace FastQ.Web.Controllers.Admin
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception(ex.Message);
+                    Response.StatusCode = 500;
+                    return Json(new { success = false, message = "Update Failed", errors = ex.Message }); 
+                    //throw new Exception(ex.Message);
                 }
             }
             else
             {
                 // If invalid, return the partial view again with validation errors
-
                 Response.StatusCode = 400;
-                //return PartialView("_ServiceEditor", ovm);
                 return Json(new { success = false, message = "Validation Failed", errors = ModelState.ToDictionary(k => k.Key, v => v.Value.Errors.Select(e => e.ErrorMessage).ToList()) });
             }
         }

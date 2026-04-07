@@ -697,7 +697,7 @@ input:checked + .slider {
 
 .queue-modal-header,
 .queue-modal-footer {
-    padding: 18px 22px;
+    padding: 5px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -810,5 +810,8 @@ align-items: center;
 .is-hidden {
     display: none;
 }
-
+.form-group:has(input:required) label::after {
+    content: " *";
+    color: red;
+}
 /*PR checkbox*/
