@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
@@ -16,6 +17,7 @@ using FastQ.Data.Repositories;
 using FastQ.Web.Helpers;
 using FastQ.Web.Models;
 using Newtonsoft.Json.Linq;
+using Oracle.ManagedDataAccess.Client;
 
 namespace FastQ.Web.Services
 {
@@ -814,11 +816,26 @@ namespace FastQ.Web.Services
 
         private void SendAppointmentConfirmation(Appointment appointment, Queue queue, string customerName, long serviceId)
         {
+            if (appointment == null)
+                return;
+
+            var loginUrl = ConfigurationManager.AppSettings["AppointmentLoginUrl"] ?? "#";
+            var inPersonLocation = ConfigurationManager.AppSettings["AppointmentInPersonLocation"] ?? "TBD";
+            var queueName = queue?.Name ?? "Queue";
+            var serviceName = _queues.ListServicesByQueue(queue?.Id ?? 0)
+                .FirstOrDefault(s => s.Item1 == serviceId)?.Item2 ?? queueName;
+
+            SendAppointmentConfirmationEmail(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
+            SendAppointmentConfirmationSms(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
+        }
+
+        private void SendAppointmentConfirmationEmail(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
+        {
             try
             {
                 var host = ConfigurationManager.AppSettings["AppointmentMailHost"];
                 var fromEmail = ConfigurationManager.AppSettings["AppointmentMailFrom"];
-                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(fromEmail) || appointment == null)
+                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(fromEmail))
                     return;
 
                 var toEmail = (appointment.CustomerEmail ?? string.Empty).Trim();
@@ -828,12 +845,6 @@ namespace FastQ.Web.Services
                 var portValue = ConfigurationManager.AppSettings["AppointmentMailPort"];
                 if (!int.TryParse(portValue, out var port) || port <= 0)
                     port = 25;
-
-                var loginUrl = ConfigurationManager.AppSettings["AppointmentLoginUrl"] ?? "#";
-                var inPersonLocation = ConfigurationManager.AppSettings["AppointmentInPersonLocation"] ?? "TBD";
-                var queueName = queue?.Name ?? "Queue";
-                var serviceName = _queues.ListServicesByQueue(queue?.Id ?? 0)
-                    .FirstOrDefault(s => s.Item1 == serviceId)?.Item2 ?? queueName;
 
                 using (var message = new MailMessage())
                 {
@@ -861,6 +872,30 @@ namespace FastQ.Web.Services
             catch (Exception ex)
             {
                 Trace.TraceError("Failed to send appointment confirmation for appointment {0}: {1}", appointment?.Id ?? 0, ex);
+            }
+        }
+
+        private void SendAppointmentConfirmationSms(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
+        {
+            try
+            {
+                var phone = (appointment.CustomerPhone ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(phone) || !appointment.CustomerSmsOptIn)
+                    return;
+
+                var message = BuildAppointmentConfirmationSms(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
+                if (string.IsNullOrWhiteSpace(message))
+                    return;
+
+                var result = SendSmsViaProc(phone, message, string.IsNullOrWhiteSpace(appointment.StampUser) ? "web" : appointment.StampUser.Trim());
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    Trace.TraceInformation("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError("Failed to send appointment SMS for appointment {0}: {1}", appointment?.Id ?? 0, ex);
             }
         }
 
@@ -919,6 +954,99 @@ namespace FastQ.Web.Services
             html.AppendLine("</body>");
             html.AppendLine("</html>");
             return html.ToString();
+        }
+
+        private static string BuildAppointmentConfirmationSms(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
+        {
+            var appointmentTime = appointment.ScheduledForUtc.ToLocalTime().ToString("MMMM dd, yyyy h:mm tt", CultureInfo.InvariantCulture);
+            var appointmentType = GetContactMethodText(appointment.ContactType);
+            var cleanQueueName = (queueName ?? string.Empty).Trim();
+            var cleanServiceName = (serviceName ?? string.Empty).Trim();
+            var cleanLocation = (inPersonLocation ?? "TBD").Trim();
+            var cleanPhone = (appointment.CustomerPhone ?? string.Empty).Trim();
+            var cleanMeetingUrl = (appointment.MeetingUrl ?? string.Empty).Trim();
+            var cleanLoginUrl = (loginUrl ?? string.Empty).Trim();
+
+            var text = new StringBuilder();
+            text.Append("Appointment Confirmation: ");
+            if (!string.IsNullOrWhiteSpace(cleanQueueName))
+            {
+                text.Append("Orange County ");
+                text.Append(cleanQueueName);
+                text.Append(". ");
+            }
+
+            text.Append("Time: ");
+            text.Append(appointmentTime);
+            text.Append(". Type: ");
+            text.Append(appointmentType);
+            text.Append(". ");
+
+            if (!string.IsNullOrWhiteSpace(cleanServiceName))
+            {
+                text.Append("Service: ");
+                text.Append(cleanServiceName);
+                text.Append(". ");
+            }
+
+            if (string.Equals((appointment.ContactType ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(cleanMeetingUrl))
+            {
+                text.Append("Meeting link: ");
+                text.Append(cleanMeetingUrl);
+                text.Append(". ");
+            }
+            else if (string.Equals((appointment.ContactType ?? string.Empty).Trim(), "IP", StringComparison.OrdinalIgnoreCase))
+            {
+                text.Append("Location: ");
+                text.Append(cleanLocation);
+                text.Append(". ");
+            }
+            else if (string.Equals((appointment.ContactType ?? string.Empty).Trim(), "PC", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(cleanPhone))
+            {
+                text.Append("We will call ");
+                text.Append(cleanPhone);
+                text.Append(". ");
+            }
+
+            if (!string.IsNullOrWhiteSpace(cleanLoginUrl) && cleanLoginUrl != "#")
+            {
+                text.Append("Login: ");
+                text.Append(cleanLoginUrl);
+                text.Append(". ");
+            }
+
+            text.Append("Reply STOP to stop");
+            return text.ToString();
+        }
+
+        private static string SendSmsViaProc(string phone, string msg, string user)
+        {
+            var connectionString = ConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connectionString))
+                return "FastQOracle connection string is missing.";
+
+            using (var conn = new OracleConnection(connectionString))
+            using (var cmd = new OracleCommand("SEND_SMS", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add(new OracleParameter("p_PHONE_NUMBER", OracleDbType.Varchar2, phone ?? string.Empty, ParameterDirection.Input));
+                cmd.Parameters.Add(new OracleParameter("p_BODY", OracleDbType.Varchar2, msg ?? string.Empty, ParameterDirection.Input));
+                cmd.Parameters.Add(new OracleParameter("p_MEDIAURL", OracleDbType.Varchar2, string.Empty, ParameterDirection.Input));
+                cmd.Parameters.Add(new OracleParameter("p_STAMPUSER", OracleDbType.Varchar2, string.IsNullOrWhiteSpace(user) ? "web" : user, ParameterDirection.Input));
+                cmd.Parameters.Add(new OracleParameter("p_APP_COL_NAME", OracleDbType.Varchar2, DBNull.Value, ParameterDirection.Input));
+                cmd.Parameters.Add(new OracleParameter("p_APP_COL_VAL", OracleDbType.Varchar2, DBNull.Value, ParameterDirection.Input));
+
+                var outRes = new OracleParameter("p_out_res", OracleDbType.Varchar2, 4000)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                cmd.Parameters.Add(outRes);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+
+                return outRes.Value == DBNull.Value ? string.Empty : outRes.Value?.ToString() ?? string.Empty;
+            }
         }
 
         private static string BuildMeetingLinkHtml(string meetingUrl)

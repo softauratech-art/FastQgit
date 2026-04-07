@@ -18,6 +18,7 @@ namespace FastQ.Web.Models
         public string ContactMethod { get; set; }
         public string ContactTypeCode { get; set; }
         public string RefValue { get; set; }
+        public string LanguagePreference { get; set; }
         public string MeetingUrl { get; set; }
         public string Notes { get; set; }
         public string StampUser { get; set; }

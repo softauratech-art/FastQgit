@@ -618,6 +618,7 @@
                         <th data-sort-key="text">Name</th>
                         <th data-sort-key="text">Phone</th>
                         <th data-sort-key="text">Ref Value</th>
+                        <th data-sort-key="text">Language</th>
                         <th data-sort-key="text">Status</th>
                         <th data-sort-key="text">Contact</th>
                         <th class="text-center">Join Meeting</th>
@@ -628,7 +629,7 @@
                     @if (walkinRows.Count == 0)
                     {
                         <tr>
-                            <td colspan="10" class="text-center">No walk-ins for today.</td>
+                            <td colspan="11" class="text-center">No walk-ins for today.</td>
                         </tr>
                     }
                     else
@@ -648,6 +649,7 @@
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
                                 <td>@row.RefValue</td>
+                                <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">
@@ -659,7 +661,7 @@
                                 <td class="text-center">&darr;</td>
                             </tr>
                             <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">
-                                <td colspan="10">
+                                <td colspan="11">
                                     <div class="action-bar">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Check-In</button>
                                         <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Start</button>
@@ -684,7 +686,7 @@
                         }
                     }
                     <tr class="table-empty is-hidden">
-                        <td colspan="10" class="text-center">No results match the selected filters.</td>
+                        <td colspan="11" class="text-center">No results match the selected filters.</td>
                     </tr>
                 </tbody>
             </table>
@@ -737,6 +739,7 @@
                         <th data-sort-key="text">Name</th>
                         <th data-sort-key="text">Phone</th>
                         <th data-sort-key="text">Ref Value</th>
+                        <th data-sort-key="text">Language</th>
                         <th data-sort-key="text">Status</th>
                         <th data-sort-key="text">Contact</th>
                         <th class="text-center">Join Meeting</th>
@@ -747,7 +750,7 @@
                     @if (appointmentRows.Count == 0)
                     {
                         <tr>
-                            <td colspan="10" class="text-center">No appointments scheduled for today.</td>
+                            <td colspan="11" class="text-center">No appointments scheduled for today.</td>
                         </tr>
                     }
                     else
@@ -767,6 +770,7 @@
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
                                 <td>@row.RefValue</td>
+                                <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">
@@ -778,7 +782,7 @@
                                 <td class="text-center">&darr;</td>
                             </tr>
                             <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">
-                                <td colspan="10">
+                                <td colspan="11">
                                     <div class="action-bar">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Check-In</button>
                                         <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Start</button>
@@ -803,7 +807,7 @@
                         }
                     }
                     <tr class="table-empty is-hidden">
-                        <td colspan="10" class="text-center">No results match the selected filters.</td>
+                        <td colspan="11" class="text-center">No results match the selected filters.</td>
                     </tr>
                 </tbody>
             </table>

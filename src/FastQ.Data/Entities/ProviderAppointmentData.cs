@@ -14,6 +14,7 @@ namespace FastQ.Data.Entities
         public string CustomerPhone { get; set; }
         public string ContactType { get; set; }
         public string RefValue { get; set; }
+        public string LanguagePreference { get; set; }
         public string MeetingUrl { get; set; }
         public string Notes { get; set; }
         public string StampUser { get; set; }

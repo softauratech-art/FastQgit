@@ -204,6 +204,7 @@ namespace FastQ.Web.Services
                     ContactMethod = contact,
                     ContactTypeCode = a.ContactType,
                     RefValue = a.RefValue,
+                    LanguagePreference = GetLanguagePreferenceText(a.LanguagePreference),
                     MeetingUrl = NormalizeMeetingUrl(a.MeetingUrl),
                     StampUser = a.StampUser
                 };
@@ -263,11 +264,21 @@ namespace FastQ.Web.Services
                     ContactMethod = GetContactMethodText(r.ContactType),
                     ContactTypeCode = r.ContactType,
                     RefValue = r.RefValue,
+                    LanguagePreference = GetLanguagePreferenceText(r.LanguagePreference),
                     MeetingUrl = NormalizeMeetingUrl(r.MeetingUrl),
                     Notes = string.IsNullOrWhiteSpace(r.Notes) ? string.Empty : r.Notes.Trim(),
                     StampUser = r.StampUser
                 };
             }).OrderBy(r => r.ScheduledForUtc).ToList();
+        }
+
+        private static string GetLanguagePreferenceText(string value)
+        {
+            var code = (value ?? string.Empty).Trim().ToUpperInvariant();
+            if (code == "EN") return "English";
+            if (code == "ES") return "Spanish";
+            if (code == "CP") return "Creole";
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private static string NormalizeMeetingUrl(string value)
