@@ -3546,6 +3546,7 @@
                     var targetQueueIdInput = document.getElementById("routeTargetQueueId");
                     var targetServiceIdInput = document.getElementById("routeTargetServiceId");
                     var targetDateInput = document.getElementById("routeTargetDate");
+                    var targetDateDisplayInput = document.getElementById("routeTargetDateDisplay");
                     var targetTimeInput = document.getElementById("routeTargetTime");
                     var refValueInput = document.getElementById("routeRefValue");
                     var notesInput = document.getElementById("routeNotes");
@@ -3558,6 +3559,13 @@
                     var targetQueueId = targetQueueIdInput ? targetQueueIdInput.value : "";
                     var targetServiceId = targetServiceIdInput ? targetServiceIdInput.value : "";
                     var targetDate = targetDateInput ? targetDateInput.value : "";
+                    if (!targetDate && targetDateDisplayInput) {
+                        targetDate = parseEntryDateDisplay(targetDateDisplayInput.value || "");
+                        if (targetDateInput && targetDate) {
+                            targetDateInput.value = targetDate;
+                            targetDateInput.setAttribute("data-current-value", targetDate);
+                        }
+                    }
                     var targetTime = targetTimeInput ? targetTimeInput.value : "";
                     var refValue = refValueInput ? refValueInput.value : "";
                     var notes = notesInput ? notesInput.value : "";
@@ -3571,8 +3579,12 @@
                         showModalFeedback("serviceRouteModal", "Notes are required.", true);
                         return;
                     }
-                    if (targetKind === "A" && (!targetDate || !targetTime)) {
-                        showModalFeedback("serviceRouteModal", "Target date and time are required for appointment target.", true);
+                    if (targetKind === "A" && !targetDate) {
+                        showModalFeedback("serviceRouteModal", "Target date is required for appointment transfer.", true);
+                        return;
+                    }
+                    if (targetKind === "A" && !targetTime) {
+                        showModalFeedback("serviceRouteModal", "Target time is required for appointment transfer.", true);
                         return;
                     }
 
