@@ -1874,13 +1874,12 @@
         return;
       }
 
-      var currentValue = input.value || "";
       input.value = selectedDate || "";
       input.setAttribute("data-current-value", selectedDate || "");
       setEntryDateDisplay(prefix, selectedDate || "");
       renderEntryCalendar(prefix);
 
-      if (!suppressChange && currentValue !== (selectedDate || "")) {
+      if (!suppressChange) {
         closeEntryDatePicker(prefix);
         input.dispatchEvent(new Event("change", { bubbles: true }));
       }
@@ -1905,7 +1904,11 @@
     function handleEntryDateDisplayCommit(prefix) {
       var displayInput = document.getElementById(prefix + "DateDisplay");
       var timeSelect = document.getElementById(prefix + "Time");
+      var picker = document.getElementById(prefix + "DatePicker");
       if (!displayInput) {
+        return;
+      }
+      if (picker && document.activeElement && picker.contains(document.activeElement)) {
         return;
       }
 
@@ -3668,7 +3671,9 @@
         handleEntryDateDisplayInput("routeTarget");
       });
       routeTargetDateDisplay.addEventListener("blur", function () {
-        handleEntryDateDisplayCommit("routeTarget");
+        setTimeout(function () {
+          handleEntryDateDisplayCommit("routeTarget");
+        }, 0);
       });
       routeTargetDateDisplay.addEventListener("keydown", function (event) {
         if (event.key === "Enter") {
@@ -3880,7 +3885,9 @@
         handleEntryDateDisplayInput("addAppt");
       });
       addApptDateDisplay.addEventListener("blur", function () {
-        handleEntryDateDisplayCommit("addAppt");
+        setTimeout(function () {
+          handleEntryDateDisplayCommit("addAppt");
+        }, 0);
       });
       addApptDateDisplay.addEventListener("keydown", function (event) {
         if (event.key === "Enter") {
