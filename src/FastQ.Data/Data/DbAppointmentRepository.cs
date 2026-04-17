@@ -367,6 +367,7 @@ namespace FastQ.Data.Db
                         {
                             AppointmentId = apptId,
                             QueueId = TryGetLong(reader, "QUEUE_ID", out var queueId) ? queueId : 0,
+                            ServiceId = TryGetLong(reader, "SERVICE_ID", out var serviceId) ? serviceId : 0,
                             ScheduledForUtc = scheduled,
                             Status = status,
                             QueueName = ReadField(reader, "NAME"),

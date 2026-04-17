@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Mail;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using FastQ.Data.Common;
@@ -61,6 +62,9 @@ namespace FastQ.Web.Services
         {
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<Appointment>.Fail("Phone is required.");
+            var phoneValidation = ValidateAndNormalizePhone(phone);
+            if (!phoneValidation.Ok)
+                return Result<Appointment>.Fail(phoneValidation.Error);
             if (string.IsNullOrWhiteSpace(email))
                 return Result<Appointment>.Fail("Email is required.");
 
@@ -147,6 +151,9 @@ namespace FastQ.Web.Services
                 return Result<Appointment>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<Appointment>.Fail("Phone is required.");
+            var phoneValidation = ValidateAndNormalizePhone(phone);
+            if (!phoneValidation.Ok)
+                return Result<Appointment>.Fail(phoneValidation.Error);
             if (string.IsNullOrWhiteSpace(contactType))
                 return Result<Appointment>.Fail("Contact type is required.");
 
@@ -238,6 +245,9 @@ namespace FastQ.Web.Services
                 return Result<long>.Fail("Customer name is required.");
             if (string.IsNullOrWhiteSpace(phone))
                 return Result<long>.Fail("Phone is required.");
+            var phoneValidation = ValidateAndNormalizePhone(phone);
+            if (!phoneValidation.Ok)
+                return Result<long>.Fail(phoneValidation.Error);
             if (string.IsNullOrWhiteSpace(contactType))
                 return Result<long>.Fail("Contact type is required.");
 
@@ -365,7 +375,7 @@ namespace FastQ.Web.Services
         public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledForUtc)
         {
             var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
-            var normalizedPhone = (phone ?? string.Empty).Trim();
+            var normalizedPhone = NormalizePhone(phone);
             Customer customer = null;
             if (!string.IsNullOrWhiteSpace(normalizedEmail))
                 customer = _customers.GetByEmail(normalizedEmail);
@@ -380,7 +390,7 @@ namespace FastQ.Web.Services
         private Customer GetOrCreateCustomer(string name, string email, string phone, bool smsOptIn, string stampUser, DateTime now)
         {
             var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
-            var normalizedPhone = (phone ?? string.Empty).Trim();
+            var normalizedPhone = NormalizePhone(phone);
             if (string.IsNullOrWhiteSpace(normalizedEmail))
             {
                 throw new InvalidOperationException("Email is required.");
@@ -424,6 +434,41 @@ namespace FastQ.Web.Services
             customer.StampUser = stampUser;
             _customers.Update(customer);
             return customer;
+        }
+
+        private static Result<string> ValidateAndNormalizePhone(string phone)
+        {
+            var normalizedPhone = NormalizePhone(phone);
+            if (string.IsNullOrWhiteSpace(normalizedPhone))
+            {
+                return Result<string>.Fail("Enter a valid US phone number.");
+            }
+
+            return Result<string>.Success(normalizedPhone);
+        }
+
+        private static string NormalizePhone(string phone)
+        {
+            var digits = Regex.Replace(phone ?? string.Empty, "[^0-9]", string.Empty);
+            if (digits.Length == 11 && digits.StartsWith("1", StringComparison.Ordinal))
+            {
+                digits = digits.Substring(1);
+            }
+
+            if (digits.Length != 10)
+            {
+                return string.Empty;
+            }
+
+            if (digits[0] == '0' || digits[0] == '1' || digits[3] == '0' || digits[3] == '1')
+            {
+                return string.Empty;
+            }
+
+            return string.Format(CultureInfo.InvariantCulture, "({0}) {1}-{2}",
+                digits.Substring(0, 3),
+                digits.Substring(3, 3),
+                digits.Substring(6, 4));
         }
 
         public Result ValidatePermit(string permitNumber)
@@ -871,7 +916,7 @@ namespace FastQ.Web.Services
             }
             catch (Exception ex)
             {
-                Trace.TraceError("Failed to send appointment confirmation for appointment {0}: {1}", appointment?.Id ?? 0, ex);
+                LogNotificationError("email", appointment?.Id ?? 0, ex.ToString());
             }
         }
 
@@ -891,12 +936,25 @@ namespace FastQ.Web.Services
                 if (!string.IsNullOrWhiteSpace(result))
                 {
                     Trace.TraceInformation("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
+                    Console.Error.WriteLine("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
                 }
             }
             catch (Exception ex)
             {
-                Trace.TraceError("Failed to send appointment SMS for appointment {0}: {1}", appointment?.Id ?? 0, ex);
+                LogNotificationError("sms", appointment?.Id ?? 0, ex.ToString());
             }
+        }
+
+        private static void LogNotificationError(string channel, long appointmentId, string message)
+        {
+            var output = string.Format(
+                CultureInfo.InvariantCulture,
+                "Failed to send appointment {0} for appointment {1}: {2}",
+                channel ?? "notification",
+                appointmentId,
+                message ?? string.Empty);
+            Trace.TraceError(output);
+            Console.Error.WriteLine(output);
         }
 
         private static string BuildAppointmentConfirmationHtml(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)

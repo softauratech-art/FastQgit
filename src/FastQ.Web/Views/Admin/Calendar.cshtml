@@ -1,4 +1,5 @@
 @using System.Globalization
+@using System.Linq
 @using Newtonsoft.Json
 @model FastQ.Web.Models.AdminDashboardViewModel
 
@@ -12,6 +13,12 @@
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
     var serviceAccess = ViewBag.ServiceAccess as FastQ.Web.Models.ServicePageAccess ?? new FastQ.Web.Models.ServicePageAccess();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+    var agendaQueueOptions = Model.SelectedDayAppointments
+        .Select(a => a.QueueName)
+        .Where(q => !string.IsNullOrWhiteSpace(q))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(q => q, StringComparer.OrdinalIgnoreCase)
+        .ToList();
 }
 
 @section Head {
@@ -198,6 +205,44 @@
             color: #64748b;
         }
 
+        .agenda-filter-switch {
+            margin-top: 14px;
+            display: inline-flex;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 999px;
+            background: #eef2f7;
+            border: 1px solid #dbe4f0;
+        }
+
+        .agenda-filter-switch .btn {
+            min-width: 88px;
+            border-radius: 999px;
+        }
+
+        .agenda-filter-switch .btn.is-active {
+            background: #0f172a;
+            border-color: #0f172a;
+            color: #ffffff;
+        }
+
+        .agenda-filter-row {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .agenda-filter-row select {
+            min-width: 200px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid #dbe4f0;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
         .agenda-list {
             display: flex;
             flex-direction: column;
@@ -227,6 +272,30 @@
             color: #0f766e;
         }
 
+        .agenda-entry-label {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .agenda-entry-label.is-appointment {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .agenda-entry-label.is-walkin {
+            background: #dcfce7;
+            color: #166534;
+        }
+
         .agenda-title {
             margin-top: 6px;
             font-size: 16px;
@@ -251,9 +320,24 @@
         .agenda-actions {
             margin-top: 12px;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .agenda-actions-main {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .agenda-actions-meta {
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+            margin-left: auto;
         }
 
         .feedback-banner {
@@ -733,6 +817,20 @@
         <div class="agenda-header">
             <h3>@Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)</h3>
             <p>@(string.IsNullOrWhiteSpace(Model.EntityName) ? "Primary entity" : Model.EntityName)</p>
+            <div class="agenda-filter-switch" role="group" aria-label="Agenda entry type filter">
+                <button class="btn small ghost is-active" type="button" data-agenda-filter="both">Both</button>
+                <button class="btn small ghost" type="button" data-agenda-filter="A">Appointments</button>
+                <button class="btn small ghost" type="button" data-agenda-filter="W">Walk-ins</button>
+            </div>
+            <div class="agenda-filter-row">
+                <select id="agendaQueueFilter" aria-label="Filter agenda by queue">
+                    <option value="all">All Queues</option>
+                    @foreach (var queueName in agendaQueueOptions)
+                    {
+                        <option value="@queueName">@queueName</option>
+                    }
+                </select>
+            </div>
         </div>
 
         @if (Model.SelectedDayAppointments.Any())
@@ -741,10 +839,21 @@
                 @foreach (var item in Model.SelectedDayAppointments)
                 {
                     var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
-                    <div class="agenda-item @(isLocked ? "locked" : null)" data-appointment-id="@item.AppointmentId" data-queue-id="@item.QueueId" data-status="@item.Status" data-src-type="@item.SrcType">
+                    var entryKindClass = string.Equals(item.SrcType, "W", StringComparison.OrdinalIgnoreCase) ? "is-walkin" : "is-appointment";
+                    <div class="agenda-item @(isLocked ? "locked" : null)"
+                         data-appointment-id="@item.AppointmentId"
+                         data-queue-id="@item.QueueId"
+                         data-service-id="@item.ServiceId"
+                         data-queue="@item.QueueName"
+                         data-ref-value="@item.RefValue"
+                         data-notes="@item.Notes"
+                         data-date="@item.ScheduledForLocal.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
+                         data-time="@item.StartTimeText"
+                         data-status="@item.Status"
+                         data-src-type="@item.SrcType">
                         <div class="agenda-time">@item.StartTimeText</div>
+                        <div class="agenda-entry-label @entryKindClass">@item.EntryKind</div>
                         <div class="agenda-title">@item.CustomerName</div>
-                        <div class="agenda-detail">@item.EntryKind</div>
                         <div class="agenda-detail">@item.QueueName</div>
                         <div class="agenda-detail">@item.ContactMethod | @item.StatusText | @item.Phone</div>
                         @if (!string.IsNullOrWhiteSpace(item.MeetingUrl))
@@ -753,23 +862,26 @@
                         }
                         <div class="agenda-notes">@item.Notes</div>
                         <div class="agenda-actions">
-                            <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Check-In</button>
-                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Start</button>
-                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">End</button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Transfer</button>
-                            <button class="btn small ghost meeting-link" type="button"
-                                    data-appointment-id="@item.AppointmentId"
-                                    data-src-type="@item.SrcType"
-                                    data-date="@item.StartDateText"
-                                    data-time="@item.StartTimeText"
-                                    data-title="@item.ServiceType"
-                                    data-customer="@item.CustomerName"
-                                    data-phone="@item.Phone"
-                                    data-meeting-url="@item.MeetingUrl"
-                                    data-notes="@item.Notes">
-                                Info
-                            </button>
-                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
+                            <div class="agenda-actions-main">
+                                <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Check-In</button>
+                                <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Start</button>
+                                <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">End</button>
+                                <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Transfer</button>
+                                <button class="btn small ghost meeting-link" type="button"
+                                        data-appointment-id="@item.AppointmentId"
+                                        data-src-type="@item.SrcType"
+                                        data-date="@item.StartDateText"
+                                        data-time="@item.StartTimeText"
+                                        data-title="@item.ServiceType"
+                                        data-customer="@item.CustomerName"
+                                        data-phone="@item.Phone"
+                                        data-meeting-url="@item.MeetingUrl"
+                                        data-notes="@item.Notes">
+                                    Info
+                                </button>
+                                <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
+                            </div>
+                            <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUser) ? "-" : item.StampUser)</div>
                         </div>
                     </div>
                 }
@@ -843,10 +955,28 @@
                 </select>
             </div>
             <div class="route-form-row route-appointment-only" id="routeDateRow">
-                <label for="routeTargetDate">Target Date</label>
-                <select id="routeTargetDate" class="route-input">
-                    <option value="">Select date</option>
-                </select>
+                <label for="routeTargetDateDisplay">Target Date</label>
+                <input id="routeTargetDate" type="hidden" value="" data-current-value="" />
+                <div class="entry-date-picker" id="routeTargetDatePicker">
+                    <div class="entry-date-picker-trigger">
+                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="dd/mm/yyyy" autocomplete="off" aria-expanded="false" />
+                        <button id="routeTargetDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Open calendar">
+                            <i class="bi bi-calendar3"></i>
+                        </button>
+                    </div>
+                    <div class="entry-date-picker-panel">
+                        <div class="entry-date-picker-header">
+                            <button id="routeTargetDatePrev" class="btn small ghost" type="button" aria-label="Previous month">&lt;</button>
+                            <div id="routeTargetDateMonthLabel" class="entry-date-picker-month"></div>
+                            <button id="routeTargetDateNext" class="btn small ghost" type="button" aria-label="Next month">&gt;</button>
+                        </div>
+                        <div class="entry-date-picker-weekdays">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div id="routeTargetDateCalendar" class="entry-date-picker-grid"></div>
+                    </div>
+                </div>
+                <div id="routeTargetDateStatus" class="helper-text"></div>
             </div>
             <div class="route-form-row route-appointment-only" id="routeTimeRow">
                 <label for="routeTargetTime">Target Time</label>
@@ -912,7 +1042,7 @@
         </div>
         <div class="modal-body">
             <div class="modal-feedback" data-modal-feedback="cancelServiceModal"></div>
-            <p>Does the customer need to be cancelled only, or cancelled and transferred?</p>
+            <p>Does the customer need to be cancelled only, or cancelled and rescheduled?</p>
             <div class="route-form-row">
                 <label for="cancelServiceNotes">Cancellation Notes</label>
                 <textarea id="cancelServiceNotes" rows="3"></textarea>
@@ -923,7 +1053,7 @@
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
             <button class="btn secondary" type="button" data-cancel-choice="cancel-only">Cancel Only</button>
-            <button class="btn primary" type="button" data-cancel-choice="cancel-transfer">Cancel + Transfer</button>
+            <button class="btn primary" type="button" data-cancel-choice="cancel-transfer">Cancel + Reschedule</button>
         </div>
     </div>
 </div>
@@ -960,13 +1090,20 @@
                 addWalkin: { seq: 0, pending: false, valid: false, message: "" }
             };
             var timeSelectionState = {
-                addAppt: { seq: 0, pending: false, valid: true, message: "" }
+                addAppt: { seq: 0, pending: false, valid: true, message: "" },
+                routeTarget: { seq: 0, pending: false, valid: true, message: "" }
             };
             var permitValidationTimers = {};
             var customerLookupTimers = {};
             var customerLookupRequestSeq = {};
             var entryCalendarState = {
                 addAppt: {
+                    monthStart: null,
+                    enabledDates: {},
+                    loadedMonths: {},
+                    requestToken: 0
+                },
+                routeTarget: {
                     monthStart: null,
                     enabledDates: {},
                     loadedMonths: {},
@@ -990,6 +1127,7 @@
                 }
                 modal.classList.remove("show");
                 closeEntryDatePicker("addAppt");
+                closeEntryDatePicker("routeTarget");
                 clearModalFeedback(id);
             }
 
@@ -1361,34 +1499,49 @@
                     activeRouteQueueDetails = null;
                     setSelectOptions(serviceSelect, [], "Select service");
                     setRouteReferenceOptions([], "");
+                    resetEntryCalendarState("routeTarget");
+                    setEntryDateValue("routeTarget", "", true);
+                    setEntryDateStatus("routeTarget", "Select queue to load open-slot dates.", false);
                     populateRouteDateOptions("");
                     populateRouteTimeOptions("");
                     return Promise.resolve();
                 }
 
-                var url = getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode);
-                return getJson(url).then(function (res) {
-                    if (!res || !res.ok) {
+                var serviceUrl = getTransferServicesUrl + "?queueId=" + encodeURIComponent(queueCode);
+                var detailsUrl = getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode);
+                return Promise.all([getJson(serviceUrl), getJson(detailsUrl)]).then(function (responses) {
+                    var servicesRes = responses[0];
+                    var detailsRes = responses[1];
+                    if (!detailsRes || !detailsRes.ok) {
                         activeRouteQueueDetails = null;
                         setSelectOptions(serviceSelect, [], "Select service");
                         setRouteReferenceOptions([], "");
+                        resetEntryCalendarState("routeTarget");
+                        setEntryDateValue("routeTarget", "", true);
+                        setEntryDateStatus("routeTarget", "Select queue to load open-slot dates.", false);
                         populateRouteDateOptions("");
                         populateRouteTimeOptions("");
                         return;
                     }
 
-                    activeRouteQueueDetails = res.data || null;
-                    setSelectOptions(serviceSelect, (res.data && res.data.services) || [], "Select service");
+                    activeRouteQueueDetails = detailsRes.data || null;
+                    setSelectOptions(serviceSelect, servicesRes && servicesRes.ok ? servicesRes.data : [], "Select service");
                     if (selectedServiceCode) {
                         serviceSelect.value = selectedServiceCode;
                     }
-                    setRouteReferenceOptions((res.data && res.data.refOptions) || [], "");
+                    setRouteReferenceOptions((detailsRes.data && detailsRes.data.refOptions) || [], "");
+                    resetEntryCalendarState("routeTarget");
+                    setEntryDateValue("routeTarget", "", true);
+                    setEntryDateStatus("routeTarget", "Select date to load available times.", false);
                     populateRouteDateOptions("");
                     populateRouteTimeOptions("");
                 }).catch(function () {
                     activeRouteQueueDetails = null;
                     setSelectOptions(serviceSelect, [], "Select service");
                     setRouteReferenceOptions([], "");
+                    resetEntryCalendarState("routeTarget");
+                    setEntryDateValue("routeTarget", "", true);
+                    setEntryDateStatus("routeTarget", "Select queue to load open-slot dates.", false);
                     populateRouteDateOptions("");
                     populateRouteTimeOptions("");
                 });
@@ -1970,6 +2123,9 @@
                         if (timeOptions.length > 0) {
                             timeSelect.value = timeOptions[0].value;
                         }
+                        if (prefix === "routeTarget") {
+                            clearModalFeedback("serviceRouteModal");
+                        }
                         return validateCustomerTimeSelection(prefix);
                     })
                     .catch(function (err) {
@@ -1982,7 +2138,7 @@
                         });
                         setSelectValues(timeSelect, [], "Select time");
                         setTimeSelectionState(prefix, false, false, "Could not load available time slots.");
-                        showModalFeedback("addAppointmentModal", "Could not load available time slots.", true);
+                        showModalFeedback(prefix === "routeTarget" ? "serviceRouteModal" : "addAppointmentModal", "Could not load available time slots.", true);
                     });
             }
 
@@ -2000,12 +2156,12 @@
                     setSelectValues(timeSelect, [], "Select time");
                     return Promise.resolve();
                 }
-                if (prefix === "addAppt") {
+                if (prefix === "addAppt" || prefix === "routeTarget") {
                     var state = getEntryCalendarState(prefix);
                     if (state.enabledDates[selectedDate] !== true) {
                         setSelectValues(timeSelect, [], "Select time");
                         setTimeSelectionState(prefix, false, false, "Selected date is not available.");
-                        showModalFeedback("addAppointmentModal", "Selected date is not available.", true);
+                        showModalFeedback(prefix === "routeTarget" ? "serviceRouteModal" : "addAppointmentModal", "Selected date is not available.", true);
                         return Promise.resolve();
                     }
                 }
@@ -2078,46 +2234,40 @@
             }
 
             function populateRouteDateOptions(selectedDateValue) {
-                var dateSelect = document.getElementById("routeTargetDate");
-                if (!dateSelect) {
-                    return;
+                var dateInput = document.getElementById("routeTargetDate");
+                if (!dateInput) {
+                    return Promise.resolve();
                 }
 
-                if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
-                    var options = getScheduleDateOptions(activeRouteQueueDetails);
-                    setSelectValues(dateSelect, options, "Select date");
-                    if (selectedDateValue && options.some(function (o) { return o.value === selectedDateValue; })) {
-                        dateSelect.value = selectedDateValue;
-                    }
-                    return;
+                var preferredDateValue = selectedDateValue || dateInput.getAttribute("data-current-value") || dateInput.value || "";
+                var state = getEntryCalendarState("routeTarget");
+                if (!state.monthStart) {
+                    var initialDate = preferredDateValue ? new Date(preferredDateValue + "T00:00:00") : new Date();
+                    state.monthStart = startOfMonth(initialDate);
                 }
 
-                setSelectValues(dateSelect, [], "Select date");
+                return loadEntryCalendarMonth("routeTarget", state.monthStart, preferredDateValue);
             }
 
             function populateRouteTimeOptions(selectedTimeValue) {
                 var timeSelect = document.getElementById("routeTargetTime");
                 if (!timeSelect) {
-                    return;
+                    return Promise.resolve();
                 }
 
-                if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
-                    var selectedDateInput = document.getElementById("routeTargetDate");
-                    var selectedDateValue = selectedDateInput ? selectedDateInput.value : "";
-                    if (!selectedDateValue) {
-                        setSelectValues(timeSelect, [], "Select time");
-                        return;
-                    }
+                var selectedDateInput = document.getElementById("routeTargetDate");
+                var selectedDateValue = selectedDateInput ? selectedDateInput.value : "";
+                if (!selectedDateValue) {
+                    setSelectValues(timeSelect, [], "Select time");
+                    return Promise.resolve();
+                }
 
-                    var options = getScheduleTimeOptions(activeRouteQueueDetails, selectedDateValue);
-                    setSelectValues(timeSelect, options, "Select time");
-                    if (selectedTimeValue && options.some(function (o) { return o.value === selectedTimeValue; })) {
+                return populateEntryModalTimeOptions("routeTarget", activeRouteQueueDetails, selectedDateValue).then(function () {
+                    if (selectedTimeValue) {
                         timeSelect.value = selectedTimeValue;
                     }
-                    return;
-                }
-
-                setSelectValues(timeSelect, [], "Select time");
+                    return null;
+                });
             }
 
             function buildRouteTargetDateTime(dateValue, timeValue) {
@@ -2141,11 +2291,30 @@
                 });
             }
 
+            function getRouteSourcePrefill(appointmentId, srcType) {
+                var selector = '.agenda-item[data-appointment-id="' + appointmentId + '"][data-src-type="' + srcType + '"]';
+                var source = document.querySelector(selector);
+                if (!source) {
+                    return null;
+                }
+
+                return {
+                    queueId: source.getAttribute("data-queue-id") || "",
+                    serviceId: source.getAttribute("data-service-id") || "",
+                    refValue: source.getAttribute("data-ref-value") || "",
+                    notes: source.getAttribute("data-notes") || "",
+                    date: source.getAttribute("data-date") || "",
+                    time: source.getAttribute("data-time") || ""
+                };
+            }
+
             function openRouteModal(mode, appointmentId, srcType, completionNotes) {
                 var routeMode = document.getElementById("routeMode");
                 var routeSrcType = document.getElementById("routeSrcType");
                 var routeSrcId = document.getElementById("routeSrcId");
                 var routeCompletionNotes = document.getElementById("routeCompletionNotes");
+                var routeTitle = document.getElementById("serviceRouteModalTitle");
+                var saveRouteButton = document.getElementById("saveRoute");
                 var targetKind = document.getElementById("routeTargetKind");
                 var targetQueueId = document.getElementById("routeTargetQueueId");
                 var targetServiceId = document.getElementById("routeTargetServiceId");
@@ -2153,6 +2322,7 @@
                 var targetTime = document.getElementById("routeTargetTime");
                 var refValue = document.getElementById("routeRefValue");
                 var notes = document.getElementById("routeNotes");
+                var sourcePrefill = mode === "cancel-transfer" ? getRouteSourcePrefill(appointmentId, srcType) : null;
 
                 if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
                     return;
@@ -2161,18 +2331,31 @@
                 routeMode.value = mode;
                 routeSrcType.value = srcType;
                 routeSrcId.value = appointmentId;
+                if (routeTitle) {
+                    routeTitle.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+                }
+                if (saveRouteButton) {
+                    saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+                }
                 if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
                 targetKind.value = srcType === "A" ? "A" : "W";
-                if (targetQueueId) targetQueueId.value = "";
-                if (targetServiceId) targetServiceId.value = "";
-                populateRouteDateOptions("");
-                populateRouteTimeOptions("");
+                if (targetQueueId) targetQueueId.value = sourcePrefill ? sourcePrefill.queueId : "";
+                if (targetServiceId) targetServiceId.value = sourcePrefill ? sourcePrefill.serviceId : "";
                 if (targetDate) targetDate.value = "";
                 if (targetTime) targetTime.value = "";
-                if (refValue) refValue.value = "";
-                if (notes) notes.value = "";
+                if (refValue) refValue.value = sourcePrefill ? sourcePrefill.refValue : "";
+                if (notes) notes.value = sourcePrefill ? sourcePrefill.notes : "";
                 toggleRouteDateRow();
-                loadRouteQueues("", "");
+                loadRouteQueues(sourcePrefill ? sourcePrefill.queueId : "", sourcePrefill ? sourcePrefill.serviceId : "").then(function () {
+                    if (sourcePrefill && targetKind && targetKind.value === "A") {
+                        populateRouteDateOptions(sourcePrefill.date).then(function () {
+                            populateRouteTimeOptions(to24Hour(sourcePrefill.time || ""));
+                        });
+                        return;
+                    }
+                    populateRouteDateOptions("");
+                    populateRouteTimeOptions("");
+                });
                 openModal("serviceRouteModal");
             }
 
@@ -2242,6 +2425,48 @@
 
             function buildCustomerName(firstName, lastName) {
                 return [firstName || "", lastName || ""].join(" ").trim();
+            }
+
+            function normalizeUsPhoneNumber(value) {
+                var digits = (value || "").replace(/\D/g, "");
+                if (digits.length === 11 && digits.charAt(0) === "1") {
+                    digits = digits.substring(1);
+                }
+                if (digits.length !== 10) {
+                    return "";
+                }
+                if (digits.charAt(0) === "0" || digits.charAt(0) === "1" || digits.charAt(3) === "0" || digits.charAt(3) === "1") {
+                    return "";
+                }
+                return "(" + digits.substring(0, 3) + ") " + digits.substring(3, 6) + "-" + digits.substring(6);
+            }
+
+            function validateUsPhoneNumber(value) {
+                var normalized = normalizeUsPhoneNumber(value);
+                return {
+                    ok: !!normalized,
+                    value: normalized,
+                    error: normalized ? "" : "Enter a valid US phone number."
+                };
+            }
+
+            function attachPhoneFormatting(inputId, modalId) {
+                var input = document.getElementById(inputId);
+                if (!input) {
+                    return;
+                }
+                input.addEventListener("blur", function () {
+                    var value = (input.value || "").trim();
+                    if (!value) {
+                        return;
+                    }
+                    var validation = validateUsPhoneNumber(value);
+                    if (!validation.ok) {
+                        showModalFeedback(modalId, validation.error, true);
+                        return;
+                    }
+                    input.value = validation.value;
+                });
             }
 
             function clearAddEntryModal(prefix) {
@@ -2564,7 +2789,11 @@
                 });
             }
 
-            function canAction(status, actionName, queueId) {
+            function canAction(status, actionName, queueId, rowDate) {
+                var todayIso = getLocalTodayIsoDate();
+                if ((rowDate || "") !== todayIso) {
+                    return false;
+                }
                 if (!hasQueuePermission(actionName, queueId)) {
                     return false;
                 }
@@ -2595,8 +2824,9 @@
                     var action = (btn.getAttribute("data-action") || "").toLowerCase();
                     var appointmentId = btn.getAttribute("data-appointment-id");
                     var queueId = btn.getAttribute("data-queue-id");
+                    var rowDate = (btn.closest("[data-date]") && btn.closest("[data-date]").getAttribute("data-date")) || "";
                     var status = appointmentId ? getStatusForAppointment(appointmentId) : "";
-                    btn.disabled = !canAction(status, action, queueId);
+                    btn.disabled = !canAction(status, action, queueId, rowDate);
 
                     if (btn.getAttribute("data-bound-provider-action") === "1") {
                         return;
@@ -2610,12 +2840,13 @@
                         var action = (btn.getAttribute("data-action") || "").toLowerCase();
                         var srcType = (btn.getAttribute("data-src-type") || "A").toUpperCase();
                         var queueId = btn.getAttribute("data-queue-id");
+                        var rowDate = (btn.closest("[data-date]") && btn.closest("[data-date]").getAttribute("data-date")) || "";
                         if (!appointmentId || !action) {
                             return;
                         }
 
                         var status = getStatusForAppointment(appointmentId);
-                        if (!canAction(status, action, queueId)) {
+                        if (!canAction(status, action, queueId, rowDate)) {
                             window.alert("Action not allowed for the current status.");
                             return;
                         }
@@ -2645,6 +2876,55 @@
                             });
                     });
                 });
+            }
+
+            function applyAgendaFilter(mode) {
+                var normalized = (mode || "both").toUpperCase();
+                var queueFilter = document.getElementById("agendaQueueFilter");
+                var queueValue = (queueFilter && queueFilter.value ? queueFilter.value : "all").toLowerCase();
+                var visibleCount = 0;
+                document.querySelectorAll(".agenda-item").forEach(function (item) {
+                    var srcType = (item.getAttribute("data-src-type") || "").toUpperCase();
+                    var queueName = (item.getAttribute("data-queue") || "").toLowerCase();
+                    var show = normalized === "BOTH" || normalized === srcType;
+                    if (show && queueValue !== "all" && queueName !== queueValue) {
+                        show = false;
+                    }
+                    item.classList.toggle("is-hidden", !show);
+                    if (show) {
+                        visibleCount += 1;
+                    }
+                });
+
+                var emptyState = document.querySelector(".agenda-panel .empty-state");
+                if (emptyState) {
+                    emptyState.classList.toggle("is-hidden", visibleCount > 0);
+                }
+
+                document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
+                    btn.classList.toggle("is-active", (btn.getAttribute("data-agenda-filter") || "").toUpperCase() === normalized);
+                });
+            }
+
+            function bindAgendaFilterSwitch() {
+                document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
+                    if (btn.getAttribute("data-bound-agenda-filter") === "1") {
+                        return;
+                    }
+                    btn.setAttribute("data-bound-agenda-filter", "1");
+                    btn.addEventListener("click", function () {
+                        applyAgendaFilter(btn.getAttribute("data-agenda-filter") || "both");
+                    });
+                });
+                var queueFilter = document.getElementById("agendaQueueFilter");
+                if (queueFilter && queueFilter.getAttribute("data-bound-agenda-queue") !== "1") {
+                    queueFilter.setAttribute("data-bound-agenda-queue", "1");
+                    queueFilter.addEventListener("change", function () {
+                        var active = document.querySelector("[data-agenda-filter].is-active");
+                        applyAgendaFilter(active ? active.getAttribute("data-agenda-filter") : "both");
+                    });
+                }
+                applyAgendaFilter("both");
             }
 
             function bindMeetingLinks() {
@@ -2912,6 +3192,8 @@
                 addWalkinPermitNumber.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
                 addWalkinPermitNumber.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
             }
+            attachPhoneFormatting("addApptPhone", "addAppointmentModal");
+            attachPhoneFormatting("addWalkinPhone", "addWalkinModal");
             ["addWalkinStreetNumber", "addWalkinStreetName", "addWalkinStreetType"].forEach(function (id) {
                 var input = document.getElementById(id);
                 if (!input) {
@@ -2952,6 +3234,15 @@
                     if (!payload.queueId || !payload.contactType || !payload.refValue || !apptHasReferenceValue || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
                         showModalFeedback("addAppointmentModal", "Queue, contact type, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
                         return;
+                    }
+                    var appointmentPhoneValidation = validateUsPhoneNumber(payload.phone);
+                    if (!appointmentPhoneValidation.ok) {
+                        showModalFeedback("addAppointmentModal", appointmentPhoneValidation.error, true);
+                        return;
+                    }
+                    payload.phone = appointmentPhoneValidation.value;
+                    if (document.getElementById("addApptPhone")) {
+                        document.getElementById("addApptPhone").value = appointmentPhoneValidation.value;
                     }
 
                     validatePermitNumber("addAppt", true).then(function (isValid) {
@@ -3008,6 +3299,15 @@
                     if (!payload.queueId || !payload.contactType || !payload.refValue || !walkinHasReferenceValue || !payload.email || !payload.customerName || !payload.phone) {
                         showModalFeedback("addWalkinModal", "Queue, contact type, reference, reference value, email, first name, last name, and phone are required.", true);
                         return;
+                    }
+                    var walkinPhoneValidation = validateUsPhoneNumber(payload.phone);
+                    if (!walkinPhoneValidation.ok) {
+                        showModalFeedback("addWalkinModal", walkinPhoneValidation.error, true);
+                        return;
+                    }
+                    payload.phone = walkinPhoneValidation.value;
+                    if (document.getElementById("addWalkinPhone")) {
+                        document.getElementById("addWalkinPhone").value = walkinPhoneValidation.value;
                     }
 
                     validatePermitNumber("addWalkin", true).then(function (isValid) {
@@ -3137,6 +3437,8 @@
             if (routeTargetKind) {
                 routeTargetKind.addEventListener("change", function () {
                     toggleRouteDateRow();
+                    resetEntryCalendarState("routeTarget");
+                    setEntryDateValue("routeTarget", "", true);
                     populateRouteDateOptions("");
                     populateRouteTimeOptions("");
                 });
@@ -3149,6 +3451,54 @@
                     populateRouteTimeOptions("");
                 });
             }
+            var routeTargetDateDisplay = document.getElementById("routeTargetDateDisplay");
+            if (routeTargetDateDisplay) {
+                routeTargetDateDisplay.addEventListener("click", function () {
+                    openEntryDatePicker("routeTarget");
+                });
+                routeTargetDateDisplay.addEventListener("focus", function () {
+                    openEntryDatePicker("routeTarget");
+                });
+                routeTargetDateDisplay.addEventListener("input", function () {
+                    handleEntryDateDisplayInput("routeTarget");
+                });
+                routeTargetDateDisplay.addEventListener("blur", function () {
+                    handleEntryDateDisplayCommit("routeTarget");
+                });
+                routeTargetDateDisplay.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleEntryDateDisplayCommit("routeTarget");
+                    }
+                });
+            }
+            var routeTargetDateToggle = document.getElementById("routeTargetDateToggle");
+            if (routeTargetDateToggle) {
+                routeTargetDateToggle.addEventListener("click", function () {
+                    var picker = document.getElementById("routeTargetDatePicker");
+                    if (picker && picker.classList.contains("is-open")) {
+                        closeEntryDatePicker("routeTarget");
+                    } else {
+                        openEntryDatePicker("routeTarget");
+                    }
+                });
+            }
+            var routeTargetDatePrev = document.getElementById("routeTargetDatePrev");
+            if (routeTargetDatePrev) {
+                routeTargetDatePrev.addEventListener("click", function () {
+                    var state = getEntryCalendarState("routeTarget");
+                    state.monthStart = addMonths(state.monthStart || startOfMonth(new Date()), -1);
+                    loadEntryCalendarMonth("routeTarget", state.monthStart, "");
+                });
+            }
+            var routeTargetDateNext = document.getElementById("routeTargetDateNext");
+            if (routeTargetDateNext) {
+                routeTargetDateNext.addEventListener("click", function () {
+                    var state = getEntryCalendarState("routeTarget");
+                    state.monthStart = addMonths(state.monthStart || startOfMonth(new Date()), 1);
+                    loadEntryCalendarMonth("routeTarget", state.monthStart, "");
+                });
+            }
 
             var routeTargetQueueId = document.getElementById("routeTargetQueueId");
             if (routeTargetQueueId) {
@@ -3156,6 +3506,15 @@
                     loadRouteServices(routeTargetQueueId.value || "", "");
                 });
             }
+            document.addEventListener("click", function (event) {
+                var picker = document.getElementById("routeTargetDatePicker");
+                if (!picker || !picker.classList.contains("is-open")) {
+                    return;
+                }
+                if (!picker.contains(event.target)) {
+                    closeEntryDatePicker("routeTarget");
+                }
+            });
 
             var saveRoute = document.getElementById("saveRoute");
             if (saveRoute) {
@@ -3234,7 +3593,7 @@
                         })
                             .then(function (res) {
                                 if (!res || !res.ok) {
-                                    showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and transfer failed.", true);
+                                    showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and reschedule failed.", true);
                                     return;
                                 }
                                 closeModal("serviceRouteModal");
@@ -3273,6 +3632,7 @@
 
             bindProviderActionButtons();
             bindMeetingLinks();
+            bindAgendaFilterSwitch();
 
             if (reopenOnError) {
                 openModal("addAppointmentModal");

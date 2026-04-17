@@ -23,6 +23,7 @@ namespace FastQ.Web.Models
     {
         public long AppointmentId { get; set; }
         public long QueueId { get; set; }
+        public long ServiceId { get; set; }
         public string SrcType { get; set; }
         public string StartTimeText { get; set; }
         public string StartDateText { get; set; }
@@ -33,6 +34,7 @@ namespace FastQ.Web.Models
         public string StatusText { get; set; }
         public AppointmentStatus Status { get; set; }
         public string ContactMethod { get; set; }
+        public string RefValue { get; set; }
         public string StampUser { get; set; }
         public string EntryKind { get; set; }
         public string Notes { get; set; }

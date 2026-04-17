@@ -171,6 +171,7 @@ namespace FastQ.Web.Services
             {
                 AppointmentId = row.AppointmentId,
                 QueueId = row.QueueId,
+                ServiceId = row.ServiceId,
                 SrcType = srcType,
                 StartTimeText = row.StartTimeText,
                 StartDateText = row.StartDateText,
@@ -181,6 +182,7 @@ namespace FastQ.Web.Services
                 StatusText = row.StatusText,
                 Status = row.Status,
                 ContactMethod = row.ContactMethod,
+                RefValue = row.RefValue,
                 StampUser = row.StampUser,
                 EntryKind = entryKind,
                 ScheduledForUtc = row.ScheduledForUtc,

@@ -192,6 +192,7 @@ namespace FastQ.Web.Services
                 {
                     AppointmentId = a.Id,
                     QueueId = a.QueueId,
+                    ServiceId = a.ServiceId ?? 0,
                     ScheduledForUtc = a.ScheduledForUtc,
                     StartTimeText = localScheduled.ToString("h:mm tt"),
                     StartDateText = localScheduled.ToString("MMM dd, yyyy"),
@@ -252,6 +253,7 @@ namespace FastQ.Web.Services
                 {
                     AppointmentId = r.AppointmentId,
                     QueueId = r.QueueId,
+                    ServiceId = r.ServiceId,
                     ScheduledForUtc = r.ScheduledForUtc,
                     StartTimeText = localScheduled.ToString("h:mm tt"),
                     StartDateText = localScheduled.ToString("MMM dd, yyyy"),

@@ -34,6 +34,12 @@
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
     var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+    var queueOptions = walkinRows.Select(r => r.QueueName)
+        .Concat(appointmentRows.Select(r => r.QueueName))
+        .Where(q => !string.IsNullOrWhiteSpace(q))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(q => q, StringComparer.OrdinalIgnoreCase)
+        .ToList();
 }
 @section Head {
     <style>
@@ -73,6 +79,21 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .action-bar-main {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .action-bar-meta {
+            margin-left: auto;
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
         }
 
         .table-card {
@@ -554,6 +575,16 @@
             </select>
         </div>
         <div class="filter-group">
+            <label for="queueFilter">Queue</label>
+            <select id="queueFilter" class="filter-input" data-filter="queue">
+                <option value="all">All</option>
+                @foreach (var queueName in queueOptions)
+                {
+                    <option value="@queueName">@queueName</option>
+                }
+            </select>
+        </div>
+        <div class="filter-group">
             <label for="walkinsStartDate">Date</label>
             <div class="action-bar date-range">
                 <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
@@ -642,7 +673,7 @@
                             var rowDate = (row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc).ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
-                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
+                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -660,26 +691,37 @@
                                 </td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">
+                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId"
+                                data-appointment-id="@row.AppointmentId"
+                                data-src-type="W"
+                                data-queue-id="@row.QueueId"
+                                data-service-id="@row.ServiceId"
+                                data-ref-value="@row.RefValue"
+                                data-notes="@row.Notes"
+                                data-date="@rowDate"
+                                data-time="@row.StartTimeText">
                                 <td colspan="11">
                                     <div class="action-bar">
-                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Check-In</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Start</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">End</button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Transfer</button>
-                                        <button class="btn small ghost meeting-link" type="button"
-                                                data-appointment-id="@row.AppointmentId"
-                                                data-src-type="W"
-                                                data-date="@row.StartDateText"
-                                                data-time="@row.StartTimeText"
-                                                data-title="@row.ServiceType"
-                                                data-customer="@row.CustomerName"
-                                                data-phone="@row.Phone"
-                                                data-meeting-url="@row.MeetingUrl"
-                                                data-notes="@row.Notes">
-                                            Info
-                                        </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
+                                        <div class="action-bar-main">
+                                            <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Check-In</button>
+                                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Start</button>
+                                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">End</button>
+                                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Transfer</button>
+                                            <button class="btn small ghost meeting-link" type="button"
+                                                    data-appointment-id="@row.AppointmentId"
+                                                    data-src-type="W"
+                                                    data-date="@row.StartDateText"
+                                                    data-time="@row.StartTimeText"
+                                                    data-title="@row.ServiceType"
+                                                    data-customer="@row.CustomerName"
+                                                    data-phone="@row.Phone"
+                                                    data-meeting-url="@row.MeetingUrl"
+                                                    data-notes="@row.Notes">
+                                                Info
+                                            </button>
+                                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
+                                        </div>
+                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUser) ? "-" : row.StampUser)</div>
                                     </div>
                                 </td>
                             </tr>
@@ -763,7 +805,7 @@
                             var rowDate = (row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc).ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
-                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName">
+                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
                                 <td>@row.QueueName</td>
                                 <td>@row.ServiceType</td>
@@ -781,26 +823,37 @@
                                 </td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">
+                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId"
+                                data-appointment-id="@row.AppointmentId"
+                                data-src-type="A"
+                                data-queue-id="@row.QueueId"
+                                data-service-id="@row.ServiceId"
+                                data-ref-value="@row.RefValue"
+                                data-notes="@row.Notes"
+                                data-date="@rowDate"
+                                data-time="@row.StartTimeText">
                                 <td colspan="11">
                                     <div class="action-bar">
-                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Check-In</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Start</button>
-                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">End</button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Transfer</button>
-                                        <button class="btn small ghost meeting-link" type="button"
-                                                data-appointment-id="@row.AppointmentId"
-                                                data-src-type="A"
-                                                data-date="@row.StartDateText"
-                                                data-time="@row.StartTimeText"
-                                                data-title="@row.ServiceType"
-                                                data-customer="@row.CustomerName"
-                                                data-phone="@row.Phone"
-                                                data-meeting-url="@row.MeetingUrl"
-                                                data-notes="@row.Notes">
-                                            Info
-                                        </button>
-                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
+                                        <div class="action-bar-main">
+                                            <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Check-In</button>
+                                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Start</button>
+                                            <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">End</button>
+                                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Transfer</button>
+                                            <button class="btn small ghost meeting-link" type="button"
+                                                    data-appointment-id="@row.AppointmentId"
+                                                    data-src-type="A"
+                                                    data-date="@row.StartDateText"
+                                                    data-time="@row.StartTimeText"
+                                                    data-title="@row.ServiceType"
+                                                    data-customer="@row.CustomerName"
+                                                    data-phone="@row.Phone"
+                                                    data-meeting-url="@row.MeetingUrl"
+                                                    data-notes="@row.Notes">
+                                                Info
+                                            </button>
+                                            <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
+                                        </div>
+                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUser) ? "-" : row.StampUser)</div>
                                     </div>
                                 </td>
                             </tr>
@@ -890,10 +943,28 @@
                 </select>
             </div>
             <div class="route-form-row route-appointment-only" id="routeDateRow">
-                <label for="routeTargetDate">Target Date</label>
-                <select id="routeTargetDate" class="route-input">
-                    <option value="">Select date</option>
-                </select>
+                <label for="routeTargetDateDisplay">Target Date</label>
+                <input id="routeTargetDate" type="hidden" value="" data-current-value="" />
+                <div class="entry-date-picker" id="routeTargetDatePicker">
+                    <div class="entry-date-picker-trigger">
+                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="dd/mm/yyyy" autocomplete="off" aria-expanded="false" />
+                        <button id="routeTargetDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Open calendar">
+                            <i class="bi bi-calendar3"></i>
+                        </button>
+                    </div>
+                    <div class="entry-date-picker-panel">
+                        <div class="entry-date-picker-header">
+                            <button id="routeTargetDatePrev" class="btn small ghost" type="button" aria-label="Previous month">&lt;</button>
+                            <div id="routeTargetDateMonthLabel" class="entry-date-picker-month"></div>
+                            <button id="routeTargetDateNext" class="btn small ghost" type="button" aria-label="Next month">&gt;</button>
+                        </div>
+                        <div class="entry-date-picker-weekdays">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div id="routeTargetDateCalendar" class="entry-date-picker-grid"></div>
+                    </div>
+                </div>
+                <div id="routeTargetDateStatus" class="helper-text"></div>
             </div>
             <div class="route-form-row route-appointment-only" id="routeTimeRow">
                 <label for="routeTargetTime">Target Time</label>
@@ -959,7 +1030,7 @@
         </div>
         <div class="modal-body">
             <div class="modal-feedback" data-modal-feedback="cancelServiceModal"></div>
-            <p>Does the customer need to be cancelled only, or cancelled and transferred?</p>
+            <p>Does the customer need to be cancelled only, or cancelled and rescheduled?</p>
             <div class="route-form-row">
                 <label for="cancelServiceNotes">Cancellation Notes</label>
                 <textarea id="cancelServiceNotes" rows="3"></textarea>
@@ -970,7 +1041,7 @@
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
             <button class="btn secondary" type="button" data-cancel-choice="cancel-only">Cancel Only</button>
-            <button class="btn primary" type="button" data-cancel-choice="cancel-transfer">Cancel + Transfer</button>
+            <button class="btn primary" type="button" data-cancel-choice="cancel-transfer">Cancel + Reschedule</button>
         </div>
     </div>
 </div>
@@ -1006,13 +1077,20 @@
       addWalkin: { seq: 0, pending: false, valid: false, message: "" }
     };
     var timeSelectionState = {
-      addAppt: { seq: 0, pending: false, valid: true, message: "" }
+      addAppt: { seq: 0, pending: false, valid: true, message: "" },
+      routeTarget: { seq: 0, pending: false, valid: true, message: "" }
     };
     var permitValidationTimers = {};
     var customerLookupTimers = {};
     var customerLookupRequestSeq = {};
     var entryCalendarState = {
       addAppt: {
+        monthStart: null,
+        enabledDates: {},
+        loadedMonths: {},
+        requestToken: 0
+      },
+      routeTarget: {
         monthStart: null,
         enabledDates: {},
         loadedMonths: {},
@@ -1388,6 +1466,48 @@
 
     function buildCustomerName(firstName, lastName) {
       return [firstName || "", lastName || ""].join(" ").trim();
+    }
+
+    function normalizeUsPhoneNumber(value) {
+      var digits = (value || "").replace(/\D/g, "");
+      if (digits.length === 11 && digits.charAt(0) === "1") {
+        digits = digits.substring(1);
+      }
+      if (digits.length !== 10) {
+        return "";
+      }
+      if (digits.charAt(0) === "0" || digits.charAt(0) === "1" || digits.charAt(3) === "0" || digits.charAt(3) === "1") {
+        return "";
+      }
+      return "(" + digits.substring(0, 3) + ") " + digits.substring(3, 6) + "-" + digits.substring(6);
+    }
+
+    function validateUsPhoneNumber(value) {
+      var normalized = normalizeUsPhoneNumber(value);
+      return {
+        ok: !!normalized,
+        value: normalized,
+        error: normalized ? "" : "Enter a valid US phone number."
+      };
+    }
+
+    function attachPhoneFormatting(inputId, modalId) {
+      var input = document.getElementById(inputId);
+      if (!input) {
+        return;
+      }
+      input.addEventListener("blur", function () {
+        var value = (input.value || "").trim();
+        if (!value) {
+          return;
+        }
+        var validation = validateUsPhoneNumber(value);
+        if (!validation.ok) {
+          showModalFeedback(modalId, validation.error, true);
+          return;
+        }
+        input.value = validation.value;
+      });
     }
 
     function setFieldDisabled(id, disabled) {
@@ -2099,12 +2219,12 @@
         setSelectValues(timeSelect, [], "Select time");
         return Promise.resolve();
       }
-      if (prefix === "addAppt") {
+      if (prefix === "addAppt" || prefix === "routeTarget") {
         var state = getEntryCalendarState(prefix);
         if (state.enabledDates[selectedDate] !== true) {
           setSelectValues(timeSelect, [], "Select time");
           setTimeSelectionState(prefix, false, false, "Selected date is not available.");
-          showModalFeedback("addAppointmentModal", "Selected date is not available.", true);
+          showModalFeedback(prefix === "routeTarget" ? "serviceRouteModal" : "addAppointmentModal", "Selected date is not available.", true);
           return Promise.resolve();
         }
       }
@@ -2128,12 +2248,15 @@
           if (timeOptions.length > 0) {
             timeSelect.value = timeOptions[0].value;
           }
+          if (prefix === "routeTarget") {
+            clearModalFeedback("serviceRouteModal");
+          }
           return validateCustomerTimeSelection(prefix);
         })
         .catch(function () {
           setSelectValues(timeSelect, [], "Select time");
           setTimeSelectionState(prefix, false, false, "Could not load available time slots.");
-          showModalFeedback("addAppointmentModal", "Could not load available time slots.", true);
+          showModalFeedback(prefix === "routeTarget" ? "serviceRouteModal" : "addAppointmentModal", "Could not load available time slots.", true);
         });
     }
 
@@ -2269,34 +2392,49 @@
         activeRouteQueueDetails = null;
         setSelectOptions(serviceSelect, [], "Select service");
         setRouteReferenceOptions([], "");
+        resetEntryCalendarState("routeTarget");
+        setEntryDateValue("routeTarget", "", true);
+        setEntryDateStatus("routeTarget", "Select queue to load open-slot dates.", false);
         populateRouteDateOptions("");
         populateRouteTimeOptions("");
         return Promise.resolve();
       }
 
-      var url = getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode);
-      return getJson(url).then(function (res) {
-        if (!res || !res.ok) {
+      var serviceUrl = getTransferServicesUrl + "?queueId=" + encodeURIComponent(queueCode);
+      var detailsUrl = getQueueDetailsUrl + "?queueId=" + encodeURIComponent(queueCode);
+      return Promise.all([getJson(serviceUrl), getJson(detailsUrl)]).then(function (responses) {
+        var servicesRes = responses[0];
+        var detailsRes = responses[1];
+        if (!detailsRes || !detailsRes.ok) {
           activeRouteQueueDetails = null;
           setSelectOptions(serviceSelect, [], "Select service");
           setRouteReferenceOptions([], "");
+          resetEntryCalendarState("routeTarget");
+          setEntryDateValue("routeTarget", "", true);
+          setEntryDateStatus("routeTarget", "Select queue to load open-slot dates.", false);
           populateRouteDateOptions("");
           populateRouteTimeOptions("");
           return;
         }
 
-        activeRouteQueueDetails = res.data || null;
-        setSelectOptions(serviceSelect, (res.data && res.data.services) || [], "Select service");
+        activeRouteQueueDetails = detailsRes.data || null;
+        setSelectOptions(serviceSelect, servicesRes && servicesRes.ok ? servicesRes.data : [], "Select service");
         if (selectedServiceCode) {
           serviceSelect.value = selectedServiceCode;
         }
-        setRouteReferenceOptions((res.data && res.data.refOptions) || [], "");
+        setRouteReferenceOptions((detailsRes.data && detailsRes.data.refOptions) || [], "");
+        resetEntryCalendarState("routeTarget");
+        setEntryDateValue("routeTarget", "", true);
+        setEntryDateStatus("routeTarget", "Select date to load available times.", false);
         populateRouteDateOptions("");
         populateRouteTimeOptions("");
       }).catch(function () {
         activeRouteQueueDetails = null;
         setSelectOptions(serviceSelect, [], "Select service");
         setRouteReferenceOptions([], "");
+        resetEntryCalendarState("routeTarget");
+        setEntryDateValue("routeTarget", "", true);
+        setEntryDateStatus("routeTarget", "Select queue to load open-slot dates.", false);
         populateRouteDateOptions("");
         populateRouteTimeOptions("");
       });
@@ -2333,6 +2471,7 @@
         modal.classList.remove("show");
       }
       closeEntryDatePicker("addAppt");
+      closeEntryDatePicker("routeTarget");
       clearModalFeedback(id);
     }
 
@@ -2434,65 +2573,40 @@
     }
 
     function populateRouteDateOptions(selectedDateValue) {
-      var dateSelect = document.getElementById("routeTargetDate");
-      if (!dateSelect) {
-        return;
+      var dateInput = document.getElementById("routeTargetDate");
+      if (!dateInput) {
+        return Promise.resolve();
       }
 
-      if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
-        buildScheduleDateOptions(activeRouteQueueDetails, selectedDateValue);
-        return;
+      var preferredDateValue = selectedDateValue || dateInput.getAttribute("data-current-value") || dateInput.value || "";
+      var state = getEntryCalendarState("routeTarget");
+      if (!state.monthStart) {
+        var initialDate = preferredDateValue ? new Date(preferredDateValue + "T00:00:00") : new Date();
+        state.monthStart = startOfMonth(initialDate);
       }
 
-      var base = new Date();
-      base.setHours(0, 0, 0, 0);
-      var options = [];
-      for (var i = 0; i < 31; i++) {
-        var dateValue = new Date(base.getTime());
-        dateValue.setDate(base.getDate() + i);
-        var yyyy = String(dateValue.getFullYear());
-        var mm = toTwoDigits(dateValue.getMonth() + 1);
-        var dd = toTwoDigits(dateValue.getDate());
-        options.push({
-          value: yyyy + "-" + mm + "-" + dd,
-          label: formatRouteDateLabel(dateValue)
-        });
-      }
-
-      setSelectValues(dateSelect, options, "Select date");
-      if (selectedDateValue) {
-        dateSelect.value = selectedDateValue;
-      }
+      return loadEntryCalendarMonth("routeTarget", state.monthStart, preferredDateValue);
     }
 
     function populateRouteTimeOptions(selectedTimeValue) {
       var timeSelect = document.getElementById("routeTargetTime");
       if (!timeSelect) {
-        return;
+        return Promise.resolve();
       }
 
-      if (activeRouteQueueDetails && activeRouteQueueDetails.schedules && activeRouteQueueDetails.schedules.length) {
-        var selectedDateValue = document.getElementById("routeTargetDate");
-        buildScheduleTimeOptions(activeRouteQueueDetails, selectedTimeValue, selectedDateValue ? selectedDateValue.value : "");
-        return;
+      var selectedDateInput = document.getElementById("routeTargetDate");
+      var selectedDateValue = selectedDateInput ? selectedDateInput.value : "";
+      if (!selectedDateValue) {
+        setSelectValues(timeSelect, [], "Select time");
+        return Promise.resolve();
       }
 
-      var options = [];
-      for (var hour = 0; hour < 24; hour++) {
-        for (var minute = 0; minute < 60; minute += 30) {
-          var hh = toTwoDigits(hour);
-          var mm = toTwoDigits(minute);
-          options.push({
-            value: hh + ":" + mm,
-            label: hh + ":" + mm
-          });
+      return refreshEntryModalTimeOptions("routeTarget").then(function () {
+        if (selectedTimeValue) {
+          timeSelect.value = selectedTimeValue;
         }
-      }
-
-      setSelectValues(timeSelect, options, "Select time");
-      if (selectedTimeValue) {
-        timeSelect.value = selectedTimeValue;
-      }
+        return null;
+      });
     }
 
     function buildRouteTargetDateTime(dateValue, timeValue) {
@@ -2516,11 +2630,30 @@
       });
     }
 
+    function getRouteSourcePrefill(appointmentId, srcType) {
+      var selector = '.row-actions[data-appointment-id="' + appointmentId + '"][data-src-type="' + srcType + '"]';
+      var source = document.querySelector(selector);
+      if (!source) {
+        return null;
+      }
+
+      return {
+        queueId: source.getAttribute("data-queue-id") || "",
+        serviceId: source.getAttribute("data-service-id") || "",
+        refValue: source.getAttribute("data-ref-value") || "",
+        notes: source.getAttribute("data-notes") || "",
+        date: source.getAttribute("data-date") || "",
+        time: source.getAttribute("data-time") || ""
+      };
+    }
+
     function openRouteModal(mode, appointmentId, srcType, completionNotes) {
       var routeMode = document.getElementById("routeMode");
       var routeSrcType = document.getElementById("routeSrcType");
       var routeSrcId = document.getElementById("routeSrcId");
       var routeCompletionNotes = document.getElementById("routeCompletionNotes");
+      var routeTitle = document.getElementById("serviceRouteModalTitle");
+      var saveRouteButton = document.getElementById("saveRoute");
       var targetKind = document.getElementById("routeTargetKind");
       var targetQueueId = document.getElementById("routeTargetQueueId");
       var targetServiceId = document.getElementById("routeTargetServiceId");
@@ -2528,6 +2661,7 @@
       var targetTime = document.getElementById("routeTargetTime");
       var refValue = document.getElementById("routeRefValue");
       var notes = document.getElementById("routeNotes");
+      var sourcePrefill = mode === "cancel-transfer" ? getRouteSourcePrefill(appointmentId, srcType) : null;
 
       if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
         return;
@@ -2536,18 +2670,31 @@
       routeMode.value = mode;
       routeSrcType.value = srcType;
       routeSrcId.value = appointmentId;
+      if (routeTitle) {
+        routeTitle.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+      }
+      if (saveRouteButton) {
+        saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+      }
       if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
       targetKind.value = srcType === "A" ? "A" : "W";
-      if (targetQueueId) targetQueueId.value = "";
-      if (targetServiceId) targetServiceId.value = "";
-      populateRouteDateOptions("");
-      populateRouteTimeOptions("");
+      if (targetQueueId) targetQueueId.value = sourcePrefill ? sourcePrefill.queueId : "";
+      if (targetServiceId) targetServiceId.value = sourcePrefill ? sourcePrefill.serviceId : "";
       if (targetDate) targetDate.value = "";
       if (targetTime) targetTime.value = "";
-      if (refValue) refValue.value = "";
-      if (notes) notes.value = "";
+      if (refValue) refValue.value = sourcePrefill ? sourcePrefill.refValue : "";
+      if (notes) notes.value = sourcePrefill ? sourcePrefill.notes : "";
       toggleRouteDateRow();
-      loadRouteQueues("", "");
+      loadRouteQueues(sourcePrefill ? sourcePrefill.queueId : "", sourcePrefill ? sourcePrefill.serviceId : "").then(function () {
+        if (sourcePrefill && targetKind && targetKind.value === "A") {
+          populateRouteDateOptions(sourcePrefill.date).then(function () {
+            populateRouteTimeOptions(to24Hour(sourcePrefill.time || ""));
+          });
+          return;
+        }
+        populateRouteDateOptions("");
+        populateRouteTimeOptions("");
+      });
       openModal("serviceRouteModal");
     }
 
@@ -2619,10 +2766,12 @@
 
       var customerInput = container.querySelector('[data-filter="customer"]');
       var statusInput = container.querySelector('[data-filter="status"]');
+      var queueInput = container.querySelector('[data-filter="queue"]');
       var startInput = container.querySelector('[data-filter="start"]');
       var endInput = container.querySelector('[data-filter="end"]');
       var customerValue = (customerInput && customerInput.value ? customerInput.value : "").toLowerCase().trim();
       var statusValue = (statusInput && statusInput.value ? statusInput.value : "").toLowerCase();
+      var queueValue = (queueInput && queueInput.value ? queueInput.value : "").toLowerCase().trim();
       var startValue = startInput && startInput.value ? startInput.value : "";
       var endValue = endInput && endInput.value ? endInput.value : "";
       var tables = container.parentElement
@@ -2644,12 +2793,16 @@
           var rowStatus = (row.getAttribute("data-status") || "").toLowerCase();
           var rowDate = row.getAttribute("data-date") || "";
           var rowCustomer = (row.getAttribute("data-customer") || "").toLowerCase();
+          var rowQueue = (row.getAttribute("data-queue") || "").toLowerCase();
           var match = true;
 
           if (customerValue && rowCustomer.indexOf(customerValue) === -1) {
             match = false;
           }
           if (statusValue && statusValue !== "all" && rowStatus !== statusValue) {
+            match = false;
+          }
+          if (queueValue && queueValue !== "all" && rowQueue !== queueValue) {
             match = false;
           }
           if (startValue && rowDate < startValue) {
@@ -2761,6 +2914,7 @@
         reset.addEventListener("click", function () {
           var customerInput = container.querySelector('[data-filter="customer"]');
           var statusInput = container.querySelector('[data-filter="status"]');
+          var queueInput = container.querySelector('[data-filter="queue"]');
           var startInput = container.querySelector('[data-filter="start"]');
           var endInput = container.querySelector('[data-filter="end"]');
           var todayValue = getLocalTodayIsoDate();
@@ -2769,6 +2923,9 @@
           }
           if (statusInput) {
             statusInput.value = "all";
+          }
+          if (queueInput) {
+            queueInput.value = "all";
           }
           if (startInput) {
             startInput.value = todayValue;
@@ -2807,7 +2964,11 @@
       return providerHasQueue || queueAdminHasQueue;
     }
 
-    function canAction(status, actionName, queueId) {
+    function canAction(status, actionName, queueId, rowDate) {
+      var todayIso = getLocalTodayIsoDate();
+      if ((rowDate || "") !== todayIso) {
+        return false;
+      }
       if (!hasQueuePermission(actionName, queueId)) {
         return false;
       }
@@ -2920,8 +3081,9 @@
         var action = (btn.getAttribute("data-action") || "").toLowerCase();
         var appointmentId = btn.getAttribute("data-appointment-id");
         var queueId = btn.getAttribute("data-queue-id");
+        var rowDate = (btn.closest("[data-date]") && btn.closest("[data-date]").getAttribute("data-date")) || "";
         var status = appointmentId ? getStatusForAppointment(appointmentId) : "";
-        btn.disabled = !canAction(status, action, queueId);
+        btn.disabled = !canAction(status, action, queueId, rowDate);
 
         if (btn.getAttribute("data-bound-provider-action") === "1") {
           return;
@@ -2935,6 +3097,7 @@
         var action = (btn.getAttribute("data-action") || "").toLowerCase();
         var srcType = (btn.getAttribute("data-src-type") || "").toUpperCase();
         var queueId = btn.getAttribute("data-queue-id");
+        var rowDate = (btn.closest("[data-date]") && btn.closest("[data-date]").getAttribute("data-date")) || "";
         if (!appointmentId || !action) {
           return;
         }
@@ -2949,7 +3112,7 @@
         }
 
         var status = getStatusForAppointment(appointmentId);
-        if (!canAction(status, action, queueId)) {
+        if (!canAction(status, action, queueId, rowDate)) {
           window.alert("Action not allowed for the current status.");
           return;
         }
@@ -3472,6 +3635,8 @@
     if (routeTargetKind) {
       routeTargetKind.addEventListener("change", function () {
         toggleRouteDateRow();
+        resetEntryCalendarState("routeTarget");
+        setEntryDateValue("routeTarget", "", true);
         populateRouteDateOptions("");
         populateRouteTimeOptions("");
       });
@@ -3484,6 +3649,54 @@
         populateRouteTimeOptions("");
       });
     }
+    var routeTargetDateDisplay = document.getElementById("routeTargetDateDisplay");
+    if (routeTargetDateDisplay) {
+      routeTargetDateDisplay.addEventListener("click", function () {
+        openEntryDatePicker("routeTarget");
+      });
+      routeTargetDateDisplay.addEventListener("focus", function () {
+        openEntryDatePicker("routeTarget");
+      });
+      routeTargetDateDisplay.addEventListener("input", function () {
+        handleEntryDateDisplayInput("routeTarget");
+      });
+      routeTargetDateDisplay.addEventListener("blur", function () {
+        handleEntryDateDisplayCommit("routeTarget");
+      });
+      routeTargetDateDisplay.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          handleEntryDateDisplayCommit("routeTarget");
+        }
+      });
+    }
+    var routeTargetDateToggle = document.getElementById("routeTargetDateToggle");
+    if (routeTargetDateToggle) {
+      routeTargetDateToggle.addEventListener("click", function () {
+        var picker = document.getElementById("routeTargetDatePicker");
+        if (picker && picker.classList.contains("is-open")) {
+          closeEntryDatePicker("routeTarget");
+        } else {
+          openEntryDatePicker("routeTarget");
+        }
+      });
+    }
+    var routeTargetDatePrev = document.getElementById("routeTargetDatePrev");
+    if (routeTargetDatePrev) {
+      routeTargetDatePrev.addEventListener("click", function () {
+        var state = getEntryCalendarState("routeTarget");
+        state.monthStart = addMonths(state.monthStart || startOfMonth(new Date()), -1);
+        loadEntryCalendarMonth("routeTarget", state.monthStart, "");
+      });
+    }
+    var routeTargetDateNext = document.getElementById("routeTargetDateNext");
+    if (routeTargetDateNext) {
+      routeTargetDateNext.addEventListener("click", function () {
+        var state = getEntryCalendarState("routeTarget");
+        state.monthStart = addMonths(state.monthStart || startOfMonth(new Date()), 1);
+        loadEntryCalendarMonth("routeTarget", state.monthStart, "");
+      });
+    }
 
     var routeTargetQueueId = document.getElementById("routeTargetQueueId");
     if (routeTargetQueueId) {
@@ -3491,6 +3704,15 @@
         loadRouteServices(routeTargetQueueId.value || "", "");
       });
     }
+    document.addEventListener("click", function (event) {
+      var picker = document.getElementById("routeTargetDatePicker");
+      if (!picker || !picker.classList.contains("is-open")) {
+        return;
+      }
+      if (!picker.contains(event.target)) {
+        closeEntryDatePicker("routeTarget");
+      }
+    });
 
     var saveRoute = document.getElementById("saveRoute");
     if (saveRoute) {
@@ -3569,7 +3791,7 @@
             })
             .then(function (res) {
               if (!res || !res.ok) {
-                showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and transfer failed.", true);
+                showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and reschedule failed.", true);
                 return;
               }
               closeModal("serviceRouteModal");
@@ -3781,6 +4003,8 @@
       addWalkinPermitNumber.addEventListener("input", function () { validatePermitNumber("addWalkin", false); });
       addWalkinPermitNumber.addEventListener("blur", function () { validatePermitNumber("addWalkin", true); });
     }
+    attachPhoneFormatting("addApptPhone", "addAppointmentModal");
+    attachPhoneFormatting("addWalkinPhone", "addWalkinModal");
     ["addWalkinStreetNumber", "addWalkinStreetName", "addWalkinStreetType"].forEach(function (id) {
       var input = document.getElementById(id);
       if (!input) {
@@ -3821,6 +4045,15 @@
         if (!payload.queueId || !payload.contactType || !payload.refValue || !apptHasReferenceValue || !payload.email || !payload.customerName || !payload.phone || !payload.appointmentDate || !payload.startTime) {
           showModalFeedback("addAppointmentModal", "Queue, contact type, reference, reference value, email, first name, last name, phone, date, and time are required.", true);
           return;
+        }
+        var appointmentPhoneValidation = validateUsPhoneNumber(payload.phone);
+        if (!appointmentPhoneValidation.ok) {
+          showModalFeedback("addAppointmentModal", appointmentPhoneValidation.error, true);
+          return;
+        }
+        payload.phone = appointmentPhoneValidation.value;
+        if (document.getElementById("addApptPhone")) {
+          document.getElementById("addApptPhone").value = appointmentPhoneValidation.value;
         }
 
         validatePermitNumber("addAppt", true).then(function (isValid) {
@@ -3877,6 +4110,15 @@
         if (!payload.queueId || !payload.contactType || !payload.refValue || !walkinHasReferenceValue || !payload.email || !payload.customerName || !payload.phone) {
           showModalFeedback("addWalkinModal", "Queue, contact type, reference, reference value, email, first name, last name, and phone are required.", true);
           return;
+        }
+        var walkinPhoneValidation = validateUsPhoneNumber(payload.phone);
+        if (!walkinPhoneValidation.ok) {
+          showModalFeedback("addWalkinModal", walkinPhoneValidation.error, true);
+          return;
+        }
+        payload.phone = walkinPhoneValidation.value;
+        if (document.getElementById("addWalkinPhone")) {
+          document.getElementById("addWalkinPhone").value = walkinPhoneValidation.value;
         }
 
         validatePermitNumber("addWalkin", true).then(function (isValid) {
