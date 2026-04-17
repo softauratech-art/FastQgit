@@ -452,27 +452,7 @@ namespace FastQ.Web.Controllers
             long parsedTargetServiceId;
             long? targetService = long.TryParse(targetServiceId, out parsedTargetServiceId) ? parsedTargetServiceId : (long?)null;
 
-            DateTime parsedTargetDate;
-            DateTime? targetDateUtc = DateTime.TryParseExact(
-                (targetDate ?? string.Empty).Trim(),
-                new[]
-                {
-                    "yyyy-MM-dd HH:mm",
-                    "yyyy-M-d H:mm",
-                    "yyyy-MM-dd",
-                    "yyyy-M-d",
-                    "MM/dd/yyyy HH:mm",
-                    "M/d/yyyy H:mm",
-                    "MM/dd/yyyy",
-                    "M/d/yyyy",
-                    "dd/MM/yyyy HH:mm",
-                    "d/M/yyyy H:mm",
-                    "dd/MM/yyyy",
-                    "d/M/yyyy"
-                },
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out parsedTargetDate)
+            var targetDateUtc = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
                 ? parsedTargetDate
                 : (DateTime?)null;
 
@@ -525,27 +505,7 @@ namespace FastQ.Web.Controllers
             if (normalizedTargetKind != null && normalizedTargetKind != "A" && normalizedTargetKind != "W")
                 return Json(new { ok = false, error = "targetKind must be A or W" });
 
-            DateTime parsedTargetDate;
-            DateTime? targetDateUtc = DateTime.TryParseExact(
-                (targetDate ?? string.Empty).Trim(),
-                new[]
-                {
-                    "yyyy-MM-dd HH:mm",
-                    "yyyy-M-d H:mm",
-                    "yyyy-MM-dd",
-                    "yyyy-M-d",
-                    "MM/dd/yyyy HH:mm",
-                    "M/d/yyyy H:mm",
-                    "MM/dd/yyyy",
-                    "M/d/yyyy",
-                    "dd/MM/yyyy HH:mm",
-                    "d/M/yyyy H:mm",
-                    "dd/MM/yyyy",
-                    "d/M/yyyy"
-                },
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out parsedTargetDate)
+            var targetDateUtc = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
                 ? parsedTargetDate
                 : (DateTime?)null;
 
@@ -642,6 +602,61 @@ namespace FastQ.Web.Controllers
             }
 
             parsedTime = default;
+            return false;
+        }
+
+        private static bool TryParseTransferTargetDate(string value, out DateTime parsedDateTime)
+        {
+            var text = (value ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                parsedDateTime = default;
+                return false;
+            }
+
+            var parts = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2
+                && DateTime.TryParseExact(parts[0], new[] { "yyyy-MM-dd", "yyyy-M-d", "MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate)
+                && TryParseStartTime(string.Join(" ", parts.Skip(1)), out var parsedTime))
+            {
+                parsedDateTime = parsedDate.Date + parsedTime;
+                return true;
+            }
+
+            if (DateTime.TryParseExact(
+                text,
+                new[]
+                {
+                    "yyyy-MM-dd HH:mm",
+                    "yyyy-M-d H:mm",
+                    "yyyy-MM-dd H:mm",
+                    "yyyy-M-d HH:mm",
+                    "yyyy-MM-dd h:mm tt",
+                    "yyyy-M-d h:mm tt",
+                    "yyyy-MM-dd hh:mm tt",
+                    "yyyy-M-d hh:mm tt",
+                    "yyyy-MM-dd",
+                    "yyyy-M-d",
+                    "MM/dd/yyyy HH:mm",
+                    "M/d/yyyy H:mm",
+                    "MM/dd/yyyy h:mm tt",
+                    "M/d/yyyy h:mm tt",
+                    "MM/dd/yyyy",
+                    "M/d/yyyy",
+                    "dd/MM/yyyy HH:mm",
+                    "d/M/yyyy H:mm",
+                    "dd/MM/yyyy h:mm tt",
+                    "d/M/yyyy h:mm tt",
+                    "dd/MM/yyyy",
+                    "d/M/yyyy"
+                },
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out parsedDateTime))
+            {
+                return true;
+            }
+
             return false;
         }
     }
