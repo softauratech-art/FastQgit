@@ -2384,9 +2384,14 @@
 
     function loadRouteServices(queueCode, selectedServiceCode) {
       var serviceSelect = document.getElementById("routeTargetServiceId");
+      var routeDateInput = document.getElementById("routeTargetDate");
+      var routeTimeSelect = document.getElementById("routeTargetTime");
       if (!serviceSelect) {
         return Promise.resolve();
       }
+
+      var currentDateValue = routeDateInput ? (routeDateInput.value || routeDateInput.getAttribute("data-current-value") || "") : "";
+      var currentTimeValue = routeTimeSelect ? (routeTimeSelect.value || "") : "";
 
       if (!queueCode) {
         activeRouteQueueDetails = null;
@@ -2423,11 +2428,13 @@
           serviceSelect.value = selectedServiceCode;
         }
         setRouteReferenceOptions((detailsRes.data && detailsRes.data.refOptions) || [], "");
+        var preferredDateValue = currentDateValue || "";
+        var preferredTimeValue = currentTimeValue || "";
         resetEntryCalendarState("routeTarget");
-        setEntryDateValue("routeTarget", "", true);
         setEntryDateStatus("routeTarget", "Select date to load available times.", false);
-        populateRouteDateOptions("");
-        populateRouteTimeOptions("");
+        return populateRouteDateOptions(preferredDateValue).then(function () {
+          return populateRouteTimeOptions(preferredTimeValue);
+        });
       }).catch(function () {
         activeRouteQueueDetails = null;
         setSelectOptions(serviceSelect, [], "Select service");
