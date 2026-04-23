@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transfer Modal Test Harness</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: #fffaf2;
+      --line: #dbcdb5;
+      --ink: #33261c;
+      --muted: #756556;
+      --accent: #b86a3d;
+      --accent-dark: #8d4d2b;
+      --danger: #b42318;
+      --danger-bg: #fdecec;
+      --ok: #166534;
+      --ok-bg: #ecfdf3;
+      --shadow: 0 24px 60px rgba(51, 38, 28, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(184, 106, 61, 0.16), transparent 24rem),
+        linear-gradient(180deg, #efe3d2, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .panel {
+      background: rgba(255, 250, 242, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 28px;
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 70ch;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+      align-items: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #fffdf8;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-dark);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .debug {
+      padding: 24px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .debug-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .debug pre {
+      margin: 0;
+      background: #2c2118;
+      color: #f9eada;
+      border-radius: 12px;
+      padding: 14px;
+      overflow: auto;
+      font-size: 13px;
+      min-height: 140px;
+    }
+
+    .backdrop {
+      position: relative;
+      min-height: 640px;
+      border-top: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(184, 106, 61, 0.10), transparent 30%),
+        #f8f0e4;
+      padding: 24px;
+    }
+
+    .modal {
+      width: min(100%, 560px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .modal-header,
+    .modal-footer {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-footer {
+      border-bottom: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .modal-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .modal-feedback {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .modal-feedback.show {
+      display: block;
+    }
+
+    .modal-feedback.error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-color: #f7b5b5;
+    }
+
+    .modal-feedback.ok {
+      background: var(--ok-bg);
+      color: var(--ok);
+      border-color: #a7f3d0;
+    }
+
+    .row {
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 88px;
+    }
+
+    .entry-date-picker {
+      position: relative;
+    }
+
+    .entry-date-picker-trigger {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .entry-date-picker-toggle {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 0 12px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .entry-date-picker-panel {
+      display: none;
+      position: absolute;
+      inset: calc(100% + 8px) 0 auto 0;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 18px 32px rgba(51, 38, 28, 0.18);
+      padding: 12px;
+      z-index: 5;
+    }
+
+    .entry-date-picker.is-open .entry-date-picker-panel {
+      display: block;
+    }
+
+    .entry-date-picker-header,
+    .entry-date-picker-weekdays,
+    .entry-date-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .entry-date-picker-header {
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .entry-date-picker-month {
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .entry-date-picker-weekdays {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .entry-date-cell {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .entry-date-cell[disabled] {
+      opacity: 0.35;
+      cursor: not-allowed;
+      background: #f7f0e6;
+    }
+
+    .entry-date-cell.is-selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .entry-date-cell.is-today {
+      outline: 2px solid rgba(184, 106, 61, 0.28);
+    }
+
+    .helper-text {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .helper-text.error {
+      color: var(--danger);
+    }
+
+    .two-up {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .radio-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .radio-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+    }
+
+    .caption {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 920px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+
+      .two-up {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="panel">
+      <div class="hero">
+        <h1>Transfer Modal Test Harness</h1>
+        <p class="lede">
+          This page mirrors the current transfer modal flow: custom date picker, mock queue and slot loading,
+          current submit payload construction, and the current server-side target date parsing logic.
+        </p>
+        <div class="toolbar">
+          <button class="btn primary" id="resetDemo" type="button">Reset Demo</button>
+          <span class="chip">Source Appointment: <strong>#12841</strong></span>
+          <span class="chip">Source Type: <strong>A</strong></span>
+        </div>
+      </div>
+      <div class="backdrop">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
+          <div class="modal-header">
+            <div>
+              <h3 id="serviceRouteModalTitle">Transfer Appointment</h3>
+              <p class="caption">Standalone copy with mock data</p>
+            </div>
+            <button class="btn ghost" type="button" id="closeModalBtn">Close</button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-feedback" id="modalFeedback"></div>
+
+            <div class="row">
+              <label for="routeTargetKind">Target Type</label>
+              <select id="routeTargetKind">
+                <option value="A" selected>Appointment</option>
+                <option value="W">Walk-in</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <label for="routeTargetQueueId">Queue</label>
+              <select id="routeTargetQueueId"></select>
+            </div>
+
+            <div class="row">
+              <label for="routeTargetServiceId">Service</label>
+              <select id="routeTargetServiceId"></select>
+            </div>
+
+            <div class="row route-appointment-only" id="routeDateRow">
+              <label for="routeTargetDateDisplay">Target Date</label>
+              <input id="routeTargetDate" type="hidden" value="" data-current-value="" />
+              <div class="entry-date-picker" id="routeTargetDatePicker">
+                <div class="entry-date-picker-trigger">
+                  <input id="routeTargetDateDisplay" type="text" placeholder="dd/mm/yyyy" autocomplete="off" aria-expanded="false" />
+                  <button id="routeTargetDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Open calendar">Calendar</button>
+                </div>
+                <div class="entry-date-picker-panel">
+                  <div class="entry-date-picker-header">
+                    <button id="routeTargetDatePrev" class="btn ghost" type="button" aria-label="Previous month">&lt;</button>
+                    <div id="routeTargetDateMonthLabel" class="entry-date-picker-month"></div>
+                    <button id="routeTargetDateNext" class="btn ghost" type="button" aria-label="Next month">&gt;</button>
+                  </div>
+                  <div class="entry-date-picker-weekdays">
+                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                  </div>
+                  <div id="routeTargetDateCalendar" class="entry-date-picker-grid"></div>
+                </div>
+              </div>
+              <div id="routeTargetDateStatus" class="helper-text"></div>
+            </div>
+
+            <div class="row route-appointment-only" id="routeTimeRow">
+              <label for="routeTargetTime">Target Time</label>
+              <select id="routeTargetTime"></select>
+            </div>
+
+            <div class="row">
+              <label for="routeRefValue">Reference</label>
+              <select id="routeRefValue"></select>
+            </div>
+
+            <div class="row">
+              <label for="routeNotes">Comments</label>
+              <textarea id="routeNotes">Testing modal without backend access.</textarea>
+            </div>
+
+            <div class="row">
+              <label>Current Flow Notes</label>
+              <div class="caption">
+                Time values are posted exactly as the current modal receives them from queue open slots, for example `09:30 AM`.
+                The simulated server uses the current `TryParseTransferTargetDate` behavior from `ProviderController`.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn ghost" type="button" id="simulateClear">Clear</button>
+            <button class="btn primary" type="button" id="saveRoute">Transfer Appointment</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="hero">
+        <h2>Debug Output</h2>
+        <p class="lede">Use this panel to inspect the exact client payload and whether the chosen server parser accepts it.</p>
+      </div>
+      <div class="debug">
+        <div class="debug-grid">
+          <div>
+            <h4>Current State</h4>
+            <pre id="stateOutput"></pre>
+          </div>
+          <div>
+            <h4>Posted Payload</h4>
+            <pre id="payloadOutput"></pre>
+          </div>
+          <div>
+            <h4>Server Parse Result</h4>
+            <pre id="resultOutput"></pre>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    (function () {
+      var mockQueues = [
+        {
+          code: "501",
+          name: "Building - Commercial Plan Coordination",
+          refOptions: [
+            { value: "PHONE", label: "Phone Follow-up" },
+            { value: "EMAIL", label: "Email Follow-up" },
+            { value: "WALKIN", label: "Walk-in Return" },
+            { value: "REFERRAL", label: "Referral" }
+          ],
+          services: [
+            { code: "1001", name: "Commercial Permit Review" },
+            { code: "1002", name: "Questions / Contractor License" }
+          ],
+          slots: {
+            "2026-04-18": ["09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM"],
+            "2026-04-21": ["08:30 AM", "09:00 AM", "09:30 AM", "01:30 PM"],
+            "2026-04-24": ["10:00 AM", "10:30 AM", "02:00 PM"]
+          }
+        },
+        {
+          code: "814",
+          name: "Zoning - Residential Questions",
+          refOptions: [
+            { value: "EMAIL", label: "Email Follow-up" },
+            { value: "REFERRAL", label: "Referral" }
+          ],
+          services: [
+            { code: "2001", name: "Residential Zoning" },
+            { code: "2002", name: "Variance Review" }
+          ],
+          slots: {
+            "2026-04-19": ["09:00 AM", "09:30 AM", "03:00 PM"],
+            "2026-04-22": ["10:00 AM", "11:00 AM", "02:30 PM"]
+          }
+        }
+      ];
+
+      var activeRouteQueue = null;
+      var calendarState = {
+        monthStart: null,
+        enabledDates: {}
+      };
+
+      var modalFeedback = document.getElementById("modalFeedback");
+      var routeTargetKind = document.getElementById("routeTargetKind");
+      var routeTargetQueueId = document.getElementById("routeTargetQueueId");
+      var routeTargetServiceId = document.getElementById("routeTargetServiceId");
+      var routeTargetDate = document.getElementById("routeTargetDate");
+      var routeTargetDateDisplay = document.getElementById("routeTargetDateDisplay");
+      var routeTargetTime = document.getElementById("routeTargetTime");
+      var routeRefValue = document.getElementById("routeRefValue");
+      var routeNotes = document.getElementById("routeNotes");
+      var routeTargetDatePicker = document.getElementById("routeTargetDatePicker");
+      var routeTargetDateToggle = document.getElementById("routeTargetDateToggle");
+      var routeTargetDatePrev = document.getElementById("routeTargetDatePrev");
+      var routeTargetDateNext = document.getElementById("routeTargetDateNext");
+      var routeTargetDateMonthLabel = document.getElementById("routeTargetDateMonthLabel");
+      var routeTargetDateCalendar = document.getElementById("routeTargetDateCalendar");
+      var routeTargetDateStatus = document.getElementById("routeTargetDateStatus");
+      var stateOutput = document.getElementById("stateOutput");
+      var payloadOutput = document.getElementById("payloadOutput");
+      var resultOutput = document.getElementById("resultOutput");
+
+      function showModalFeedback(message, isError) {
+        modalFeedback.textContent = message || "";
+        modalFeedback.className = "modal-feedback show " + (isError ? "error" : "ok");
+      }
+
+      function clearModalFeedback() {
+        modalFeedback.textContent = "";
+        modalFeedback.className = "modal-feedback";
+      }
+
+      function setHelperText(message, isError) {
+        routeTargetDateStatus.textContent = message || "";
+        routeTargetDateStatus.className = "helper-text" + (isError ? " error" : "");
+      }
+
+      function setSelectOptions(select, items, placeholder) {
+        select.innerHTML = "";
+        var option = document.createElement("option");
+        option.value = "";
+        option.textContent = placeholder;
+        select.appendChild(option);
+
+        (items || []).forEach(function (item) {
+          var next = document.createElement("option");
+          next.value = item.code || item.value || "";
+          next.textContent = item.name || item.label || "";
+          select.appendChild(next);
+        });
+      }
+
+      function toTwoDigits(value) {
+        return value < 10 ? "0" + value : String(value);
+      }
+
+      function toIsoDate(dateValue) {
+        return dateValue.getFullYear() + "-" + toTwoDigits(dateValue.getMonth() + 1) + "-" + toTwoDigits(dateValue.getDate());
+      }
+
+      function formatEntryDateDisplay(value) {
+        if (!value) {
+          return "";
+        }
+        var parts = value.split("-");
+        if (parts.length !== 3) {
+          return value;
+        }
+        return parts[2] + "/" + parts[1] + "/" + parts[0];
+      }
+
+      function parseEntryDateDisplay(value) {
+        var match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(value || "");
+        if (!match) {
+          return "";
+        }
+        var day = parseInt(match[1], 10);
+        var month = parseInt(match[2], 10);
+        var year = parseInt(match[3], 10);
+        var candidate = new Date(year, month - 1, day);
+        if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
+          return "";
+        }
+        return toIsoDate(candidate);
+      }
+
+      function setEntryDateValue(value, suppressChange) {
+        routeTargetDate.value = value || "";
+        routeTargetDate.setAttribute("data-current-value", value || "");
+        routeTargetDateDisplay.value = formatEntryDateDisplay(value || "");
+        renderCalendar();
+        if (!suppressChange) {
+          refreshRouteTimes();
+          closeDatePicker();
+        }
+        syncDebugState();
+      }
+
+      function openDatePicker() {
+        routeTargetDatePicker.classList.add("is-open");
+        routeTargetDateDisplay.setAttribute("aria-expanded", "true");
+      }
+
+      function closeDatePicker() {
+        routeTargetDatePicker.classList.remove("is-open");
+        routeTargetDateDisplay.setAttribute("aria-expanded", "false");
+      }
+
+      function startOfMonth(dateValue) {
+        return new Date(dateValue.getFullYear(), dateValue.getMonth(), 1);
+      }
+
+      function addMonths(dateValue, count) {
+        return new Date(dateValue.getFullYear(), dateValue.getMonth() + count, 1);
+      }
+
+      function loadRouteQueues() {
+        setSelectOptions(routeTargetQueueId, mockQueues.map(function (queue) {
+          return { code: queue.code, name: queue.name };
+        }), "Select queue");
+        routeTargetQueueId.value = mockQueues[0].code;
+        loadRouteServices();
+      }
+
+      function loadRouteServices() {
+        activeRouteQueue = mockQueues.find(function (queue) {
+          return queue.code === routeTargetQueueId.value;
+        }) || null;
+
+        if (!activeRouteQueue) {
+          setSelectOptions(routeTargetServiceId, [], "Select service");
+          setSelectOptions(routeRefValue, [], "Select reference");
+          calendarState.enabledDates = {};
+          setEntryDateValue("", true);
+          setSelectOptions(routeTargetTime, [], "Select time");
+          setHelperText("Select queue to load open-slot dates.", false);
+          syncDebugState();
+          return;
+        }
+
+        setSelectOptions(routeTargetServiceId, activeRouteQueue.services, "Select service");
+        routeTargetServiceId.value = activeRouteQueue.services[0].code;
+        setSelectOptions(routeRefValue, activeRouteQueue.refOptions, "Select reference");
+        routeRefValue.value = activeRouteQueue.refOptions[0].value;
+        calendarState.enabledDates = {};
+        Object.keys(activeRouteQueue.slots).forEach(function (key) {
+          calendarState.enabledDates[key] = true;
+        });
+
+        var enabledKeys = Object.keys(calendarState.enabledDates).sort();
+        var firstEnabledDate = enabledKeys.length ? enabledKeys[0] : "";
+        calendarState.monthStart = startOfMonth(new Date((firstEnabledDate || toIsoDate(new Date())) + "T00:00:00"));
+        renderCalendar();
+        setHelperText("Only dates with open slots are selectable.", false);
+        setEntryDateValue(firstEnabledDate, true);
+        refreshRouteTimes();
+      }
+
+      function getMonthLabel(dateValue) {
+        var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        return months[dateValue.getMonth()] + " " + dateValue.getFullYear();
+      }
+
+      function renderCalendar() {
+        if (!calendarState.monthStart) {
+          calendarState.monthStart = startOfMonth(new Date());
+        }
+
+        routeTargetDateMonthLabel.textContent = getMonthLabel(calendarState.monthStart);
+        routeTargetDateCalendar.innerHTML = "";
+
+        var firstWeekday = calendarState.monthStart.getDay();
+        for (var blankIndex = 0; blankIndex < firstWeekday; blankIndex++) {
+          var blankCell = document.createElement("span");
+          routeTargetDateCalendar.appendChild(blankCell);
+        }
+
+        var month = calendarState.monthStart.getMonth();
+        var year = calendarState.monthStart.getFullYear();
+        var selectedDate = routeTargetDate.value || "";
+        var todayIso = toIsoDate(new Date());
+        var totalDays = new Date(year, month + 1, 0).getDate();
+
+        for (var day = 1; day <= totalDays; day++) {
+          var current = new Date(year, month, day);
+          var iso = toIsoDate(current);
+          var enabled = calendarState.enabledDates[iso] === true;
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "entry-date-cell";
+          button.textContent = String(day);
+          button.disabled = !enabled;
+          if (iso === selectedDate) {
+            button.classList.add("is-selected");
+          }
+          if (iso === todayIso) {
+            button.classList.add("is-today");
+          }
+          if (enabled) {
+            button.addEventListener("click", (function (value) {
+              return function () {
+                clearModalFeedback();
+                setHelperText("", false);
+                setEntryDateValue(value, false);
+              };
+            })(iso));
+          }
+          routeTargetDateCalendar.appendChild(button);
+        }
+      }
+
+      function refreshRouteTimes() {
+        var selectedDate = routeTargetDate.value || "";
+        if (!activeRouteQueue || !selectedDate) {
+          setSelectOptions(routeTargetTime, [], "Select time");
+          syncDebugState();
+          return;
+        }
+
+        var rawSlots = activeRouteQueue.slots[selectedDate] || [];
+        var options = rawSlots.map(function (slot) {
+          return {
+            value: slot,
+            label: slot
+          };
+        });
+        setSelectOptions(routeTargetTime, options, "Select time");
+        if (options.length) {
+          routeTargetTime.value = options[0].value;
+        }
+        syncDebugState();
+      }
+
+      function buildRouteTargetDateTime(dateValue, timeValue) {
+        if (!dateValue) {
+          return "";
+        }
+        if (!timeValue) {
+          return dateValue;
+        }
+        return dateValue + " " + timeValue;
+      }
+
+      function toggleRouteDateRows() {
+        var showAppointmentFields = routeTargetKind.value === "A";
+        document.querySelectorAll(".route-appointment-only").forEach(function (element) {
+          element.style.display = showAppointmentFields ? "" : "none";
+        });
+      }
+
+      function parseStartTime(value) {
+        var text = (value || "").trim();
+        if (!text) {
+          return null;
+        }
+
+        var match24 = /^(\d{1,2}):(\d{2})$/.exec(text);
+        if (match24) {
+          var hour24 = parseInt(match24[1], 10);
+          var minute24 = parseInt(match24[2], 10);
+          if (hour24 >= 0 && hour24 <= 23 && minute24 >= 0 && minute24 <= 59) {
+            return toTwoDigits(hour24) + ":" + toTwoDigits(minute24);
+          }
+        }
+
+        var match12 = /^(\d{1,2}):(\d{2})\s*([AP]M)$/i.exec(text);
+        if (match12) {
+          var hour12 = parseInt(match12[1], 10);
+          var minute12 = parseInt(match12[2], 10);
+          var meridiem = match12[3].toUpperCase();
+          if (hour12 >= 1 && hour12 <= 12 && minute12 >= 0 && minute12 <= 59) {
+            if (meridiem === "AM") {
+              hour12 = hour12 === 12 ? 0 : hour12;
+            } else {
+              hour12 = hour12 === 12 ? 12 : hour12 + 12;
+            }
+            return toTwoDigits(hour12) + ":" + toTwoDigits(minute12);
+          }
+        }
+
+        return null;
+      }
+
+      function tryParseDatePart(value) {
+        var text = (value || "").trim();
+        var patterns = [
+          /^(\d{4})-(\d{2})-(\d{2})$/,
+          /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+          /^(\d{2})\/(\d{2})\/(\d{4})$/,
+          /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+          /^(\d{2})\/(\d{2})\/(\d{4})$/,
+          /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+        ];
+
+        for (var i = 0; i < patterns.length; i++) {
+          var match = patterns[i].exec(text);
+          if (!match) {
+            continue;
+          }
+
+          var year;
+          var month;
+          var day;
+
+          if (text.indexOf("-") >= 0) {
+            year = parseInt(match[1], 10);
+            month = parseInt(match[2], 10);
+            day = parseInt(match[3], 10);
+          } else {
+            month = parseInt(match[1], 10);
+            day = parseInt(match[2], 10);
+            year = parseInt(match[3], 10);
+          }
+
+          var candidate = new Date(year, month - 1, day);
+          if (candidate.getFullYear() === year && candidate.getMonth() === month - 1 && candidate.getDate() === day) {
+            return toIsoDate(candidate);
+          }
+        }
+
+        return null;
+      }
+
+      function currentServerParse(text) {
+        var value = (text || "").trim();
+        if (!value) {
+          return null;
+        }
+
+        var parts = value.split(/\s+/);
+        if (parts.length >= 2) {
+          var datePart = parts[0];
+          var timePart = parts.slice(1).join(" ");
+          var normalizedDate = tryParseDatePart(datePart);
+          var parsedTime = parseStartTime(timePart);
+          if (normalizedDate && parsedTime) {
+            return {
+              accepted: true,
+              parsed: normalizedDate + " " + parsedTime,
+              source: "date-part + TryParseStartTime"
+            };
+          }
+        }
+
+        var match = /^(\S+)(?:\s+(\S+)(?:\s+(\S+))?)?$/.exec(value);
+        if (match) {
+          var fallbackDate = tryParseDatePart(match[1] || "");
+          if (fallbackDate) {
+            if (!match[2]) {
+              return {
+                accepted: true,
+                parsed: fallbackDate,
+                source: "date-only exact pattern"
+              };
+            }
+
+            var fallbackTime = parseStartTime(((match[2] || "") + " " + (match[3] || "")).trim());
+            if (fallbackTime) {
+              return {
+                accepted: true,
+                parsed: fallbackDate + " " + fallbackTime,
+                source: "combined exact pattern"
+              };
+            }
+          }
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(value) || /^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}$/.test(value)) {
+          return {
+            accepted: true,
+            parsed: value,
+            source: "24-hour exact pattern"
+          };
+        }
+
+        return null;
+      }
+
+      function syncDebugState(payload, parseResult) {
+        var state = {
+          targetKind: routeTargetKind.value,
+          queueId: routeTargetQueueId.value,
+          serviceId: routeTargetServiceId.value,
+          hiddenTargetDate: routeTargetDate.value,
+          displayTargetDate: routeTargetDateDisplay.value,
+          targetTime: routeTargetTime.value,
+          enabledDates: Object.keys(calendarState.enabledDates).sort()
+        };
+
+        stateOutput.textContent = JSON.stringify(state, null, 2);
+        payloadOutput.textContent = payload ? JSON.stringify(payload, null, 2) : "// Submit the modal to inspect the request payload";
+        resultOutput.textContent = parseResult ? JSON.stringify(parseResult, null, 2) : "// Submit the modal to inspect the server parse result";
+      }
+
+      function submitTransfer() {
+        clearModalFeedback();
+
+        var targetDate = routeTargetDate.value || "";
+        if (!targetDate && routeTargetDateDisplay.value) {
+          targetDate = parseEntryDateDisplay(routeTargetDateDisplay.value || "");
+          if (targetDate) {
+            routeTargetDate.value = targetDate;
+            routeTargetDate.setAttribute("data-current-value", targetDate);
+          }
+        }
+
+        if (!routeTargetQueueId.value) {
+          showModalFeedback("Source and target queue are required.", true);
+          syncDebugState();
+          return;
+        }
+
+        if (routeTargetKind.value === "A" && !targetDate) {
+          showModalFeedback("Target date is required for appointment transfer.", true);
+          setHelperText("Target date is required for appointment transfer.", true);
+          syncDebugState();
+          return;
+        }
+
+        if (routeTargetKind.value === "A" && !routeTargetTime.value) {
+          showModalFeedback("Target time is required for appointment transfer.", true);
+          syncDebugState();
+          return;
+        }
+
+        var targetDateTime = buildRouteTargetDateTime(targetDate, routeTargetTime.value || "");
+        var payload = {
+          appointmentId: "12841",
+          srcType: "A",
+          targetQueueId: routeTargetQueueId.value,
+          targetKind: routeTargetKind.value,
+          targetServiceId: routeTargetServiceId.value || "",
+          targetDate: targetDateTime || "",
+          refValue: routeRefValue.value || "",
+          notes: routeNotes.value || ""
+        };
+
+        var parsed = currentServerParse(payload.targetDate);
+
+        if (routeTargetKind.value === "A" && !parsed) {
+          showModalFeedback("Current server validation failed. Target date was not parsed.", true);
+          syncDebugState(payload, {
+            ok: false,
+            parserMode: "current",
+            reason: "Target date is required for appointment transfer.",
+            rawTargetDate: payload.targetDate
+          });
+          return;
+        }
+
+        showModalFeedback("Payload passed both client validation and simulated server parsing.", false);
+        syncDebugState(payload, {
+          ok: true,
+          parserMode: "current",
+          parsedTargetDate: parsed ? parsed.parsed : null,
+          parseSource: parsed ? parsed.source : null,
+          rawTargetDate: payload.targetDate
+        });
+      }
+
+      function resetDemo() {
+        clearModalFeedback();
+        routeTargetKind.value = "A";
+        routeNotes.value = "Testing modal without backend access.";
+        loadRouteQueues();
+        toggleRouteDateRows();
+        syncDebugState();
+      }
+
+      function clearForm() {
+        clearModalFeedback();
+        routeTargetDateDisplay.value = "";
+        routeTargetDate.value = "";
+        routeTargetDate.setAttribute("data-current-value", "");
+        setSelectOptions(routeTargetTime, [], "Select time");
+        setHelperText("", false);
+        syncDebugState();
+      }
+
+      routeTargetQueueId.addEventListener("change", function () {
+        clearModalFeedback();
+        loadRouteServices();
+      });
+
+      routeTargetKind.addEventListener("change", function () {
+        clearModalFeedback();
+        toggleRouteDateRows();
+        syncDebugState();
+      });
+
+      routeTargetDateToggle.addEventListener("click", function () {
+        if (routeTargetDatePicker.classList.contains("is-open")) {
+          closeDatePicker();
+        } else {
+          openDatePicker();
+        }
+      });
+
+      routeTargetDatePrev.addEventListener("click", function () {
+        calendarState.monthStart = addMonths(calendarState.monthStart || startOfMonth(new Date()), -1);
+        renderCalendar();
+      });
+
+      routeTargetDateNext.addEventListener("click", function () {
+        calendarState.monthStart = addMonths(calendarState.monthStart || startOfMonth(new Date()), 1);
+        renderCalendar();
+      });
+
+      routeTargetDateDisplay.addEventListener("focus", openDatePicker);
+      routeTargetDateDisplay.addEventListener("click", openDatePicker);
+      routeTargetDateDisplay.addEventListener("input", function () {
+        clearModalFeedback();
+        var parsed = parseEntryDateDisplay(routeTargetDateDisplay.value || "");
+        if (parsed) {
+          calendarState.monthStart = startOfMonth(new Date(parsed + "T00:00:00"));
+          renderCalendar();
+        }
+        syncDebugState();
+      });
+      routeTargetDateDisplay.addEventListener("blur", function () {
+        var raw = (routeTargetDateDisplay.value || "").trim();
+        if (!raw) {
+          setEntryDateValue("", true);
+          setHelperText("Date is required.", true);
+          return;
+        }
+
+        var parsed = parseEntryDateDisplay(raw);
+        if (!parsed) {
+          setEntryDateValue("", true);
+          setHelperText("Enter date as dd/mm/yyyy.", true);
+          return;
+        }
+
+        if (calendarState.enabledDates[parsed] !== true) {
+          setEntryDateValue("", true);
+          setHelperText("Selected date is not available.", true);
+          return;
+        }
+
+        setHelperText("", false);
+        setEntryDateValue(parsed, false);
+      });
+
+      routeTargetTime.addEventListener("change", syncDebugState);
+      routeTargetServiceId.addEventListener("change", syncDebugState);
+      routeRefValue.addEventListener("change", syncDebugState);
+      routeNotes.addEventListener("input", syncDebugState);
+
+      document.getElementById("saveRoute").addEventListener("click", submitTransfer);
+      document.getElementById("resetDemo").addEventListener("click", resetDemo);
+      document.getElementById("simulateClear").addEventListener("click", clearForm);
+      document.getElementById("closeModalBtn").addEventListener("click", function () {
+        showModalFeedback("Close button is visual only in this harness.", false);
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!routeTargetDatePicker.contains(event.target)) {
+          closeDatePicker();
+        }
+      });
+
+      resetDemo();
+    })();
+  </script>
+</body>
+</html>

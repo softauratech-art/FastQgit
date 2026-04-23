@@ -8,7 +8,7 @@ namespace FastQ.Web.Models
         public long CustomerId { get; set; }
         public string CustomerPhone { get; set; }
         public string Status { get; set; }
-        public string ScheduledForUtc { get; set; }
+        public string ScheduledFor { get; set; }
         public string UpdatedUtc { get; set; }
     }
 
@@ -28,4 +28,3 @@ namespace FastQ.Web.Models
         public List<AppointmentRowDto> Done { get; set; } = new List<AppointmentRowDto>();
     }
 }
-

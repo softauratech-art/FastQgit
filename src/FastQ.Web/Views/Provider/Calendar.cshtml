@@ -13,7 +13,7 @@
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
     var serviceAccess = ViewBag.ServiceAccess as FastQ.Web.Models.ServicePageAccess ?? new FastQ.Web.Models.ServicePageAccess();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
-    var agendaQueueOptions = Model.SelectedDayAppointments
+    var agendaQueueOptions = Model.MonthAppointments
         .Select(a => a.QueueName)
         .Where(q => !string.IsNullOrWhiteSpace(q))
         .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -24,17 +24,22 @@
 @section Head {
     <style>
         .calendar-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            display: grid;
             gap: 16px;
             margin-bottom: 18px;
-            flex-wrap: wrap;
             padding: 14px 16px;
             background: #ffffff;
             border: 1px solid #dbe4f0;
             border-radius: 18px;
             box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .calendar-toolbar-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .calendar-nav {
@@ -92,6 +97,31 @@
             gap: 20px;
         }
 
+        .calendar-month-filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .calendar-month-filters-main {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .calendar-filter-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
         .calendar-panel,
         .agenda-panel {
             background: #fff;
@@ -105,10 +135,12 @@
         }
 
         .agenda-panel {
-            padding: 22px;
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
+            max-height: calc(100vh - 220px);
+            overflow: hidden;
         }
 
         .calendar-weekdays,
@@ -206,7 +238,6 @@
         }
 
         .agenda-filter-switch {
-            margin-top: 14px;
             display: inline-flex;
             gap: 6px;
             padding: 4px;
@@ -227,7 +258,6 @@
         }
 
         .agenda-filter-row {
-            margin-top: 12px;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -246,13 +276,61 @@
         .agenda-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .agenda-day-group {
+            display: grid;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .agenda-day-group.is-selected {
+            border-color: #0f766e;
+            background: #f0fdfa;
+        }
+
+        .agenda-day-group.is-dimmed {
+            opacity: 0.52;
+        }
+
+        .agenda-day-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .agenda-day-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .agenda-day-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .agenda-item {
             border: 1px solid #dbe4f0;
-            border-radius: 16px;
-            padding: 14px;
+            border-radius: 14px;
+            padding: 10px 12px;
             background: #f8fafc;
         }
 
@@ -265,7 +343,7 @@
         }
 
         .agenda-time {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
@@ -275,10 +353,10 @@
         .agenda-entry-label {
             display: inline-flex;
             align-items: center;
-            margin-top: 8px;
-            padding: 4px 10px;
+            margin-top: 4px;
+            padding: 3px 8px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
@@ -297,28 +375,33 @@
         }
 
         .agenda-title {
-            margin-top: 6px;
-            font-size: 16px;
+            margin-top: 4px;
+            font-size: 14px;
             font-weight: 700;
             color: #0f172a;
         }
 
         .agenda-detail {
-            margin-top: 4px;
-            font-size: 13px;
+            margin-top: 2px;
+            font-size: 12px;
             color: #475569;
+            line-height: 1.35;
         }
 
         .agenda-notes {
-            margin-top: 8px;
-            padding-top: 8px;
+            margin-top: 6px;
+            padding-top: 6px;
             border-top: 1px dashed #cbd5e1;
-            font-size: 13px;
+            font-size: 12px;
             color: #334155;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .agenda-actions {
-            margin-top: 12px;
+            margin-top: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -336,8 +419,12 @@
         .agenda-actions-meta {
             font-size: 12px;
             color: #64748b;
-            white-space: nowrap;
             margin-left: auto;
+        }
+
+        .agenda-filter-summary {
+            font-size: 12px;
+            color: #64748b;
         }
 
         .feedback-banner {
@@ -692,9 +779,26 @@
             .calendar-shell {
                 grid-template-columns: 1fr;
             }
+
+            .agenda-panel {
+                max-height: none;
+            }
         }
 
         @@media (max-width: 720px) {
+            .calendar-month-filters {
+                justify-content: flex-start;
+            }
+
+            .calendar-month-filters-main {
+                width: 100%;
+            }
+
+            .agenda-filter-switch {
+                width: 100%;
+                justify-content: space-between;
+            }
+
             .calendar-form-grid {
                 grid-template-columns: 1fr;
             }
@@ -732,33 +836,55 @@
 }
 
 <div class="calendar-toolbar">
-    <div class="calendar-nav">
-        <button class="btn ghost" type="button" data-calendar-shift="-1">Previous</button>
-        <div class="month-label">@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</div>
-        <button class="btn ghost" type="button" data-calendar-shift="1">Next</button>
-        <div class="calendar-jump">
-            <select id="calendarMonthSelect" aria-label="Select month">
-                @for (var monthIndex = 1; monthIndex <= 12; monthIndex++)
-                {
-                    <option value="@monthIndex" @(monthIndex == Model.DisplayMonth.Month ? "selected" : null)>@monthNames[monthIndex - 1]</option>
-                }
-            </select>
-            <select id="calendarYearSelect" aria-label="Select year">
-                @foreach (var year in yearOptions)
-                {
-                    <option value="@year" @(year == currentYear ? "selected" : null)>@year</option>
-                }
-            </select>
-            <button class="btn small ghost" type="button" id="calendarTodayBtn">Today</button>
+    <div class="calendar-toolbar-row">
+        <div class="calendar-nav">
+            <button class="btn ghost" type="button" data-calendar-shift="-1">Previous</button>
+            <div class="month-label">@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</div>
+            <button class="btn ghost" type="button" data-calendar-shift="1">Next</button>
+            <div class="calendar-jump">
+                <select id="calendarMonthSelect" aria-label="Select month">
+                    @for (var monthIndex = 1; monthIndex <= 12; monthIndex++)
+                    {
+                        <option value="@monthIndex" @(monthIndex == Model.DisplayMonth.Month ? "selected" : null)>@monthNames[monthIndex - 1]</option>
+                    }
+                </select>
+                <select id="calendarYearSelect" aria-label="Select year">
+                    @foreach (var year in yearOptions)
+                    {
+                        <option value="@year" @(year == currentYear ? "selected" : null)>@year</option>
+                    }
+                </select>
+                <button class="btn small ghost" type="button" id="calendarTodayBtn">Today</button>
+            </div>
         </div>
+        @if (serviceAccess.CanAddEntries)
+        {
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="button" class="btn secondary" data-modal-open="addAppointmentModal">Add Appointment</button>
+                <button type="button" class="btn ghost" data-modal-open="addWalkinModal">Add Walk-In</button>
+            </div>
+        }
     </div>
-    @if (serviceAccess.CanAddEntries)
-    {
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="button" class="btn secondary" data-modal-open="addAppointmentModal">Add Appointment</button>
-            <button type="button" class="btn ghost" data-modal-open="addWalkinModal">Add Walk-In</button>
+    <div class="calendar-month-filters">
+        <div class="calendar-month-filters-main">
+            <span class="calendar-filter-label">Month Filters</span>
+            <div class="agenda-filter-switch" role="group" aria-label="Month entry type filter">
+                <button class="btn small ghost is-active" type="button" data-agenda-filter="both">Both</button>
+                <button class="btn small ghost" type="button" data-agenda-filter="A">Appointments</button>
+                <button class="btn small ghost" type="button" data-agenda-filter="W">Walk-ins</button>
+            </div>
+            <div class="agenda-filter-row">
+                <select id="agendaQueueFilter" aria-label="Filter month agenda by queue">
+                    <option value="all">All Queues</option>
+                    @foreach (var queueName in agendaQueueOptions)
+                    {
+                        <option value="@queueName">@queueName</option>
+                    }
+                </select>
+            </div>
         </div>
-    }
+        <div class="agenda-filter-summary">Selected day stays emphasized; other days remain visible in a dimmed state.</div>
+    </div>
 </div>
 
 <div class="calendar-shell">
@@ -815,81 +941,86 @@
 
     <aside class="agenda-panel">
         <div class="agenda-header">
-            <h3>@Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)</h3>
-            <p>@(string.IsNullOrWhiteSpace(Model.EntityName) ? "Primary entity" : Model.EntityName)</p>
-            <div class="agenda-filter-switch" role="group" aria-label="Agenda entry type filter">
-                <button class="btn small ghost is-active" type="button" data-agenda-filter="both">Both</button>
-                <button class="btn small ghost" type="button" data-agenda-filter="A">Appointments</button>
-                <button class="btn small ghost" type="button" data-agenda-filter="W">Walk-ins</button>
-            </div>
-            <div class="agenda-filter-row">
-                <select id="agendaQueueFilter" aria-label="Filter agenda by queue">
-                    <option value="all">All Queues</option>
-                    @foreach (var queueName in agendaQueueOptions)
-                    {
-                        <option value="@queueName">@queueName</option>
-                    }
-                </select>
-            </div>
+            <h3>@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</h3>
+            <p>Month agenda for @(string.IsNullOrWhiteSpace(Model.EntityName) ? "primary entity" : Model.EntityName). @Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) is highlighted.</p>
         </div>
 
-        @if (Model.SelectedDayAppointments.Any())
+        @if (Model.MonthAppointments.Any())
         {
             <div class="agenda-list">
-                @foreach (var item in Model.SelectedDayAppointments)
+                @foreach (var group in Model.MonthAppointments.GroupBy(a => a.ScheduledFor.Date).OrderBy(g => g.Key))
                 {
-                    var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
-                    var entryKindClass = string.Equals(item.SrcType, "W", StringComparison.OrdinalIgnoreCase) ? "is-walkin" : "is-appointment";
-                    <div class="agenda-item @(isLocked ? "locked" : null)"
-                         data-appointment-id="@item.AppointmentId"
-                         data-queue-id="@item.QueueId"
-                         data-service-id="@item.ServiceId"
-                         data-queue="@item.QueueName"
-                         data-ref-value="@item.RefValue"
-                         data-notes="@item.Notes"
-                         data-date="@item.ScheduledForLocal.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
-                         data-time="@item.StartTimeText"
-                         data-status="@item.Status"
-                         data-src-type="@item.SrcType">
-                        <div class="agenda-time">@item.StartTimeText</div>
-                        <div class="agenda-entry-label @entryKindClass">@item.EntryKind</div>
-                        <div class="agenda-title">@item.CustomerName</div>
-                        <div class="agenda-detail">@item.QueueName</div>
-                        <div class="agenda-detail">@item.ContactMethod | @item.StatusText | @item.Phone</div>
-                        @if (!string.IsNullOrWhiteSpace(item.MeetingUrl))
-                        {
-                            <div class="agenda-detail"><a href="@item.MeetingUrl" target="_blank" rel="noopener">Open meeting link</a></div>
-                        }
-                        <div class="agenda-notes">@item.Notes</div>
-                        <div class="agenda-actions">
-                            <div class="agenda-actions-main">
-                                <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Check-In</button>
-                                <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Start</button>
-                                <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">End</button>
-                                <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Transfer</button>
-                                <button class="btn small ghost meeting-link" type="button"
-                                        data-appointment-id="@item.AppointmentId"
-                                        data-src-type="@item.SrcType"
-                                        data-date="@item.StartDateText"
-                                        data-time="@item.StartTimeText"
-                                        data-title="@item.ServiceType"
-                                        data-customer="@item.CustomerName"
-                                        data-phone="@item.Phone"
-                                        data-meeting-url="@item.MeetingUrl"
-                                        data-notes="@item.Notes">
-                                    Info
-                                </button>
-                                <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
-                            </div>
-                            <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUser) ? "-" : item.StampUser)</div>
+                    var groupIsSelected = group.Key.Date == Model.SelectedDate.Date;
+                    <div class="agenda-day-group @(groupIsSelected ? "is-selected" : "is-dimmed")" data-agenda-day="@group.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">
+                        <div class="agenda-day-header">
+                            <div class="agenda-day-title">@group.Key.ToString("ddd, MMM d", CultureInfo.InvariantCulture)</div>
+                            <div class="agenda-day-count">@group.Count()</div>
                         </div>
+                        @foreach (var item in group)
+                        {
+                            var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
+                            var entryKindClass = string.Equals(item.SrcType, "W", StringComparison.OrdinalIgnoreCase) ? "is-walkin" : "is-appointment";
+                            <div class="agenda-item @(isLocked ? "locked" : null)"
+                                 data-appointment-id="@item.AppointmentId"
+                                 data-queue-id="@item.QueueId"
+                                 data-service-id="@item.ServiceId"
+                                 data-queue="@item.QueueName"
+                                 data-ref-value="@item.RefValue"
+                                 data-notes="@item.Notes"
+                                 data-date="@item.ScheduledFor.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
+                                 data-time="@item.StartTimeText"
+                                 data-status="@item.Status"
+                                 data-src-type="@item.SrcType">
+                                <div class="agenda-time">@item.StartTimeText</div>
+                                <div class="agenda-entry-label @entryKindClass">@item.EntryKind</div>
+                                <div class="agenda-title">@item.CustomerName</div>
+                                <div class="agenda-detail">@item.QueueName</div>
+                                <div class="agenda-detail">@item.ContactMethod | @item.StatusText | @item.Phone</div>
+                                @if (!string.IsNullOrWhiteSpace(item.MeetingUrl))
+                                {
+                                    <div class="agenda-detail"><a href="@item.MeetingUrl" target="_blank" rel="noopener">Open meeting link</a></div>
+                                }
+                                <div class="agenda-notes">@item.Notes</div>
+                                <div class="agenda-actions">
+                                    <div class="agenda-actions-main">
+                                        <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Check-In</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Start</button>
+                                        <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">End</button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Transfer</button>
+                                        <button class="btn small ghost meeting-link" type="button"
+                                                data-appointment-id="@item.AppointmentId"
+                                                data-src-type="@item.SrcType"
+                                                data-date="@item.StartDateText"
+                                                data-time="@item.StartTimeText"
+                                                data-title="@item.ServiceType"
+                                                data-customer="@item.CustomerName"
+                                                data-phone="@item.Phone"
+                                                data-queue-name="@item.QueueName"
+                                                data-service-name="@item.ServiceType"
+                                                data-ref-value="@item.RefValue"
+                                                data-language="@item.LanguagePreference"
+                                                data-status-text="@item.StatusText"
+                                                data-contact="@item.ContactMethod"
+                                                data-stamp-user="@item.StampUser"
+                                                data-meeting-url="@item.MeetingUrl"
+                                                data-meeting-url-host="@item.MeetingUrlHost"
+                                                data-notes="@item.Notes">
+                                            Info
+                                        </button>
+                                        <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
+                                    </div>
+                                    <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUser) ? "-" : item.StampUser)</div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 }
             </div>
+            <div class="empty-state is-hidden">No appointments match the selected month filters.</div>
         }
         else
         {
-            <div class="empty-state">No appointments scheduled for the selected day.</div>
+            <div class="empty-state">No appointments scheduled for this month.</div>
         }
     </aside>
 </div>
@@ -911,15 +1042,28 @@
                 Title: <span id="meetingTitle"></span><br />
             </p>
             <p>Customer Info:<br /><span id="meetingCustomer"></span> | <span id="meetingPhone"></span></p>
+            <p>
+                Queue: <span id="meetingQueue"></span><br />
+                Service: <span id="meetingService"></span><br />
+                Ref Value: <span id="meetingRefValue"></span><br />
+                Contact: <span id="meetingContact"></span><br />
+                Language: <span id="meetingLanguage"></span><br />
+                Status: <span id="meetingStatus"></span><br />
+                Stamp User: <span id="meetingStampUser"></span><br />
+            </p>
             <div class="field-row">
-                <div>WebEx URL:</div>
+                <div>Guest URL:</div>
+                <input id="mGuestURL" type="text" value="" />
+            </div>
+            <div class="field-row">
+                <div>Host URL:</div>
                 <input id="mURL" type="text" value="" />
             </div>
             <div class="field-row">
                 <div>Notes:</div>
                 <textarea id="mNotes" rows="3"></textarea>
             </div>
-            <div class="helper-text">Visible to customer</div>
+            <div class="helper-text">Guest URL, host URL, and notes are saved. New notes are appended to the existing notes.</div>
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
@@ -959,7 +1103,7 @@
                 <input id="routeTargetDate" type="hidden" value="" data-current-value="" />
                 <div class="entry-date-picker" id="routeTargetDatePicker">
                     <div class="entry-date-picker-trigger">
-                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="dd/mm/yyyy" autocomplete="off" aria-expanded="false" />
+                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="mm/dd/yyyy" autocomplete="off" aria-expanded="false" />
                         <button id="routeTargetDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Open calendar">
                             <i class="bi bi-calendar3"></i>
                         </button>
@@ -1001,6 +1145,7 @@
             <input id="routeMode" type="hidden" value="" />
             <input id="routeSrcType" type="hidden" value="" />
             <input id="routeSrcId" type="hidden" value="" />
+            <input id="routeOriginalNotes" type="hidden" value="" />
             <input id="routeCompletionNotes" type="hidden" value="" />
         </div>
         <div class="modal-footer">
@@ -1146,6 +1291,17 @@
                 el.classList.remove("success");
             }
 
+            function showGuiWarning(message) {
+                if (!message) {
+                    return;
+                }
+                if (window.FastQLive && typeof window.FastQLive.toast === "function") {
+                    window.FastQLive.toast(message);
+                    return;
+                }
+                window.alert(message);
+            }
+
             function showModalFeedback(id, message, isError) {
                 var el = getModalFeedbackElement(id);
                 if (!el) {
@@ -1246,12 +1402,13 @@
                 return "https://" + trimmed.replace(/^\/+/, "");
             }
 
-            function updateCalendarMeetingLinkUi(appointmentId, srcType, rawUrl, notes) {
+            function updateCalendarMeetingLinkUi(appointmentId, srcType, rawGuestUrl, rawHostUrl, notes) {
                 var normalizedSrcType = (srcType || "A").toUpperCase();
-                var normalizedUrl = normalizeMeetingUrl(rawUrl);
+                var normalizedUrl = normalizeMeetingUrl(rawGuestUrl);
 
                 document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
-                    link.setAttribute("data-meeting-url", rawUrl || "");
+                    link.setAttribute("data-meeting-url", rawGuestUrl || "");
+                    link.setAttribute("data-meeting-url-host", rawHostUrl || "");
                     link.setAttribute("data-notes", notes || "");
                 });
 
@@ -1282,6 +1439,21 @@
                         notesRow.textContent = notes || "Use Info to add meeting details or notes.";
                     }
                 });
+            }
+
+            function appendNotes(existingNotes, newNotes) {
+                var current = (existingNotes || "").trim();
+                var incoming = (newNotes || "").trim();
+                if (!incoming) {
+                    return current;
+                }
+                if (!current) {
+                    return incoming;
+                }
+                if (incoming === current || incoming.indexOf(current) === 0) {
+                    return incoming;
+                }
+                return current + "\n" + incoming;
             }
 
             function setSelectOptions(selectElement, items, placeholderText) {
@@ -1710,7 +1882,7 @@
                     return value;
                 }
 
-                return parts[2] + "/" + parts[1] + "/" + parts[0];
+                return parts[1] + "/" + parts[2] + "/" + parts[0];
             }
 
             function parseEntryDateDisplay(value) {
@@ -1719,8 +1891,8 @@
                     return "";
                 }
 
-                var day = parseInt(match[1], 10);
-                var month = parseInt(match[2], 10);
+                var month = parseInt(match[1], 10);
+                var day = parseInt(match[2], 10);
                 var year = parseInt(match[3], 10);
                 var candidate = new Date(year, month - 1, day);
                 if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
@@ -1826,8 +1998,8 @@
                     if (timeSelect) {
                         setSelectValues(timeSelect, [], "Select time");
                     }
-                    setTimeSelectionState(prefix, false, false, "Enter date as dd/mm/yyyy.");
-                    setEntryDateStatus(prefix, "Enter date as dd/mm/yyyy.", true);
+                    setTimeSelectionState(prefix, false, false, "Enter date as mm/dd/yyyy.");
+                    setEntryDateStatus(prefix, "Enter date as mm/dd/yyyy.", true);
                     return;
                 }
 
@@ -2327,6 +2499,7 @@
                 var routeMode = document.getElementById("routeMode");
                 var routeSrcType = document.getElementById("routeSrcType");
                 var routeSrcId = document.getElementById("routeSrcId");
+                var routeOriginalNotes = document.getElementById("routeOriginalNotes");
                 var routeCompletionNotes = document.getElementById("routeCompletionNotes");
                 var routeTitle = document.getElementById("serviceRouteModalTitle");
                 var saveRouteButton = document.getElementById("saveRoute");
@@ -2337,7 +2510,8 @@
                 var targetTime = document.getElementById("routeTargetTime");
                 var refValue = document.getElementById("routeRefValue");
                 var notes = document.getElementById("routeNotes");
-                var sourcePrefill = mode === "cancel-transfer" ? getRouteSourcePrefill(appointmentId, srcType) : null;
+                var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
+                var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
 
                 if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
                     return;
@@ -2352,6 +2526,7 @@
                 if (saveRouteButton) {
                     saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
                 }
+                if (routeOriginalNotes) routeOriginalNotes.value = sourceContext ? sourceContext.notes : "";
                 if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
                 targetKind.value = srcType === "A" ? "A" : "W";
                 if (targetQueueId) targetQueueId.value = sourcePrefill ? sourcePrefill.queueId : "";
@@ -2911,6 +3086,11 @@
                     }
                 });
 
+                document.querySelectorAll(".agenda-day-group").forEach(function (group) {
+                    var visibleInGroup = group.querySelectorAll(".agenda-item:not(.is-hidden)").length;
+                    group.classList.toggle("is-hidden", visibleInGroup === 0);
+                });
+
                 var emptyState = document.querySelector(".agenda-panel .empty-state");
                 if (emptyState) {
                     emptyState.classList.toggle("is-hidden", visibleCount > 0);
@@ -2961,6 +3141,14 @@
                         var meetingTitle = document.getElementById("meetingTitle");
                         var meetingCustomer = document.getElementById("meetingCustomer");
                         var meetingPhone = document.getElementById("meetingPhone");
+                        var meetingQueue = document.getElementById("meetingQueue");
+                        var meetingService = document.getElementById("meetingService");
+                        var meetingRefValue = document.getElementById("meetingRefValue");
+                        var meetingContact = document.getElementById("meetingContact");
+                        var meetingLanguage = document.getElementById("meetingLanguage");
+                        var meetingStatus = document.getElementById("meetingStatus");
+                        var meetingStampUser = document.getElementById("meetingStampUser");
+                        var guestUrlInput = document.getElementById("mGuestURL");
                         var urlInput = document.getElementById("mURL");
                         var notesInput = document.getElementById("mNotes");
 
@@ -2974,8 +3162,17 @@
                         if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
                         if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
                         if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
-                        if (urlInput) urlInput.value = link.getAttribute("data-meeting-url") || "";
+                        if (meetingQueue) meetingQueue.textContent = link.getAttribute("data-queue-name") || "";
+                        if (meetingService) meetingService.textContent = link.getAttribute("data-service-name") || "";
+                        if (meetingRefValue) meetingRefValue.textContent = link.getAttribute("data-ref-value") || "";
+                        if (meetingContact) meetingContact.textContent = link.getAttribute("data-contact") || "";
+                        if (meetingLanguage) meetingLanguage.textContent = link.getAttribute("data-language") || "";
+                        if (meetingStatus) meetingStatus.textContent = link.getAttribute("data-status-text") || "";
+                        if (meetingStampUser) meetingStampUser.textContent = link.getAttribute("data-stamp-user") || "";
+                        if (guestUrlInput) guestUrlInput.value = link.getAttribute("data-meeting-url") || "";
+                        if (urlInput) urlInput.value = link.getAttribute("data-meeting-url-host") || "";
                         if (notesInput) notesInput.value = link.getAttribute("data-notes") || "";
+                        if (mid) mid.setAttribute("data-original-notes", link.getAttribute("data-notes") || "");
                         clearModalFeedback("meetingModal");
 
                         openModal("meetingModal");
@@ -3282,6 +3479,7 @@
                             }
                             closeModal("addAppointmentModal");
                             queueLiveSync();
+                            showGuiWarning(res && res.warning ? res.warning : "");
                         });
                     });
                 });
@@ -3420,6 +3618,7 @@
             if (saveMeeting) {
                 saveMeeting.addEventListener("click", function () {
                     var mid = document.getElementById("mid");
+                    var guestUrlInput = document.getElementById("mGuestURL");
                     var urlInput = document.getElementById("mURL");
                     var notesInput = document.getElementById("mNotes");
                     if (!mid) {
@@ -3428,11 +3627,13 @@
 
                     var appointmentId = mid.getAttribute("data-appointment-id");
                     var srcType = mid.getAttribute("data-src-type") || "A";
+                    var originalNotes = mid.getAttribute("data-original-notes") || "";
                     var payload = {
                         appointmentId: appointmentId,
                         srcType: srcType,
-                        webexUrl: urlInput ? urlInput.value : "",
-                        notes: notesInput ? notesInput.value : ""
+                        guestUrl: guestUrlInput ? guestUrlInput.value : "",
+                        hostUrl: urlInput ? urlInput.value : "",
+                        notes: appendNotes(originalNotes, notesInput ? notesInput.value : "")
                     };
 
                     postForm(saveServiceInfoUrl, payload)
@@ -3441,7 +3642,7 @@
                                 showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
                                 return;
                             }
-                            updateCalendarMeetingLinkUi(appointmentId, srcType, payload.webexUrl || "", payload.notes || "");
+                            updateCalendarMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", payload.notes || "");
                             closeModal("meetingModal");
                         })
                         .catch(function () {
@@ -3541,6 +3742,7 @@
                     var routeMode = document.getElementById("routeMode");
                     var routeSrcType = document.getElementById("routeSrcType");
                     var routeSrcId = document.getElementById("routeSrcId");
+                    var routeOriginalNotes = document.getElementById("routeOriginalNotes");
                     var routeCompletionNotes = document.getElementById("routeCompletionNotes");
                     var targetKindInput = document.getElementById("routeTargetKind");
                     var targetQueueIdInput = document.getElementById("routeTargetQueueId");
@@ -3554,6 +3756,7 @@
                     var mode = routeMode ? routeMode.value : "";
                     var srcType = routeSrcType ? routeSrcType.value : "";
                     var appointmentId = routeSrcId ? routeSrcId.value : "";
+                    var originalNotes = routeOriginalNotes ? routeOriginalNotes.value : "";
                     var completionNotes = routeCompletionNotes ? routeCompletionNotes.value : "";
                     var targetKind = targetKindInput ? targetKindInput.value : "";
                     var targetQueueId = targetQueueIdInput ? targetQueueIdInput.value : "";
@@ -3568,7 +3771,7 @@
                     }
                     var targetTime = targetTimeInput ? targetTimeInput.value : "";
                     var refValue = refValueInput ? refValueInput.value : "";
-                    var notes = notesInput ? notesInput.value : "";
+                    var notes = appendNotes(originalNotes, notesInput ? notesInput.value : "");
                     var targetDateTime = buildRouteTargetDateTime(targetDate, targetTime);
 
                     if (!appointmentId || !srcType || !targetQueueId) {

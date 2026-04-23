@@ -23,8 +23,8 @@
             <div class="stat-value" id="queueName">-</div>
         </div>
         <div class="stat">
-            <div class="stat-label">Scheduled (UTC)</div>
-            <div class="stat-value" id="scheduledUtc">-</div>
+            <div class="stat-label">Scheduled</div>
+            <div class="stat-value" id="scheduledFor">-</div>
         </div>
         <div class="stat">
             <div class="stat-label">Updated (UTC)</div>
@@ -77,7 +77,7 @@ var FastQStatus = {
         $("#apptId").text(d.AppointmentId);
         $("#statusText").text(FastQStatus.label(d.Status));
         $("#queueName").text(d.QueueName || d.QueueId);
-        $("#scheduledUtc").text(d.ScheduledForUtc);
+        $("#scheduledFor").text(d.ScheduledFor);
         $("#updatedUtc").text(d.UpdatedUtc);
         $("#waitingCount").text(d.WaitingCount);
         $("#pos").text(d.PositionInQueue ? d.PositionInQueue : "-");

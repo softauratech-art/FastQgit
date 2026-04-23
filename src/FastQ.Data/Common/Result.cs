@@ -4,8 +4,12 @@ namespace FastQ.Data.Common
     {
         public bool Ok { get; protected set; }
         public string Error { get; protected set; }
+        public string Warning { get; protected set; }
 
         public static Result Success() => new Result { Ok = true };
+
+        public static Result SuccessWithWarning(string warning) =>
+            new Result { Ok = true, Warning = warning };
 
         public static Result Fail(string error) =>
             new Result { Ok = false, Error = error };
@@ -18,8 +22,10 @@ namespace FastQ.Data.Common
         public static Result<T> Success(T value) =>
             new Result<T> { Ok = true, Value = value };
 
-        public static Result<T> Fail(string error) =>
+        public static Result<T> Success(T value, string warning) =>
+            new Result<T> { Ok = true, Value = value, Warning = warning };
+
+        public new static Result<T> Fail(string error) =>
             new Result<T> { Ok = false, Error = error };
     }
 }
-

@@ -227,13 +227,13 @@
     <Content Include="Scripts\timepicker\jquery.timepicker.css" />
     <Content Include="Scripts\timepicker\jquery.timepicker.js" />
     <Content Include="Logout.aspx" />
-    <Content Include="Views\Admin\Calendar.cshtml" />
     <Content Include="Views\Admin\Dashboard.cshtml" />
     <Content Include="Views\Customer\Book.cshtml" />
     <Content Include="Views\Customer\Home.cshtml" />
     <Content Include="Views\Customer\Login.cshtml" />
     <Content Include="Views\Customer\Status.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Provider\Calendar.cshtml" />
     <Content Include="Views\Provider\Today.cshtml" />
     <Content Include="Views\Reporting\Overview.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />

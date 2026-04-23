@@ -83,7 +83,7 @@ namespace FastQ.Data.Db
                 if (queueId <= 0)
                     throw new InvalidOperationException("QueueId must be a numeric ID.");
 
-                var joinInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
+                var joinInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledFor.TimeOfDay);
                 var endInterval = OracleInterval(appointment.EndTime);
                 var createdBy = string.IsNullOrWhiteSpace(appointment.CreatedBy) ? "fastq" : appointment.CreatedBy;
                 var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
@@ -137,7 +137,7 @@ namespace FastQ.Data.Db
             using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS.UPDATE_APPOINTMENT"))
             {
                 var apptDate = ResolveApptDate(appointment);
-                var startInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay);
+                var startInterval = OracleInterval(appointment.StartTime ?? appointment.ScheduledFor.TimeOfDay);
                 var endInterval = OracleInterval(appointment.EndTime);
                 var stampUser = string.IsNullOrWhiteSpace(appointment.StampUser) ? "fastq" : appointment.StampUser;
 
@@ -236,14 +236,14 @@ namespace FastQ.Data.Db
             return list;
         }
 
-        public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
+        public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStart, DateTime rangeEnd)
         {
-            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
+            return ListForUserProc(userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
         }
 
-        public IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc)
+        public IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStart, DateTime rangeEnd)
         {
-            return ListForUserProc(userId, rangeStartUtc, rangeEndUtc, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
+            return ListForUserProc(userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
         }
 
         public bool ValidatePermitNumber(long queueId, string permitNumber, out string message)
@@ -303,7 +303,7 @@ namespace FastQ.Data.Db
             }
         }
 
-        private IList<ProviderAppointmentData> ListForUserProc(string userId, DateTime rangeStartUtc, DateTime rangeEndUtc, string procName)
+        private IList<ProviderAppointmentData> ListForUserProc(string userId, DateTime rangeStart, DateTime rangeEnd, string procName)
         {
             var list = new List<ProviderAppointmentData>();
             if (string.IsNullOrWhiteSpace(userId))
@@ -315,8 +315,8 @@ namespace FastQ.Data.Db
             using (var cmd = DataAccess.CreateStoredProc(conn, procName))
             {
                 DataAccess.AddParam(cmd, "p_userid", userId.Trim(), DbType.String);
-                DataAccess.AddParam(cmd, "p_range_startdate", rangeStartUtc.Date, DbType.DateTime);
-                DataAccess.AddParam(cmd, "p_range_enddate", rangeEndUtc.Date, DbType.DateTime);
+                DataAccess.AddParam(cmd, "p_range_startdate", rangeStart.Date, DbType.DateTime);
+                DataAccess.AddParam(cmd, "p_range_enddate", rangeEnd.Date, DbType.DateTime);
                 DataAccess.AddOutRefCursor(cmd, "p_cur");
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -368,7 +368,7 @@ namespace FastQ.Data.Db
                             AppointmentId = apptId,
                             QueueId = TryGetLong(reader, "QUEUE_ID", out var queueId) ? queueId : 0,
                             ServiceId = TryGetLong(reader, "SERVICE_ID", out var serviceId) ? serviceId : 0,
-                            ScheduledForUtc = scheduled,
+                            ScheduledFor = scheduled,
                             Status = status,
                             QueueName = ReadField(reader, "NAME"),
                             ServiceName = ReadField(reader, "SERVICE_NAME"),
@@ -378,6 +378,7 @@ namespace FastQ.Data.Db
                             RefValue = ReadField(reader, "REF_VALUE"),
                             LanguagePreference = ReadField(reader, "LANGUAGE_PREF"),
                             MeetingUrl = ReadMeetingUrl(reader),
+                            MeetingUrlHost = ReadMeetingUrlHost(reader),
                             Notes = ReadField(reader, "MOREINFO"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
@@ -470,13 +471,12 @@ namespace FastQ.Data.Db
 
         private static string ReadMeetingUrl(IDataRecord record)
         {
-            var hostUrl = ReadField(record, "MEETINGURL_HOST");
-            if (!string.IsNullOrWhiteSpace(hostUrl))
-            {
-                return hostUrl;
-            }
-
             return ReadField(record, "MEETINGURL");
+        }
+
+        private static string ReadMeetingUrlHost(IDataRecord record)
+        {
+            return ReadField(record, "MEETINGURL_HOST");
         }
 
         private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> entityByQueue)
@@ -506,12 +506,13 @@ namespace FastQ.Data.Db
                 RefValue = record["REF_VALUE"]?.ToString(),
                 ContactType = record["CONTACTTYPE"]?.ToString(),
                 MoreInfo = record["MOREINFO"]?.ToString(),
-                ApptDateUtc = DateTime.SpecifyKind(apptDate, DateTimeKind.Local),
+                ApptDate = DateTime.SpecifyKind(apptDate, DateTimeKind.Local),
                 StartTime = startTime,
                 EndTime = endTime,
                 Status = status,
                 ConfirmationCode = record["CONFCODE"]?.ToString(),
                 MeetingUrl = ReadMeetingUrl(record),
+                MeetingUrlHost = ReadMeetingUrlHost(record),
                 LanguagePreference = record["LANGUAGE_PREF"]?.ToString(),
                 CreatedBy = record["CREATEDBY"]?.ToString(),
                 CreatedOnUtc = DateTime.SpecifyKind(createdOn, DateTimeKind.Utc),
@@ -717,7 +718,7 @@ namespace FastQ.Data.Db
                         : (JToken)new JValue(appointment.MeetingUrl.Trim()),
                     ["MOREINFO"] = appointment.MoreInfo,
                     ["APPT_DATE"] = ResolveApptDate(appointment).ToString("dd-MMM-yy", CultureInfo.InvariantCulture).ToUpperInvariant(),
-                    ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledForUtc.TimeOfDay),
+                    ["START_TIME"] = OracleInterval(appointment.StartTime ?? appointment.ScheduledFor.TimeOfDay),
                     ["END_TIME"] = OracleInterval(appointment.EndTime),
                     ["STATUS"] = appointment.Status.ToString().ToUpperInvariant(),
                     ["LANGUAGE_PREF"] = appointment.LanguagePreference,
@@ -756,12 +757,12 @@ namespace FastQ.Data.Db
 
         private static DateTime ResolveApptDate(Appointment appointment)
         {
-            if (appointment.ApptDateUtc != default)
+            if (appointment.ApptDate != default)
             {
-                return appointment.ApptDateUtc;
+                return appointment.ApptDate;
             }
 
-            return appointment.ScheduledForUtc;
+            return appointment.ScheduledFor;
         }
 
         private static AppointmentStatus MapStatus(string statusText)

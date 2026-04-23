@@ -271,7 +271,7 @@ namespace FastQ.Web.Controllers
 
             if (action == "remove" && !string.IsNullOrWhiteSpace(notes))
             {
-                var saveRes = _service.SaveServiceInfo(apptId, normalizedSrc[0], null, notes, resolvedUserId);
+                var saveRes = _service.SaveServiceInfo(apptId, normalizedSrc[0], null, null, notes, resolvedUserId);
                 if (!saveRes.Ok)
                     return Json(new { ok = true, warning = saveRes.Error });
             }
@@ -323,7 +323,7 @@ namespace FastQ.Web.Controllers
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
-            return Json(new { ok = true, id = res.Value.Id });
+            return Json(new { ok = true, id = res.Value.Id, warning = res.Warning });
         }
 
         [HttpPost]
@@ -452,7 +452,7 @@ namespace FastQ.Web.Controllers
             long parsedTargetServiceId;
             long? targetService = long.TryParse(targetServiceId, out parsedTargetServiceId) ? parsedTargetServiceId : (long?)null;
 
-            var targetDateUtc = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
+            var parsedTargetDateValue = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
                 ? parsedTargetDate
                 : (DateTime?)null;
 
@@ -463,7 +463,7 @@ namespace FastQ.Web.Controllers
                 TargetQueueId = queueId,
                 TargetServiceId = targetService,
                 TargetKind = normalizedTarget[0],
-                TargetDateUtc = targetDateUtc,
+                TargetDate = parsedTargetDateValue,
                 RefValue = refValue,
                 Notes = notes,
                 StampUser = _auth.GetLoggedInWindowsUser(),
@@ -505,7 +505,7 @@ namespace FastQ.Web.Controllers
             if (normalizedTargetKind != null && normalizedTargetKind != "A" && normalizedTargetKind != "W")
                 return Json(new { ok = false, error = "targetKind must be A or W" });
 
-            var targetDateUtc = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
+            var parsedTargetDateValue = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
                 ? parsedTargetDate
                 : (DateTime?)null;
 
@@ -517,7 +517,7 @@ namespace FastQ.Web.Controllers
                 TargetQueueId = queueId,
                 TargetServiceId = serviceId,
                 TargetKind = string.IsNullOrWhiteSpace(normalizedTargetKind) ? (char?)null : normalizedTargetKind[0],
-                TargetDateUtc = targetDateUtc,
+                TargetDate = parsedTargetDateValue,
                 RefValue = refValue,
                 Notes = notes,
                 StampUser = _auth.GetLoggedInWindowsUser()
@@ -529,7 +529,7 @@ namespace FastQ.Web.Controllers
 
             if (!string.IsNullOrWhiteSpace(completionNotes))
             {
-                var saveRes = _service.SaveServiceInfo(srcId, normalizedSrc[0], null, completionNotes, _auth.GetLoggedInWindowsUser());
+                var saveRes = _service.SaveServiceInfo(srcId, normalizedSrc[0], null, null, completionNotes, _auth.GetLoggedInWindowsUser());
                 if (!saveRes.Ok)
                     return Json(new { ok = true, newSrcId = res.Value, warning = saveRes.Error });
             }
@@ -538,7 +538,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult SaveServiceInfo(string appointmentId, string srcType, string webexUrl, string notes, string providerId)
+        public JsonResult SaveServiceInfo(string appointmentId, string srcType, string webexUrl, string guestUrl, string hostUrl, string notes, string providerId)
         {
             if (!long.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId must be a number" });
@@ -552,7 +552,8 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = updatePermissionError });
 
             var resolvedUserId = _auth.GetLoggedInWindowsUser();
-            var res = _service.SaveServiceInfo(apptId, normalized[0], webexUrl, notes, resolvedUserId);
+            var resolvedHostUrl = string.IsNullOrWhiteSpace(hostUrl) ? webexUrl : hostUrl;
+            var res = _service.SaveServiceInfo(apptId, normalized[0], guestUrl, resolvedHostUrl, notes, resolvedUserId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 

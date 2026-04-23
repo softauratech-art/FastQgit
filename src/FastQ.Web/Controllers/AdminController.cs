@@ -120,8 +120,8 @@ namespace FastQ.Web.Controllers
         //    {
         //        LocationId = location.Id,
         //        LocationName = location.Name,
-        //        TodayAppointments = rows.Where(r => r.ScheduledForLocal.Date == today).ToList(),
-        //        UpcomingAppointments = rows.Where(r => r.ScheduledForLocal.Date > today).ToList()
+        //        TodayAppointments = rows.Where(r => r.ScheduledFor.Date == today).ToList(),
+        //        UpcomingAppointments = rows.Where(r => r.ScheduledFor.Date > today).ToList()
         //    };
         //}
 
@@ -137,7 +137,7 @@ namespace FastQ.Web.Controllers
         //            queues.TryGetValue(a.QueueId, out var queue);
         //            customers.TryGetValue(a.CustomerId, out var customer);
 
-        //            var localTime = a.ScheduledForUtc.ToLocalTime();
+        //            var localTime = a.ScheduledFor;
         //            var contact = string.IsNullOrWhiteSpace(a.ContactType)
         //                ? (customer != null && customer.SmsOptIn ? "Virtual" : "In-Person")
         //                : a.ContactType;
@@ -145,8 +145,8 @@ namespace FastQ.Web.Controllers
         //            return new AdminAppointmentRow
         //            {
         //                AppointmentId = a.Id,
-        //                ScheduledForUtc = a.ScheduledForUtc,
-        //                ScheduledForLocal = localTime,
+        //                ScheduledFor = a.ScheduledFor,
+        //                ScheduledFor = localTime,
         //                StartTimeText = localTime.ToString("h:mm tt"),
         //                StartDateText = localTime.ToString("MMM dd, yyyy"),
         //                QueueName = queue?.Name ?? "Unknown Queue",
@@ -160,7 +160,7 @@ namespace FastQ.Web.Controllers
         //                MeetingUrl = a.MeetingUrl
         //            };
         //        })
-        //        .OrderBy(r => r.ScheduledForLocal)
+        //        .OrderBy(r => r.ScheduledFor)
         //        .ToList();
         //}
     }

@@ -7,7 +7,7 @@ namespace FastQ.Data.Entities
         public long AppointmentId { get; set; }
         public long QueueId { get; set; }
         public long ServiceId { get; set; }
-        public DateTime ScheduledForUtc { get; set; }
+        public DateTime ScheduledFor { get; set; }
         public AppointmentStatus Status { get; set; }
         public string QueueName { get; set; }
         public string ServiceName { get; set; }
@@ -17,6 +17,7 @@ namespace FastQ.Data.Entities
         public string RefValue { get; set; }
         public string LanguagePreference { get; set; }
         public string MeetingUrl { get; set; }
+        public string MeetingUrlHost { get; set; }
         public string Notes { get; set; }
         public string StampUser { get; set; }
         public bool SmsOptIn { get; set; }

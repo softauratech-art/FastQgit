@@ -9,7 +9,9 @@
     ViewBag.Title = "Provider Today";
     var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
     var appointmentRows = Model.Appointments ?? new List<ProviderAppointmentRow>();
-    var statusOptions = Enum.GetNames(typeof(AppointmentStatus));
+    var statusOptions = new[] { "ACTIVE" }
+        .Concat(Enum.GetNames(typeof(AppointmentStatus)))
+        .ToList();
     var defaultDate = (ViewBag.StartDate as string) ?? DateTime.Now.ToString("yyyy-MM-dd");
     var endDate = (ViewBag.EndDate as string) ?? defaultDate;
     var actionName = (ViewContext.RouteData.Values["action"] as string) ?? "Today";
@@ -98,6 +100,14 @@
 
         .table-card {
             overflow-x: auto;
+        }
+
+        .cell-ellipsis {
+            display: block;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .date-nav {
@@ -670,16 +680,16 @@
                             var row = walkinRows[i];
                             var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
                             var rowStatus = row.Status.ToString();
-                            var rowDate = (row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc).ToString("yyyy-MM-dd");
+                            var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
-                                <td>@row.QueueName</td>
-                                <td>@row.ServiceType</td>
+                                <td><span class="cell-ellipsis" title="@row.QueueName">@row.QueueName</span></td>
+                                <td><span class="cell-ellipsis" title="@row.ServiceType">@row.ServiceType</span></td>
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
-                                <td>@row.RefValue</td>
+                                <td><span class="cell-ellipsis" title="@row.RefValue">@row.RefValue</span></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
@@ -715,7 +725,15 @@
                                                     data-title="@row.ServiceType"
                                                     data-customer="@row.CustomerName"
                                                     data-phone="@row.Phone"
+                                                    data-queue-name="@row.QueueName"
+                                                    data-service-name="@row.ServiceType"
+                                                    data-ref-value="@row.RefValue"
+                                                    data-language="@row.LanguagePreference"
+                                                    data-status-text="@row.StatusText"
+                                                    data-contact="@row.ContactMethod"
+                                                    data-stamp-user="@row.StampUser"
                                                     data-meeting-url="@row.MeetingUrl"
+                                                    data-meeting-url-host="@row.MeetingUrlHost"
                                                     data-notes="@row.Notes">
                                                 Info
                                             </button>
@@ -802,16 +820,16 @@
                             var row = appointmentRows[i];
                             var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
                             var rowStatus = row.Status.ToString();
-                            var rowDate = (row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc).ToString("yyyy-MM-dd");
+                            var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
-                                <td>@row.QueueName</td>
-                                <td>@row.ServiceType</td>
+                                <td><span class="cell-ellipsis" title="@row.QueueName">@row.QueueName</span></td>
+                                <td><span class="cell-ellipsis" title="@row.ServiceType">@row.ServiceType</span></td>
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
-                                <td>@row.RefValue</td>
+                                <td><span class="cell-ellipsis" title="@row.RefValue">@row.RefValue</span></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
@@ -847,7 +865,15 @@
                                                     data-title="@row.ServiceType"
                                                     data-customer="@row.CustomerName"
                                                     data-phone="@row.Phone"
+                                                    data-queue-name="@row.QueueName"
+                                                    data-service-name="@row.ServiceType"
+                                                    data-ref-value="@row.RefValue"
+                                                    data-language="@row.LanguagePreference"
+                                                    data-status-text="@row.StatusText"
+                                                    data-contact="@row.ContactMethod"
+                                                    data-stamp-user="@row.StampUser"
                                                     data-meeting-url="@row.MeetingUrl"
+                                                    data-meeting-url-host="@row.MeetingUrlHost"
                                                     data-notes="@row.Notes">
                                                 Info
                                             </button>
@@ -888,15 +914,28 @@
                 Title: <span id="meetingTitle"></span><br />
             </p>
             <p>Customer Info:<br /><span id="meetingCustomer"></span> | <span id="meetingPhone"></span></p>
+            <p>
+                Queue: <span id="meetingQueue"></span><br />
+                Service: <span id="meetingService"></span><br />
+                Ref Value: <span id="meetingRefValue"></span><br />
+                Contact: <span id="meetingContact"></span><br />
+                Language: <span id="meetingLanguage"></span><br />
+                Status: <span id="meetingStatus"></span><br />
+                Stamp User: <span id="meetingStampUser"></span><br />
+            </p>
             <div class="field-row">
-                <div>WebEx URL:</div>
+                <div>Guest URL:</div>
+                <input id="mGuestURL" type="text" value="" />
+            </div>
+            <div class="field-row">
+                <div>Host URL:</div>
                 <input id="mURL" type="text" value="" />
             </div>
             <div class="field-row">
                 <div>Notes:</div>
                 <textarea id="mNotes" rows="3"></textarea>
             </div>
-            <div class="helper-text">Visible to customer</div>
+            <div class="helper-text">Guest URL, host URL, and notes are saved. New notes are appended to the existing notes.</div>
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
@@ -947,7 +986,7 @@
                 <input id="routeTargetDate" type="hidden" value="" data-current-value="" />
                 <div class="entry-date-picker" id="routeTargetDatePicker">
                     <div class="entry-date-picker-trigger">
-                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="dd/mm/yyyy" autocomplete="off" aria-expanded="false" />
+                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="mm/dd/yyyy" autocomplete="off" aria-expanded="false" />
                         <button id="routeTargetDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Open calendar">
                             <i class="bi bi-calendar3"></i>
                         </button>
@@ -989,6 +1028,7 @@
             <input id="routeMode" type="hidden" value="" />
             <input id="routeSrcType" type="hidden" value="" />
             <input id="routeSrcId" type="hidden" value="" />
+            <input id="routeOriginalNotes" type="hidden" value="" />
             <input id="routeCompletionNotes" type="hidden" value="" />
         </div>
         <div class="modal-footer">
@@ -1176,12 +1216,13 @@
       return "https://" + trimmed.replace(/^\/+/, "");
     }
 
-    function updateTodayMeetingLinkUi(appointmentId, srcType, rawUrl, notes) {
+    function updateTodayMeetingLinkUi(appointmentId, srcType, rawGuestUrl, rawHostUrl, notes) {
       var normalizedSrcType = (srcType || "A").toUpperCase();
-      var normalizedUrl = normalizeMeetingUrl(rawUrl);
+      var normalizedGuestUrl = normalizeMeetingUrl(rawGuestUrl);
 
       document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
-        link.setAttribute("data-meeting-url", rawUrl || "");
+        link.setAttribute("data-meeting-url", rawGuestUrl || "");
+        link.setAttribute("data-meeting-url-host", rawHostUrl || "");
         link.setAttribute("data-notes", notes || "");
       });
 
@@ -1192,13 +1233,28 @@
         }
 
         var joinCell = cells[8];
-        if (!normalizedUrl) {
+        if (!normalizedGuestUrl) {
           joinCell.innerHTML = "";
           return;
         }
 
-        joinCell.innerHTML = '<a class="btn small ghost" href="' + normalizedUrl.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">Join Meeting</a>';
+        joinCell.innerHTML = '<a class="btn small ghost" href="' + normalizedGuestUrl.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">Join Meeting</a>';
       });
+    }
+
+    function appendNotes(existingNotes, newNotes) {
+      var current = (existingNotes || "").trim();
+      var incoming = (newNotes || "").trim();
+      if (!incoming) {
+        return current;
+      }
+      if (!current) {
+        return incoming;
+      }
+      if (incoming === current || incoming.indexOf(current) === 0) {
+        return incoming;
+      }
+      return current + "\n" + incoming;
     }
 
     function getJson(url) {
@@ -1813,7 +1869,7 @@
         return value;
       }
 
-      return parts[2] + "/" + parts[1] + "/" + parts[0];
+      return parts[1] + "/" + parts[2] + "/" + parts[0];
     }
 
     function parseEntryDateDisplay(value) {
@@ -1822,8 +1878,8 @@
         return "";
       }
 
-      var day = parseInt(match[1], 10);
-      var month = parseInt(match[2], 10);
+      var month = parseInt(match[1], 10);
+      var day = parseInt(match[2], 10);
       var year = parseInt(match[3], 10);
       var candidate = new Date(year, month - 1, day);
       if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
@@ -1929,8 +1985,8 @@
         if (timeSelect) {
           setSelectValues(timeSelect, [], "Select time");
         }
-        setTimeSelectionState(prefix, false, false, "Enter date as dd/mm/yyyy.");
-        setEntryDateStatus(prefix, "Enter date as dd/mm/yyyy.", true);
+        setTimeSelectionState(prefix, false, false, "Enter date as mm/dd/yyyy.");
+        setEntryDateStatus(prefix, "Enter date as mm/dd/yyyy.", true);
         return;
       }
 
@@ -2508,6 +2564,17 @@
       el.classList.remove("success");
     }
 
+    function showGuiWarning(message) {
+      if (!message) {
+        return;
+      }
+      if (window.FastQLive && typeof window.FastQLive.toast === "function") {
+        window.FastQLive.toast(message);
+        return;
+      }
+      window.alert(message);
+    }
+
     function showModalFeedback(id, message, isError) {
       var el = getModalFeedbackElement(id);
       if (!el) {
@@ -2661,6 +2728,7 @@
       var routeMode = document.getElementById("routeMode");
       var routeSrcType = document.getElementById("routeSrcType");
       var routeSrcId = document.getElementById("routeSrcId");
+      var routeOriginalNotes = document.getElementById("routeOriginalNotes");
       var routeCompletionNotes = document.getElementById("routeCompletionNotes");
       var routeTitle = document.getElementById("serviceRouteModalTitle");
       var saveRouteButton = document.getElementById("saveRoute");
@@ -2671,7 +2739,8 @@
       var targetTime = document.getElementById("routeTargetTime");
       var refValue = document.getElementById("routeRefValue");
       var notes = document.getElementById("routeNotes");
-      var sourcePrefill = mode === "cancel-transfer" ? getRouteSourcePrefill(appointmentId, srcType) : null;
+      var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
+      var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
 
       if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
         return;
@@ -2686,6 +2755,7 @@
       if (saveRouteButton) {
         saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
       }
+      if (routeOriginalNotes) routeOriginalNotes.value = sourceContext ? sourceContext.notes : "";
       if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
       targetKind.value = srcType === "A" ? "A" : "W";
       if (targetQueueId) targetQueueId.value = sourcePrefill ? sourcePrefill.queueId : "";
@@ -2809,7 +2879,7 @@
           if (customerValue && rowCustomer.indexOf(customerValue) === -1) {
             match = false;
           }
-          if (statusValue && statusValue !== "all" && rowStatus !== statusValue) {
+          if (statusValue && statusValue !== "all" && !matchesStatusFilter(rowStatus, statusValue)) {
             match = false;
           }
           if (queueValue && queueValue !== "all" && rowQueue !== queueValue) {
@@ -2834,15 +2904,28 @@
           }
         });
 
+        var dataRows = table.querySelectorAll("tbody tr.accordion-toggle");
         var visibleRows = Array.prototype.filter.call(
-          table.querySelectorAll("tbody tr.accordion-toggle"),
+          dataRows,
           function (row) { return !row.classList.contains("is-hidden"); }
         );
         var emptyRow = table.querySelector("tbody tr.table-empty");
         if (emptyRow) {
-          emptyRow.classList.toggle("is-hidden", visibleRows.length > 0);
+          emptyRow.classList.toggle("is-hidden", dataRows.length === 0 || visibleRows.length > 0);
         }
       });
+    }
+
+    function matchesStatusFilter(rowStatus, statusValue) {
+      if (!statusValue || statusValue === "all") {
+        return true;
+      }
+
+      if (statusValue === "active") {
+        return rowStatus === "scheduled" || rowStatus === "arrived" || rowStatus === "inservice";
+      }
+
+      return rowStatus === statusValue;
     }
 
     function bindAccordionRows() {
@@ -3588,6 +3671,14 @@
           var meetingTitle = document.getElementById("meetingTitle");
           var meetingCustomer = document.getElementById("meetingCustomer");
           var meetingPhone = document.getElementById("meetingPhone");
+          var meetingQueue = document.getElementById("meetingQueue");
+          var meetingService = document.getElementById("meetingService");
+          var meetingRefValue = document.getElementById("meetingRefValue");
+          var meetingContact = document.getElementById("meetingContact");
+          var meetingLanguage = document.getElementById("meetingLanguage");
+          var meetingStatus = document.getElementById("meetingStatus");
+          var meetingStampUser = document.getElementById("meetingStampUser");
+          var guestUrlInput = document.getElementById("mGuestURL");
           var urlInput = document.getElementById("mURL");
           var notesInput = document.getElementById("mNotes");
 
@@ -3601,8 +3692,17 @@
           if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
           if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
           if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
-          if (urlInput) urlInput.value = link.getAttribute("data-meeting-url") || "";
+          if (meetingQueue) meetingQueue.textContent = link.getAttribute("data-queue-name") || "";
+          if (meetingService) meetingService.textContent = link.getAttribute("data-service-name") || "";
+          if (meetingRefValue) meetingRefValue.textContent = link.getAttribute("data-ref-value") || "";
+          if (meetingContact) meetingContact.textContent = link.getAttribute("data-contact") || "";
+          if (meetingLanguage) meetingLanguage.textContent = link.getAttribute("data-language") || "";
+          if (meetingStatus) meetingStatus.textContent = link.getAttribute("data-status-text") || "";
+          if (meetingStampUser) meetingStampUser.textContent = link.getAttribute("data-stamp-user") || "";
+          if (guestUrlInput) guestUrlInput.value = link.getAttribute("data-meeting-url") || "";
+          if (urlInput) urlInput.value = link.getAttribute("data-meeting-url-host") || "";
           if (notesInput) notesInput.value = link.getAttribute("data-notes") || "";
+          if (mid) mid.setAttribute("data-original-notes", link.getAttribute("data-notes") || "");
           clearModalFeedback("meetingModal");
 
           openModal("meetingModal");
@@ -3614,6 +3714,7 @@
     if (saveMeeting) {
       saveMeeting.addEventListener("click", function () {
         var mid = document.getElementById("mid");
+        var guestUrlInput = document.getElementById("mGuestURL");
         var urlInput = document.getElementById("mURL");
         var notesInput = document.getElementById("mNotes");
         if (!mid) {
@@ -3622,11 +3723,13 @@
 
         var appointmentId = mid.getAttribute("data-appointment-id");
         var srcType = mid.getAttribute("data-src-type") || "A";
+        var originalNotes = mid.getAttribute("data-original-notes") || "";
         var payload = {
           appointmentId: appointmentId,
           srcType: srcType,
-          webexUrl: urlInput ? urlInput.value : "",
-          notes: notesInput ? notesInput.value : ""
+          guestUrl: guestUrlInput ? guestUrlInput.value : "",
+          hostUrl: urlInput ? urlInput.value : "",
+          notes: appendNotes(originalNotes, notesInput ? notesInput.value : "")
         };
 
         postForm(saveServiceInfoUrl, payload)
@@ -3635,7 +3738,7 @@
               showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
               return;
             }
-            updateTodayMeetingLinkUi(appointmentId, srcType, payload.webexUrl || "", payload.notes || "");
+            updateTodayMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", payload.notes || "");
             closeModal("meetingModal");
           });
       });
@@ -3732,6 +3835,7 @@
         var routeMode = document.getElementById("routeMode");
         var routeSrcType = document.getElementById("routeSrcType");
         var routeSrcId = document.getElementById("routeSrcId");
+        var routeOriginalNotes = document.getElementById("routeOriginalNotes");
         var routeCompletionNotes = document.getElementById("routeCompletionNotes");
         var targetKindInput = document.getElementById("routeTargetKind");
         var targetQueueIdInput = document.getElementById("routeTargetQueueId");
@@ -3745,6 +3849,7 @@
         var mode = routeMode ? routeMode.value : "";
         var srcType = routeSrcType ? routeSrcType.value : "";
         var appointmentId = routeSrcId ? routeSrcId.value : "";
+        var originalNotes = routeOriginalNotes ? routeOriginalNotes.value : "";
         var completionNotes = routeCompletionNotes ? routeCompletionNotes.value : "";
         var targetKind = targetKindInput ? targetKindInput.value : "";
         var targetQueueId = targetQueueIdInput ? targetQueueIdInput.value : "";
@@ -3759,7 +3864,7 @@
         }
         var targetTime = targetTimeInput ? targetTimeInput.value : "";
         var refValue = refValueInput ? refValueInput.value : "";
-        var notes = notesInput ? notesInput.value : "";
+        var notes = appendNotes(originalNotes, notesInput ? notesInput.value : "");
         var targetDateTime = buildRouteTargetDateTime(targetDate, targetTime);
 
         if (!appointmentId || !srcType || !targetQueueId) {
@@ -4102,6 +4207,7 @@
             }
             closeModal("addAppointmentModal");
             queueLiveSync();
+            showGuiWarning(res && res.warning ? res.warning : "");
           });
         });
       });

@@ -1,5 +1,5 @@
 using System;
-using FastQ.Web.Services;
+using System.Linq;
 using FastQ.Data.Entities;
 using FastQ.Web.Hubs;
 using Microsoft.AspNet.SignalR;
@@ -45,25 +45,55 @@ namespace FastQ.Web.Services
         {
             var idText = appointment.Id.ToString();
             var shortId = idText.Length <= IdPreviewLength ? idText : idText.Substring(0, IdPreviewLength);
+            var customerContext = BuildCustomerContext(appointment);
             switch (appointment.Status)
             {
                 case AppointmentStatus.Scheduled:
-                    return $"New booking created ({shortId}).";
+                    return $"New booking created ({shortId}{customerContext}).";
                 case AppointmentStatus.Arrived:
-                    return $"Customer arrived ({shortId}).";
+                    return $"Customer arrived ({shortId}{customerContext}).";
                 case AppointmentStatus.InService:
-                    return $"Service started ({shortId}).";
+                    return $"Service started ({shortId}{customerContext}).";
                 case AppointmentStatus.Completed:
-                    return $"Service completed ({shortId}).";
+                    return $"Service completed ({shortId}{customerContext}).";
                 case AppointmentStatus.Cancelled:
-                    return $"Appointment cancelled ({shortId}).";
+                    return $"Appointment cancelled ({shortId}{customerContext}).";
                 case AppointmentStatus.ClosedBySystem:
-                    return $"Appointment closed by system ({shortId}).";
+                    return $"Appointment closed by system ({shortId}{customerContext}).";
                 case AppointmentStatus.TransferredOut:
-                    return $"Appointment transferred ({shortId}).";
+                    return $"Appointment transferred ({shortId}{customerContext}).";
                 default:
                     return null;
             }
+        }
+
+        private static string BuildCustomerContext(Appointment appointment)
+        {
+            var fullName = string.Join(" ", new[]
+            {
+                (appointment.CustomerFirstName ?? string.Empty).Trim(),
+                (appointment.CustomerLastName ?? string.Empty).Trim()
+            }).Trim();
+
+            var digits = new string((appointment.CustomerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
+            var phoneLast4 = digits.Length >= 4 ? digits.Substring(digits.Length - 4) : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(fullName) && string.IsNullOrWhiteSpace(phoneLast4))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                return $" / {phoneLast4}";
+            }
+
+            if (string.IsNullOrWhiteSpace(phoneLast4))
+            {
+                return $" / {fullName}";
+            }
+
+            return $" / {fullName}/{phoneLast4}";
         }
     }
 }

@@ -46,7 +46,7 @@ namespace FastQ.Data.Db
                     }
                 }
             }
-            catch (OracleException ex)
+            catch (OracleException)
             {
                 return null;
             }

@@ -41,7 +41,7 @@ namespace FastQ.Web.Controllers
             model.FeedbackIsError = string.Equals(TempData["CalendarMessageIsError"] as string, "true", StringComparison.OrdinalIgnoreCase);
             ViewBag.ProviderId = userId ?? string.Empty;
             ViewBag.ServiceAccess = _auth.GetServicePageAccess();
-            return View("~/Views/Admin/Calendar.cshtml", model);
+            return View("~/Views/Provider/Calendar.cshtml", model);
         }
 
         [HttpGet]
@@ -257,7 +257,8 @@ namespace FastQ.Web.Controllers
                 localStart,
                 languagePreference,
                 notes,
-                meetingUrl);
+                meetingUrl,
+                _auth.GetLoggedInWindowsUser());
 
             if (!res.Ok)
             {
@@ -275,12 +276,15 @@ namespace FastQ.Web.Controllers
                     ok = true,
                     message = "Appointment added to the calendar.",
                     appointmentId = res.Value.Id,
+                    warning = res.Warning,
                     month = parsedDate.ToString("yyyy-MM-01"),
                     selectedDate = parsedDate.ToString("yyyy-MM-dd")
                 });
             }
 
-            TempData["CalendarMessage"] = "Appointment added to the calendar.";
+            TempData["CalendarMessage"] = string.IsNullOrWhiteSpace(res.Warning)
+                ? "Appointment added to the calendar."
+                : "Appointment added to the calendar. " + res.Warning;
             TempData["CalendarMessageIsError"] = "false";
 
             return RedirectToAction("Index", new
@@ -366,7 +370,8 @@ namespace FastQ.Web.Controllers
                 contactType,
                 languagePreference,
                 meetingUrl,
-                notes);
+                notes,
+                _auth.GetLoggedInWindowsUser());
 
             if (!res.Ok)
             {
@@ -407,7 +412,7 @@ namespace FastQ.Web.Controllers
             model.FeedbackIsError = true;
             ViewBag.ProviderId = userId ?? string.Empty;
             ViewBag.ServiceAccess = _auth.GetServicePageAccess();
-            return View("~/Views/Admin/Calendar.cshtml", model);
+            return View("~/Views/Provider/Calendar.cshtml", model);
         }
 
         private static DateTime ParseMonth(string month)

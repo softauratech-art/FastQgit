@@ -22,7 +22,7 @@ App Start to Provider Today Rendering Flow
 4) Controller data fetch
    - ProviderController.Today() loads all queues and customers via CompositionRoot.
    - It loads all appointments, filters to today in UTC:
-     - a.ScheduledForUtc.Date == DateTime.UtcNow.Date
+     - a.ScheduledFor.Date == DateTime.Today
    - It builds AdminAppointmentRow entries (queue name, customer name/phone, status, etc.).
    - It splits rows into:
      - LiveQueue (Arrived/InService)

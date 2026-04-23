@@ -32,11 +32,9 @@ namespace FastQ.Web.Services
             try
             {
                 var usr = _users.Get(userid, _stampuser);
-                bool configadmin = usr.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag;
-
                 return TransformToModel(usr);
             }
-            catch (Exception ex)
+            catch
             {
                 return null;
             }

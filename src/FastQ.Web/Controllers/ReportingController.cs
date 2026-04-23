@@ -42,7 +42,7 @@ namespace FastQ.Web.Controllers
             var dayEnd = dayStart.AddDays(1);
 
             var bookedToday = appointments.Count(a => a.CreatedUtc >= dayStart && a.CreatedUtc < dayEnd);
-            var scheduledToday = appointments.Count(a => a.ScheduledForUtc >= dayStart && a.ScheduledForUtc < dayEnd);
+            var scheduledToday = appointments.Count(a => a.ScheduledFor >= dayStart && a.ScheduledFor < dayEnd);
             var completedToday = appointments.Count(a => a.UpdatedUtc >= dayStart && a.UpdatedUtc < dayEnd && a.Status == AppointmentStatus.Completed);
             var cancelledToday = appointments.Count(a => a.UpdatedUtc >= dayStart && a.UpdatedUtc < dayEnd &&
                                                        (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem));

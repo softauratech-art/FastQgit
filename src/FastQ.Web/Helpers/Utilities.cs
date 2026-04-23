@@ -62,7 +62,7 @@ namespace FastQ.Web.Helpers
                 string friendly2 = $"{ts.Days} Days, {ts.Hours} Hours"; // Output: 90 Days, 0 Hours
                 return friendly2;
             }
-            catch (Exception ex)
+            catch
             {
                 if (rawInterval.EndsWith("D"))
                     return rawInterval.Replace("PT", "").Replace("P", "").Replace("D", " days");

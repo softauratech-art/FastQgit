@@ -10,11 +10,10 @@ namespace FastQ.Web.Models
         public string QueueName { get; set; }
 
         public string Status { get; set; }
-        public string ScheduledForUtc { get; set; }
+        public string ScheduledFor { get; set; }
         public string UpdatedUtc { get; set; }
 
         public int? PositionInQueue { get; set; }
         public int WaitingCount { get; set; }
     }
 }
-

@@ -13,6 +13,7 @@ namespace FastQ.Web.Models
         public IList<AdminAppointmentRow> TodayAppointments { get; set; } = new List<AdminAppointmentRow>();
         public IList<AdminAppointmentRow> UpcomingAppointments { get; set; } = new List<AdminAppointmentRow>();
         public IList<AdminAppointmentRow> SelectedDayAppointments { get; set; } = new List<AdminAppointmentRow>();
+        public IList<AdminAppointmentRow> MonthAppointments { get; set; } = new List<AdminAppointmentRow>();
         public IList<AdminCalendarDay> CalendarDays { get; set; } = new List<AdminCalendarDay>();
         public IList<AdminOptionItem> QueueOptions { get; set; } = new List<AdminOptionItem>();
         public string FeedbackMessage { get; set; }
@@ -34,13 +35,14 @@ namespace FastQ.Web.Models
         public string StatusText { get; set; }
         public AppointmentStatus Status { get; set; }
         public string ContactMethod { get; set; }
+        public string LanguagePreference { get; set; }
         public string RefValue { get; set; }
         public string StampUser { get; set; }
         public string EntryKind { get; set; }
         public string Notes { get; set; }
         public string MeetingUrl { get; set; }
-        public DateTime ScheduledForUtc { get; set; }
-        public DateTime ScheduledForLocal { get; set; }
+        public string MeetingUrlHost { get; set; }
+        public DateTime ScheduledFor { get; set; }
     }
 
     public class AdminCalendarDay

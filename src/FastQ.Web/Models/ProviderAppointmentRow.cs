@@ -21,8 +21,9 @@ namespace FastQ.Web.Models
         public string RefValue { get; set; }
         public string LanguagePreference { get; set; }
         public string MeetingUrl { get; set; }
+        public string MeetingUrlHost { get; set; }
         public string Notes { get; set; }
         public string StampUser { get; set; }
-        public DateTime ScheduledForUtc { get; set; }
+        public DateTime ScheduledFor { get; set; }
     }
 }

@@ -20,12 +20,13 @@ namespace FastQ.Data.Entities
         public string RefValue { get; set; }
         public string ContactType { get; set; }
         public string MoreInfo { get; set; }
-        public DateTime ApptDateUtc { get; set; }
+        public DateTime ApptDate { get; set; }
         public TimeSpan? StartTime { get; set; }
         public TimeSpan? EndTime { get; set; }
         public AppointmentStatus Status { get; set; }
         public string ConfirmationCode { get; set; }
         public string MeetingUrl { get; set; }
+        public string MeetingUrlHost { get; set; }
         public string LanguagePreference { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedOnUtc { get; set; }
@@ -35,21 +36,21 @@ namespace FastQ.Data.Entities
         public DateTime CreatedUtc { get; set; }
         public DateTime UpdatedUtc { get; set; }
 
-        public DateTime ScheduledForUtc
+        public DateTime ScheduledFor
         {
             get
             {
                 if (StartTime.HasValue)
                 {
-                    return DateTime.SpecifyKind(ApptDateUtc.Date + StartTime.Value, DateTimeKind.Local);
+                    return DateTime.SpecifyKind(ApptDate.Date + StartTime.Value, DateTimeKind.Local);
                 }
 
-                return DateTime.SpecifyKind(ApptDateUtc, DateTimeKind.Local);
+                return DateTime.SpecifyKind(ApptDate, DateTimeKind.Local);
             }
             set
             {
                 var local = DateTime.SpecifyKind(value, DateTimeKind.Local);
-                ApptDateUtc = local.Date;
+                ApptDate = local.Date;
                 StartTime = local.TimeOfDay;
             }
         }

@@ -165,7 +165,7 @@ var FastQHome = {
               queueName: d.QueueName || "Queue",
               entityId: d.EntityId,
               status: d.Status,
-              scheduledUtc: d.ScheduledForUtc,
+              scheduledFor: d.ScheduledFor,
               updatedUtc: d.UpdatedUtc,
               position: d.PositionInQueue,
               waitingCount: d.WaitingCount,
@@ -253,7 +253,7 @@ var FastQHome = {
       var type = item.contactMethod || "Online";
       var cancelLink = FastQHome.isPast(item.status) ? "<span class='muted'>-</span>" : "<a href='javascript:void(0)' class='cancel-link' onclick='FastQHome.promptCancel(\"" + item.id + "\")'>Cancel</a>";
       return "<tr>" +
-        "<td>" + (item.scheduledUtc || "xx-xx-xxxx xxxx AM") + "</td>" +
+        "<td>" + (item.scheduledFor || "xx-xx-xxxx xxxx AM") + "</td>" +
         "<td>" + (item.queueName || "Queue") + "</td>" +
         "<td>" + type + "</td>" +
         "<td>" + statusTag + "</td>" +

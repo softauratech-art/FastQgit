@@ -48,7 +48,7 @@ namespace FastQ.Web.Services
             }
 
             var counts = rows
-                .GroupBy(r => r.ScheduledForLocal.Date)
+                .GroupBy(r => r.ScheduledFor.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
             var model = new AdminDashboardViewModel
@@ -65,9 +65,12 @@ namespace FastQ.Web.Services
                     })
                     .ToList(),
                 CalendarDays = BuildCalendarDays(monthStart, selected, counts),
+                MonthAppointments = rows
+                    .OrderBy(r => r.ScheduledFor)
+                    .ToList(),
                 SelectedDayAppointments = rows
-                    .Where(r => r.ScheduledForLocal.Date == selected)
-                    .OrderBy(r => r.ScheduledForLocal)
+                    .Where(r => r.ScheduledFor.Date == selected)
+                    .OrderBy(r => r.ScheduledFor)
                     .ToList()
             };
 
@@ -86,10 +89,11 @@ namespace FastQ.Web.Services
             string customerName,
             string phone,
             string contactType,
-            DateTime scheduledForUtc,
+            DateTime scheduledFor,
             string languagePreference,
             string notes,
-            string meetingUrl)
+            string meetingUrl,
+            string stampUser)
         {
             return _customerService.CreateScheduled(
                 queueId,
@@ -103,11 +107,11 @@ namespace FastQ.Web.Services
                 customerName,
                 phone,
                 contactType,
-                scheduledForUtc,
+                scheduledFor,
                 languagePreference,
                 notes,
                 meetingUrl,
-                "web");
+                stampUser);
         }
 
         public Result<long> CreateWalkin(
@@ -124,7 +128,8 @@ namespace FastQ.Web.Services
             string contactType,
             string languagePreference,
             string meetingUrl,
-            string notes)
+            string notes,
+            string stampUser)
         {
             return _customerService.CreateWalkin(
                 queueId,
@@ -141,7 +146,7 @@ namespace FastQ.Web.Services
                 languagePreference,
                 meetingUrl,
                 notes,
-                "web");
+                stampUser);
         }
 
         private static IList<AdminCalendarDay> BuildCalendarDays(DateTime monthStart, DateTime selectedDate, IDictionary<DateTime, int> counts)
@@ -182,13 +187,14 @@ namespace FastQ.Web.Services
                 StatusText = row.StatusText,
                 Status = row.Status,
                 ContactMethod = row.ContactMethod,
+                LanguagePreference = row.LanguagePreference,
                 RefValue = row.RefValue,
                 StampUser = row.StampUser,
                 EntryKind = entryKind,
-                ScheduledForUtc = row.ScheduledForUtc,
-                ScheduledForLocal = row.ScheduledForUtc.Kind == DateTimeKind.Utc ? row.ScheduledForUtc.ToLocalTime() : row.ScheduledForUtc,
+                ScheduledFor = row.ScheduledFor,
                 Notes = string.IsNullOrWhiteSpace(row.Notes) ? "Use Info to add meeting details or notes." : row.Notes,
-                MeetingUrl = row.MeetingUrl
+                MeetingUrl = row.MeetingUrl,
+                MeetingUrlHost = row.MeetingUrlHost
             };
         }
     }

@@ -141,8 +141,6 @@ AS
 BEGIN
  OPEN p_cur FOR
     SELECT q.queue_id, q.name, vs.service_id, vs.service_name,
-        p.role_id, r.role_desc,
-        u.fname, u.lname,
         a.*, c.sms_optin
         , fq_crypto_pkg.decrypt(c.fname) cust_fname, fq_crypto_pkg.decrypt(c.lname) cust_lname
         , fq_crypto_pkg.decrypt(c.email) cust_email, fq_crypto_pkg.decrypt(c.phone) cust_phone
@@ -150,14 +148,8 @@ BEGIN
         INNER JOIN walkins a ON q.queue_id = a.queue_id
         INNER join validqueue_services vs ON
             vs.queue_id = a.queue_id and vs.service_id = a.service_id
-        INNER JOIN user_permissions p ON q.queue_id = p.queue_id
-        INNER JOIN validroles r ON r.role_id = p.role_id
-        INNER JOIN fq_users u ON u.user_id = p.user_id
         INNER JOIN customers c on c.customer_id = a.customer_id
-    WHERE
-            NVL(q.activeflag,'N') = 'Y'
-            AND u.user_id = p_userid AND NVL(u.activeflag,'N') = 'Y'
-            AND trunc(createdon) BETWEEN trunc(p_range_startdate) AND trunc(p_range_enddate);
+    WHERE trunc(createdon) BETWEEN trunc(p_range_startdate) AND trunc(p_range_enddate);
 END;
 
 PROCEDURE GET_MYAPPOINTMENTS (
@@ -170,7 +162,6 @@ AS
 BEGIN
  OPEN p_cur FOR
     SELECT q.queue_id, q.name, vs.service_id, vs.service_name,
-        p.role_id, r.role_desc, u.fname, u.lname,
         a.*, c.sms_optin
         , fq_crypto_pkg.decrypt(c.fname) cust_fname, fq_crypto_pkg.decrypt(c.lname) cust_lname
         , fq_crypto_pkg.decrypt(c.email) cust_email, fq_crypto_pkg.decrypt(c.phone) cust_phone
@@ -178,12 +169,8 @@ BEGIN
         INNER JOIN appointments a ON q.queue_id = a.queue_id
         INNER join validqueue_services vs ON
             vs.queue_id = a.queue_id and vs.service_id = a.service_id
-        INNER JOIN user_permissions p ON q.queue_id = p.queue_id
-        INNER JOIN validroles r ON r.role_id = p.role_id
-        INNER JOIN fq_users u ON u.user_id = p.user_id
         INNER JOIN customers c on c.customer_id = a.customer_id
-    WHERE NVL(q.activeflag,'N') = 'Y'
-        AND u.user_id = p_userid AND NVL(u.activeflag,'N') = 'Y'
+    WHERE 1 = 1
         AND trunc(appt_date) BETWEEN trunc(p_range_startdate) AND trunc(p_range_enddate);
 END;
 
