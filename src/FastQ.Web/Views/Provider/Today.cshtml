@@ -108,6 +108,26 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            padding: 0;
+            border: 0;
+            background: none;
+            text-align: left;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .cell-ellipsis:hover,
+        .cell-ellipsis:focus-visible {
+            text-decoration: underline;
+            outline: none;
+        }
+
+        .cell-ellipsis.is-expanded {
+            max-width: none;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            word-break: break-word;
         }
 
         .date-nav {
@@ -685,11 +705,11 @@
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
-                                <td><span class="cell-ellipsis" title="@row.QueueName">@row.QueueName</span></td>
-                                <td><span class="cell-ellipsis" title="@row.ServiceType">@row.ServiceType</span></td>
+                                <td><button type="button" class="cell-ellipsis" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
+                                <td><button type="button" class="cell-ellipsis" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
-                                <td><span class="cell-ellipsis" title="@row.RefValue">@row.RefValue</span></td>
+                                <td><button type="button" class="cell-ellipsis" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
@@ -825,11 +845,11 @@
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
-                                <td><span class="cell-ellipsis" title="@row.QueueName">@row.QueueName</span></td>
-                                <td><span class="cell-ellipsis" title="@row.ServiceType">@row.ServiceType</span></td>
+                                <td><button type="button" class="cell-ellipsis" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
+                                <td><button type="button" class="cell-ellipsis" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
-                                <td><span class="cell-ellipsis" title="@row.RefValue">@row.RefValue</span></td>
+                                <td><button type="button" class="cell-ellipsis" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
@@ -3710,6 +3730,23 @@
       });
     }
 
+    function bindExpandableEllipsis() {
+      document.querySelectorAll(".cell-ellipsis").forEach(function (toggle) {
+        if (toggle.getAttribute("data-bound-ellipsis") === "1") {
+          return;
+        }
+
+        toggle.setAttribute("data-bound-ellipsis", "1");
+        toggle.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          var isExpanded = toggle.classList.toggle("is-expanded");
+          toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+        });
+      });
+    }
+
     var saveMeeting = document.getElementById("saveMeeting");
     if (saveMeeting) {
       saveMeeting.addEventListener("click", function () {
@@ -4274,6 +4311,7 @@
     bindTodaySorting();
     bindProviderActionButtons();
     bindMeetingLinks();
+    bindExpandableEllipsis();
     renderNotifications();
 
     var todayGlobalSearch = document.getElementById("todayGlobalSearch");

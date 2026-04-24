@@ -780,8 +780,13 @@ BEGIN
         STATUS, CONFCODE, MEETINGURL_HOST, LANGUAGE_PREF, 
         CREATEDBY, CREATEDON, STAMPUSER, STAMPDATE
     )
-    SELECT APPTSEQ.NEXTVAL, FQ_CRYPTO_PKG.DECRYPT(p_customerid), J.*,
-          'WEBAPP', sysdate, 'WEBAPP', sysdate
+    SELECT APPTSEQ.NEXTVAL, FQ_CRYPTO_PKG.DECRYPT(p_customerid),
+           J.REF_CRITERIA, J.REF_VALUE,
+           J.QUEUE_ID, J.SERVICE_ID,
+           J.CONTACTTYPE, J.MOREINFO,
+           J.APPT_DATE, J.START_TIME, J.END_TIME,
+           J.STATUS, J.CONFCODE, J.MEETINGURL_HOST, J.LANGUAGE_PREF,
+           NVL(J.CREATEDBY, 'WEBAPP'), sysdate, NVL(J.STAMPUSER, 'WEBAPP'), sysdate
     FROM JSON_TABLE(
         p_json,
         '$[*]' COLUMNS (            
@@ -797,7 +802,9 @@ BEGIN
             STATUS PATH '$.STATUS',
             CONFCODE PATH '$.CONFCODE',
             MEETINGURL_HOST PATH '$.MEETINGURL',
-            LANGUAGE_PREF PATH '$.LANGUAGE_PREF'
+            LANGUAGE_PREF PATH '$.LANGUAGE_PREF',
+            CREATEDBY PATH '$.CREATEDBY',
+            STAMPUSER PATH '$.STAMPUSER'
         )
     ) J;
 

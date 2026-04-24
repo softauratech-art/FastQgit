@@ -49,19 +49,19 @@ namespace FastQ.Web.Services
             switch (appointment.Status)
             {
                 case AppointmentStatus.Scheduled:
-                    return $"New booking created ({shortId}{customerContext}).";
+                    return $"New Booking Created ({shortId}{customerContext}).";
                 case AppointmentStatus.Arrived:
-                    return $"Customer arrived ({shortId}{customerContext}).";
+                    return $"Customer Arrived ({shortId}{customerContext}).";
                 case AppointmentStatus.InService:
-                    return $"Service started ({shortId}{customerContext}).";
+                    return $"Service Started ({shortId}{customerContext}).";
                 case AppointmentStatus.Completed:
-                    return $"Service completed ({shortId}{customerContext}).";
+                    return $"Service Completed ({shortId}{customerContext}).";
                 case AppointmentStatus.Cancelled:
-                    return $"Appointment cancelled ({shortId}{customerContext}).";
+                    return $"Appointment Cancelled ({shortId}{customerContext}).";
                 case AppointmentStatus.ClosedBySystem:
-                    return $"Appointment closed by system ({shortId}{customerContext}).";
+                    return $"Appointment Closed By System ({shortId}{customerContext}).";
                 case AppointmentStatus.TransferredOut:
-                    return $"Appointment transferred ({shortId}{customerContext}).";
+                    return $"Appointment Transferred ({shortId}{customerContext}).";
                 default:
                     return null;
             }
@@ -74,26 +74,27 @@ namespace FastQ.Web.Services
                 (appointment.CustomerFirstName ?? string.Empty).Trim(),
                 (appointment.CustomerLastName ?? string.Empty).Trim()
             }).Trim();
+            var compactName = new string(fullName.Where(char.IsLetterOrDigit).ToArray());
 
             var digits = new string((appointment.CustomerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
             var phoneLast4 = digits.Length >= 4 ? digits.Substring(digits.Length - 4) : string.Empty;
 
-            if (string.IsNullOrWhiteSpace(fullName) && string.IsNullOrWhiteSpace(phoneLast4))
+            if (string.IsNullOrWhiteSpace(compactName) && string.IsNullOrWhiteSpace(phoneLast4))
             {
                 return string.Empty;
             }
 
-            if (string.IsNullOrWhiteSpace(fullName))
+            if (string.IsNullOrWhiteSpace(compactName))
             {
-                return $" / {phoneLast4}";
+                return "-" + phoneLast4;
             }
 
             if (string.IsNullOrWhiteSpace(phoneLast4))
             {
-                return $" / {fullName}";
+                return "-" + compactName;
             }
 
-            return $" / {fullName}/{phoneLast4}";
+            return "-" + compactName + "/" + phoneLast4;
         }
     }
 }

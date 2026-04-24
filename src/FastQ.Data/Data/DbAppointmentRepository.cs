@@ -722,6 +722,12 @@ namespace FastQ.Data.Db
                     ["END_TIME"] = OracleInterval(appointment.EndTime),
                     ["STATUS"] = appointment.Status.ToString().ToUpperInvariant(),
                     ["LANGUAGE_PREF"] = appointment.LanguagePreference,
+                    ["CREATEDBY"] = string.IsNullOrWhiteSpace(appointment.CreatedBy)
+                        ? JValue.CreateNull()
+                        : (JToken)new JValue(appointment.CreatedBy.Trim()),
+                    ["STAMPUSER"] = string.IsNullOrWhiteSpace(appointment.StampUser)
+                        ? JValue.CreateNull()
+                        : (JToken)new JValue(appointment.StampUser.Trim()),
                     ["FNAME"] = firstName,
                     ["LNAME"] = lastName,
                     ["EMAIL"] = customerEmail,
