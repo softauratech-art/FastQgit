@@ -287,6 +287,7 @@ namespace FastQ.Web.Services
             if (appt == null)
                 return Result.SuccessWithWarning("Cancellation email was not sent: appointment not found.");
 
+            PopulateAppointmentCustomerFields(appt);
             var queue = _queues.Get(appt.QueueId);
             var emailWarning = SendAppointmentCancellationEmail(appt, queue);
 
@@ -930,6 +931,7 @@ namespace FastQ.Web.Services
                 if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(fromEmail) || appointment == null)
                     return "Cancellation email was not sent: mail host/from configuration is missing.";
 
+                PopulateAppointmentCustomerFields(appointment);
                 var toEmail = (appointment.CustomerEmail ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(toEmail))
                     return "Cancellation email was not sent: customer email is missing.";
@@ -976,6 +978,32 @@ namespace FastQ.Web.Services
                 LogNotificationError("cancellation email", appointment?.Id ?? 0, ex.ToString());
                 return "Cancellation email failed: " + ex.Message;
             }
+        }
+
+        private void PopulateAppointmentCustomerFields(Appointment appointment)
+        {
+            if (appointment == null || appointment.CustomerId <= 0)
+                return;
+
+            var needsEmail = string.IsNullOrWhiteSpace(appointment.CustomerEmail);
+            var needsFirstName = string.IsNullOrWhiteSpace(appointment.CustomerFirstName);
+            var needsLastName = string.IsNullOrWhiteSpace(appointment.CustomerLastName);
+            var needsPhone = string.IsNullOrWhiteSpace(appointment.CustomerPhone);
+            if (!needsEmail && !needsFirstName && !needsLastName && !needsPhone)
+                return;
+
+            var customer = _customers.Get(appointment.CustomerId);
+            if (customer == null)
+                return;
+
+            if (needsEmail)
+                appointment.CustomerEmail = customer.Email ?? string.Empty;
+            if (needsFirstName)
+                appointment.CustomerFirstName = customer.FirstName ?? string.Empty;
+            if (needsLastName)
+                appointment.CustomerLastName = customer.LastName ?? string.Empty;
+            if (needsPhone)
+                appointment.CustomerPhone = customer.Phone ?? string.Empty;
         }
 
         private static void LogNotificationError(string channel, long appointmentId, string message)
