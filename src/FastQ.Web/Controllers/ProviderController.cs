@@ -269,14 +269,38 @@ namespace FastQ.Web.Controllers
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
+            var warningMessages = new List<string>();
+            if (!string.IsNullOrWhiteSpace(res.Warning))
+                warningMessages.Add(res.Warning);
+
+            if (action == "remove" && normalizedSrc == "A")
+            {
+                var emailRes = _customerService.SendCancellationEmail(apptId);
+                if (!emailRes.Ok)
+                    return Json(new { ok = false, error = emailRes.Error });
+                if (!string.IsNullOrWhiteSpace(emailRes.Warning))
+                    warningMessages.Add(emailRes.Warning);
+            }
+
             if (action == "remove" && !string.IsNullOrWhiteSpace(notes))
             {
                 var saveRes = _service.SaveServiceInfo(apptId, normalizedSrc[0], null, null, notes, resolvedUserId);
                 if (!saveRes.Ok)
-                    return Json(new { ok = true, warning = saveRes.Error });
+                    warningMessages.Add(saveRes.Error);
+                else if (!string.IsNullOrWhiteSpace(saveRes.Warning))
+                    warningMessages.Add(saveRes.Warning);
             }
 
-            return Json(new { ok = true });
+            var warningText = warningMessages
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct()
+                .ToList();
+
+            return Json(new
+            {
+                ok = true,
+                warning = warningText.Count > 0 ? string.Join(" ", warningText) : null
+            });
         }
 
         [HttpPost]

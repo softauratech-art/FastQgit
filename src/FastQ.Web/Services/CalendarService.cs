@@ -183,6 +183,7 @@ namespace FastQ.Web.Services
                 QueueName = row.QueueName,
                 ServiceType = row.ServiceType,
                 CustomerName = row.CustomerName,
+                CustomerEmail = row.CustomerEmail,
                 Phone = row.Phone,
                 StatusText = row.StatusText,
                 Status = row.Status,

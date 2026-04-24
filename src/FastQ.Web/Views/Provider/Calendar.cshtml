@@ -388,16 +388,46 @@
             line-height: 1.35;
         }
 
+        .expandable-text {
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            text-align: left;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .expandable-text.is-collapsed {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .agenda-notes.expandable-text.is-collapsed {
+            display: -webkit-box;
+            white-space: normal;
+            text-overflow: clip;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .expandable-text:hover,
+        .expandable-text:focus-visible {
+            text-decoration: underline;
+            outline: none;
+        }
+
         .agenda-notes {
             margin-top: 6px;
             padding-top: 6px;
             border-top: 1px dashed #cbd5e1;
             font-size: 12px;
             color: #334155;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            line-height: 1.45;
+            word-break: break-word;
         }
 
         .agenda-actions {
@@ -973,14 +1003,14 @@
                                  data-src-type="@item.SrcType">
                                 <div class="agenda-time">@item.StartTimeText</div>
                                 <div class="agenda-entry-label @entryKindClass">@item.EntryKind</div>
-                                <div class="agenda-title">@item.CustomerName</div>
-                                <div class="agenda-detail">@item.QueueName</div>
+                                <button type="button" class="agenda-title expandable-text is-collapsed" aria-expanded="false" title="@item.CustomerName">@item.CustomerName</button>
+                                <button type="button" class="agenda-detail expandable-text is-collapsed" aria-expanded="false" title="@item.QueueName">@item.QueueName</button>
                                 <div class="agenda-detail">@item.ContactMethod | @item.StatusText | @item.Phone</div>
                                 @if (!string.IsNullOrWhiteSpace(item.MeetingUrl))
                                 {
                                     <div class="agenda-detail"><a href="@item.MeetingUrl" target="_blank" rel="noopener">Open meeting link</a></div>
                                 }
-                                <div class="agenda-notes">@item.Notes</div>
+                                <button type="button" class="agenda-notes expandable-text is-collapsed" aria-expanded="false" title="@item.Notes">@item.Notes</button>
                                 <div class="agenda-actions">
                                     <div class="agenda-actions-main">
                                         <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Check-In</button>
@@ -994,6 +1024,7 @@
                                                 data-time="@item.StartTimeText"
                                                 data-title="@item.ServiceType"
                                                 data-customer="@item.CustomerName"
+                                                data-email="@item.CustomerEmail"
                                                 data-phone="@item.Phone"
                                                 data-queue-name="@item.QueueName"
                                                 data-service-name="@item.ServiceType"
@@ -1041,7 +1072,11 @@
                 Meeting Time: <span id="meetingTime"></span><br />
                 Title: <span id="meetingTitle"></span><br />
             </p>
-            <p>Customer Info:<br /><span id="meetingCustomer"></span> | <span id="meetingPhone"></span></p>
+            <p>
+                Customer Info:<br />
+                <span id="meetingCustomer"></span> | <span id="meetingPhone"></span><br />
+                Email: <span id="meetingEmail"></span>
+            </p>
             <p>
                 Queue: <span id="meetingQueue"></span><br />
                 Service: <span id="meetingService"></span><br />
@@ -1060,10 +1095,14 @@
                 <input id="mURL" type="text" value="" />
             </div>
             <div class="field-row">
-                <div>Notes:</div>
+                <div>Previous Notes:</div>
+                <div id="mPreviousNotes" class="route-input" style="min-height:44px; background:#f8fafc; white-space:pre-wrap; word-break:break-word;">-</div>
+            </div>
+            <div class="field-row">
+                <div>Add Notes:</div>
                 <textarea id="mNotes" rows="3"></textarea>
             </div>
-            <div class="helper-text">Guest URL, host URL, and notes are saved. New notes are appended to the existing notes.</div>
+            <div class="helper-text">Guest URL, host URL, and notes are saved. Text entered in Add Notes is appended to Previous Notes.</div>
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
@@ -2981,7 +3020,7 @@
 
             function canAction(status, actionName, queueId, rowDate) {
                 var todayIso = getLocalTodayIsoDate();
-                if ((rowDate || "") !== todayIso) {
+                if ((rowDate || "") < todayIso) {
                     return false;
                 }
                 if (!hasQueuePermission(actionName, queueId)) {
@@ -3122,6 +3161,23 @@
                 applyAgendaFilter("both");
             }
 
+            function bindExpandableText() {
+                document.querySelectorAll(".expandable-text").forEach(function (toggle) {
+                    if (toggle.getAttribute("data-bound-expandable") === "1") {
+                        return;
+                    }
+
+                    toggle.setAttribute("data-bound-expandable", "1");
+                    toggle.addEventListener("click", function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        var isCollapsed = toggle.classList.toggle("is-collapsed");
+                        toggle.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+                    });
+                });
+            }
+
             function bindMeetingLinks() {
                 document.querySelectorAll(".meeting-link").forEach(function (link) {
                     if (link.getAttribute("data-bound-meeting-link") === "1") {
@@ -3140,6 +3196,7 @@
                         var meetingTime = document.getElementById("meetingTime");
                         var meetingTitle = document.getElementById("meetingTitle");
                         var meetingCustomer = document.getElementById("meetingCustomer");
+                        var meetingEmail = document.getElementById("meetingEmail");
                         var meetingPhone = document.getElementById("meetingPhone");
                         var meetingQueue = document.getElementById("meetingQueue");
                         var meetingService = document.getElementById("meetingService");
@@ -3150,6 +3207,7 @@
                         var meetingStampUser = document.getElementById("meetingStampUser");
                         var guestUrlInput = document.getElementById("mGuestURL");
                         var urlInput = document.getElementById("mURL");
+                        var previousNotes = document.getElementById("mPreviousNotes");
                         var notesInput = document.getElementById("mNotes");
 
                         if (mid) {
@@ -3161,6 +3219,7 @@
                         if (meetingTime) meetingTime.textContent = link.getAttribute("data-time") || "";
                         if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
                         if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
+                        if (meetingEmail) meetingEmail.textContent = link.getAttribute("data-email") || "";
                         if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
                         if (meetingQueue) meetingQueue.textContent = link.getAttribute("data-queue-name") || "";
                         if (meetingService) meetingService.textContent = link.getAttribute("data-service-name") || "";
@@ -3171,7 +3230,8 @@
                         if (meetingStampUser) meetingStampUser.textContent = link.getAttribute("data-stamp-user") || "";
                         if (guestUrlInput) guestUrlInput.value = link.getAttribute("data-meeting-url") || "";
                         if (urlInput) urlInput.value = link.getAttribute("data-meeting-url-host") || "";
-                        if (notesInput) notesInput.value = link.getAttribute("data-notes") || "";
+                        if (previousNotes) previousNotes.textContent = link.getAttribute("data-notes") || "-";
+                        if (notesInput) notesInput.value = "";
                         if (mid) mid.setAttribute("data-original-notes", link.getAttribute("data-notes") || "");
                         clearModalFeedback("meetingModal");
 
@@ -3867,6 +3927,7 @@
             bindProviderActionButtons();
             bindMeetingLinks();
             bindAgendaFilterSwitch();
+            bindExpandableText();
 
             if (reopenOnError) {
                 openModal("addAppointmentModal");

@@ -13,6 +13,7 @@ namespace FastQ.Web.Models
         public string QueueName { get; set; }
         public string ServiceType { get; set; }
         public string CustomerName { get; set; }
+        public string CustomerEmail { get; set; }
         public string Phone { get; set; }
         public string StatusText { get; set; }
         public AppointmentStatus Status { get; set; }

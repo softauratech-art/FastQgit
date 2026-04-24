@@ -373,6 +373,7 @@ namespace FastQ.Data.Db
                             QueueName = ReadField(reader, "NAME"),
                             ServiceName = ReadField(reader, "SERVICE_NAME"),
                             CustomerName = fullName,
+                            CustomerEmail = ReadField(reader, "EMAIL"),
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
                             ContactType = ReadField(reader, "CONTACTTYPE"),
                             RefValue = ReadField(reader, "REF_VALUE"),

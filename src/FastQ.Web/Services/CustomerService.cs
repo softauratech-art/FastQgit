@@ -281,6 +281,20 @@ namespace FastQ.Web.Services
                 : Result.SuccessWithWarning(emailWarning);
         }
 
+        public Result SendCancellationEmail(long appointmentId)
+        {
+            var appt = _appts.Get(appointmentId);
+            if (appt == null)
+                return Result.SuccessWithWarning("Cancellation email was not sent: appointment not found.");
+
+            var queue = _queues.Get(appt.QueueId);
+            var emailWarning = SendAppointmentCancellationEmail(appt, queue);
+
+            return string.IsNullOrWhiteSpace(emailWarning)
+                ? Result.Success()
+                : Result.SuccessWithWarning(emailWarning);
+        }
+
         public AppointmentSnapshotDto GetAppointmentSnapshot(long appointmentId)
         {
             var appt = _appts.Get(appointmentId);

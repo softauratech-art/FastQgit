@@ -744,6 +744,7 @@
                                                     data-time="@row.StartTimeText"
                                                     data-title="@row.ServiceType"
                                                     data-customer="@row.CustomerName"
+                                                    data-email="@row.CustomerEmail"
                                                     data-phone="@row.Phone"
                                                     data-queue-name="@row.QueueName"
                                                     data-service-name="@row.ServiceType"
@@ -884,6 +885,7 @@
                                                     data-time="@row.StartTimeText"
                                                     data-title="@row.ServiceType"
                                                     data-customer="@row.CustomerName"
+                                                    data-email="@row.CustomerEmail"
                                                     data-phone="@row.Phone"
                                                     data-queue-name="@row.QueueName"
                                                     data-service-name="@row.ServiceType"
@@ -933,7 +935,11 @@
                 Meeting Time: <span id="meetingTime"></span><br />
                 Title: <span id="meetingTitle"></span><br />
             </p>
-            <p>Customer Info:<br /><span id="meetingCustomer"></span> | <span id="meetingPhone"></span></p>
+            <p>
+                Customer Info:<br />
+                <span id="meetingCustomer"></span> | <span id="meetingPhone"></span><br />
+                Email: <span id="meetingEmail"></span>
+            </p>
             <p>
                 Queue: <span id="meetingQueue"></span><br />
                 Service: <span id="meetingService"></span><br />
@@ -952,10 +958,14 @@
                 <input id="mURL" type="text" value="" />
             </div>
             <div class="field-row">
-                <div>Notes:</div>
+                <div>Previous Notes:</div>
+                <div id="mPreviousNotes" class="route-input" style="min-height:44px; background:#f8fafc; white-space:pre-wrap; word-break:break-word;">-</div>
+            </div>
+            <div class="field-row">
+                <div>Add Notes:</div>
                 <textarea id="mNotes" rows="3"></textarea>
             </div>
-            <div class="helper-text">Guest URL, host URL, and notes are saved. New notes are appended to the existing notes.</div>
+            <div class="helper-text">Guest URL, host URL, and notes are saved. Text entered in Add Notes is appended to Previous Notes.</div>
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
@@ -3079,7 +3089,7 @@
 
     function canAction(status, actionName, queueId, rowDate) {
       var todayIso = getLocalTodayIsoDate();
-      if ((rowDate || "") !== todayIso) {
+      if ((rowDate || "") < todayIso) {
         return false;
       }
       if (!hasQueuePermission(actionName, queueId)) {
@@ -3690,6 +3700,7 @@
           var meetingTime = document.getElementById("meetingTime");
           var meetingTitle = document.getElementById("meetingTitle");
           var meetingCustomer = document.getElementById("meetingCustomer");
+          var meetingEmail = document.getElementById("meetingEmail");
           var meetingPhone = document.getElementById("meetingPhone");
           var meetingQueue = document.getElementById("meetingQueue");
           var meetingService = document.getElementById("meetingService");
@@ -3700,6 +3711,7 @@
           var meetingStampUser = document.getElementById("meetingStampUser");
           var guestUrlInput = document.getElementById("mGuestURL");
           var urlInput = document.getElementById("mURL");
+          var previousNotes = document.getElementById("mPreviousNotes");
           var notesInput = document.getElementById("mNotes");
 
           if (mid) {
@@ -3711,6 +3723,7 @@
           if (meetingTime) meetingTime.textContent = link.getAttribute("data-time") || "";
           if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
           if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
+          if (meetingEmail) meetingEmail.textContent = link.getAttribute("data-email") || "";
           if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
           if (meetingQueue) meetingQueue.textContent = link.getAttribute("data-queue-name") || "";
           if (meetingService) meetingService.textContent = link.getAttribute("data-service-name") || "";
@@ -3721,7 +3734,8 @@
           if (meetingStampUser) meetingStampUser.textContent = link.getAttribute("data-stamp-user") || "";
           if (guestUrlInput) guestUrlInput.value = link.getAttribute("data-meeting-url") || "";
           if (urlInput) urlInput.value = link.getAttribute("data-meeting-url-host") || "";
-          if (notesInput) notesInput.value = link.getAttribute("data-notes") || "";
+          if (previousNotes) previousNotes.textContent = link.getAttribute("data-notes") || "-";
+          if (notesInput) notesInput.value = "";
           if (mid) mid.setAttribute("data-original-notes", link.getAttribute("data-notes") || "");
           clearModalFeedback("meetingModal");
 
