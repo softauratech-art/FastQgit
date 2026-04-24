@@ -167,46 +167,16 @@ namespace FastQ.Web.Services
             return access;
         }
 
-        public bool CanCheckIn(long queueId)
+        public bool CanAccessQueueActions(long queueId)
         {
             var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
-        }
-
-        public bool CanTransfer(long queueId)
-        {
-            var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
-        }
-
-        public bool CanCancel(long queueId)
-        {
-            var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
-        }
-
-        public bool CanUpdateInfo(long queueId)
-        {
-            var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
+            return HasQueueActionAccess(access, queueId);
         }
 
         public bool CanAddEntries(long queueId)
         {
             var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.CanAddEntries;
-        }
-
-        public bool CanStartService(long queueId)
-        {
-            var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
-        }
-
-        public bool CanEndService(long queueId)
-        {
-            var access = GetServicePageAccess();
-            return access.IsAdmin || access.QueueAdminQueueIds.Contains(queueId) || access.ProviderQueueIds.Contains(queueId);
+            return HasQueueActionAccess(access, queueId) || access.CanAddEntries;
         }
 
         private User GetCurrentUser()
@@ -218,6 +188,18 @@ namespace FastQ.Web.Services
             }
 
             return null;
+        }
+
+        private static bool HasQueueActionAccess(ServicePageAccess access, long queueId)
+        {
+            if (access == null)
+            {
+                return false;
+            }
+
+            return access.IsAdmin
+                   || access.QueueAdminQueueIds.Contains(queueId)
+                   || access.ProviderQueueIds.Contains(queueId);
         }
     }
 }

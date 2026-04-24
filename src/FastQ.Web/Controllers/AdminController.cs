@@ -86,7 +86,6 @@ namespace FastQ.Web.Controllers
         //        return Json(new { ok = false, error = "Queue not found" });
 
         //    if (queue.Config == null)
-        //        queue.Config = new QueueConfig();
 
         //    queue.Config.MaxUpcomingAppointments = maxUpcomingInt;
         //    queue.Config.MaxDaysAhead = maxDaysAheadInt;

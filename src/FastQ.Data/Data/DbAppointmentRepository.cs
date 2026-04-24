@@ -499,6 +499,10 @@ namespace FastQ.Data.Db
             {
                 Id = apptId,
                 CustomerId = customerId,
+                CustomerEmail = ReadField(record, "EMAIL"),
+                CustomerFirstName = ReadField(record, "FNAME"),
+                CustomerLastName = ReadField(record, "LNAME"),
+                CustomerPhone = ReadField(record, "PHONE"),
                 QueueId = queueId,
                 EntityId = entityId,
                 ServiceId = serviceId,

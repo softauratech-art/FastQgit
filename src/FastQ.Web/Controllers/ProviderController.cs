@@ -576,12 +576,12 @@ namespace FastQ.Web.Controllers
             var normalizedAction = (action ?? string.Empty).Trim().ToLowerInvariant();
             var allowed = normalizedAction switch
             {
-                "arrive" => _auth.CanCheckIn(queueId.Value),
-                "transfer" => _auth.CanTransfer(queueId.Value),
-                "remove" => _auth.CanCancel(queueId.Value),
-                "info" => _auth.CanUpdateInfo(queueId.Value),
-                "begin" => _auth.CanStartService(queueId.Value),
-                "end" => _auth.CanEndService(queueId.Value),
+                "arrive" => _auth.CanAccessQueueActions(queueId.Value),
+                "transfer" => _auth.CanAccessQueueActions(queueId.Value),
+                "remove" => _auth.CanAccessQueueActions(queueId.Value),
+                "info" => _auth.CanAccessQueueActions(queueId.Value),
+                "begin" => _auth.CanAccessQueueActions(queueId.Value),
+                "end" => _auth.CanAccessQueueActions(queueId.Value),
                 _ => false
             };
 

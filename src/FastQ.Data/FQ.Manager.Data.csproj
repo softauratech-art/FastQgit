@@ -143,7 +143,6 @@
     <Compile Include="Entities\QService.cs" />
     <Compile Include="Entities\QueueOpenSlot.cs" />
     <Compile Include="Entities\Queue.cs" />
-    <Compile Include="Entities\QueueConfig.cs" />
     <Compile Include="Entities\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\IAppointmentRepository.cs" />

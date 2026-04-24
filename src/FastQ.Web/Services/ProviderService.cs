@@ -307,6 +307,38 @@ namespace FastQ.Web.Services
             return "https://" + trimmed.TrimStart('/');
         }
 
+        private void PopulateCustomerNotificationFields(Appointment appointment)
+        {
+            if (appointment == null || appointment.CustomerId <= 0)
+            {
+                return;
+            }
+
+            var needsName = string.IsNullOrWhiteSpace(appointment.CustomerFirstName) && string.IsNullOrWhiteSpace(appointment.CustomerLastName);
+            var needsPhone = string.IsNullOrWhiteSpace(appointment.CustomerPhone);
+            if (!needsName && !needsPhone)
+            {
+                return;
+            }
+
+            var customer = _customers.Get(appointment.CustomerId);
+            if (customer == null)
+            {
+                return;
+            }
+
+            if (needsName)
+            {
+                appointment.CustomerFirstName = customer.FirstName ?? string.Empty;
+                appointment.CustomerLastName = customer.LastName ?? string.Empty;
+            }
+
+            if (needsPhone)
+            {
+                appointment.CustomerPhone = customer.Phone ?? string.Empty;
+            }
+        }
+
         public long? GetSourceQueueId(char srcType, long sourceId)
         {
             return _appts.GetQueueIdForSource(srcType, sourceId);
@@ -525,6 +557,7 @@ namespace FastQ.Web.Services
                     : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
                 sourceAppt.UpdatedUtc = _clock.UtcNow;
                 sourceAppt.StampDateUtc = _clock.UtcNow;
+                PopulateCustomerNotificationFields(sourceAppt);
                 _rt.AppointmentChanged(sourceAppt);
                 _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
             }
@@ -577,6 +610,7 @@ namespace FastQ.Web.Services
                     appt.ProviderId = request.StampUser;
                     appt.UpdatedUtc = _clock.UtcNow;
                     appt.StampDateUtc = _clock.UtcNow;
+                    PopulateCustomerNotificationFields(appt);
                     _rt.AppointmentChanged(appt);
                     _rt.QueueChanged(appt.EntityId, appt.QueueId);
                 }
@@ -610,6 +644,7 @@ namespace FastQ.Web.Services
                 a.StampDateUtc = now;
                 _appts.Update(a);
 
+                PopulateCustomerNotificationFields(a);
                 _rt.AppointmentChanged(a);
                 _rt.QueueChanged(a.EntityId, a.QueueId);
             }
@@ -641,6 +676,7 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
+                PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
@@ -672,6 +708,7 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
+                PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
@@ -704,6 +741,7 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
+                PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
@@ -735,6 +773,7 @@ namespace FastQ.Web.Services
                 appt.UpdatedUtc = now;
                 appt.StampDateUtc = now;
 
+                PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }

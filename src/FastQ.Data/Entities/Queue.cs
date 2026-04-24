@@ -23,7 +23,6 @@ namespace FastQ.Data.Entities
         public string[] RefCriterias { get; set; }
         public string[] ContactMethods { get; set; }
 
-        public QueueConfig Config { get; set; } = new QueueConfig();
         public IList<QService> Services { get; set; }
         public IList<QSchedule> Schedules { get; set; }
     }

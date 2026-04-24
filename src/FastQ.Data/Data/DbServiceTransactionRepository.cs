@@ -44,8 +44,8 @@ namespace FastQ.Data.Db
         private static void UpdateSourceEndTime(System.Data.Common.DbConnection conn, char srcType, long srcId, TimeSpan endTimeLocal)
         {
             var upperSrc = char.ToUpperInvariant(srcType);
-            var targetTable = upperSrc == 'W' ? "SIGNINS" : "APPOINTMENTS";
-            var idColumn = upperSrc == 'W' ? "SIGNIN_ID" : "APPOINTMENT_ID";
+            var targetTable = upperSrc == 'W' ? "WALKINS" : "APPOINTMENTS";
+            var idColumn = upperSrc == 'W' ? "WALKIN_ID" : "APPOINTMENT_ID";
 
             using (var cmd = DataAccess.CreateCommand(conn, $"UPDATE {targetTable} SET END_TIME = TO_DSINTERVAL(:p_end_time) WHERE {idColumn} = :p_src_id"))
             {

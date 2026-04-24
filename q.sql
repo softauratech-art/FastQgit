@@ -1118,8 +1118,14 @@ PROCEDURE GET_APPT_DETAILS (
 AS
 BEGIN
  OPEN p_ref_cursor FOR
-    SELECT FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id), A.* 
+    SELECT FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id),
+           A.*,
+           FQ_CRYPTO_PKG.DECRYPT(C.FNAME) AS FNAME,
+           FQ_CRYPTO_PKG.DECRYPT(C.LNAME) AS LNAME,
+           FQ_CRYPTO_PKG.DECRYPT(C.EMAIL) AS EMAIL,
+           FQ_CRYPTO_PKG.DECRYPT(C.PHONE) AS PHONE
     FROM APPOINTMENTS A
+    LEFT JOIN CUSTOMERS C ON C.CUSTOMER_ID = A.CUSTOMER_ID
     WHERE appointment_id = p_apptid;
     --TODO: Add additional conditions and Join-Tables
 END; 

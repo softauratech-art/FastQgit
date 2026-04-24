@@ -295,12 +295,22 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
         WHEN 'A' THEN
           UPDATE APPOINTMENTS
              SET STATUS    = v_status_new,
+                 END_TIME  = CASE
+                               WHEN UPPER(p_action) = 'END'
+                                 THEN NUMTODSINTERVAL(TO_NUMBER(TO_CHAR(SYSDATE, 'SSSSS')), 'SECOND')
+                               ELSE END_TIME
+                             END,
                  STAMPUSER = NVL(p_stampuser, STAMPUSER),
                  STAMPDATE = SYSDATE
            WHERE APPOINTMENT_ID = p_src_id;
         WHEN 'W' THEN
           UPDATE WALKINS
              SET STATUS    = v_status_new,
+                 END_TIME  = CASE
+                               WHEN UPPER(p_action) = 'END'
+                                 THEN NUMTODSINTERVAL(TO_NUMBER(TO_CHAR(SYSDATE, 'SSSSS')), 'SECOND')
+                               ELSE END_TIME
+                             END,
                  STAMPUSER = NVL(p_stampuser, STAMPUSER),
                  STAMPDATE = SYSDATE
            WHERE WALKIN_ID = p_src_id;

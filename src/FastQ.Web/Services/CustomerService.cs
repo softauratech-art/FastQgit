@@ -58,68 +58,6 @@ namespace FastQ.Web.Services
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
-        public Result<Appointment> BookFirstAvailable(long entityId, long queueId, string phone, string email, bool smsOptIn, string name = null)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-                return Result<Appointment>.Fail("Phone is required.");
-            var phoneValidation = ValidateAndNormalizePhone(phone);
-            if (!phoneValidation.Ok)
-                return Result<Appointment>.Fail(phoneValidation.Error);
-            if (string.IsNullOrWhiteSpace(email))
-                return Result<Appointment>.Fail("Email is required.");
-
-            var now = _clock.UtcNow;
-            var queue = _queues.Get(queueId);
-            if (queue == null) return Result<Appointment>.Fail("Queue not found.");
-
-            if (entityId <= 0)
-            {
-                entityId = queue.EntityId;
-            }
-
-            //var entity = _entities.Get(entityId);
-
-            if (queue.EntityId != entityId) return Result<Appointment>.Fail("Queue not found for this entity.");
-
-            var customer = GetOrCreateCustomer(name, email, phone, smsOptIn, "web", now);
-
-            var upcoming = _appts.ListByCustomer(customer.Id)
-                .Count(a => a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived || a.Status == AppointmentStatus.InService);
-
-            if (upcoming >= queue.Config.MaxUpcomingAppointments)
-                return Result<Appointment>.Fail($"Customer already has {upcoming} upcoming appointments (max {queue.Config.MaxUpcomingAppointments}).");
-
-            var earliest = now.AddHours(queue.Config.MinHoursLead);
-            var latest = now.AddDays(queue.Config.MaxDaysAhead);
-
-            var candidate = new DateTime(earliest.Year, earliest.Month, earliest.Day, earliest.Hour, 0, 0, DateTimeKind.Local);
-            if (candidate < earliest) candidate = candidate.AddHours(1);
-            if (candidate > latest) return Result<Appointment>.Fail($"No available slots within {queue.Config.MaxDaysAhead} days.");
-
-            var appt = new Appointment
-            {
-                Id = 0,
-                EntityId = entityId,
-                QueueId = queueId,
-                CustomerId = customer.Id,
-                ScheduledFor = candidate,
-                Status = AppointmentStatus.Scheduled,
-                CreatedBy = "web",
-                StampUser = "web",
-                CreatedOnUtc = now,
-                StampDateUtc = now,
-                CreatedUtc = now,
-                UpdatedUtc = now
-            };
-
-            _appts.Add(appt);
-
-            _rt.AppointmentChanged(appt);
-            _rt.QueueChanged(entityId, queueId);
-
-            return Result<Appointment>.Success(appt);
-        }
-
         public Result<Appointment> CreateScheduled(
             long queueId,
             string serviceId,
@@ -208,6 +146,22 @@ namespace FastQ.Web.Services
 
             _appts.Add(appt);
             var insertedAppt = _appts.Get(appt.Id) ?? appt;
+            if (string.IsNullOrWhiteSpace(insertedAppt.CustomerEmail))
+            {
+                insertedAppt.CustomerEmail = appt.CustomerEmail;
+            }
+            if (string.IsNullOrWhiteSpace(insertedAppt.CustomerFirstName))
+            {
+                insertedAppt.CustomerFirstName = appt.CustomerFirstName;
+            }
+            if (string.IsNullOrWhiteSpace(insertedAppt.CustomerLastName))
+            {
+                insertedAppt.CustomerLastName = appt.CustomerLastName;
+            }
+            if (string.IsNullOrWhiteSpace(insertedAppt.CustomerPhone))
+            {
+                insertedAppt.CustomerPhone = appt.CustomerPhone;
+            }
             var emailWarning = SendAppointmentConfirmation(insertedAppt, queue, customerName, parsedServiceId);
             _rt.AppointmentChanged(insertedAppt);
             _rt.QueueChanged(insertedAppt.EntityId, insertedAppt.QueueId);
