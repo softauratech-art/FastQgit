@@ -135,24 +135,10 @@ namespace FastQ.Web.Services
                 .Where(q => q.QueueActiveFlag && (currentEntityId <= 0 || q.EntityId == currentEntityId))
                 .ToList();
 
-            var hasActiveEntity = (user.BusinessEntities ?? new List<UserEntity>())
-                .Any(e => e.ActiveFlag && (currentEntityId <= 0 || e.EntityId == currentEntityId));
             var isSuperAdmin = (user.BusinessEntities ?? new List<UserEntity>())
                 .Any(e => e.ActiveFlag && e.ConfigAdminFlag && (currentEntityId <= 0 || e.EntityId == currentEntityId));
 
-            access.IsHost = hasActiveEntity && queuePermissions.Any(q => q.HostFlag);
-            access.IsProvider = hasActiveEntity && queuePermissions.Any(q => q.ProviderFlag);
-            access.IsReporter = hasActiveEntity && queuePermissions.Any(q => q.ReporterFlag);
-            access.IsQueueAdmin = hasActiveEntity && queuePermissions.Any(q => q.QueueAdminFlag);
             access.IsAdmin = isSuperAdmin;
-
-            access.CanCheckIn = access.IsHost || access.IsProvider || access.IsQueueAdmin || access.IsAdmin;
-            access.CanTransfer = access.CanCheckIn;
-            access.CanCancel = access.CanCheckIn;
-            access.CanUpdateInfo = access.CanCheckIn;
-            access.CanAddEntries = access.CanCheckIn;
-            access.CanViewReports = access.IsAdmin || access.IsReporter;
-            access.CanAccessAdmin = access.IsAdmin || access.IsQueueAdmin;
             access.ProviderQueueIds = actionQueuePermissions
                 .Where(q => q.ProviderFlag)
                 .Select(q => q.QueueId)
@@ -163,6 +149,9 @@ namespace FastQ.Web.Services
                 .Select(q => q.QueueId)
                 .Distinct()
                 .ToList();
+            access.CanAddEntries = access.IsAdmin
+                || access.ProviderQueueIds.Count > 0
+                || access.QueueAdminQueueIds.Count > 0;
 
             return access;
         }
@@ -176,7 +165,7 @@ namespace FastQ.Web.Services
         public bool CanAddEntries(long queueId)
         {
             var access = GetServicePageAccess();
-            return HasQueueActionAccess(access, queueId) || access.CanAddEntries;
+            return HasQueueActionAccess(access, queueId);
         }
 
         private User GetCurrentUser()

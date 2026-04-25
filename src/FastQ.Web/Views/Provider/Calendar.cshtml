@@ -5,6 +5,8 @@
 
 @{
     ViewBag.Title = "Calendar";
+    var requestedScope = ((Request["scope"] as string) ?? "monthly").Trim().ToLowerInvariant();
+    var currentScope = requestedScope == "weekly" || requestedScope == "daily" ? requestedScope : "monthly";
     var previousMonth = Model.DisplayMonth.AddMonths(-1);
     var nextMonth = Model.DisplayMonth.AddMonths(1);
     var modalDate = Model.SelectedDate == default(DateTime) ? DateTime.Today : Model.SelectedDate;
@@ -114,6 +116,26 @@
             gap: 10px;
         }
 
+        .calendar-scope-switch {
+            display: inline-flex;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 999px;
+            background: #eef2f7;
+            border: 1px solid #dbe4f0;
+        }
+
+        .calendar-scope-switch .btn {
+            min-width: 88px;
+            border-radius: 999px;
+        }
+
+        .calendar-scope-switch .btn.is-active {
+            background: #0f766e;
+            border-color: #0f766e;
+            color: #ffffff;
+        }
+
         .calendar-filter-label {
             font-size: 12px;
             font-weight: 700;
@@ -148,6 +170,11 @@
             display: grid;
             grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 10px;
+        }
+
+        .calendar-grid.is-daily,
+        .calendar-weekdays.is-daily {
+            grid-template-columns: minmax(0, 1fr);
         }
 
         .calendar-weekdays {
@@ -898,6 +925,11 @@
     <div class="calendar-month-filters">
         <div class="calendar-month-filters-main">
             <span class="calendar-filter-label">Month Filters</span>
+            <div class="calendar-scope-switch" role="group" aria-label="Calendar scope filter">
+                <button class="btn small ghost @(currentScope == "monthly" ? "is-active" : null)" type="button" data-calendar-scope="monthly">Monthly</button>
+                <button class="btn small ghost @(currentScope == "weekly" ? "is-active" : null)" type="button" data-calendar-scope="weekly">Weekly</button>
+                <button class="btn small ghost @(currentScope == "daily" ? "is-active" : null)" type="button" data-calendar-scope="daily">Daily</button>
+            </div>
             <div class="agenda-filter-switch" role="group" aria-label="Month entry type filter">
                 <button class="btn small ghost is-active" type="button" data-agenda-filter="both">Both</button>
                 <button class="btn small ghost" type="button" data-agenda-filter="A">Appointments</button>
@@ -913,23 +945,23 @@
                 </select>
             </div>
         </div>
-        <div class="agenda-filter-summary">Selected day stays emphasized; other days remain visible in a dimmed state.</div>
+        <div class="agenda-filter-summary" id="calendarScopeSummary">Selected day stays emphasized; other days remain visible in a dimmed state.</div>
     </div>
 </div>
 
 <div class="calendar-shell">
     <section class="calendar-panel">
-        <div class="calendar-weekdays">
-            <div class="calendar-weekday">Sun</div>
-            <div class="calendar-weekday">Mon</div>
-            <div class="calendar-weekday">Tue</div>
-            <div class="calendar-weekday">Wed</div>
-            <div class="calendar-weekday">Thu</div>
-            <div class="calendar-weekday">Fri</div>
-            <div class="calendar-weekday">Sat</div>
+        <div class="calendar-weekdays" id="calendarWeekdays">
+            <div class="calendar-weekday" data-weekday-index="0">Sun</div>
+            <div class="calendar-weekday" data-weekday-index="1">Mon</div>
+            <div class="calendar-weekday" data-weekday-index="2">Tue</div>
+            <div class="calendar-weekday" data-weekday-index="3">Wed</div>
+            <div class="calendar-weekday" data-weekday-index="4">Thu</div>
+            <div class="calendar-weekday" data-weekday-index="5">Fri</div>
+            <div class="calendar-weekday" data-weekday-index="6">Sat</div>
         </div>
 
-        <div class="calendar-grid">
+        <div class="calendar-grid" id="calendarGrid">
             @foreach (var day in Model.CalendarDays)
             {
                 var dayClass = "calendar-day";
@@ -946,10 +978,10 @@
                     dayClass += " is-today";
                 }
 
-                <div class="@dayClass">
+                <div class="@dayClass" data-calendar-date="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" data-weekday-index="@((int)day.Date.DayOfWeek)">
                     @if (day.IsCurrentMonth)
                     {
-                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd") })">
+                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope })">
                             <div class="day-number">@day.Date.Day</div>
                             <div class="day-meta">
                                 <span>@(day.AppointmentCount == 1 ? "1 appt" : day.AppointmentCount + " appts")</span>
@@ -971,8 +1003,8 @@
 
     <aside class="agenda-panel">
         <div class="agenda-header">
-            <h3>@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</h3>
-            <p>Month agenda for @(string.IsNullOrWhiteSpace(Model.EntityName) ? "primary entity" : Model.EntityName). @Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) is highlighted.</p>
+            <h3 id="agendaScopeTitle">@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</h3>
+            <p id="agendaScopeDescription">Month agenda for @(string.IsNullOrWhiteSpace(Model.EntityName) ? "primary entity" : Model.EntityName). @Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) is highlighted.</p>
         </div>
 
         @if (Model.MonthAppointments.Any())
@@ -1262,6 +1294,8 @@
             var validateCustomerTimeUrl = "@Url.Action("ValidateCustomerTimeSelection", "Calendar")";
             var serviceAccess = @Html.Raw(JsonConvert.SerializeObject(serviceAccess));
             var selectedCalendarDate = "@modalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)";
+            var currentCalendarScope = "@currentScope";
+            var activeAgendaDate = "";
             var currentMonth = new Date(@Model.DisplayMonth.Year, @Model.DisplayMonth.Month - 1, 1);
             var selectedDay = @Model.SelectedDate.Day;
             var activeRouteQueueDetails = null;
@@ -1371,7 +1405,165 @@
                 var url = new URL(window.location.href);
                 url.searchParams.set("month", yyyy + "-" + mm + "-01");
                 url.searchParams.set("selectedDate", yyyy + "-" + mm + "-" + dd);
+                url.searchParams.set("scope", currentCalendarScope || "monthly");
                 window.location.assign(url.toString());
+            }
+
+            function parseIsoDateLocal(value) {
+                if (!value) {
+                    return null;
+                }
+                var parts = value.split("-");
+                if (parts.length !== 3) {
+                    return null;
+                }
+                return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            }
+
+            function toIsoDateLocal(dateValue) {
+                if (!(dateValue instanceof Date)) {
+                    return "";
+                }
+                return dateValue.getFullYear()
+                    + "-" + String(dateValue.getMonth() + 1).padStart(2, "0")
+                    + "-" + String(dateValue.getDate()).padStart(2, "0");
+            }
+
+            function startOfWeek(dateValue) {
+                var copy = new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate());
+                copy.setDate(copy.getDate() - copy.getDay());
+                return copy;
+            }
+
+            function endOfWeek(dateValue) {
+                var copy = startOfWeek(dateValue);
+                copy.setDate(copy.getDate() + 6);
+                return copy;
+            }
+
+            function getSelectedCalendarDateValue() {
+                return parseIsoDateLocal(selectedCalendarDate) || new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDay || 1);
+            }
+
+            function setActiveAgendaDate(dateText) {
+                activeAgendaDate = dateText || "";
+                document.querySelectorAll("[data-calendar-date]").forEach(function (day) {
+                    var matches = !!activeAgendaDate && (day.getAttribute("data-calendar-date") || "") === activeAgendaDate;
+                    day.classList.toggle("is-selected", matches);
+                });
+            }
+
+            function getScopeDateRange(scope) {
+                var selected = getSelectedCalendarDateValue();
+                var normalized = (scope || "monthly").toLowerCase();
+                if (normalized === "daily") {
+                    return {
+                        start: new Date(selected.getFullYear(), selected.getMonth(), selected.getDate()),
+                        end: new Date(selected.getFullYear(), selected.getMonth(), selected.getDate())
+                    };
+                }
+                if (normalized === "weekly") {
+                    return {
+                        start: startOfWeek(selected),
+                        end: endOfWeek(selected)
+                    };
+                }
+                return {
+                    start: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1),
+                    end: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+                };
+            }
+
+            function isDateInScope(dateText, scope) {
+                var dateValue = parseIsoDateLocal(dateText);
+                if (!dateValue) {
+                    return false;
+                }
+                var range = getScopeDateRange(scope);
+                return dateValue >= range.start && dateValue <= range.end;
+            }
+
+            function shiftCalendarScope(delta) {
+                var normalized = (currentCalendarScope || "monthly").toLowerCase();
+                var selected = getSelectedCalendarDateValue();
+                if (normalized === "daily") {
+                    selected.setDate(selected.getDate() + delta);
+                } else if (normalized === "weekly") {
+                    selected.setDate(selected.getDate() + (delta * 7));
+                } else {
+                    selected = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, Math.min(selected.getDate(), 28));
+                }
+                goToCalendar(new Date(selected.getFullYear(), selected.getMonth(), 1), selected.getDate());
+            }
+
+            function applyCalendarScope(scope) {
+                currentCalendarScope = (scope || "monthly").toLowerCase();
+                var normalized = currentCalendarScope;
+                var selected = getSelectedCalendarDateValue();
+                var selectedWeekday = selected.getDay();
+                var calendarGrid = document.getElementById("calendarGrid");
+                var calendarWeekdays = document.getElementById("calendarWeekdays");
+                var agendaTitle = document.getElementById("agendaScopeTitle");
+                var agendaDescription = document.getElementById("agendaScopeDescription");
+                var scopeSummary = document.getElementById("calendarScopeSummary");
+
+                if (calendarGrid) {
+                    calendarGrid.classList.toggle("is-daily", normalized === "daily");
+                }
+                if (calendarWeekdays) {
+                    calendarWeekdays.classList.toggle("is-daily", normalized === "daily");
+                    calendarWeekdays.querySelectorAll("[data-weekday-index]").forEach(function (item) {
+                        var itemIndex = parseInt(item.getAttribute("data-weekday-index") || "-1", 10);
+                        var visible = normalized !== "daily" || itemIndex === selectedWeekday;
+                        item.classList.toggle("is-hidden", !visible);
+                    });
+                }
+
+                document.querySelectorAll("[data-calendar-date]").forEach(function (day) {
+                    var dayDate = day.getAttribute("data-calendar-date") || "";
+                    day.classList.toggle("is-hidden", !isDateInScope(dayDate, normalized));
+                    if (!activeAgendaDate) {
+                        day.classList.remove("is-selected");
+                    }
+                });
+
+                document.querySelectorAll("[data-calendar-scope]").forEach(function (btn) {
+                    btn.classList.toggle("is-active", (btn.getAttribute("data-calendar-scope") || "").toLowerCase() === normalized);
+                });
+
+                if (agendaTitle) {
+                    if (normalized === "daily") {
+                        agendaTitle.textContent = selected.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+                    } else if (normalized === "weekly") {
+                        var range = getScopeDateRange(normalized);
+                        agendaTitle.textContent = range.start.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                            + " - "
+                            + range.end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                    } else {
+                        agendaTitle.textContent = currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                    }
+                }
+
+                if (agendaDescription) {
+                    if (normalized === "daily") {
+                        agendaDescription.textContent = "Daily agenda for " + selected.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) + ".";
+                    } else if (normalized === "weekly") {
+                        agendaDescription.textContent = "Weekly agenda for the selected week. Selected day stays emphasized inside the visible week.";
+                    } else {
+                        agendaDescription.textContent = "Month agenda for @(string.IsNullOrWhiteSpace(Model.EntityName) ? "primary entity" : Model.EntityName). @Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) is highlighted.";
+                    }
+                }
+
+                if (scopeSummary) {
+                    scopeSummary.textContent = normalized === "monthly"
+                        ? "Selected day stays emphasized; other days remain visible in a dimmed state."
+                        : normalized === "weekly"
+                            ? "Weekly scope shows only the selected week in the calendar and right panel."
+                            : "Daily scope shows only the selected day in the calendar and right panel.";
+                }
+
+                var activeAgendaFilter = document.querySelector("[data-agenda-filter].is-active");
+                applyAgendaFilter(activeAgendaFilter ? activeAgendaFilter.getAttribute("data-agenda-filter") : "both");
             }
 
             function postForm(url, data) {
@@ -3115,8 +3307,15 @@
                 document.querySelectorAll(".agenda-item").forEach(function (item) {
                     var srcType = (item.getAttribute("data-src-type") || "").toUpperCase();
                     var queueName = (item.getAttribute("data-queue") || "").toLowerCase();
+                    var rowDate = item.getAttribute("data-date") || "";
                     var show = normalized === "BOTH" || normalized === srcType;
                     if (show && queueValue !== "all" && queueName !== queueValue) {
+                        show = false;
+                    }
+                    if (show && !isDateInScope(rowDate, currentCalendarScope)) {
+                        show = false;
+                    }
+                    if (show && activeAgendaDate && rowDate !== activeAgendaDate) {
                         show = false;
                     }
                     item.classList.toggle("is-hidden", !show);
@@ -3126,8 +3325,10 @@
                 });
 
                 document.querySelectorAll(".agenda-day-group").forEach(function (group) {
+                    var groupDate = group.getAttribute("data-agenda-day") || "";
                     var visibleInGroup = group.querySelectorAll(".agenda-item:not(.is-hidden)").length;
-                    group.classList.toggle("is-hidden", visibleInGroup === 0);
+                    var inScope = isDateInScope(groupDate, currentCalendarScope);
+                    group.classList.toggle("is-hidden", visibleInGroup === 0 || !inScope);
                 });
 
                 var emptyState = document.querySelector(".agenda-panel .empty-state");
@@ -3138,6 +3339,11 @@
                 document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
                     btn.classList.toggle("is-active", (btn.getAttribute("data-agenda-filter") || "").toUpperCase() === normalized);
                 });
+            }
+
+            function getActiveAgendaMode() {
+                var active = document.querySelector("[data-agenda-filter].is-active");
+                return active ? (active.getAttribute("data-agenda-filter") || "both") : "both";
             }
 
             function bindAgendaFilterSwitch() {
@@ -3159,6 +3365,52 @@
                     });
                 }
                 applyAgendaFilter("both");
+            }
+
+            function bindCalendarScopeSwitch() {
+                document.querySelectorAll("[data-calendar-scope]").forEach(function (btn) {
+                    if (btn.getAttribute("data-bound-calendar-scope") === "1") {
+                        return;
+                    }
+                    btn.setAttribute("data-bound-calendar-scope", "1");
+                    btn.addEventListener("click", function () {
+                        applyCalendarScope(btn.getAttribute("data-calendar-scope") || "monthly");
+                    });
+                });
+                applyCalendarScope(currentCalendarScope);
+            }
+
+            function bindCalendarDaySelection() {
+                document.querySelectorAll(".calendar-day-link").forEach(function (link) {
+                    if (link.getAttribute("data-bound-calendar-day") === "1") {
+                        return;
+                    }
+                    link.setAttribute("data-bound-calendar-day", "1");
+                    link.addEventListener("click", function (event) {
+                        event.preventDefault();
+                        var day = link.closest("[data-calendar-date]");
+                        if (!day) {
+                            return;
+                        }
+                        var dateText = day.getAttribute("data-calendar-date") || "";
+                        if (!dateText) {
+                            return;
+                        }
+                        setActiveAgendaDate(dateText);
+                        applyAgendaFilter(getActiveAgendaMode());
+                    });
+                });
+
+                document.addEventListener("click", function (event) {
+                    if (!activeAgendaDate) {
+                        return;
+                    }
+                    if (event.target.closest(".calendar-panel")) {
+                        return;
+                    }
+                    setActiveAgendaDate("");
+                    applyAgendaFilter(getActiveAgendaMode());
+                });
             }
 
             function bindExpandableText() {
@@ -3246,7 +3498,7 @@
                     if (!shift) {
                         return;
                     }
-                    goToCalendar(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + shift, 1), selectedDay);
+                    shiftCalendarScope(shift);
                 });
             });
 
@@ -3927,6 +4179,8 @@
             bindProviderActionButtons();
             bindMeetingLinks();
             bindAgendaFilterSwitch();
+            bindCalendarScopeSwitch();
+            bindCalendarDaySelection();
             bindExpandableText();
 
             if (reopenOnError) {

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar Page Demo</title>
+  <style>
+    :root {
+      --bg: #edf3f8;
+      --panel: #ffffff;
+      --panel-soft: #f8fbfe;
+      --border: #d9e4ef;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #0f766e;
+      --accent-soft: #dff7f2;
+      --chip: #eef2f7;
+      --shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(180deg, #f4f8fb 0%, #e8eff5 100%);
+      color: var(--text);
+    }
+
+    .page {
+      width: min(1400px, calc(100vw - 32px));
+      margin: 24px auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    .toolbar,
+    .panel,
+    .agenda-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      padding: 16px 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right,
+    .filters-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .title-wrap p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+
+    .btn,
+    select {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 9px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--chip);
+      border: 1px solid var(--border);
+    }
+
+    select {
+      border-radius: 12px;
+      min-width: 180px;
+    }
+
+    .summary {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
+      gap: 18px;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .weekdays.daily,
+    .calendar-grid.daily {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .weekday {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .calendar-day {
+      min-height: 96px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #fff 0%, var(--panel-soft) 100%);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .calendar-day.muted {
+      opacity: 0.38;
+      cursor: default;
+    }
+
+    .calendar-day.in-scope.selected {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+      background: linear-gradient(180deg, #f0fdfa 0%, #e8fbf6 100%);
+    }
+
+    .calendar-day.today .day-number {
+      color: var(--accent);
+    }
+
+    .calendar-day.hidden,
+    .weekday.hidden,
+    .agenda-day-group.hidden,
+    .agenda-item.hidden {
+      display: none;
+    }
+
+    .day-number {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .day-meta {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .day-count {
+      min-width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      color: #fff;
+      font-weight: 700;
+      padding: 0 8px;
+    }
+
+    .agenda-panel {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 720px;
+      max-height: calc(100vh - 80px);
+      overflow: hidden;
+    }
+
+    .agenda-header h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .agenda-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .agenda-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .agenda-day-group {
+      display: grid;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: #fff;
+      transition: opacity 0.2s ease;
+    }
+
+    .agenda-day-group.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .agenda-day-group.dimmed {
+      opacity: 0.5;
+    }
+
+    .agenda-day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .agenda-day-title {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .agenda-day-count {
+      min-width: 24px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 12px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+    }
+
+    .agenda-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel-soft);
+      padding: 10px 12px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .agenda-time {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    .pill.appt {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .pill.walkin {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .expandable {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .expandable.collapsed {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .agenda-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .agenda-detail {
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .agenda-notes {
+      font-size: 12px;
+      color: #334155;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 6px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .agenda-notes.collapsed {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      white-space: normal;
+      overflow: hidden;
+    }
+
+    .empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      background: #fbfdff;
+    }
+
+    @media (max-width: 1100px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .agenda-panel {
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <div class="title-wrap">
+          <h1>Calendar Page Demo</h1>
+          <p>Standalone demo of the current Provider Calendar behavior.</p>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn" id="prevBtn" type="button">Previous</button>
+          <button class="btn" id="nextBtn" type="button">Next</button>
+          <button class="btn" id="todayBtn" type="button">Today</button>
+        </div>
+      </div>
+      <div class="toolbar-row">
+        <div class="filters-left">
+          <span class="summary">Scope</span>
+          <div class="segmented">
+            <button class="btn active" type="button" data-scope="monthly">Monthly</button>
+            <button class="btn" type="button" data-scope="weekly">Weekly</button>
+            <button class="btn" type="button" data-scope="daily">Daily</button>
+          </div>
+          <span class="summary">Type</span>
+          <div class="segmented">
+            <button class="btn active" type="button" data-type="both">Both</button>
+            <button class="btn" type="button" data-type="A">Appointments</button>
+            <button class="btn" type="button" data-type="W">Walk-ins</button>
+          </div>
+          <select id="queueFilter">
+            <option value="all">All Queues</option>
+          </select>
+        </div>
+        <div class="summary" id="scopeSummary">Selected day stays emphasized; other days remain visible in a dimmed state.</div>
+      </div>
+    </div>
+
+    <div class="shell">
+      <section class="panel" id="calendarPanel">
+        <div class="agenda-header">
+          <h2 id="monthTitle"></h2>
+          <p>Click a date on the left to show only that day on the right. Click outside the calendar to clear the day selection.</p>
+        </div>
+        <div class="weekdays" id="weekdays">
+          <div class="weekday" data-weekday="0">Sun</div>
+          <div class="weekday" data-weekday="1">Mon</div>
+          <div class="weekday" data-weekday="2">Tue</div>
+          <div class="weekday" data-weekday="3">Wed</div>
+          <div class="weekday" data-weekday="4">Thu</div>
+          <div class="weekday" data-weekday="5">Fri</div>
+          <div class="weekday" data-weekday="6">Sat</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+      <aside class="agenda-panel">
+        <div class="agenda-header">
+          <h2 id="agendaTitle"></h2>
+          <p id="agendaDescription"></p>
+        </div>
+        <div class="agenda-list" id="agendaList"></div>
+        <div class="empty hidden" id="agendaEmpty">No records match the current selection.</div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const currentMonth = new Date(2026, 3, 1);
+      const today = new Date(2026, 3, 25);
+      let activeScope = "monthly";
+      let activeType = "both";
+      let activeQueue = "all";
+      let selectedDate = toIsoDate(today);
+      let activeAgendaDate = "";
+
+      const data = [
+        { id: 1201, srcType: "A", date: "2026-04-20", time: "09:00 AM", queue: "Building - Commercial Plans Coordination", customer: "Akib Ali", phone: "9173926396", status: "scheduled", statusText: "SCHEDULED", contact: "Online Meeting", notes: "Need follow-up on permit packet." },
+        { id: 1202, srcType: "A", date: "2026-04-21", time: "10:30 AM", queue: "Permits - New Construction", customer: "Sahidul Islam", phone: "4075556396", status: "arrived", statusText: "ARRIVED", contact: "In-Person", notes: "Bringing revised plans and fee receipt." },
+        { id: 1203, srcType: "W", date: "2026-04-22", time: "11:45 AM", queue: "Code Enforcement", customer: "Mariam Chowdhury", phone: "3215559123", status: "inservice", statusText: "IN PROGRESS", contact: "Phone Call", notes: "Discussing property case details in a longer note to test expandable and shrinkable content in the agenda." },
+        { id: 1204, srcType: "A", date: "2026-04-23", time: "08:15 AM", queue: "Business Tax Receipt", customer: "Rashed Karim", phone: "6895551204", status: "cancelled", statusText: "CANCELLED", contact: "Online Meeting", notes: "Cancelled by customer." },
+        { id: 1205, srcType: "A", date: "2026-04-24", time: "01:15 PM", queue: "Building - Commercial Plans Coordination", customer: "Asardar Rahman", phone: "11926396", status: "scheduled", statusText: "SCHEDULED", contact: "Online Meeting", notes: "Wants to verify contractor licensing and related documentation." },
+        { id: 1206, srcType: "W", date: "2026-04-24", time: "03:00 PM", queue: "Public Works", customer: "Nazia Sultana", phone: "4075553344", status: "arrived", statusText: "ARRIVED", contact: "In-Person", notes: "Walk-in for utility damage restoration permit." },
+        { id: 1207, srcType: "A", date: "2026-04-25", time: "08:30 AM", queue: "Building - Commercial Plans Coordination", customer: "Arif Hasan", phone: "9173926396", status: "arrived", statusText: "ARRIVED", contact: "Online Meeting", notes: "Service completed example row style." },
+        { id: 1208, srcType: "A", date: "2026-04-25", time: "09:45 AM", queue: "Code Enforcement", customer: "Tahmina Noor", phone: "4075556677", status: "scheduled", statusText: "SCHEDULED", contact: "Online Meeting", notes: "Needs meeting host and guest URL updates later." },
+        { id: 1209, srcType: "W", date: "2026-04-25", time: "11:00 AM", queue: "Business Tax Receipt", customer: "Reza Ahmed", phone: "3215558877", status: "scheduled", statusText: "SCHEDULED", contact: "Phone Call", notes: "Quick question about renewal documents." },
+        { id: 1210, srcType: "A", date: "2026-04-26", time: "10:00 AM", queue: "Permits - New Construction", customer: "Nadim Kabir", phone: "6895555500", status: "scheduled", statusText: "SCHEDULED", contact: "In-Person", notes: "Future appointment for weekly scope testing." },
+        { id: 1211, srcType: "A", date: "2026-04-27", time: "02:30 PM", queue: "Building - Commercial Plans Coordination", customer: "Sumaiya Jahan", phone: "4075557711", status: "scheduled", statusText: "SCHEDULED", contact: "Online Meeting", notes: "Future monthly row with long queue name to test compact layout." },
+        { id: 1212, srcType: "W", date: "2026-04-29", time: "04:00 PM", queue: "Public Works", customer: "Imran Hossain", phone: "3215559900", status: "scheduled", statusText: "SCHEDULED", contact: "In-Person", notes: "Future walk-in style record." }
+      ];
+
+      const queueFilter = document.getElementById("queueFilter");
+      const monthTitle = document.getElementById("monthTitle");
+      const agendaTitle = document.getElementById("agendaTitle");
+      const agendaDescription = document.getElementById("agendaDescription");
+      const scopeSummary = document.getElementById("scopeSummary");
+      const weekdays = document.getElementById("weekdays");
+      const calendarGrid = document.getElementById("calendarGrid");
+      const agendaList = document.getElementById("agendaList");
+      const agendaEmpty = document.getElementById("agendaEmpty");
+      const calendarPanel = document.getElementById("calendarPanel");
+
+      const queues = [...new Set(data.map(x => x.queue))].sort();
+      queues.forEach(queue => {
+        const option = document.createElement("option");
+        option.value = queue;
+        option.textContent = queue;
+        queueFilter.appendChild(option);
+      });
+
+      document.querySelectorAll("[data-scope]").forEach(btn => {
+        btn.addEventListener("click", function () {
+          activeScope = btn.getAttribute("data-scope");
+          activeAgendaDate = "";
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-type]").forEach(btn => {
+        btn.addEventListener("click", function () {
+          activeType = btn.getAttribute("data-type");
+          render();
+        });
+      });
+
+      queueFilter.addEventListener("change", function () {
+        activeQueue = queueFilter.value || "all";
+        render();
+      });
+
+      document.getElementById("prevBtn").addEventListener("click", function () {
+        shiftScope(-1);
+      });
+
+      document.getElementById("nextBtn").addEventListener("click", function () {
+        shiftScope(1);
+      });
+
+      document.getElementById("todayBtn").addEventListener("click", function () {
+        selectedDate = toIsoDate(today);
+        currentMonth.setFullYear(today.getFullYear(), today.getMonth(), 1);
+        activeAgendaDate = "";
+        render();
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!activeAgendaDate) return;
+        if (calendarPanel.contains(event.target)) return;
+        activeAgendaDate = "";
+        renderAgenda();
+        renderCalendarSelection();
+      });
+
+      function toIsoDate(date) {
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+      }
+
+      function fromIsoDate(value) {
+        const [year, month, day] = value.split("-").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      function startOfWeek(date) {
+        const copy = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        copy.setDate(copy.getDate() - copy.getDay());
+        return copy;
+      }
+
+      function endOfWeek(date) {
+        const copy = startOfWeek(date);
+        copy.setDate(copy.getDate() + 6);
+        return copy;
+      }
+
+      function getRange() {
+        const selected = fromIsoDate(selectedDate);
+        if (activeScope === "daily") {
+          return { start: new Date(selected), end: new Date(selected) };
+        }
+        if (activeScope === "weekly") {
+          return { start: startOfWeek(selected), end: endOfWeek(selected) };
+        }
+        return {
+          start: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1),
+          end: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+        };
+      }
+
+      function isWithinScope(dateText) {
+        const date = fromIsoDate(dateText);
+        const range = getRange();
+        return date >= range.start && date <= range.end;
+      }
+
+      function shiftScope(delta) {
+        let selected = fromIsoDate(selectedDate);
+        if (activeScope === "daily") {
+          selected.setDate(selected.getDate() + delta);
+        } else if (activeScope === "weekly") {
+          selected.setDate(selected.getDate() + delta * 7);
+        } else {
+          selected = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, Math.min(selected.getDate(), 28));
+        }
+        currentMonth.setFullYear(selected.getFullYear(), selected.getMonth(), 1);
+        selectedDate = toIsoDate(selected);
+        activeAgendaDate = "";
+        render();
+      }
+
+      function getFilteredRecords() {
+        return data.filter(item => {
+          if (!isWithinScope(item.date)) return false;
+          if (activeType !== "both" && item.srcType !== activeType) return false;
+          if (activeQueue !== "all" && item.queue !== activeQueue) return false;
+          if (activeAgendaDate && item.date !== activeAgendaDate) return false;
+          return true;
+        });
+      }
+
+      function renderCalendar() {
+        monthTitle.textContent = currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        calendarGrid.classList.toggle("daily", activeScope === "daily");
+        weekdays.classList.toggle("daily", activeScope === "daily");
+
+        weekdays.querySelectorAll(".weekday").forEach(node => {
+          node.classList.toggle("hidden", activeScope === "daily" && Number(node.dataset.weekday) !== fromIsoDate(selectedDate).getDay());
+        });
+
+        calendarGrid.innerHTML = "";
+        const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const gridStart = new Date(monthStart);
+        gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+        for (let i = 0; i < 42; i++) {
+          const date = new Date(gridStart);
+          date.setDate(gridStart.getDate() + i);
+          const iso = toIsoDate(date);
+          const inCurrentMonth = date.getMonth() === currentMonth.getMonth();
+          const count = data.filter(item => item.date === iso).length;
+
+          const card = document.createElement("div");
+          card.className = "calendar-day";
+          card.dataset.date = iso;
+          if (!inCurrentMonth) card.classList.add("muted");
+          if (toIsoDate(date) === toIsoDate(today)) card.classList.add("today");
+          if (!isWithinScope(iso)) card.classList.add("hidden");
+
+          if (activeScope === "daily" && date.getDay() !== fromIsoDate(selectedDate).getDay()) {
+            card.classList.add("hidden");
+          }
+
+          if (inCurrentMonth) {
+            card.classList.add("in-scope");
+            card.addEventListener("click", function (event) {
+              event.stopPropagation();
+              selectedDate = iso;
+              activeAgendaDate = iso;
+              renderCalendarSelection();
+              renderAgenda();
+            });
+          }
+
+          card.innerHTML = `
+            <div class="day-number">${date.getDate()}</div>
+            <div class="day-meta">
+              <span>${count === 1 ? "1 appt" : count + " appts"}</span>
+              ${count > 0 ? `<span class="day-count">${count}</span>` : ""}
+            </div>
+          `;
+          calendarGrid.appendChild(card);
+        }
+
+        renderCalendarSelection();
+      }
+
+      function renderCalendarSelection() {
+        document.querySelectorAll(".calendar-day.in-scope").forEach(card => {
+          card.classList.toggle("selected", !!activeAgendaDate && card.dataset.date === activeAgendaDate);
+        });
+      }
+
+      function renderAgenda() {
+        const records = getFilteredRecords().sort((a, b) => (a.date + " " + a.time).localeCompare(b.date + " " + b.time));
+        agendaList.innerHTML = "";
+
+        if (activeAgendaDate) {
+          const day = fromIsoDate(activeAgendaDate);
+          agendaTitle.textContent = day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+          agendaDescription.textContent = "Showing only the selected date from the left calendar. Click outside the calendar to return to the active scope.";
+        } else if (activeScope === "daily") {
+          const day = fromIsoDate(selectedDate);
+          agendaTitle.textContent = day.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+          agendaDescription.textContent = "Daily scope view.";
+        } else if (activeScope === "weekly") {
+          const range = getRange();
+          agendaTitle.textContent = range.start.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " - " + range.end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+          agendaDescription.textContent = "Weekly scope view.";
+        } else {
+          agendaTitle.textContent = currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+          agendaDescription.textContent = "Monthly scope view.";
+        }
+
+        scopeSummary.textContent = activeAgendaDate
+          ? "A left-calendar date is selected, so the right panel is narrowed to that day."
+          : activeScope === "monthly"
+            ? "Selected day stays emphasized; other days remain visible in a dimmed state."
+            : activeScope === "weekly"
+              ? "Weekly scope shows only the selected week in both panels."
+              : "Daily scope shows only the selected day in both panels.";
+
+        const groups = new Map();
+        records.forEach(item => {
+          if (!groups.has(item.date)) groups.set(item.date, []);
+          groups.get(item.date).push(item);
+        });
+
+        groups.forEach((items, dateText) => {
+          const date = fromIsoDate(dateText);
+          const group = document.createElement("div");
+          group.className = "agenda-day-group";
+          if (activeAgendaDate ? dateText === activeAgendaDate : dateText === selectedDate) {
+            group.classList.add("selected");
+          } else if (!activeAgendaDate) {
+            group.classList.add("dimmed");
+          }
+
+          const header = document.createElement("div");
+          header.className = "agenda-day-header";
+          header.innerHTML = `
+            <div class="agenda-day-title">${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</div>
+            <div class="agenda-day-count">${items.length}</div>
+          `;
+          group.appendChild(header);
+
+          items.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "agenda-item";
+            card.innerHTML = `
+              <div class="agenda-time">${item.time}</div>
+              <div class="pill ${item.srcType === "A" ? "appt" : "walkin"}">${item.srcType === "A" ? "Appointment" : "Walk-In"}</div>
+              <button type="button" class="agenda-title expandable collapsed">${item.customer}</button>
+              <button type="button" class="agenda-detail expandable collapsed">${item.queue}</button>
+              <div class="agenda-detail">${item.contact} | ${item.statusText} | ${item.phone}</div>
+              <button type="button" class="agenda-notes expandable collapsed">${item.notes}</button>
+            `;
+            group.appendChild(card);
+          });
+
+          agendaList.appendChild(group);
+        });
+
+        agendaEmpty.classList.toggle("hidden", records.length > 0);
+        bindExpandables();
+      }
+
+      function bindExpandables() {
+        document.querySelectorAll(".expandable").forEach(node => {
+          if (node.dataset.bound === "1") return;
+          node.dataset.bound = "1";
+          node.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            node.classList.toggle("collapsed");
+          });
+        });
+      }
+
+      function render() {
+        document.querySelectorAll("[data-scope]").forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.scope === activeScope);
+        });
+        document.querySelectorAll("[data-type]").forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.type === activeType);
+        });
+        renderCalendar();
+        renderAgenda();
+      }
+
+      render();
+    })();
+  </script>
+</body>
+</html>
