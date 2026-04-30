@@ -202,7 +202,7 @@ namespace FastQ.Data.Db
             var phone = ReadRawString(record, "PHONE");
             var smsOptIn = (record["SMS_OPTIN"]?.ToString() ?? string.Empty) == "Y";
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
-            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.UtcNow : Convert.ToDateTime(record["STAMPDATE"]);
+            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["STAMPDATE"]);
             var stampUser = record["STAMPUSER"]?.ToString() ?? string.Empty;
 
             return new Customer
@@ -215,9 +215,9 @@ namespace FastQ.Data.Db
                 SmsOptIn = smsOptIn,
                 ActiveFlag = activeFlag,
                 StampUser = stampUser,
-                CreatedUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
-                UpdatedUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
-                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc)
+                CreatedOn = stampDate,
+                UpdatedOn = stampDate,
+                StampDate = stampDate
             };
         }
 

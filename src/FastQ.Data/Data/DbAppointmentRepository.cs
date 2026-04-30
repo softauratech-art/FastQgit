@@ -73,7 +73,7 @@ namespace FastQ.Data.Db
         {
             using (var conn = DataAccess.Open())
             {
-                var newId = DataAccess.NextVal(conn, "WALKINSEQ");
+                long newId = 0;      //DataAccess.NextVal(conn, "WALKINSEQ");
                 appointment.Id = newId;
 
                 var customerId = appointment.CustomerId;
@@ -373,7 +373,7 @@ namespace FastQ.Data.Db
                             QueueName = ReadField(reader, "NAME"),
                             ServiceName = ReadField(reader, "SERVICE_NAME"),
                             CustomerName = fullName,
-                            CustomerEmail = ReadField(reader, "EMAIL"),
+                            CustomerEmail = ReadField(reader, "CUST_EMAIL"),
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
                             ContactType = ReadField(reader, "CONTACTTYPE"),
                             RefValue = ReadField(reader, "REF_VALUE"),
@@ -511,7 +511,7 @@ namespace FastQ.Data.Db
                 RefValue = record["REF_VALUE"]?.ToString(),
                 ContactType = record["CONTACTTYPE"]?.ToString(),
                 MoreInfo = record["MOREINFO"]?.ToString(),
-                ApptDate = DateTime.SpecifyKind(apptDate, DateTimeKind.Local),
+                ApptDate = apptDate,
                 StartTime = startTime,
                 EndTime = endTime,
                 Status = status,
@@ -520,11 +520,11 @@ namespace FastQ.Data.Db
                 MeetingUrlHost = ReadMeetingUrlHost(record),
                 LanguagePreference = record["LANGUAGE_PREF"]?.ToString(),
                 CreatedBy = record["CREATEDBY"]?.ToString(),
-                CreatedOnUtc = DateTime.SpecifyKind(createdOn, DateTimeKind.Utc),
+                CreatedOn = createdOn,
                 StampUser = record["STAMPUSER"]?.ToString(),
-                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
-                CreatedUtc = DateTime.SpecifyKind(createdOn, DateTimeKind.Utc),
-                UpdatedUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc)
+                StampDate = stampDate,
+                //CreatedOn = createdOn,
+                UpdatedOn = stampDate
             };
         }
 

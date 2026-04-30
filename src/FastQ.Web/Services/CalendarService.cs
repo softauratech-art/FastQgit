@@ -34,8 +34,11 @@ namespace FastQ.Web.Services
             _queues = queues;
         }
 
-        public AdminDashboardViewModel BuildCalendarModel(string userId, DateTime displayMonth, DateTime selectedDate)
+        public AdminDashboardViewModel BuildCalendarModel(string userId, DateTime displayMonth, DateTime selectedDate, string selectedEntry, string selectedQueue)
         {
+            selectedEntry = selectedEntry ?? "both";
+            selectedQueue = selectedQueue ?? "all";
+            
             var monthStart = new DateTime(displayMonth.Year, displayMonth.Month, 1);
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
             var selected = selectedDate.Date;
@@ -43,11 +46,18 @@ namespace FastQ.Web.Services
             var rows = new List<AdminAppointmentRow>();
             if (!string.IsNullOrWhiteSpace(userId))
             {
-                rows.AddRange(_providerService.BuildRowsForUser(userId, monthStart, monthEnd).Select(r => MapRow(r, "A", "Appointment")));
-                rows.AddRange(_providerService.BuildWalkinsForUser(userId, monthStart, monthEnd).Select(r => MapRow(r, "W", "Walk-In")));
+                if (selectedEntry.ToLower().Equals("a") || selectedEntry.Equals("both"))
+                    rows.AddRange(_providerService.BuildRowsForUser(userId, monthStart, monthEnd).Select(r => MapRow(r, "A", "Appointment")));
+                if (selectedEntry.ToLower().Equals("w") || selectedEntry.Equals("both")) 
+                    rows.AddRange(_providerService.BuildWalkinsForUser(userId, monthStart, monthEnd).Select(r => MapRow(r, "W", "Walk-In")));
             }
 
-            var counts = rows
+            var oMonthAppointments = rows
+                    .Where(r => selectedQueue.Equals("all") || r.QueueId == Convert.ToInt64(selectedQueue))
+                    .OrderBy(r => r.ScheduledFor)
+                    .ToList();
+
+            var counts = oMonthAppointments
                 .GroupBy(r => r.ScheduledFor.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
@@ -66,10 +76,11 @@ namespace FastQ.Web.Services
                     .ToList(),
                 CalendarDays = BuildCalendarDays(monthStart, selected, counts),
                 MonthAppointments = rows
+                    .Where(r => selectedQueue.Equals("all") || r.QueueId == Convert.ToInt64(selectedQueue) )
                     .OrderBy(r => r.ScheduledFor)
                     .ToList(),
                 SelectedDayAppointments = rows
-                    .Where(r => r.ScheduledFor.Date == selected)
+                    .Where(r => r.ScheduledFor.Date == selected && (selectedQueue.Equals("all") || r.QueueId == Convert.ToInt64(selectedQueue)))
                     .OrderBy(r => r.ScheduledFor)
                     .ToList()
             };

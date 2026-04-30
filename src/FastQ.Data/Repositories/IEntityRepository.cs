@@ -7,8 +7,10 @@ namespace FastQ.Data.Repositories
     public interface IEntityRepository
     {
         Entity Get(long id);
-        void Add(Entity entity);
-        void Update(Entity entity);
+        void Update(Entity entity, string stampuser);
+
+        // Add and ListAll - only available to ISS-LDMS team members
         IList<Entity> ListAll();
+        //void Add(Entity entity, string stampuser);
     }
 }

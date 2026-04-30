@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
@@ -19,7 +20,7 @@ namespace FastQ.Web.Services
         private readonly IQueueRepository _queues;
         //private readonly ILocationRepository _locations;
         private readonly IServiceTransactionRepository _serviceTransactions;
-        private readonly IClock _clock;
+        //private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
         public ProviderService()
@@ -29,7 +30,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateQueueRepository(),
                 //DbRepositoryFactory.CreateLocationRepository(),
                 DbRepositoryFactory.CreateServiceTransactionRepository(),
-                new SystemClock(),
+                //new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
         }
@@ -40,7 +41,7 @@ namespace FastQ.Web.Services
             IQueueRepository queues,
             //ILocationRepository locations,
             IServiceTransactionRepository serviceTransactions,
-            IClock clock,
+            //IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
@@ -48,7 +49,7 @@ namespace FastQ.Web.Services
             _queues = queues;
             //_locations = locations;
             _serviceTransactions = serviceTransactions;
-            _clock = clock;
+            //_clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
@@ -377,16 +378,16 @@ namespace FastQ.Web.Services
 
             var all = _appts.ListByQueue(queueId)
                 .OrderBy(a => a.Status)
-                .ThenBy(a => a.CreatedUtc)
+                .ThenBy(a => a.CreatedOn)
                 .ToList();
 
             bool IsWaiting(Appointment a) => a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived;
             bool IsInService(Appointment a) => a.Status == AppointmentStatus.InService;
             bool IsDone(Appointment a) => a.Status == AppointmentStatus.Completed || a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem || a.Status == AppointmentStatus.TransferredOut;
 
-            var waiting = all.Where(IsWaiting).OrderBy(a => a.CreatedUtc).ToList();
-            var inService = all.Where(IsInService).OrderBy(a => a.UpdatedUtc).ToList();
-            var done = all.Where(IsDone).OrderByDescending(a => a.UpdatedUtc).Take(50).ToList();
+            var waiting = all.Where(IsWaiting).OrderBy(a => a.CreatedOn).ToList();
+            var inService = all.Where(IsInService).OrderBy(a => a.UpdatedOn).ToList();
+            var done = all.Where(IsDone).OrderByDescending(a => a.UpdatedOn).Take(50).ToList();
 
             var dto = new QueueSnapshotDto
             {
@@ -409,7 +410,7 @@ namespace FastQ.Web.Services
                     CustomerPhone = c?.Phone ?? "",
                     Status = a.Status.ToString(),
                     ScheduledFor = a.ScheduledFor.ToString("yyyy-MM-dd h:mm tt"),
-                    UpdatedUtc = ToLocalDisplayTime(a.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt")
+                    UpdatedOn = a.UpdatedOn.ToString("yyyy-MM-dd h:mm tt")
                 });
             }
 
@@ -423,7 +424,7 @@ namespace FastQ.Web.Services
                     CustomerPhone = c?.Phone ?? "",
                     Status = a.Status.ToString(),
                     ScheduledFor = a.ScheduledFor.ToString("yyyy-MM-dd h:mm tt"),
-                    UpdatedUtc = ToLocalDisplayTime(a.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt")
+                    UpdatedOn = a.UpdatedOn.ToString("yyyy-MM-dd h:mm tt")
                 });
             }
 
@@ -437,16 +438,11 @@ namespace FastQ.Web.Services
                     CustomerPhone = c?.Phone ?? "",
                     Status = a.Status.ToString(),
                     ScheduledFor = a.ScheduledFor.ToString("yyyy-MM-dd h:mm tt"),
-                    UpdatedUtc = ToLocalDisplayTime(a.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt")
+                    UpdatedOn = a.UpdatedOn.ToString("yyyy-MM-dd h:mm tt")
                 });
             }
 
             return dto;
-        }
-
-        private static DateTime ToLocalDisplayTime(DateTime value)
-        {
-            return value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : value;
         }
 
         private IList<Queue> ListEligibleQueues(long? requestedEntityId = null)
@@ -507,6 +503,7 @@ namespace FastQ.Web.Services
             public DateTime? TargetDate { get; set; }
             public string RefValue { get; set; }
             public string Notes { get; set; }
+            public string ServiceNotes { get; set; }
             public string StampUser { get; set; }
         }
 
@@ -557,8 +554,8 @@ namespace FastQ.Web.Services
                 sourceAppt.Status = sourceAction == "REMOVE"
                     ? AppointmentStatus.Cancelled
                     : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
-                sourceAppt.UpdatedUtc = _clock.UtcNow;
-                sourceAppt.StampDateUtc = _clock.UtcNow;
+                sourceAppt.UpdatedOn = DateTime.Now;
+                sourceAppt.StampDate = DateTime.Now;
                 PopulateCustomerNotificationFields(sourceAppt);
                 _rt.AppointmentChanged(sourceAppt);
                 _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
@@ -590,6 +587,14 @@ namespace FastQ.Web.Services
                     return Result<long>.Fail("Target date is required for appointment target.");
             }
 
+            Appointment sourceAppt = null;
+            TimeSpan? sourceEndTime = null;
+            if (srcType == 'A')
+            {
+                sourceAppt = _appts.Get(request.SrcId);
+                sourceEndTime = ResolveSlotEndTime(sourceAppt);
+            }
+
             var stampUser = string.IsNullOrWhiteSpace(request.StampUser) ? "web" : request.StampUser.Trim();
             var newSrcId = _serviceTransactions.CloseAndAddSource(
                 srcType,
@@ -601,17 +606,20 @@ namespace FastQ.Web.Services
                 request.TargetDate,
                 request.RefValue,
                 request.Notes,
-                stampUser);
+                request.ServiceNotes,
+                stampUser,
+                sourceEndTime);
 
             if (srcType == 'A')
             {
-                var appt = _appts.Get(request.SrcId);
+                var appt = sourceAppt ?? _appts.Get(request.SrcId);
                 if (appt != null)
                 {
                     appt.Status = AppointmentStatus.Completed;
+                    appt.EndTime = sourceEndTime ?? appt.EndTime;
                     appt.ProviderId = request.StampUser;
-                    appt.UpdatedUtc = _clock.UtcNow;
-                    appt.StampDateUtc = _clock.UtcNow;
+                    appt.UpdatedOn = DateTime.Now; //_clock.UtcNow;
+                    appt.StampDate = DateTime.Now; //_clock.UtcNow;
                     PopulateCustomerNotificationFields(appt);
                     _rt.AppointmentChanged(appt);
                     _rt.QueueChanged(appt.EntityId, appt.QueueId);
@@ -630,29 +638,29 @@ namespace FastQ.Web.Services
             return Result<long>.Success(newSrcId);
         }
 
-        public int CloseStaleScheduledAppointments(int staleHours)
-        {
-            var now = _clock.UtcNow;
-            var cutoff = now.AddHours(-staleHours);
+        //public int CloseStaleScheduledAppointments(int staleHours)
+        //{
+        //    var now = _clock.UtcNow;
+        //    var cutoff = now.AddHours(-staleHours);
 
-            var stale = _appts.ListAll()
-                .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedUtc <= cutoff)
-                .ToList();
+        //    var stale = _appts.ListAll()
+        //        .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedOn <= cutoff)
+        //        .ToList();
 
-            foreach (var a in stale)
-            {
-                a.Status = AppointmentStatus.ClosedBySystem;
-                a.UpdatedUtc = now;
-                a.StampDateUtc = now;
-                _appts.Update(a);
+        //    foreach (var a in stale)
+        //    {
+        //        a.Status = AppointmentStatus.ClosedBySystem;
+        //        a.UpdatedOn = now;
+        //        a.StampDate = now;
+        //        _appts.Update(a);
 
-                PopulateCustomerNotificationFields(a);
-                _rt.AppointmentChanged(a);
-                _rt.QueueChanged(a.EntityId, a.QueueId);
-            }
+        //        PopulateCustomerNotificationFields(a);
+        //        _rt.AppointmentChanged(a);
+        //        _rt.QueueChanged(a.EntityId, a.QueueId);
+        //    }
 
-            return stale.Count;
-        }
+        //    return stale.Count;
+        //}
 
         private Result QueueCustomer(char srcType, long appointmentId, string providerId)
         {
@@ -667,16 +675,16 @@ namespace FastQ.Web.Services
             if (appt != null && (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem))
                 return Result.Fail("Cannot queue a finished appointment.");
 
-            var now = _clock.UtcNow;
+            var now = DateTime.Now;  // _clock.UtcNow;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
-            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "CHECKIN", stampUser, null, null);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "CHECKIN", stampUser, null);
 
             if (upperSrc == 'A' && appt != null)
             {
                 appt.Status = AppointmentStatus.Arrived;
                 appt.ProviderId = providerId;
-                appt.UpdatedUtc = now;
-                appt.StampDateUtc = now;
+                appt.UpdatedOn = now;
+                appt.StampDate = now;
 
                 PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
@@ -699,16 +707,16 @@ namespace FastQ.Web.Services
             if (appt != null && appt.Status != AppointmentStatus.Arrived && appt.Status != AppointmentStatus.Scheduled)
                 return Result.Fail("Appointment must be queued or scheduled to begin service.");
 
-            var now = _clock.UtcNow;
+            var now = DateTime.Now;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
-            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "START", stampUser, null, null);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "START", stampUser, null);
             if (upperSrc == 'A' && appt != null)
             {
                 appt.Status = AppointmentStatus.InService;
                 appt.ProviderId = providerId;
-                appt.UpdatedUtc = now;
-                appt.StampDateUtc = now;
+                appt.UpdatedOn = now;
+                appt.StampDate = now;
 
                 PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
@@ -731,17 +739,17 @@ namespace FastQ.Web.Services
             if (appt != null && appt.Status != AppointmentStatus.InService)
                 return Result.Fail("Appointment must be in service to end service.");
 
-            var now = _clock.UtcNow;
-            var localNow = TimeZoneInfo.ConvertTimeFromUtc(now, TimeZoneInfo.Local);
+            var now = DateTime.Now;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
-            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", stampUser, null, localNow.TimeOfDay);
+            var endTime = ResolveSlotEndTime(appt);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", stampUser, null, endTime);
             if (upperSrc == 'A' && appt != null)
             {
                 appt.Status = AppointmentStatus.Completed;
-                appt.EndTime = localNow.TimeOfDay;
+                appt.EndTime = endTime ?? appt.EndTime;
                 appt.ProviderId = providerId;
-                appt.UpdatedUtc = now;
-                appt.StampDateUtc = now;
+                appt.UpdatedOn = now;
+                appt.StampDate = now;
 
                 PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
@@ -749,6 +757,40 @@ namespace FastQ.Web.Services
             }
 
             return Result.Success();
+        }
+
+        private TimeSpan? ResolveSlotEndTime(Appointment appt)
+        {
+            if (appt == null)
+                return null;
+            if (appt.EndTime.HasValue)
+                return appt.EndTime.Value;
+
+            var slots = _appts.GetQueueOpenSlots(appt.QueueId, appt.ScheduledFor.Date);
+            if (slots == null)
+                return null;
+
+            foreach (var slot in slots)
+            {
+                var begin = ParseSlotTime(slot?.SlotBegin);
+                if (begin.HasValue && begin.Value == appt.ScheduledFor.TimeOfDay)
+                {
+                    return ParseSlotTime(slot?.SlotEnd);
+                }
+            }
+
+            return null;
+        }
+
+        private static TimeSpan? ParseSlotTime(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            if (!DateTime.TryParseExact(value.Trim(), new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+                return null;
+
+            return parsed.TimeOfDay;
         }
 
         private Result RemoveAppointment(char srcType, long appointmentId, string providerId)
@@ -764,16 +806,16 @@ namespace FastQ.Web.Services
             if (appt != null && (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem))
                 return Result.Fail("Appointment is already finished.");
 
-            var now = _clock.UtcNow;
+            var now = DateTime.Now;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 
-            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "REMOVE", stampUser, null, null);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "REMOVE", stampUser, null);
             if (upperSrc == 'A' && appt != null)
             {
                 appt.Status = AppointmentStatus.Cancelled;
                 appt.ProviderId = providerId;
-                appt.UpdatedUtc = now;
-                appt.StampDateUtc = now;
+                appt.UpdatedOn = now;
+                appt.StampDate = now;
 
                 PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);

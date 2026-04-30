@@ -179,7 +179,6 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Helpers\IClock.cs" />
     <Compile Include="Helpers\Utilities.cs" />
     <Compile Include="Hubs\QueueHub.cs" />
     <Compile Include="Models\AdminDashboardViewModel.cs" />
@@ -208,6 +207,7 @@
     <Content Include="Content\logo-wd.png" />
     <Content Include="Content\modal.css" />
     <Content Include="Content\queueadmin.css" />
+    <Content Include="Content\siteadmin.css" />
     <Content Include="favicon.ico" />
     <Content Include="Content\OC_Logo.png" />
     <Content Include="Content\site.css" />
@@ -280,7 +280,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>0</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:5095/</IISUrl>
+          <IISUrl>http://localhost:5095/FastQ</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

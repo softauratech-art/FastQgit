@@ -987,7 +987,7 @@
 <div id="serviceRouteModal" class="modal-backdrop route-modal" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
     <div class="modal">
         <div class="modal-header">
-            <h5 class="modal-title" id="serviceRouteModalTitle">Transfer Appointment</h5>
+            <h5 class="modal-title" id="serviceRouteModalTitle">Route Appointment</h5>
             <button class="btn small ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
         </div>
         <div class="modal-body">
@@ -1063,7 +1063,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
-            <button class="btn primary" type="button" id="saveRoute">Transfer Appointment</button>
+            <button class="btn primary" type="button" id="saveRoute">Save</button>
         </div>
     </div>
 </div>
@@ -1087,7 +1087,7 @@
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="endServiceModal">Cancel</button>
             <button class="btn secondary" type="button" data-end-choice="end-only">End Only</button>
-            <button class="btn primary" type="button" data-end-choice="end-add">End + Add Service</button>
+            <button class="btn primary" type="button" data-end-choice="end-add">End + New</button>
         </div>
     </div>
 </div>
@@ -1317,7 +1317,37 @@
       setSelectOptions(document.getElementById(prefix + "ServiceId"), details && details.services ? details.services : [], "Select service");
       setSelectOptions(document.getElementById(prefix + "ContactType"), details && details.contactOptions ? details.contactOptions : [], "Select contact type");
       setSelectOptions(document.getElementById(prefix + "RefValue"), details && details.refOptions ? details.refOptions : [], "Select reference");
+      if (prefix === "addWalkin") {
+        forceWalkinContactTypeInPerson();
+      }
       syncReferenceInputMeta(prefix);
+    }
+
+    function forceWalkinContactTypeInPerson() {
+      var select = document.getElementById("addWalkinContactType");
+      if (!select) {
+        return;
+      }
+
+      var inPersonOption = null;
+      Array.prototype.forEach.call(select.options, function (option) {
+        var isInPerson = (option.value || "").toUpperCase() === "IP";
+        option.disabled = option.value ? !isInPerson : true;
+        if (isInPerson) {
+          inPersonOption = option;
+        }
+      });
+
+      if (!inPersonOption) {
+        inPersonOption = document.createElement("option");
+        inPersonOption.value = "IP";
+        inPersonOption.textContent = "In person";
+        select.appendChild(inPersonOption);
+      }
+      if (inPersonOption) {
+        select.value = inPersonOption.value;
+      }
+      select.disabled = true;
     }
 
     function loadEntryQueueDetails(prefix, queueCode) {
@@ -2754,6 +2784,40 @@
       };
     }
 
+    function ensureSelectOption(selectElement, value, label) {
+      if (!selectElement || !value) {
+        return;
+      }
+      var exists = Array.prototype.some.call(selectElement.options, function (option) {
+        return option.value === value;
+      });
+      if (!exists) {
+        var option = document.createElement("option");
+        option.value = value;
+        option.textContent = label || value;
+        selectElement.appendChild(option);
+      }
+    }
+
+    function lockRouteReferenceFromSource() {
+      var routeMode = document.getElementById("routeMode");
+      var routeSrcType = document.getElementById("routeSrcType");
+      var routeSrcId = document.getElementById("routeSrcId");
+      var refValue = document.getElementById("routeRefValue");
+      if (!routeMode || routeMode.value !== "end-add" || !routeSrcId || !routeSrcType || !refValue) {
+        return;
+      }
+
+      var sourceContext = getRouteSourcePrefill(routeSrcId.value, routeSrcType.value);
+      if (!sourceContext) {
+        return;
+      }
+
+      ensureSelectOption(refValue, sourceContext.refValue, sourceContext.refValue);
+      refValue.value = sourceContext.refValue || "";
+      refValue.disabled = true;
+    }
+
     function openRouteModal(mode, appointmentId, srcType, completionNotes) {
       var routeMode = document.getElementById("routeMode");
       var routeSrcType = document.getElementById("routeSrcType");
@@ -2771,6 +2835,7 @@
       var notes = document.getElementById("routeNotes");
       var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
       var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
+      var lockReference = mode === "end-add";
 
       if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
         return;
@@ -2780,10 +2845,10 @@
       routeSrcType.value = srcType;
       routeSrcId.value = appointmentId;
       if (routeTitle) {
-        routeTitle.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+        routeTitle.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : (mode === "end-add" ? "End + New" : "Transfer Appointment");
       }
       if (saveRouteButton) {
-        saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+        saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : (mode === "end-add" ? "End + New" : "Transfer Appointment");
       }
       if (routeOriginalNotes) routeOriginalNotes.value = sourceContext ? sourceContext.notes : "";
       if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
@@ -2792,10 +2857,17 @@
       if (targetServiceId) targetServiceId.value = sourcePrefill ? sourcePrefill.serviceId : "";
       if (targetDate) targetDate.value = "";
       if (targetTime) targetTime.value = "";
-      if (refValue) refValue.value = sourcePrefill ? sourcePrefill.refValue : "";
+      if (refValue) {
+        refValue.disabled = !!lockReference;
+        if (lockReference && sourceContext) {
+          ensureSelectOption(refValue, sourceContext.refValue, sourceContext.refValue);
+        }
+        refValue.value = lockReference && sourceContext ? sourceContext.refValue : (sourcePrefill ? sourcePrefill.refValue : "");
+      }
       if (notes) notes.value = sourcePrefill ? sourcePrefill.notes : "";
       toggleRouteDateRow();
       loadRouteQueues(sourcePrefill ? sourcePrefill.queueId : "", sourcePrefill ? sourcePrefill.serviceId : "").then(function () {
+        lockRouteReferenceFromSource();
         if (sourcePrefill && targetKind && targetKind.value === "A") {
           populateRouteDateOptions(sourcePrefill.date).then(function () {
             populateRouteTimeOptions(to24Hour(sourcePrefill.time || ""));
@@ -3015,12 +3087,12 @@
           if (!year || !month || !day) {
             return;
           }
-          var base = new Date(Date.UTC(year, month - 1, day));
+          var base = new Date(year, month - 1, day);
           var shift = parseInt(btn.getAttribute("data-date-shift") || "0", 10);
           if (!shift) {
             return;
           }
-          base.setUTCDate(base.getUTCDate() + shift);
+          base.setDate(base.getDate() + shift);
           var nextValue = base.toISOString().slice(0, 10);
           dateInput.value = nextValue;
           var startInput = container.querySelector('[data-filter="start"]');
@@ -3076,15 +3148,21 @@
     function hasQueuePermission(actionName, queueId) {
       var access = serviceAccess || {};
       var numericQueueId = parseInt(queueId || "0", 10);
+      var hostQueueIds = Array.isArray(access.HostQueueIds) ? access.HostQueueIds : [];
       var providerQueueIds = Array.isArray(access.ProviderQueueIds) ? access.ProviderQueueIds : [];
       var queueAdminQueueIds = Array.isArray(access.QueueAdminQueueIds) ? access.QueueAdminQueueIds : [];
+      var hostHasQueue = hostQueueIds.indexOf(numericQueueId) >= 0;
       var providerHasQueue = providerQueueIds.indexOf(numericQueueId) >= 0;
       var queueAdminHasQueue = queueAdminQueueIds.indexOf(numericQueueId) >= 0;
 
       if (access.IsAdmin) {
         return true;
       }
-      return providerHasQueue || queueAdminHasQueue;
+
+      if (actionName == "arrive" || actionName == "remove")
+          return [hostHasQueue, providerHasQueue, queueAdminHasQueue].some(flag => flag === true);
+      else
+          return [providerHasQueue, queueAdminHasQueue].some(flag => flag === true);
     }
 
     function canAction(status, actionName, queueId, rowDate) {
@@ -3780,7 +3858,8 @@
           srcType: srcType,
           guestUrl: guestUrlInput ? guestUrlInput.value : "",
           hostUrl: urlInput ? urlInput.value : "",
-          notes: appendNotes(originalNotes, notesInput ? notesInput.value : "")
+            //notes: appendNotes(originalNotes, notesInput ? notesInput.value : "")
+          notes: notesInput ? notesInput.value : ""
         };
 
         postForm(saveServiceInfoUrl, payload)
@@ -3867,7 +3946,7 @@
     var routeTargetQueueId = document.getElementById("routeTargetQueueId");
     if (routeTargetQueueId) {
       routeTargetQueueId.addEventListener("change", function () {
-        loadRouteServices(routeTargetQueueId.value || "", "");
+        loadRouteServices(routeTargetQueueId.value || "", "").then(lockRouteReferenceFromSource);
       });
     }
     document.addEventListener("click", function (event) {

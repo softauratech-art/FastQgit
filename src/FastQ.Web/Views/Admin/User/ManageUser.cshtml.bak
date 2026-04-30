@@ -1,0 +1,211 @@
+
+@model FastQ.Web.Models.Admin.UserVM
+@{
+    ViewBag.Title = "User Settings";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section Head{
+    <link href="~/Content/siteadmin.css" rel="stylesheet" />
+}
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Manage User Accounts</div>
+        <div class="topbar-sub">Edit user information and permissions</div>
+    </div>
+}
+
+@{
+    if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <strong>Error:</strong> @ViewBag.ErrorMessage
+        </div>
+    }
+
+    if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success">
+            <strong>Success:</strong> @ViewBag.SuccessMessage
+        </div>
+    }
+}
+
+@if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("edit")
+    || ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("create")
+)
+{
+    using (Html.BeginForm(ViewContext.RouteData.Values["action"].ToString(), "User", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken();
+        <section class="card">
+            <div class="configuration-header">
+                <h2>User Settings</h2>
+                <div class="primary-actions">
+                    <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "User")" />
+                    <input type="submit" value="Save Settings" class="btn-save" />
+                </div>
+            </div>
+
+            <input type="hidden" name="entityId" id="entityId" value="@(new FastQ.Web.Services.AuthService().GetSessionEntityId())" />
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group mt-2">
+                            @Html.LabelFor(model => model.UserId)
+                            @Html.TextBoxFor(m => m.UserId, new { @required="true" })
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="FirstName">First Name</label>
+                            @Html.TextBoxFor(m => m.FirstName)
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="LastName">Last Name</label>
+                            @Html.TextBoxFor(m => m.LastName)
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="Email">Email</label>
+                            @Html.TextBoxFor(m => m.Email)
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group mt-2">
+                            <label for="Title">Title</label>
+                            @Html.TextBoxFor(m => m.Title)
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="Phone">Phone</label>
+                            @Html.TextBoxFor(m => m.Phone)
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-group mt-2" style="border-bottom: none;">
+                                @Html.LabelFor(model => model.IsActive, new { @class = "switch-label" })
+                                <label class="switch">
+                                    <input type="checkbox" value="true" name="IsActive" id="IsActive" @(Model.IsActive ? "checked" : "") />
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-group">
+                                <div>
+                                    @Html.Label("IsAdmin", "Super Admin?", new { @class = "switch-label" })
+                                    <span style="font-size:10px; display:block;">(Queues, Users and Holidays)</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" value="true" name="IsAdmin" id="IsAdmin" @(Model.IsAdmin ? "checked" : "") />
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="switch-group" style="border-bottom: none;">
+                                <label class="switch-label">Spanish</label>
+                                <label class="switch">
+                                    <input type="checkbox" value="ES" name="Language" id="OtherLanguageES"  @(Model.OtherLanguage != null && Model.OtherLanguage.Contains("ES") ? "checked" : "")  />
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="switch-group" style="border-bottom:">
+                                <label class = "switch-label">Creole</label>
+                                <label class="switch">
+                                    <input type="checkbox" value="CP" name="Language" id="OtherLanguageCP"  @(Model.OtherLanguage != null && Model.OtherLanguage.Contains("CP") ? "checked" : "") />
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid mt-3" style="display:grid;">
+                <div class="card">
+                    <table class="table table-striped">
+                        <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
+                            <tr>
+                                <td>Queue</td>
+                                <td><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host?</td>
+                                <td><input type="checkbox" name="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? </td>
+                                <td> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</td>
+                                <td><input type="checkbox" name="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var qlist = new FastQ.Web.Services.QueueService().ListQueues().Where(e => e.EntityId == new FastQ.Web.Services.AuthService().GetSessionEntityId()).OrderBy(q => q.Name);
+                                foreach (FastQ.Web.Models.Admin.QueueVM q in qlist)
+                                {
+
+                                    var isHost = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).HostFlag : false;
+                                    var isProvider = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).ProviderFlag : false;
+                                    var isReporter = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).ReporterFlag : false;
+                                    var isQueueAdmin = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).QueueAdminFlag : false;
+                                    <tr>
+                                        <td>@q.Name</td>
+                                        <td><input type="checkbox" name="host" value="@q.Id" class="host-role" @(isHost ? "checked" : "") /></td>
+                                        <td><input type="checkbox" name="provider" value="@q.Id" class="provider-role" @(isProvider ? "checked" : "") /></td>
+                                        <td><input type="checkbox" name="reporter" value="@q.Id" class="reporter-role" @(isReporter ? "checked" : "") /></td>
+                                        <td><input type="checkbox" name="queueadmin" value="@q.Id" class="queueadmin-role" @(isQueueAdmin ? "checked" : "") /></td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    }
+ }
+
+@*@if (ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("delete"))
+{
+    using (Html.BeginForm("Delete", "User", FormMethod.Post))
+    {
+        <div class="card">
+            <h2>Delete User</h2>
+            <table cellpadding="5">
+                <tr>
+                    <td>User ID :</td>
+                    <td>@Model.UserId</td>
+                </tr>
+                <tr>
+                    <td>First Name :</td>
+                    <td>@Model.FirstName</td>
+                </tr>
+                <tr>
+                    <td>Last Name :</td>
+                    <td>@Model.LastName</td>
+                </tr>
+                <tr>
+                    <td>Email :</td>
+                    <td>@Model.Email</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <h3>Are you sure you want to delete this user?</h3>
+                        <button type="submit" class="btn secondary"
+                                formaction="/user/delete/@Model.UserId">
+                            Yes
+                        </button>
+                        &nbsp;&nbsp;
+                        <button type="submit" class="btn ghost"
+                                formaction="/user">
+                            No
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    }
+}*@
+
+@section Scripts {
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        function selectAll(obj, classname) {
+            $('.' + classname).prop('checked', obj.checked);
+        }
+    </script>
+}

@@ -1,3 +1,19 @@
+
+@section Head {
+    @*<link rel="stylesheet" href="~/Content/siteadmin.css" />*@
+    <style>
+        .outage-grid-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 3fr;
+            gap: 16px;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+            margin: 10px 0;
+        }
+    </style>
+}
+
 @section PageHeader {
     <div>
         <div class="topbar-title">FastQ Admin Menu</div>
@@ -7,7 +23,7 @@
     </div>
 }
 
-@{ 
+@{
 
     var authsvc = new FastQ.Web.Services.AuthService();
     //var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
@@ -17,11 +33,11 @@
     var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
 }
 
-<div class="grid-3">    
+<div class="grid-3">
     <div class="card" style='display: @((isSuperAdmin || isQueueAdmin) ? "" : "none;")'>
         <div class="card-body">
             <h5 class="card-title">Queue Settings</h5>
-            <p class="card-text">Add and manage queue configuration, schedules and services.</p>
+            <p class="card-text">Add and manage configuration, schedules, services and security.</p>
             <a href="@Url.Action("Index", "Queue")" class="btn secondary">Manage Queue Settings</a>
         </div>
     </div>
@@ -42,3 +58,154 @@
         </div>
     </div>
 </div>
+
+@{ if (isSuperAdmin)
+    {
+        var secname = "AccessSection-1";
+        var entityid = new FastQ.Web.Services.AuthService().GetSessionEntityId();
+        var oentity = ViewBag.Entity == null ? new FastQ.Data.Entities.Entity() : (FastQ.Data.Entities.Entity)ViewBag.Entity;
+        var dtplaceholder = "MM/DD/YYYY HH:MI AM";
+        <form action="@Url.Action("EditEntity", "Admin")" method="post" data-id="@entityid" data-secname="@secname" id="submitEntityForm">
+            @Html.AntiForgeryToken()
+            <div class="card" id="@secname">
+
+                <div class="feedback">@(ViewBag.FeedbackMessage != null ? ViewBag.Feedback : "")</div>
+                <div class="card-title">Manage Entity Info</div>
+                <div class="card-body mt-2">
+                    <div class="validation-summary-error alert-danger"></div>
+                    <div class="grid-2">
+                        <div class="mt-2 form-group">
+                            <input id="EntityId" name="EntityId" type="hidden" value="@entityid">
+                            <label for="Name">Entity Name</label>
+                            <input class="form-control text-box single-line" id="Name" name="Name" required="required" type="text" value="@oentity.Name">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="Description">Description</label>
+                            <input class="form-control text-box multi-line" id="Description" name="Description" required="required" type="text" rows="2" value="@oentity.Description">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="Address">Address</label>
+                            <input class="form-control text-box single-line" id="Address" name="Address" required="required" type="text" value="@oentity.Address">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="Phone">Phone</label>
+                            <input class="form-control text-box single-line" id="Phone" name="Phone" required="required" type="text" value="@oentity.Phone">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="OpensAt">Opens At</label>
+                            <input class="form-control text-box single-line" id="OpensAt" name="OpensAt"  type="text" value="@oentity.OpensAt">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="ClosesAt">Closes At</label>
+                            <input class="form-control text-box single-line" id="ClosesAt" name="ClosesAt"  type="text" value="@oentity.ClosesAt">
+                        </div>
+                    </div>
+
+                    @*for-future-use<div class="switch-group">
+                        <label class="switch">
+                            <input type="checkbox" value="true" name="ActivateOutage" id="ActivateOutage" @(oentity.OutageMessage != "" ? "checked" : "") />
+                            <span class="slider"></span>
+                        </label>
+                    </div>*@
+
+
+                    <div class="outage-grid-section alert-danger">
+                        <div class="mt-2 form-group">
+                            <label for="OutageBegin">Outage Begins From</label>
+                            <input class="form-control text-box single-line" id="OutageBegin" name="OutageBegin" type="text" value="@oentity.OutageBegin" placeholder="@dtplaceholder">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="OutageEnd">Outage Ends At</label>
+                            <input class="form-control text-box single-line" id="OutageEnd" name="OutageEnd" type="text" value="@oentity.OutageEnd"  placeholder="@dtplaceholder">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="OutageNotifyBegin">Notification Begin Date & Time</label>
+                            <input class="form-control text-box single-line" id="OutageNotifyBegin" name="OutageNotifyBegin" type="text" value="@oentity.OutageNotifyBegin"  placeholder="@dtplaceholder">
+                        </div>
+
+                        <div class="mt-2 form-group">
+                            <label for="OutageMessage">Outage Display Message</label>
+                            <input class="form-control text-box single-line" id="OutageMessage" name="OutageMessage" type="text" value="@oentity.OutageMessage" >
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <input type="submit" value="Submit" class="btn secondary ">
+                        <a href="@Url.Action("Dashboard", "Admin")" class="btn ghost" style="margin-left: 15px; height: 35px;">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    }
+}
+
+
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            //$('#ActivateOutage').change(function () {
+            //    $('.outage-grid-section').toggle(this.checked);
+            //});
+            
+            function validateOutageData() {
+                var hasdata = ($.trim($('#OutageBegin').val()) + $.trim($('#OutageEnd').val()) + $.trim($('#OutageNotifyBegin').val()) + $.trim($('#OutageMessage').val())).length > 0;
+
+                if (!hasdata)
+                    return true;
+
+                var isvalid = false;
+                var startDate = new Date($('#OutageBegin').val());
+                var endDate = new Date($('#OutageEnd').val());
+                var notifyDate = new Date($('#OutageNotifyBegin').val());
+                var outagemessage = $.trim($('#OutageMessage').val());
+
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || isNaN(notifyDate.getTime())) {
+                    alert("Invalid date format(s)");
+                } else if (startDate > endDate) {
+                    alert("Start date cannot be after end date.");
+                } else if (startDate.getTime() === endDate.getTime()) {
+                    alert("The dates are identical.");
+                } else if (notifyDate.getTime() > startDate.getTime()) {
+                    alert("Notify Date cannot be after start date.");
+                } else if (outagemessage.length === 0) {
+                    alert("Notification Message cannot be empty.");
+                } else
+                    isvalid = true;
+
+                return isvalid;
+            }
+
+            $('#submitEntityForm').submit(function (e) {
+
+                var openDate = new Date($('#OpensAt').val());
+                var closeDate = new Date($('#ClosesAt').val());
+                
+                if (($.trim($('#OpensAt').val()) + $.trim($('#ClosesAt').val())).length > 0) {
+                    if (isNaN(openDate.getTime()) || isNaN(closeDate.getTime())) {
+                        e.preventDefault();
+                        alert("Invalid Open/Close date format(s)");
+                    } else if (openDate > closeDate) {
+                        e.preventDefault();
+                        alert("Open date cannot be after Close date.");
+                    }
+                };
+
+                if (!validateOutageData()) {
+                    e.preventDefault(); // Stops the form from posting to the controller
+                    var formData = $('#submitEntityForm').serializeArray();
+                    $.each(formData, function (index, field) {
+                        console.log(field.name + ": " + field.value);
+                    });
+                }
+            });
+        });
+
+    </script>
+}

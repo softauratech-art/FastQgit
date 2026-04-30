@@ -1,11 +1,14 @@
+using FastQ.Data.Entities;
+using FastQ.Web.Attributes;
+using FastQ.Web.Helpers;
+using FastQ.Web.Models.Admin;
+using FastQ.Web.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Web.Mvc;
-using FastQ.Web.Attributes;
-using FastQ.Web.Models.Admin;
-using FastQ.Web.Services;
-using FastQ.Web.Helpers;
+
 
 namespace FastQ.Web.Controllers.Admin
 {
@@ -110,10 +113,10 @@ namespace FastQ.Web.Controllers.Admin
             try
             {
                 _service.Delete(id);
-                ViewBag.SuccessMessage = "Record deleted successfully";
+                TempData["SuccessMessage"] = "Record deleted successfully";
             }
-            catch (Exception ex){
-                ViewBag.ErrorMessage = "An error occurred while processing your request. " + ex.Message;
+            catch (Exception ex) {
+                TempData["ErrorMessage"] = "An error occurred while processing your request. " + ex.Message;
             }
             return RedirectToAction("Index");
         }
@@ -239,7 +242,6 @@ namespace FastQ.Web.Controllers.Admin
 
         // POST: Queue/DeleteService/5
         [HttpPost, ActionName("DeleteService")]
-        //[ValidateAntiForgeryToken]
         public ActionResult DeleteSvcConfirmed(long id, long queueid)
         {
             _service.DeleteQService(id);
@@ -248,6 +250,57 @@ namespace FastQ.Web.Controllers.Admin
             return PartialView(controllerpath + "_QueueServices", oQueue.Services);
 
             //return Json(new { success = true, message = "Record deleted successfully" });
+        }
+        #endregion
+
+        #region UserAccess
+        //POST: Queue/EditAccess
+        [HttpPost, ValidateAntiForgeryToken]
+        public ActionResult EditAccess(FormCollection collection)
+        {
+            long qid = Convert.ToInt64(collection["Id"].ToString());
+            bool iserror = false;
+            try
+            {        
+                string hostusers = collection["host"]?.ToString();
+                string providerusers = collection["provider"]?.ToString();
+                string reporterusers = collection["reporter"]?.ToString();
+                string adminusers = collection["queueadmin"]?.ToString();
+                //throw new Exception("forced error");
+
+                // Add to database
+                _service.AddOrUpdateQAccess(qid, hostusers, providerusers, reporterusers, adminusers);
+
+                ViewBag.SuccessMessage = "Record updated successfully";
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = "An error occurred while processing your request. " + ex.Message;
+                iserror = true;
+           
+            }
+            var oQueue = _service.GetQueue(qid);
+            oQueue.LeadTimeMin = Helpers.Utilities.ParseDurationFromISO(oQueue.LeadTimeMin);
+            oQueue.LeadTimeMax = Helpers.Utilities.ParseDurationFromISO(oQueue.LeadTimeMax);
+
+            if (iserror) ReloadAccessList(oQueue.UserAccessList, collection);  //re-load UAL from form-object
+            return View(controllerpath + "ManageQueue", oQueue);
+        }
+
+        void ReloadAccessList(IList<QAccess> perms, FormCollection fc)
+        {
+            string[] useraccessfld = ["host", "provider", "reporter", "queueadmin"];
+            foreach (string key in useraccessfld)
+            {                
+                string[] ids = fc[key] == null ? [] : fc[key]?.Split(',');
+                foreach (var usr in perms)
+                {
+                    if (key.Equals("host")) usr.HostFlag = ids.Contains(usr.UserId);
+                    if (key.Equals("provider")) usr.ProviderFlag = ids.Contains(usr.UserId);
+                    if (key.Equals("reporter")) usr.ReporterFlag = ids.Contains(usr.UserId);
+                    if (key.Equals("queueadmin")) usr.QueueAdminFlag = ids.Contains(usr.UserId);
+                }
+            }           
         }
         #endregion
     }

@@ -46,7 +46,7 @@ namespace FastQ.Data.Db
                     }
                 }
             }
-            catch (OracleException)
+            catch
             {
                 return null;
             }
@@ -92,7 +92,7 @@ namespace FastQ.Data.Db
 
             var first = record["FNAME"]?.ToString() ?? string.Empty;
             var last = record["LNAME"]?.ToString() ?? string.Empty;
-            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.UtcNow : Convert.ToDateTime(record["STAMPDATE"]);
+            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["STAMPDATE"]);
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
             var adminFlag = (record["ADMINFLAG"]?.ToString() ?? "N") == "Y";
             return new User
@@ -108,8 +108,7 @@ namespace FastQ.Data.Db
                 // AdminFlag set in BusinessWEntities collection for each entity
                 Title = record["TITLE"]?.ToString() ?? string.Empty,
                 StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
-                //StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc),
-                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Local),
+                StampDate = stampDate,
                 Queues = GetUserQueuePermissions(userIdText, stampuser),
                 BusinessEntities = GetUserEntities(userIdText, stampuser)
             };
@@ -119,7 +118,7 @@ namespace FastQ.Data.Db
         {
             using (var conn = DataAccess.Open())
             {                
-                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_USER_QUEUES_ROLES"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "FQOWNER.FQ_PROCS_GET.GET_USER_QUEUES_ROLES"))
                 {
                     DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
                     DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
@@ -159,7 +158,7 @@ namespace FastQ.Data.Db
         {
             using (var conn = DataAccess.Open())
             {
-                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.GET_USER_ENTITIES"))
+                using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_USER_ENTITIES"))
                 {
                     DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
                     DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
@@ -194,7 +193,7 @@ namespace FastQ.Data.Db
         public void AddOrUpdateUser(string action, User ouser, long entityid, string hostqueues, string providerqueues, string reporterqueues, string queueadminqueues, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "fqowner.FQ_UPSERTUSER";
+            string sp_name = "FQOWNER.FQ_PROCS_ADMIN.UPSERT_USER";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_action", action, DbType.String); 
@@ -221,13 +220,14 @@ namespace FastQ.Data.Db
             }
         }
 
-        public void Delete(string uid, string stampuser)
+        public void Delete(string uid, long entityid, string stampuser)
         {
             using var conn = DataAccess.Open();
-            string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETEUSER";
+            string sp_name = "fqowner.FQ_PROCS_ADMIN.DELETE_USER";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
                 DataAccess.AddParam(cmd, "p_userid", uid, DbType.String);
+                DataAccess.AddParam(cmd, "p_entityid", entityid, DbType.Int64);
                 DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
                 DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String).Direction = ParameterDirection.Output;
                 cmd.Parameters["p_outmsg"].Size = 4000;

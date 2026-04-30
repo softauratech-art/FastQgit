@@ -139,6 +139,11 @@ namespace FastQ.Web.Services
                 .Any(e => e.ActiveFlag && e.ConfigAdminFlag && (currentEntityId <= 0 || e.EntityId == currentEntityId));
 
             access.IsAdmin = isSuperAdmin;
+            access.HostQueueIds = actionQueuePermissions
+                .Where(q => q.HostFlag)
+                .Select(q => q.QueueId)
+                .Distinct()
+                .ToList();
             access.ProviderQueueIds = actionQueuePermissions
                 .Where(q => q.ProviderFlag)
                 .Select(q => q.QueueId)
@@ -151,7 +156,8 @@ namespace FastQ.Web.Services
                 .ToList();
             access.CanAddEntries = access.IsAdmin
                 || access.ProviderQueueIds.Count > 0
-                || access.QueueAdminQueueIds.Count > 0;
+                || access.QueueAdminQueueIds.Count > 0
+                || access.HostQueueIds.Count > 0;
 
             return access;
         }
@@ -188,7 +194,8 @@ namespace FastQ.Web.Services
 
             return access.IsAdmin
                    || access.QueueAdminQueueIds.Contains(queueId)
-                   || access.ProviderQueueIds.Contains(queueId);
+                   || access.ProviderQueueIds.Contains(queueId) 
+                   || access.HostQueueIds.Contains(queueId);
         }
     }
 }

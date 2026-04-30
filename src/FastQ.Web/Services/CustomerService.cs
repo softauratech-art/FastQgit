@@ -28,7 +28,7 @@ namespace FastQ.Web.Services
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
         //private readonly ILocationRepository _locations;
-        private readonly IClock _clock;
+        //private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
         public CustomerService()
@@ -37,7 +37,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
                 //DbRepositoryFactory.CreateLocationRepository(),
-                new SystemClock(),
+                //new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
         }
@@ -47,14 +47,14 @@ namespace FastQ.Web.Services
             ICustomerRepository customers,
             IQueueRepository queues,
             //ILocationRepository locations,
-            IClock clock,
+            //IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
             _customers = customers;
             _queues = queues;
             //_locations = locations;
-            _clock = clock;
+            //_clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
@@ -109,7 +109,7 @@ namespace FastQ.Web.Services
             if (!slotValidation.Ok)
                 return Result<Appointment>.Fail(slotValidation.Error);
 
-            var now = _clock.UtcNow;
+            var now = DateTime.Now;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
             var customer = GetOrCreateCustomer(customerName, email, phone, !string.IsNullOrWhiteSpace(meetingUrl), user, now);
             var customerTimeValidation = ValidateCustomerTimeAvailability(customer.Id, scheduledFor);
@@ -137,12 +137,13 @@ namespace FastQ.Web.Services
                 Status = AppointmentStatus.Scheduled,
                 CreatedBy = user,
                 StampUser = user,
-                CreatedOnUtc = now,
-                StampDateUtc = now,
-                CreatedUtc = now,
-                UpdatedUtc = now
+                CreatedOn = now,
+                StampDate = now,
+                //CreatedOn = now,
+                UpdatedOn = now
             };
             appt.ScheduledFor = scheduledFor;
+            appt.EndTime = ResolveSlotEndTime(queueId, scheduledFor) ?? appt.EndTime;
 
             _appts.Add(appt);
             var insertedAppt = _appts.Get(appt.Id) ?? appt;
@@ -202,8 +203,7 @@ namespace FastQ.Web.Services
             var phoneValidation = ValidateAndNormalizePhone(phone);
             if (!phoneValidation.Ok)
                 return Result<long>.Fail(phoneValidation.Error);
-            if (string.IsNullOrWhiteSpace(contactType))
-                return Result<long>.Fail("Contact type is required.");
+            contactType = "IP";
 
             var queue = _queues.Get(queueId);
             if (queue == null) return Result<long>.Fail("Queue not found.");
@@ -211,9 +211,8 @@ namespace FastQ.Web.Services
             if (!referenceValidation.Ok)
                 return Result<long>.Fail(referenceValidation.Error);
 
-            var now = _clock.UtcNow;
-            var localNow = DateTime.Now;
-            var user = string.IsNullOrWhiteSpace(stampUser) ? "web" : stampUser.Trim();
+            var now = DateTime.Now;
+            var user = string.IsNullOrWhiteSpace(stampUser) ? "fastQ" : stampUser.Trim();
             var customer = GetOrCreateCustomer(customerName, email, phone, false, user, now);
 
             var walkin = new Appointment
@@ -222,6 +221,9 @@ namespace FastQ.Web.Services
                 EntityId = queue.EntityId,
                 QueueId = queueId,
                 CustomerId = customer.Id,
+                CustomerFirstName = customer.FirstName,
+                CustomerLastName = customer.LastName,
+                CustomerPhone = customer.Phone,
                 ServiceId = long.TryParse(serviceId, out var parsedServiceId) ? parsedServiceId : (long?)null,
                 RefCriteria = refCriteria,
                 RefValue = referenceValue,
@@ -232,14 +234,19 @@ namespace FastQ.Web.Services
                 Status = AppointmentStatus.Arrived,
                 CreatedBy = user,
                 StampUser = user,
-                CreatedOnUtc = now,
-                StampDateUtc = now,
-                CreatedUtc = now,
-                UpdatedUtc = now
+                CreatedOn = now,
+                StampDate = now,
+                //CreatedOn = now,
+                UpdatedOn = now,
+                ScheduledFor = now
             };
-            walkin.ScheduledFor = localNow;
+            walkin.EndTime = ResolveCurrentSlotEndTime(queueId, now) ?? walkin.EndTime;
 
             var newId = _appts.AddWalkin(walkin);
+
+            // Populate walkin-object's Id from data-layer
+            walkin.Id = newId;
+
             _rt.AppointmentChanged(walkin);
             _rt.QueueChanged(walkin.EntityId, walkin.QueueId);
 
@@ -266,8 +273,8 @@ namespace FastQ.Web.Services
                 return Result.Fail("Appointment cannot be cancelled.");
 
             appt.Status = AppointmentStatus.Cancelled;
-            appt.UpdatedUtc = _clock.UtcNow;
-            appt.StampDateUtc = appt.UpdatedUtc;
+            appt.UpdatedOn = DateTime.Now;
+            appt.StampDate = appt.UpdatedOn;
             _appts.Update(appt);
 
             var queue = _queues.Get(appt.QueueId);
@@ -313,14 +320,14 @@ namespace FastQ.Web.Services
                 QueueName = queue?.Name ?? "Unknown",
                 Status = appt.Status.ToString(),
                 ScheduledFor = appt.ScheduledFor.ToString("yyyy-MM-dd h:mm tt"),
-                UpdatedUtc = (appt.UpdatedUtc.Kind == DateTimeKind.Utc ? appt.UpdatedUtc.ToLocalTime() : appt.UpdatedUtc).ToString("yyyy-MM-dd h:mm tt"),
+                UpdatedOn = appt.UpdatedOn.ToString("yyyy-MM-dd h:mm tt"),
             };
 
             bool IsWaiting(Appointment a) => a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived;
 
             var waiting = _appts.ListByQueue(appt.QueueId)
                 .Where(IsWaiting)
-                .OrderBy(a => a.CreatedUtc)
+                .OrderBy(a => a.CreatedOn)
                 .ToList();
 
             snapshot.WaitingCount = waiting.Count;
@@ -386,9 +393,9 @@ namespace FastQ.Web.Services
                     Name = (name ?? string.Empty).Trim(),
                     SmsOptIn = smsOptIn,
                     ActiveFlag = true,
-                    CreatedUtc = now,
-                    UpdatedUtc = now,
-                    StampDateUtc = now,
+                    CreatedOn = now,
+                    UpdatedOn = now,
+                    StampDate = now,
                     StampUser = stampUser
                 };
                 customer.Email = normalizedEmail;
@@ -403,8 +410,8 @@ namespace FastQ.Web.Services
             }
             customer.Email = normalizedEmail;
             customer.Phone = normalizedPhone;
-            customer.UpdatedUtc = now;
-            customer.StampDateUtc = now;
+            customer.UpdatedOn = now;
+            customer.StampDate = now;
             customer.StampUser = stampUser;
             _customers.Update(customer);
             return customer;
@@ -675,6 +682,50 @@ namespace FastQ.Web.Services
                 return false;
 
             return parsedBegin.TimeOfDay == localScheduled.TimeOfDay;
+        }
+
+        private TimeSpan? ResolveSlotEndTime(long queueId, DateTime localScheduled)
+        {
+            var slots = _appts.GetQueueOpenSlots(queueId, localScheduled.Date);
+            if (slots == null)
+                return null;
+
+            var matched = slots.FirstOrDefault(slot => SlotMatches(slot, localScheduled));
+            return ParseSlotTime(matched?.SlotEnd);
+        }
+
+        private TimeSpan? ResolveCurrentSlotEndTime(long queueId, DateTime localNow)
+        {
+            var slots = _appts.GetQueueOpenSlots(queueId, localNow.Date);
+            if (slots == null)
+                return null;
+
+            var now = localNow.TimeOfDay;
+            foreach (var slot in slots)
+            {
+                var begin = ParseSlotTime(slot?.SlotBegin);
+                var end = ParseSlotTime(slot?.SlotEnd);
+                if (!begin.HasValue || !end.HasValue)
+                    continue;
+
+                var normalizedEnd = end.Value <= begin.Value ? end.Value.Add(TimeSpan.FromDays(1)) : end.Value;
+                var normalizedNow = now < begin.Value && normalizedEnd.Days > 0 ? now.Add(TimeSpan.FromDays(1)) : now;
+                if (normalizedNow >= begin.Value && normalizedNow < normalizedEnd)
+                    return end.Value;
+            }
+
+            return null;
+        }
+
+        private static TimeSpan? ParseSlotTime(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            if (!DateTime.TryParseExact(value.Trim(), new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+                return null;
+
+            return parsed.TimeOfDay;
         }
 
         private static JObject ParseJsonObject(string json)
@@ -1027,8 +1078,10 @@ namespace FastQ.Web.Services
             var safeLocation = HttpUtility.HtmlEncode(inPersonLocation ?? "TBD");
             var safePhone = HttpUtility.HtmlEncode(appointment.CustomerPhone ?? string.Empty);
             var safeLoginUrl = HttpUtility.HtmlAttributeEncode(loginUrl ?? "#");
-            var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy h:mm tt"));
+            var appointmentDate = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy"));
+            var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("h:mm tt"));
             var displayLink = BuildMeetingLinkHtml(appointment.MeetingUrl);
+            var contactType = (appointment.ContactType ?? string.Empty).Trim().ToUpperInvariant();
 
             var html = new StringBuilder();
             html.AppendLine("<!DOCTYPE html>");
@@ -1053,15 +1106,25 @@ namespace FastQ.Web.Services
             html.AppendLine($"        <p>Dear {safeCustomerName},</p>");
             html.AppendLine($"        <p>Your appointment with Orange County {safeQueueName} is confirmed. See below for details:</p>");
             html.AppendLine("        <div class=\"details\">");
+            html.AppendLine($"            <p><strong>Appointment Date:</strong> {appointmentDate}</p>");
             html.AppendLine($"            <p><strong>Appointment Time:</strong> {appointmentTime}</p>");
             html.AppendLine($"            <p><strong>Appointment Type:</strong> {safeAppointmentType}</p>");
             html.AppendLine($"            <p><strong>Queue:</strong> {safeQueueName}</p>");
             html.AppendLine($"            <p><strong>Service:</strong> {safeServiceName}</p>");
             html.AppendLine("        </div>");
-            html.AppendLine($"        <p><strong>For In-person:</strong> {safeLocation}</p>");
-            html.AppendLine($"        <p><strong>For Online:</strong> A virtual appointment request has been submitted and will be conducted through Webex at {displayLink}. Prior to the meeting, please follow the instructions below:</p>");
-            html.AppendLine("        <p>Webex Instructions, English | Spanish | Creole</p>");
-            html.AppendLine($"        <p><strong>For Phone:</strong> Our staff will contact you at the phone number provided ({safePhone}) at the scheduled time.</p>");
+            if (contactType == "OM")
+            {
+                html.AppendLine($"        <p><strong>Online:</strong> A virtual appointment request has been submitted and will be conducted through Webex at {displayLink}. Prior to the meeting, please follow the instructions below:</p>");
+                html.AppendLine("        <p>Webex Instructions, English | Spanish | Creole</p>");
+            }
+            else if (contactType == "PC")
+            {
+                html.AppendLine($"        <p><strong>Phone:</strong> Our staff will contact you at the phone number provided ({safePhone}) at the scheduled time.</p>");
+            }
+            else
+            {
+                html.AppendLine($"        <p><strong>In-person:</strong> {safeLocation}</p>");
+            }
             html.AppendLine("        <p>Sincerely,</p>");
             html.AppendLine("        <p>Orange County Government, FL</p>");
             html.AppendLine("        <div class=\"footer\">");
@@ -1077,7 +1140,8 @@ namespace FastQ.Web.Services
 
         private static string BuildAppointmentConfirmationSms(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
         {
-            var appointmentTime = appointment.ScheduledFor.ToString("MMMM dd, yyyy h:mm tt", CultureInfo.InvariantCulture);
+            var appointmentDate = appointment.ScheduledFor.ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
+            var appointmentTime = appointment.ScheduledFor.ToString("h:mm tt", CultureInfo.InvariantCulture);
             var appointmentType = GetContactMethodText(appointment.ContactType);
             var cleanQueueName = (queueName ?? string.Empty).Trim();
             var cleanServiceName = (serviceName ?? string.Empty).Trim();
@@ -1095,7 +1159,9 @@ namespace FastQ.Web.Services
                 text.Append(". ");
             }
 
-            text.Append("Time: ");
+            text.Append("Date: ");
+            text.Append(appointmentDate);
+            text.Append(". Time: ");
             text.Append(appointmentTime);
             text.Append(". Type: ");
             text.Append(appointmentType);
@@ -1144,7 +1210,8 @@ namespace FastQ.Web.Services
             var safeQueueName = HttpUtility.HtmlEncode(queueName ?? string.Empty);
             var safeServiceName = HttpUtility.HtmlEncode(serviceName ?? string.Empty);
             var safeAppointmentType = HttpUtility.HtmlEncode(GetContactMethodText(appointment.ContactType));
-            var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy h:mm tt"));
+            var appointmentDate = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy"));
+            var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("h:mm tt"));
 
             var html = new StringBuilder();
             html.AppendLine("<!DOCTYPE html>");
@@ -1155,6 +1222,7 @@ namespace FastQ.Web.Services
             html.AppendLine($"<p>Dear {safeCustomerName},</p>");
             html.AppendLine("<p>Your appointment has been cancelled.</p>");
             html.AppendLine("<div style=\"margin:16px 0;padding:12px;background:#f5f5f5;border-radius:4px;\">");
+            html.AppendLine($"<p><strong>Appointment Date:</strong> {appointmentDate}</p>");
             html.AppendLine($"<p><strong>Appointment Time:</strong> {appointmentTime}</p>");
             html.AppendLine($"<p><strong>Appointment Type:</strong> {safeAppointmentType}</p>");
             html.AppendLine($"<p><strong>Queue:</strong> {safeQueueName}</p>");

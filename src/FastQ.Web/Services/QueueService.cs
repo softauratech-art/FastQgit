@@ -61,7 +61,8 @@ namespace FastQ.Web.Services
                 SelectedRefCriterias = item.RefCriterias,
                 SelectedContactMethods = item.ContactMethods,
                 HasUploads = item.HasUploads,
-                HasGuidelines = item.HasGuidelines
+                HasGuidelines = item.HasGuidelines,
+                UserAccessList = item.UserAccess
             };
 
             return (model);
@@ -246,5 +247,9 @@ namespace FastQ.Web.Services
             _queues.DeleteQSchedule(scheduleid, _stampuser);
         }
 
+        public void AddOrUpdateQAccess(long id, string hostids, string providerids, string reporterids, string queueadminids)
+        {
+            _queues.AddOrUpdateQAccess(id, hostids, providerids, reporterids, queueadminids, _stampuser);
+        }
     }
 }

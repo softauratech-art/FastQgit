@@ -13,9 +13,9 @@ namespace FastQ.Data.Entities
         public bool ActiveFlag { get; set; } = true;
         public string StampUser { get; set; }
 
-        public DateTime CreatedUtc { get; set; }
-        public DateTime UpdatedUtc { get; set; }
-        public DateTime StampDateUtc { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public DateTime UpdatedOn { get; set; }
+        public DateTime StampDate { get; set; }
 
         public string Name
         {

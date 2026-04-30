@@ -9,7 +9,7 @@ namespace FastQ.Web.Models
         public string CustomerPhone { get; set; }
         public string Status { get; set; }
         public string ScheduledFor { get; set; }
-        public string UpdatedUtc { get; set; }
+        public string UpdatedOn { get; set; }
     }
 
     public class QueueSnapshotDto

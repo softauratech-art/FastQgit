@@ -1,0 +1,542 @@
+@model FastQ.Web.Models.Admin.QueueVM
+@using FastQ.Web.Helpers
+
+@{
+    ViewBag.Title = "ManageQueue";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Head
+    {
+    <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/datatablesFQ.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/Content/modal.css" />
+    <link rel="stylesheet" href="~/Content/fqadmin.css" />
+    <style>
+        tr:hover {
+            background-color: #fff !important;
+        }
+        table#QAccessdata td {padding:8px;}
+    </style>
+}
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Manage Queue</div>
+        <div class="topbar-sub">Manage Queues Configuration, Services and Schedules</div>
+    </div>
+    @*<div class="top-actions"></div>*@
+}
+@{
+    if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <strong>Error:</strong> @ViewBag.ErrorMessage
+        </div>
+    }
+
+    if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success">
+            <strong>Success:</strong> @ViewBag.SuccessMessage
+        </div>
+    }
+}
+
+@using (Html.BeginForm("Edit", "Queue"))
+{
+    @Html.AntiForgeryToken();
+    Html.Validate("QueueVM");
+    <section class="section-configuration card">
+        <div class="configuration-header">
+            <h2>Configuration @(Model.Id == 0 ? "" : " for Queue " + Model.Id.ToString())</h2>
+            <div class="primary-actions">
+                <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "Queue")" />
+                <input type="submit" value="Save Config" class="btn-save" />
+            </div>
+        </div>
+
+        <div class="grid-4">
+            <div class="card">
+                @Html.HiddenFor(model => model.Id)
+                @Html.HiddenFor(model => model.EntityId)
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-card-heading"></i>Identity & Translations</div>
+                    @*<div class="form-group">
+                            @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
+                            @Html.DisplayFor(model => model.Id)
+                        </div>*@
+                    <div class="form-group mt-2">
+                        @Html.LabelFor(model => model.Name, "Name (Primary English)", new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                    <div class="form-group mt-2">
+                        @Html.Label("NameES", "Spanish", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.NameES, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.NameES, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                    <div class="form-group mt-2">
+                        @Html.Label("NameCP", "Creole", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.NameCP, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.NameCP, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-eye"></i> Visibility & Rules</div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.ActiveFlag, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="ActiveFlag" id="ActiveFlag" @(Model.ActiveFlag ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.EmpOnly, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="EmpOnly" id="EmpOnly" @(Model.EmpOnly ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HideInKiosk, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HideInKiosk" id="HideInKiosk" @(Model.HideInKiosk ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HideInMonitor, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HideInMonitor" id="HideInMonitor" @(Model.HideInMonitor ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HasGuidelines, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HasGuidelines" id="HasGuidelines" @(Model.HasGuidelines ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="switch-group">
+                            @Html.LabelFor(model => model.HasUploads, new { @class = "switch-label" })
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="HasUploads" id="HasUploads" @(Model.HasUploads ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        @*<div class="form-check form-switch">
+                                @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
+                                @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
+                            </div>*@
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-calendar"></i> Booking Constraints</div>
+                    <div class="form-group mt-2">
+                        @Html.LabelFor(model => model.LeadTimeMin, "Min. Lead Time", htmlAttributes: new { @class = "control-label" })
+                        @Html.DropDownListFor(model => model.LeadTimeMin, Model.GetLeadTimes("LeadTimeMin"), "- Select-", new { @style = "font-size:0.9em" })
+                        @Html.ValidationMessageFor(model => model.LeadTimeMin, "", new { @class = "text-danger" })
+                    </div>
+
+                    <div class="form-group mt-2">
+                        @Html.LabelFor(model => model.LeadTimeMax, "Max. Lead Time", htmlAttributes: new { @class = "control-label" })
+                        @Html.DropDownListFor(model => model.LeadTimeMax, Model.GetLeadTimes("LeadTimeMax"), "- Select-", new { @style = "font-size:0.9em" })
+                        @Html.ValidationMessageFor(model => model.LeadTimeMax, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="form-group mt-3">
+                        @Html.Label("SelectedRefCiriterias", "Reference Data", htmlAttributes: new { @class = "control-label" })
+                        <div class="tag-group">
+                            @foreach (var item in Model.AvailableRefCriterias)
+                            {
+                                <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                    <input type="checkbox"
+                                           name="SelectedRefCriterias"
+                                           value="@item.Value"
+                                           @(item.IsChecked ? "checked" : "") />
+                                    @item.Name
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        @Html.Label("SelectedContactMethods", "Appointment Types", htmlAttributes: new { @class = "control-label" })
+                        <div class="tag-group">
+                            @foreach (var item in Model.AvailableContactMethods)
+                            {
+                                <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                    <input type="checkbox"
+                                           name="SelectedContactMethods"
+                                           value="@item.Value"
+                                           @(item.IsChecked ? "checked" : "") />
+                                    @item.Name
+                                </label>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title"><i class="bi bi-info-circle"></i>Location & Phone</div>
+                    <div class="form-group mt-2">
+                        @Html.Label("Address", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.ValidationMessageFor(model => model.Address, "", new { @class = "text-danger" })
+                        @Html.EditorFor(model => model.Address, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                    <div class="form-group mt-2">
+                        @Html.Label("Phone", htmlAttributes: new { @class = "form-label control-label", @type = "phone" })
+                        @Html.EditorFor(model => model.Phone, new { htmlAttributes = new { @class = "form-control" } })
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+}
+
+<div class="card">
+    <div class="card-title" style="display:block;">
+        Services
+        <button onclick="showInPopup('@Url.Action("EditService","Queue", 0)','New Service')"
+                class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
+            Add Service
+        </button>
+    </div>
+    <div class="table-card">
+        @if (Model.Services != null)
+        {
+            Html.RenderPartial("../Admin/Queue/_QueueServices", Model.Services);
+        }
+        else
+        {
+            <div id="ServiceSection">No records found</div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title" style="display:block;">
+        Schedules
+        <button onclick="showInPopup('@Url.Action("EditSchedule","Queue", Model.Id)','New Schedule')"
+                class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
+            Add Schedule
+        </button>
+    </div>
+
+    <div class="table-card">
+        @if (Model.Schedules != null)
+        {
+            Html.RenderPartial("../Admin/Queue/_QueueSchedules", Model.Schedules);
+        }
+        else
+        {
+            <div id="ScheduleSection">No records found</div>
+        }
+    </div>
+</div>
+@using (Html.BeginForm("EditAccess", "Queue", FormMethod.Post, new { @id = "frmQAccess" }))
+{
+    @Html.AntiForgeryToken();
+<div class="card">
+    @Html.HiddenFor(model => model.Id)
+
+    <!--<div class="card-title" style="display:block;">
+        Security-->
+        @*<input type="submit" value="Save Access" class="btn small btn-save" id="btnSaveAccess" style="float:right" />*@
+    <!--</div>-->
+
+    <div class="table-card">
+        <table class="table " id="QAccessdata">
+            <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
+                <tr>
+                    <th>User</th>
+                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host?</th>
+                    <th><input type="checkbox" name="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? </th>
+                    <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</th>
+                    <th><input type="checkbox" name="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? </th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var userlist = Model.UserAccessList;
+                    if (Model.UserAccessList != null)
+                    {
+                        foreach (var acl in userlist)
+                        {
+
+                            var isHost = acl.HostFlag;
+                            var isProvider = acl.ProviderFlag;
+                            var isReporter = acl.ReporterFlag;
+                            var isQueueAdmin = acl.QueueAdminFlag;
+                            var isConfigAdmin = acl.ConfigAdminFlag;
+                            <tr>
+                                <td>@acl.UserName (@acl.UserId) <sup>@(acl.ConfigAdminFlag ? "SuperAdmin" : "")</sup> <span class="text-danger">@(acl.UserActiveFlag == false ? "Inactive" : "")</span></td>
+                                <td><input type="checkbox" name="host" value="@acl.UserId" class="host-role" @(isHost ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="provider" value="@acl.UserId" class="provider-role" @(isProvider ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="reporter" value="@acl.UserId" class="reporter-role" @(isReporter ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="queueadmin" value="@acl.UserId" class="queueadmin-role" @(isQueueAdmin ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+}
+
+
+<div id="form-modal" class="queue-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
+    <div class="queue-modal">
+        <div class="queue-modal-header">
+            <h5 class="modal-title"></h5>
+            <button type="button" class="btn-close" onclick="closeModal('form-modal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body queue-modal-body">
+            <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
+            <!--Content from Partial-View-Editors-->
+        </div>
+        <div class="modal-footer">
+        </div>
+    </div>
+</div>
+@section Scripts{
+
+    <script src="https://cdn.datatables.net/2.3.7/js/dataTables.min.js"></script>
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/Scripts/jquery-fxtime.js"></script>
+    <script>
+        function clearModalBody(id) {
+            $('#' + id + ' .modal-body').empty();
+            $('#' + id + ' .modal-title').empty();
+        }
+
+        function closeModal(id) {
+            var modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove("show");
+                clearModalBody(id);
+            }
+        }
+
+        function openModal(id) {
+            var modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add("show");
+            }
+        }
+
+        $(document).ready(function () {
+            $("input.time").fxtime();
+
+            showInPopup = (url, title) => {
+                $.ajax({
+                    type: 'GET',
+                    url: url,
+                    data: {queueid: @Model.Id},
+                    success: function (res) {
+                        $('#form-modal .modal-body').html(res);
+                        $('#form-modal .modal-title').html(title);
+                        //$('#form-modal').modal('show');
+                        openModal('form-modal');
+                    }
+                })
+            }
+
+            deleteRecord = (obj) => {
+                var partialviewdiv = $(obj).data("secname");
+                var sid = $(obj).data("id");
+                var urlaction = $(obj).data("action");
+                var qid = @Model.Id;
+
+                if (confirm('Are you sure to delete this record (id: ' + sid + ') ?')) {
+                    try {
+                        const postData = {
+                            id: sid,
+                            queueid: qid
+                        };
+
+                        fetch(urlaction, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(postData),
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Server responded with ${response.status}`);
+                                }
+                                // Return the response as plain text (HTML string)
+                                return response.text();
+                            })
+                            .then(html => {
+                                // reload partial view
+                                $(`#${partialviewdiv}`).replaceWith(html);
+                                $('#form-modal .modal-body').html('Record deleted successfully');
+                                $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
+                            })
+                            .catch(error => {
+                                console.error('There has been a problem with your fetch operation:', error);
+                                $('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                            });
+
+                    } catch (ex) {
+                        console.log(ex);
+                    }
+                }
+            }
+
+            showErrors = (errors) => {
+                $(".validation-summary-error").empty();
+                var errlist = $('<ul></ul>');
+                for (var key in errors) {
+                    if (errros.hasOwnProperty(key)) {
+                        errors[key].forEach(function (errmsg) {
+                            errlist.append('<li>' + errmsg + '</li>');
+                        });
+                    }
+                }
+                $(".validation-summary-error").append(errlist);
+            }
+
+            postQchildForm = (form) => {
+                try {
+                    var sid = $(form).data("id");
+                    var partialviewdiv = $(form).data("secname");
+                    var errcode;
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form)
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                errcode = response.status;
+                                return response.json().then(err => { throw err; });
+                                //throw new Error(`Server responded with ${response.errors} ${errorData.message}`);
+                            }
+                            // Return the response as plain text (HTML string)
+                            return response.text();
+                        })
+                        .then(html => {
+                            // reload partial view
+                            $(`#${partialviewdiv}`).replaceWith(html);
+                            $('#form-modal .modal-body').html('Record updated successfully');
+                            $('#form-modal .modal-footer').html('<input data-bs-dismiss="modal" type="button" value="OK" class="btn btn-primary /> ');
+                        })
+                        .catch(error => {
+                            if (errcode == 400) {
+                                $('#form-modal .validation-summary-error').html(`${error.message} Please fill out all fields.`);
+                            }
+                            else
+                                $('#form-modal .validation-summary-error').html(`${error.message} ${error.errors}`);
+                            //was:$('#form-modal .modal-body').html(`Update failed with fetch operation ${error}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                        });
+
+                } catch (err) {
+                    console.error('Submission failed:', err);
+                    $('#form-modal .modal-body').html(`Submission failed ${err}<br/><input data-bs-dismiss="modal" type="button" value="OK" />`);
+                }
+                // Prevents default form submission
+                return false;
+            }
+
+        });
+
+        $(document).on('click', '.btnDeleteSvc', function(){
+            deleteRecord(this);
+        });
+
+        $(document).on('click', '.btnDeleteSch', function () {
+            deleteRecord(this);
+        });
+
+        // Pill tag click handling
+        document.querySelectorAll('.pill-tag input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
+                    this.parentElement.classList.add('active');
+                } else {
+                    this.parentElement.classList.remove('active');
+                }
+            });
+        });
+
+        function selectAll(obj, classname) {
+            $('.' + classname).prop('checked', obj.checked);
+        }
+
+
+        $(document).ready(function () {
+            $('#QAccessdata').DataTable({
+                language: {
+                    search: '',
+                    searchPlaceholder: "Search by Name or Id"
+                },
+                pageLength: 20, // Sets the default to 50 rows
+                fixedColumns: true,
+                columnDefs: [
+                    { "targets": [1,2,3,4], "orderable": false }
+                    ],
+                layout: {
+                    topStart: 'search', // Places default search box,
+                    topEnd: {                      
+                            div: {
+                                className: 'action-btn-div'
+                            }
+                    }
+                },
+                initComplete: function () {
+                    // Use initComplete to insert the actual hyperlink after the table is initialized
+                    $('.action-btn-div').wrapInner('<input type="submit" value="Save Changes" class="btn small btn-save" id="btnSaveAccess" style="float:right" />');
+                    $('.dt-search').prepend('<span class="card-title" style="display:inline;margin-right: 20px;">Security</span>');
+
+                }
+            });
+
+
+            $('#frmQAccess').on('submit', function (e) {
+                var form = this;
+                var table = $('#QAccessdata').DataTable();
+
+                // Get data from all pages as an array
+                var params = table.$('input').serializeArray();
+
+                // Iterate through the serialized data
+                $.each(params, function () {
+                    // If the specific input is NOT currently in the DOM (hidden by pagination/filter)
+                    if (!$.contains(document, form[this.name])) {
+                        // Append it as a hidden field so the browser "sees" it during submit
+                        $(form).append(
+                            $('<input>')
+                                .attr('type', 'hidden')
+                                .attr('name', this.name)
+                                .val(this.value)
+                        );
+                    }
+                });
+            });
+        });
+
+    </script> 
+    }

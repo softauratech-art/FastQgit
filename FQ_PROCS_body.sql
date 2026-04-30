@@ -295,22 +295,14 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
         WHEN 'A' THEN
           UPDATE APPOINTMENTS
              SET STATUS    = v_status_new,
-                 END_TIME  = CASE
-                               WHEN UPPER(p_action) = 'END'
-                                 THEN NUMTODSINTERVAL(TO_NUMBER(TO_CHAR(SYSDATE, 'SSSSS')), 'SECOND')
-                               ELSE END_TIME
-                             END,
+                 END_TIME  = END_TIME,
                  STAMPUSER = NVL(p_stampuser, STAMPUSER),
                  STAMPDATE = SYSDATE
            WHERE APPOINTMENT_ID = p_src_id;
         WHEN 'W' THEN
           UPDATE WALKINS
              SET STATUS    = v_status_new,
-                 END_TIME  = CASE
-                               WHEN UPPER(p_action) = 'END'
-                                 THEN NUMTODSINTERVAL(TO_NUMBER(TO_CHAR(SYSDATE, 'SSSSS')), 'SECOND')
-                               ELSE END_TIME
-                             END,
+                 END_TIME  = END_TIME,
                  STAMPUSER = NVL(p_stampuser, STAMPUSER),
                  STAMPDATE = SYSDATE
            WHERE WALKIN_ID = p_src_id;
@@ -492,6 +484,7 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
     p_target_date       IN DATE,
     p_ref_value         IN VARCHAR2,
     p_notes             IN VARCHAR2,
+    p_servicenotes      IN VARCHAR2,
     p_stampuser         IN VARCHAR2,
     p_new_src_id        OUT NUMBER,
     p_outmsg            OUT VARCHAR2
@@ -508,7 +501,7 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
         p_src_id    => p_src_id,
         p_action    => 'END',
         p_stampuser => p_stampuser,
-        p_notes     => p_notes,
+        p_notes     => NVL(p_servicenotes, p_notes),
         p_outmsg    => p_outmsg
       );
 
@@ -529,7 +522,7 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
       p_target_kind     => UPPER(TRIM(p_target_kind)),
       p_target_date     => p_target_date,
       p_ref_value       => p_ref_value,
-      p_notes           => 'Additional service after close',
+      p_notes           => NVL(p_servicenotes, 'Additional service after close'),
       p_stampuser       => p_stampuser,
       p_new_src_id      => p_new_src_id,
       p_outmsg          => p_outmsg,

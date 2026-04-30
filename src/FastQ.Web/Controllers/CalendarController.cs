@@ -26,7 +26,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public ActionResult Index(string month, string selectedDate)
+        public ActionResult Index(string month, string selectedDate, string entry, string queue)
         {
             var userId = _auth.GetLoggedInWindowsUser();
             var displayMonth = ParseMonth(month);
@@ -36,7 +36,7 @@ namespace FastQ.Web.Controllers
                 selected = new DateTime(displayMonth.Year, displayMonth.Month, Math.Min(selected.Day, DateTime.DaysInMonth(displayMonth.Year, displayMonth.Month)));
             }
 
-            var model = _service.BuildCalendarModel(userId, displayMonth, selected);
+            var model = _service.BuildCalendarModel(userId, displayMonth, selected, entry, queue);
             model.FeedbackMessage = TempData["CalendarMessage"] as string;
             model.FeedbackIsError = string.Equals(TempData["CalendarMessageIsError"] as string, "true", StringComparison.OrdinalIgnoreCase);
             ViewBag.ProviderId = userId ?? string.Empty;
@@ -407,7 +407,7 @@ namespace FastQ.Web.Controllers
         private ActionResult CalendarError(DateTime displayMonth, DateTime selectedDate, string message)
         {
             var userId = _auth.GetLoggedInWindowsUser();
-            var model = _service.BuildCalendarModel(userId, displayMonth, selectedDate);
+            var model = _service.BuildCalendarModel(userId, displayMonth, selectedDate, null, null);
             model.FeedbackMessage = message;
             model.FeedbackIsError = true;
             ViewBag.ProviderId = userId ?? string.Empty;

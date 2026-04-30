@@ -11,7 +11,7 @@ namespace FastQ.Web.Services
     {
         private readonly IUserRepository _users;
         private readonly string _stampuser = new AuthService().GetLoggedInWindowsUser();
-        private long _sessionentity  = new AuthService().GetSessionEntityId();
+        private readonly long _sessionentity  = new AuthService().GetSessionEntityId();
         public UserService()
            : this(
                DbRepositoryFactory.CreateUserRepository())
@@ -32,6 +32,8 @@ namespace FastQ.Web.Services
             try
             {
                 var usr = _users.Get(userid, _stampuser);
+                bool configadmin = usr.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag;
+
                 return TransformToModel(usr);
             }
             catch
@@ -84,7 +86,7 @@ namespace FastQ.Web.Services
 
         public void Delete(string uid)
         {
-            _users.Delete(uid, _stampuser);
+            _users.Delete(uid, _sessionentity, _stampuser);
         }
     }
 }

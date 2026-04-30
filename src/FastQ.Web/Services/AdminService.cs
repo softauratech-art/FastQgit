@@ -13,9 +13,9 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
-        // readonly ILocationRepository _locations;
+        private readonly IEntityRepository _entities;
         private readonly IProviderRepository _providers;
-        private readonly IClock _clock;
+        //private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
         public AdminService()
@@ -23,9 +23,9 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
-                //DbRepositoryFactory.CreateLocationRepository(),
+                DbRepositoryFactory.CreateEntityRepository(),
                 DbRepositoryFactory.CreateProviderRepository(),
-                new SystemClock(),
+                //new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
         }
@@ -34,29 +34,34 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
-            //ILocationRepository locations,
+            IEntityRepository entities,
             IProviderRepository providers,
-            IClock clock,
+            //IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
             _customers = customers;
             _queues = queues;
-            //_locations = locations;
+            _entities = entities;
             _providers = providers;
-            _clock = clock;
+            //_clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
-        //public Location GetPrimaryLocation()
-        //{
-        //    return _locations.ListAll().FirstOrDefault();
-        //}
+        public Entity GetCurrentEntity()
+        {            
+            var sessionEntityId = new AuthService().GetSessionEntityId();            
+            return _entities.Get(sessionEntityId);
+        }
 
-        //public IList<Location> ListLocations()
-        //{
-        //    return _locations.ListAll();
-        //}
+        public IList<Entity> ListEntities()
+        {
+            return _entities.ListAll();
+        }
+        public void UpdateEntity(Entity entity)
+        {
+            _entities.Update(entity, new AuthService().GetLoggedInWindowsUser());
+        }
 
         public IList<Queue> ListQueuesByEntity(long entityId)
         {
@@ -93,28 +98,28 @@ namespace FastQ.Web.Services
             _queues.AddOrUpdateQueue(queue, new AuthService().GetLoggedInWindowsUser());
         }
 
-        public int CloseStaleScheduledAppointments(int staleHours)
-        {
-            var now = _clock.UtcNow;
-            var cutoff = now.AddHours(-staleHours);
+        //public int CloseStaleScheduledAppointments(int staleHours)
+        //{
+        //    var now = DateTime.Now;
+        //    var cutoff = now.AddHours(-staleHours);
 
-            var stale = _appts.ListAll()
-                .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedUtc <= cutoff)
-                .ToList();
+        //    var stale = _appts.ListAll()
+        //        .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedOn <= cutoff)
+        //        .ToList();
 
-            foreach (var a in stale)
-            {
-                a.Status = AppointmentStatus.ClosedBySystem;
-                a.UpdatedUtc = now;
-                a.StampDateUtc = now;
-                _appts.Update(a);
+        //    foreach (var a in stale)
+        //    {
+        //        a.Status = AppointmentStatus.ClosedBySystem;
+        //        a.UpdatedOn = now;
+        //        a.StampDate = now;
+        //        _appts.Update(a);
 
-                _rt.AppointmentChanged(a);
-                _rt.QueueChanged(a.EntityId, a.QueueId);
-            }
+        //        _rt.AppointmentChanged(a);
+        //        _rt.QueueChanged(a.EntityId, a.QueueId);
+        //    }
 
-            return stale.Count;
-        }
+        //    return stale.Count;
+        //}
 
         private IList<Queue> ListEligibleQueues(long? requestedEntityId = null)
         {

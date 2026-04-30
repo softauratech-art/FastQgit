@@ -5,6 +5,8 @@
 
 @{
     ViewBag.Title = "Calendar";
+    var requestedEntry = ((Request["entry"] as string) ?? "both").Trim().ToLowerInvariant();
+    var requestedQueue = ((Request["queue"] as string) ?? "all").Trim().ToLowerInvariant();
     var requestedScope = ((Request["scope"] as string) ?? "monthly").Trim().ToLowerInvariant();
     var currentScope = requestedScope == "weekly" || requestedScope == "daily" ? requestedScope : "monthly";
     var previousMonth = Model.DisplayMonth.AddMonths(-1);
@@ -15,12 +17,13 @@
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
     var serviceAccess = ViewBag.ServiceAccess as FastQ.Web.Models.ServicePageAccess ?? new FastQ.Web.Models.ServicePageAccess();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
-    var agendaQueueOptions = Model.MonthAppointments
-        .Select(a => a.QueueName)
-        .Where(q => !string.IsNullOrWhiteSpace(q))
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .OrderBy(q => q, StringComparer.OrdinalIgnoreCase)
-        .ToList();
+    //var agendaQueueOptions = Model.MonthAppointments
+    //    .Select(a => a.QueueName)
+    //    .Where(q => !string.IsNullOrWhiteSpace(q))
+    //    .Distinct(StringComparer.OrdinalIgnoreCase)
+    //    .OrderBy(q => q, StringComparer.OrdinalIgnoreCase)
+    //    .ToList();
+    var agendaQueueOptions = Model.QueueOptions.ToList();
 }
 
 @section Head {
@@ -249,7 +252,7 @@
             height: 26px;
             padding: 0 8px;
             border-radius: 999px;
-            background: #0f172a;
+            background: var(--accent-2); /*PR:#0f172a;*/
             color: #fff;
             font-weight: 700;
         }
@@ -311,17 +314,17 @@
         .agenda-day-group {
             display: grid;
             gap: 8px;
-            padding: 10px 12px;
+            /*padding: 10px 12px;*/
             border-radius: 18px;
-            border: 1px solid #e2e8f0;
+            /*border: 1px solid #e2e8f0;*/
             background: #ffffff;
             transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
         }
-
+/*
         .agenda-day-group.is-selected {
             border-color: #0f766e;
             background: #f0fdfa;
-        }
+        }*/
 
         .agenda-day-group.is-dimmed {
             opacity: 0.52;
@@ -352,6 +355,7 @@
             color: #334155;
             font-size: 12px;
             font-weight: 700;
+            float:right; /*PR*/
         }
 
         .agenda-item {
@@ -375,6 +379,7 @@
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: #0f766e;
+            float: right; /*PR*/
         }
 
         .agenda-entry-label {
@@ -389,6 +394,7 @@
             text-transform: uppercase;
             background: #e2e8f0;
             color: #334155;
+            float: right; /*PR*/
         }
 
         .agenda-entry-label.is-appointment {
@@ -875,15 +881,32 @@
                 align-items: start;
             }
         }
+
+        select#agendaQueueFilter option[selected] {
+            font-weight: bold;
+        }
+
+        select#agendaQueueFilter option {
+            background-color: #fff;
+            color: #000;
+        }
+
+        select#agendaQueueFilter {
+            background: #0f172a;
+            color: #fff;
+            line-height: 0.9em;
+            padding: 5px 3px;
+        }
+        .page {gap:3px;}
     </style>
 }
 
 @section PageHeader {
     <div>
         <div class="topbar-title">Appointment Calendar</div>
-        <div class="topbar-sub">
+        @*<div class="topbar-sub">
             Month view by default with a selected-day details panel and staff-assisted booking.
-        </div>
+        </div>*@
     </div>
 }
 
@@ -896,8 +919,8 @@
     <div class="calendar-toolbar-row">
         <div class="calendar-nav">
             <button class="btn ghost" type="button" data-calendar-shift="-1">Previous</button>
-            <div class="month-label">@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</div>
-            <button class="btn ghost" type="button" data-calendar-shift="1">Next</button>
+            @*<div class="month-label">@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</div>*@
+
             <div class="calendar-jump">
                 <select id="calendarMonthSelect" aria-label="Select month">
                     @for (var monthIndex = 1; monthIndex <= 12; monthIndex++)
@@ -913,6 +936,7 @@
                 </select>
                 <button class="btn small ghost" type="button" id="calendarTodayBtn">Today</button>
             </div>
+            <button class="btn ghost" type="button" data-calendar-shift="1">Next</button>
         </div>
         @if (serviceAccess.CanAddEntries)
         {
@@ -924,28 +948,30 @@
     </div>
     <div class="calendar-month-filters">
         <div class="calendar-month-filters-main">
-            <span class="calendar-filter-label">Month Filters</span>
-            <div class="calendar-scope-switch" role="group" aria-label="Calendar scope filter">
-                <button class="btn small ghost @(currentScope == "monthly" ? "is-active" : null)" type="button" data-calendar-scope="monthly">Monthly</button>
-                <button class="btn small ghost @(currentScope == "weekly" ? "is-active" : null)" type="button" data-calendar-scope="weekly">Weekly</button>
-                <button class="btn small ghost @(currentScope == "daily" ? "is-active" : null)" type="button" data-calendar-scope="daily">Daily</button>
-            </div>
+            <span class="calendar-filter-label">Filters: </span>
+            <!--
+    <div class="calendar-scope-switch" role="group" aria-label="Calendar scope filter">
+        <button class="btn small ghost @(currentScope == "monthly" ? "is-active" : null)" type="button" data-calendar-scope="monthly">Monthly</button>
+        <button class="btn small ghost @(currentScope == "weekly" ? "is-active" : null)" type="button" data-calendar-scope="weekly">Weekly</button>
+        <button class="btn small ghost @(currentScope == "daily" ? "is-active" : null)" type="button" data-calendar-scope="daily">Daily</button>
+    </div>
+        -->
             <div class="agenda-filter-switch" role="group" aria-label="Month entry type filter">
-                <button class="btn small ghost is-active" type="button" data-agenda-filter="both">Both</button>
-                <button class="btn small ghost" type="button" data-agenda-filter="A">Appointments</button>
-                <button class="btn small ghost" type="button" data-agenda-filter="W">Walk-ins</button>
+                <button class="btn small ghost @(requestedEntry == "both" ? "is-active" : null)" type="button" data-agenda-filter="both" onclick="reloadByEntryFilter('both');">Both</button>
+                <button class="btn small ghost @(requestedEntry.ToLower() == "a" ? "is-active" : null)" type="button" data-agenda-filter="A" onclick="reloadByEntryFilter('A');">Appointments</button>
+                <button class="btn small ghost @(requestedEntry.ToLower() == "w" ? "is-active" : null)" type="button" data-agenda-filter="W" onclick="reloadByEntryFilter('W');">Walk-ins</button>
             </div>
             <div class="agenda-filter-row">
-                <select id="agendaQueueFilter" aria-label="Filter month agenda by queue">
+                <select id="agendaQueueFilter" aria-label="Filter month agenda by queue" onchange="reloadByQueueFilter(this.value);">
                     <option value="all">All Queues</option>
                     @foreach (var queueName in agendaQueueOptions)
                     {
-                        <option value="@queueName">@queueName</option>
+                        <option value="@queueName.Value" @(requestedQueue.Equals(queueName.Value) ? "selected" : null)>@queueName.Text</option>
                     }
                 </select>
             </div>
         </div>
-        <div class="agenda-filter-summary" id="calendarScopeSummary">Selected day stays emphasized; other days remain visible in a dimmed state.</div>
+        @*<div class="agenda-filter-summary" id="calendarScopeSummary">Selected day stays emphasized; other days remain visible in a dimmed state.</div>*@
     </div>
 </div>
 
@@ -981,10 +1007,10 @@
                 <div class="@dayClass" data-calendar-date="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" data-weekday-index="@((int)day.Date.DayOfWeek)">
                     @if (day.IsCurrentMonth)
                     {
-                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope })">
+                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope, queue = requestedQueue, entry = requestedEntry })">
                             <div class="day-number">@day.Date.Day</div>
                             <div class="day-meta">
-                                <span>@(day.AppointmentCount == 1 ? "1 appt" : day.AppointmentCount + " appts")</span>
+                                <span>@(day.AppointmentCount == 1 ? "1 item" : day.AppointmentCount + " items")</span>
                                 @if (day.AppointmentCount > 0)
                                 {
                                     <span class="day-count">@day.AppointmentCount</span>
@@ -1002,22 +1028,27 @@
     </section>
 
     <aside class="agenda-panel">
-        <div class="agenda-header">
+        @*<div class="agenda-header">
             <h3 id="agendaScopeTitle">@Model.DisplayMonth.ToString("MMMM yyyy", CultureInfo.InvariantCulture)</h3>
             <p id="agendaScopeDescription">Month agenda for @(string.IsNullOrWhiteSpace(Model.EntityName) ? "primary entity" : Model.EntityName). @Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture) is highlighted.</p>
+        </div>*@
+
+        <div class="agenda-header">
+            <div class="agenda-day-count">@Model.SelectedDayAppointments.Count()</div>
+            <h3>@Model.SelectedDate.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)</h3>
         </div>
 
-        @if (Model.MonthAppointments.Any())
+        @if (Model.SelectedDayAppointments.Any())
         {
             <div class="agenda-list">
-                @foreach (var group in Model.MonthAppointments.GroupBy(a => a.ScheduledFor.Date).OrderBy(g => g.Key))
+                @foreach (var group in Model.SelectedDayAppointments.GroupBy(a => a.ScheduledFor.Date).OrderBy(g => g.Key))
                 {
                     var groupIsSelected = group.Key.Date == Model.SelectedDate.Date;
                     <div class="agenda-day-group @(groupIsSelected ? "is-selected" : "is-dimmed")" data-agenda-day="@group.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">
-                        <div class="agenda-day-header">
+                        @*<div class="agenda-day-header">
                             <div class="agenda-day-title">@group.Key.ToString("ddd, MMM d", CultureInfo.InvariantCulture)</div>
                             <div class="agenda-day-count">@group.Count()</div>
-                        </div>
+                        </div>*@
                         @foreach (var item in group)
                         {
                             var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
@@ -1034,10 +1065,10 @@
                                  data-status="@item.Status"
                                  data-src-type="@item.SrcType">
                                 <div class="agenda-time">@item.StartTimeText</div>
+                                <div class="agenda-title">@item.CustomerName</div>
                                 <div class="agenda-entry-label @entryKindClass">@item.EntryKind</div>
-                                <button type="button" class="agenda-title expandable-text is-collapsed" aria-expanded="false" title="@item.CustomerName">@item.CustomerName</button>
-                                <button type="button" class="agenda-detail expandable-text is-collapsed" aria-expanded="false" title="@item.QueueName">@item.QueueName</button>
                                 <div class="agenda-detail">@item.ContactMethod | @item.StatusText | @item.Phone</div>
+                                <div class="agenda-detail" aria-expanded="false" title="@item.QueueName">@item.QueueName</div>
                                 @if (!string.IsNullOrWhiteSpace(item.MeetingUrl))
                                 {
                                     <div class="agenda-detail"><a href="@item.MeetingUrl" target="_blank" rel="noopener">Open meeting link</a></div>
@@ -1079,11 +1110,11 @@
                     </div>
                 }
             </div>
-            <div class="empty-state is-hidden">No appointments match the selected month filters.</div>
+            <div class="empty-state is-hidden">No records match the selected filters.</div>
         }
         else
         {
-            <div class="empty-state">No appointments scheduled for this month.</div>
+    <div class="empty-state">No records found for the selected date(s) and filters.</div>
         }
     </aside>
 </div>
@@ -1146,7 +1177,7 @@
 <div id="serviceRouteModal" class="calendar-modal-backdrop modal-backdrop route-modal" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
     <div class="modal">
         <div class="modal-header">
-            <h5 class="modal-title" id="serviceRouteModalTitle">Transfer Appointment</h5>
+            <h5 class="modal-title" id="serviceRouteModalTitle">Route Appointment</h5>
             <button class="btn small ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
         </div>
         <div class="modal-body">
@@ -1221,7 +1252,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
-            <button class="btn primary" type="button" id="saveRoute">Transfer Appointment</button>
+            <button class="btn primary" type="button" id="saveRoute">Save</button>
         </div>
     </div>
 </div>
@@ -1245,7 +1276,7 @@
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="endServiceModal">Cancel</button>
             <button class="btn secondary" type="button" data-end-choice="end-only">End Only</button>
-            <button class="btn primary" type="button" data-end-choice="end-add">End + Add Service</button>
+            <button class="btn primary" type="button" data-end-choice="end-add">End + New</button>
         </div>
     </div>
 </div>
@@ -1276,6 +1307,27 @@
 
 @section Scripts {
     <script>
+
+        function reloadByQueueFilter(qid) {
+            var url = "@Url.Action("Index", "Calendar")?";
+            url += "&month=@Model.DisplayMonth.ToString("yyyy-MM-01")";
+            url += "&selectedDate=@modalDate.Date.ToString("yyyy-MM-dd")";
+            url += "&scope=@currentScope";
+            url += "&entry=@requestedEntry";
+            url += "&queue=" + qid;
+            window.location.href = url;
+        }
+
+        function reloadByEntryFilter(entry) {
+            var url = "@Url.Action("Index", "Calendar")?";
+            url += "&month=@Model.DisplayMonth.ToString("yyyy-MM-01")";
+            url += "&selectedDate=@modalDate.Date.ToString("yyyy-MM-dd")";
+            url += "&scope=@currentScope";
+            url += "&entry=" + entry;
+            url += "&queue=@requestedQueue";
+            window.location.href = url;
+        }
+
         (function () {
             var reopenOnError = @(Model.FeedbackIsError ? "true" : "false");
             var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
@@ -1497,6 +1549,8 @@
             }
 
             function applyCalendarScope(scope) {
+                return; //PR
+
                 currentCalendarScope = (scope || "monthly").toLowerCase();
                 var normalized = currentCalendarScope;
                 var selected = getSelectedCalendarDateValue();
@@ -1531,7 +1585,7 @@
                     btn.classList.toggle("is-active", (btn.getAttribute("data-calendar-scope") || "").toLowerCase() === normalized);
                 });
 
-                if (agendaTitle) {
+                @*//PR: if (agendaTitle) {
                     if (normalized === "daily") {
                         agendaTitle.textContent = selected.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
                     } else if (normalized === "weekly") {
@@ -1560,10 +1614,10 @@
                         : normalized === "weekly"
                             ? "Weekly scope shows only the selected week in the calendar and right panel."
                             : "Daily scope shows only the selected day in the calendar and right panel.";
-                }
+                }*@
 
                 var activeAgendaFilter = document.querySelector("[data-agenda-filter].is-active");
-                applyAgendaFilter(activeAgendaFilter ? activeAgendaFilter.getAttribute("data-agenda-filter") : "both");
+                //PR: applyAgendaFilter(activeAgendaFilter ? activeAgendaFilter.getAttribute("data-agenda-filter") : "both");
             }
 
             function postForm(url, data) {
@@ -1841,7 +1895,37 @@
                 setSelectOptions(serviceSelect, details && details.services ? details.services : [], "Select service");
                 setSelectOptions(contactSelect, details && details.contactOptions ? details.contactOptions : [], "Select contact type");
                 setSelectOptions(refSelect, details && details.refOptions ? details.refOptions : [], "Select reference");
+                if (prefix === "addWalkin") {
+                    forceWalkinContactTypeInPerson();
+                }
                 syncReferenceInputMeta(prefix);
+            }
+
+            function forceWalkinContactTypeInPerson() {
+                var select = document.getElementById("addWalkinContactType");
+                if (!select) {
+                    return;
+                }
+
+                var inPersonOption = null;
+                Array.prototype.forEach.call(select.options, function (option) {
+                    var isInPerson = (option.value || "").toUpperCase() === "IP";
+                    option.disabled = option.value ? !isInPerson : true;
+                    if (isInPerson) {
+                        inPersonOption = option;
+                    }
+                });
+
+                if (!inPersonOption) {
+                    inPersonOption = document.createElement("option");
+                    inPersonOption.value = "IP";
+                    inPersonOption.textContent = "In person";
+                    select.appendChild(inPersonOption);
+                }
+                if (inPersonOption) {
+                    select.value = inPersonOption.value;
+                }
+                select.disabled = true;
             }
 
             function loadEntryQueueDetails(prefix, queueCode) {
@@ -2726,6 +2810,40 @@
                 };
             }
 
+            function ensureSelectOption(selectElement, value, label) {
+                if (!selectElement || !value) {
+                    return;
+                }
+                var exists = Array.prototype.some.call(selectElement.options, function (option) {
+                    return option.value === value;
+                });
+                if (!exists) {
+                    var option = document.createElement("option");
+                    option.value = value;
+                    option.textContent = label || value;
+                    selectElement.appendChild(option);
+                }
+            }
+
+            function lockRouteReferenceFromSource() {
+                var routeMode = document.getElementById("routeMode");
+                var routeSrcType = document.getElementById("routeSrcType");
+                var routeSrcId = document.getElementById("routeSrcId");
+                var refValue = document.getElementById("routeRefValue");
+                if (!routeMode || routeMode.value !== "end-add" || !routeSrcId || !routeSrcType || !refValue) {
+                    return;
+                }
+
+                var sourceContext = getRouteSourcePrefill(routeSrcId.value, routeSrcType.value);
+                if (!sourceContext) {
+                    return;
+                }
+
+                ensureSelectOption(refValue, sourceContext.refValue, sourceContext.refValue);
+                refValue.value = sourceContext.refValue || "";
+                refValue.disabled = true;
+            }
+
             function openRouteModal(mode, appointmentId, srcType, completionNotes) {
                 var routeMode = document.getElementById("routeMode");
                 var routeSrcType = document.getElementById("routeSrcType");
@@ -2743,6 +2861,7 @@
                 var notes = document.getElementById("routeNotes");
                 var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
                 var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
+                var lockReference = mode === "end-add";
 
                 if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
                     return;
@@ -2752,10 +2871,10 @@
                 routeSrcType.value = srcType;
                 routeSrcId.value = appointmentId;
                 if (routeTitle) {
-                    routeTitle.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+                    routeTitle.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : (mode === "end-add" ? "End + New" : "Transfer Appointment");
                 }
                 if (saveRouteButton) {
-                    saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : "Transfer Appointment";
+                    saveRouteButton.textContent = mode === "cancel-transfer" ? "Cancel + Reschedule" : (mode === "end-add" ? "End + New" : "Transfer Appointment");
                 }
                 if (routeOriginalNotes) routeOriginalNotes.value = sourceContext ? sourceContext.notes : "";
                 if (routeCompletionNotes) routeCompletionNotes.value = completionNotes || "";
@@ -2764,10 +2883,17 @@
                 if (targetServiceId) targetServiceId.value = sourcePrefill ? sourcePrefill.serviceId : "";
                 if (targetDate) targetDate.value = "";
                 if (targetTime) targetTime.value = "";
-                if (refValue) refValue.value = sourcePrefill ? sourcePrefill.refValue : "";
+                if (refValue) {
+                    refValue.disabled = !!lockReference;
+                    if (lockReference && sourceContext) {
+                        ensureSelectOption(refValue, sourceContext.refValue, sourceContext.refValue);
+                    }
+                    refValue.value = lockReference && sourceContext ? sourceContext.refValue : (sourcePrefill ? sourcePrefill.refValue : "");
+                }
                 if (notes) notes.value = sourcePrefill ? sourcePrefill.notes : "";
                 toggleRouteDateRow();
                 loadRouteQueues(sourcePrefill ? sourcePrefill.queueId : "", sourcePrefill ? sourcePrefill.serviceId : "").then(function () {
+                    lockRouteReferenceFromSource();
                     if (sourcePrefill && targetKind && targetKind.value === "A") {
                         populateRouteDateOptions(sourcePrefill.date).then(function () {
                             populateRouteTimeOptions(to24Hour(sourcePrefill.time || ""));
@@ -3299,95 +3425,99 @@
                 });
             }
 
-            function applyAgendaFilter(mode) {
-                var normalized = (mode || "both").toUpperCase();
-                var queueFilter = document.getElementById("agendaQueueFilter");
-                var queueValue = (queueFilter && queueFilter.value ? queueFilter.value : "all").toLowerCase();
-                var visibleCount = 0;
-                document.querySelectorAll(".agenda-item").forEach(function (item) {
-                    var srcType = (item.getAttribute("data-src-type") || "").toUpperCase();
-                    var queueName = (item.getAttribute("data-queue") || "").toLowerCase();
-                    var rowDate = item.getAttribute("data-date") || "";
-                    var show = normalized === "BOTH" || normalized === srcType;
-                    if (show && queueValue !== "all" && queueName !== queueValue) {
-                        show = false;
-                    }
-                    if (show && !isDateInScope(rowDate, currentCalendarScope)) {
-                        show = false;
-                    }
-                    if (show && activeAgendaDate && rowDate !== activeAgendaDate) {
-                        show = false;
-                    }
-                    item.classList.toggle("is-hidden", !show);
-                    if (show) {
-                        visibleCount += 1;
-                    }
-                });
+            //PR:
+            //function applyAgendaFilter(mode) {
+            //    var normalized = (mode || "both").toUpperCase();
+            //    var queueFilter = document.getElementById("agendaQueueFilter");
+            //    var queueValue = (queueFilter && queueFilter.value ? queueFilter.value : "all").toLowerCase();
+            //    var visibleCount = 0;
+            //    document.querySelectorAll(".agenda-item").forEach(function (item) {
+            //        var srcType = (item.getAttribute("data-src-type") || "").toUpperCase();
+            //        var queueName = (item.getAttribute("data-queue") || "").toLowerCase();
+            //        var rowDate = item.getAttribute("data-date") || "";
+            //        var show = normalized === "BOTH" || normalized === srcType;
+            //        if (show && queueValue !== "all" && queueName !== queueValue) {
+            //            show = false;
+            //        }
+            //        if (show && !isDateInScope(rowDate, currentCalendarScope)) {
+            //            show = false;
+            //        }
+            //        if (show && activeAgendaDate && rowDate !== activeAgendaDate) {
+            //            show = false;
+            //        }
+            //        item.classList.toggle("is-hidden", !show);
+            //        if (show) {
+            //            visibleCount += 1;
+            //        }
+            //    });
 
-                document.querySelectorAll(".agenda-day-group").forEach(function (group) {
-                    var groupDate = group.getAttribute("data-agenda-day") || "";
-                    var visibleInGroup = group.querySelectorAll(".agenda-item:not(.is-hidden)").length;
-                    var inScope = isDateInScope(groupDate, currentCalendarScope);
-                    group.classList.toggle("is-hidden", visibleInGroup === 0 || !inScope);
-                });
+            //    document.querySelectorAll(".agenda-day-group").forEach(function (group) {
+            //        var groupDate = group.getAttribute("data-agenda-day") || "";
+            //        var visibleInGroup = group.querySelectorAll(".agenda-item:not(.is-hidden)").length;
+            //        var inScope = isDateInScope(groupDate, currentCalendarScope);
+            //        group.classList.toggle("is-hidden", visibleInGroup === 0 || !inScope);
+            //    });
 
-                var emptyState = document.querySelector(".agenda-panel .empty-state");
-                if (emptyState) {
-                    emptyState.classList.toggle("is-hidden", visibleCount > 0);
-                }
+            //    var emptyState = document.querySelector(".agenda-panel .empty-state");
+            //    if (emptyState) {
+            //        emptyState.classList.toggle("is-hidden", visibleCount > 0);
+            //    }
 
-                document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
-                    btn.classList.toggle("is-active", (btn.getAttribute("data-agenda-filter") || "").toUpperCase() === normalized);
-                });
-            }
+            //    document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
+            //        btn.classList.toggle("is-active", (btn.getAttribute("data-agenda-filter") || "").toUpperCase() === normalized);
+            //    });
+            //}
 
             function getActiveAgendaMode() {
                 var active = document.querySelector("[data-agenda-filter].is-active");
                 return active ? (active.getAttribute("data-agenda-filter") || "both") : "both";
             }
 
-            function bindAgendaFilterSwitch() {
-                document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
-                    if (btn.getAttribute("data-bound-agenda-filter") === "1") {
-                        return;
-                    }
-                    btn.setAttribute("data-bound-agenda-filter", "1");
-                    btn.addEventListener("click", function () {
-                        applyAgendaFilter(btn.getAttribute("data-agenda-filter") || "both");
-                    });
-                });
-                var queueFilter = document.getElementById("agendaQueueFilter");
-                if (queueFilter && queueFilter.getAttribute("data-bound-agenda-queue") !== "1") {
-                    queueFilter.setAttribute("data-bound-agenda-queue", "1");
-                    queueFilter.addEventListener("change", function () {
-                        var active = document.querySelector("[data-agenda-filter].is-active");
-                        applyAgendaFilter(active ? active.getAttribute("data-agenda-filter") : "both");
-                    });
-                }
-                applyAgendaFilter("both");
-            }
+            //PR:
+            //function bindAgendaFilterSwitch() {
+            //    document.querySelectorAll("[data-agenda-filter]").forEach(function (btn) {
+            //        if (btn.getAttribute("data-bound-agenda-filter") === "1") {
+            //            return;
+            //        }
+            //        btn.setAttribute("data-bound-agenda-filter", "1");
+            //        btn.addEventListener("click", function () {
+            //            applyAgendaFilter(btn.getAttribute("data-agenda-filter") || "both");
+            //        });
+            //    });
+            //    var queueFilter = document.getElementById("agendaQueueFilter");
+            //    if (queueFilter && queueFilter.getAttribute("data-bound-agenda-queue") !== "1") {
+            //        queueFilter.setAttribute("data-bound-agenda-queue", "1");
+            //        queueFilter.addEventListener("change", function () {
+            //            var active = document.querySelector("[data-agenda-filter].is-active");
+            //            applyAgendaFilter(active ? active.getAttribute("data-agenda-filter") : "both");
+            //        });
+            //    }
+            //    applyAgendaFilter("both");
+            //}
 
-            function bindCalendarScopeSwitch() {
-                document.querySelectorAll("[data-calendar-scope]").forEach(function (btn) {
-                    if (btn.getAttribute("data-bound-calendar-scope") === "1") {
-                        return;
-                    }
-                    btn.setAttribute("data-bound-calendar-scope", "1");
-                    btn.addEventListener("click", function () {
-                        applyCalendarScope(btn.getAttribute("data-calendar-scope") || "monthly");
-                    });
-                });
-                applyCalendarScope(currentCalendarScope);
-            }
+            //PR
+            //function bindCalendarScopeSwitch() {
+            //    document.querySelectorAll("[data-calendar-scope]").forEach(function (btn) {
+            //        if (btn.getAttribute("data-bound-calendar-scope") === "1") {
+            //            return;
+            //        }
+            //        btn.setAttribute("data-bound-calendar-scope", "1");
+            //        btn.addEventListener("click", function () {
+            //            applyCalendarScope(btn.getAttribute("data-calendar-scope") || "monthly");
+            //        });
+            //    });
+            //    applyCalendarScope(currentCalendarScope);
+            //}
 
             function bindCalendarDaySelection() {
+                //return; //PR
                 document.querySelectorAll(".calendar-day-link").forEach(function (link) {
                     if (link.getAttribute("data-bound-calendar-day") === "1") {
                         return;
                     }
                     link.setAttribute("data-bound-calendar-day", "1");
                     link.addEventListener("click", function (event) {
-                        event.preventDefault();
+                        //event.preventDefault();
                         var day = link.closest("[data-calendar-date]");
                         if (!day) {
                             return;
@@ -3397,7 +3527,7 @@
                             return;
                         }
                         setActiveAgendaDate(dateText);
-                        applyAgendaFilter(getActiveAgendaMode());
+                        //PR: applyAgendaFilter(getActiveAgendaMode());
                     });
                 });
 
@@ -3409,7 +3539,7 @@
                         return;
                     }
                     setActiveAgendaDate("");
-                    applyAgendaFilter(getActiveAgendaMode());
+                    //PR: applyAgendaFilter(getActiveAgendaMode());
                 });
             }
 
@@ -4035,7 +4165,7 @@
             var routeTargetQueueId = document.getElementById("routeTargetQueueId");
             if (routeTargetQueueId) {
                 routeTargetQueueId.addEventListener("change", function () {
-                    loadRouteServices(routeTargetQueueId.value || "", "");
+                    loadRouteServices(routeTargetQueueId.value || "", "").then(lockRouteReferenceFromSource);
                 });
             }
             document.addEventListener("click", function (event) {
@@ -4178,8 +4308,8 @@
 
             bindProviderActionButtons();
             bindMeetingLinks();
-            bindAgendaFilterSwitch();
-            bindCalendarScopeSwitch();
+            //PR: bindAgendaFilterSwitch();
+            //PR: bindCalendarScopeSwitch();
             bindCalendarDaySelection();
             bindExpandableText();
 

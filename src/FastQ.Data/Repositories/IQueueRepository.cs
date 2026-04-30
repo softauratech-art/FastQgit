@@ -8,13 +8,13 @@ namespace FastQ.Data.Repositories
     {
         Queue Get(long id);
         long AddOrUpdateQueue(Queue oqueue, string stampuser);
-        
-		void Delete(long id, string stampuser);
-        
+
+        void Delete(long id, string stampuser);
+
         IList<Tuple<long, string>> ListServicesByQueue(long queueId);
-        
-		IList<Queue> ListByEntity(long? entityid, string stampuser);
-        
+
+        IList<Queue> ListByEntity(long? entityid, string stampuser);
+
         Tuple<string, string, string> GetQueueDetailsJson(long queueId);
 
         QService GetQService(long id, string stampuser);
@@ -28,6 +28,8 @@ namespace FastQ.Data.Repositories
         void AddOrUpdateQSchedule(QSchedule qschedule, string stampuser);
 
         void DeleteQSchedule(long serviceid, string stampuser);
+
+        void AddOrUpdateQAccess(long id, string hostids, string providerids, string reporterids, string queueadminids, string stampuser);
 
     }
 }

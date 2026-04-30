@@ -33,6 +33,7 @@ namespace FastQ.Web.Models.Admin
         [DisplayName("Address / Location")]
         public string Address { get; set; }
 
+        [Phone(ErrorMessage = "Invalid Phone Number")]
         public string Phone { get; set; }
 
         [DisplayName("Is Active?")]
@@ -87,6 +88,8 @@ namespace FastQ.Web.Models.Admin
 
         public IList<QueueScheduleVM> Schedules { get; set; }
         public IList<QueueServiceVM> Services { get; set; }
+
+        public IList<FastQ.Data.Entities.QAccess> UserAccessList { get; set; }
 
         // This property contains the available options
         public List<RefCriteriaItem> AvailableRefCriterias
@@ -152,7 +155,8 @@ namespace FastQ.Web.Models.Admin
 
 
         [Required(ErrorMessage = "End Date is required")]
-        public DateTime EndDate { get; set; } = DateTime.Now.Date.AddYears(1);   //"31-DEC-26"
+        public DateTime EndDate { get; set; } = DateTime.Now.Date.AddYears(10);   //"31-DEC-36"
+
         [Required(ErrorMessage = "Open Time is required")]
         public string OpenTime { get; set; }     //"+00 11:00:00.000000"
 

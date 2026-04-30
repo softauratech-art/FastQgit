@@ -16,8 +16,8 @@ namespace FastQ.Data.Entities
         public string Title { get; set; }
 
         public string StampUser { get; set; }
-        public DateTime CreatedUtc { get; set; }
-        public DateTime StampDateUtc { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public DateTime StampDate { get; set; }
 
         public IList<UserQueuePermission> Queues { get; set; }
 

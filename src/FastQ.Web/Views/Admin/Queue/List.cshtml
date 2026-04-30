@@ -7,7 +7,7 @@
     @section Head{
         <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
         <link href="~/Content/datatablesFQ.css" rel="stylesheet" />
-        <link href="~/Content/queueadmin.css" rel="stylesheet" />
+        <link href="~/Content/siteadmin.css" rel="stylesheet" />
     }
     @section PageHeader {
         <div>
@@ -17,17 +17,17 @@
     }
 
     @{  //Handle messages from DELETE action
-        if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+        if (TempData["ErrorMessage"] != null && !string.IsNullOrEmpty(TempData["ErrorMessage"].ToString()))
         {
             <div class="alert alert-danger">
-                <strong>Error:</strong> @ViewBag.ErrorMessage
+                <strong>Error:</strong> @TempData["ErrorMessage"]
             </div>
         }
 
-        if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+        if (TempData["SuccessMessage"] != null && !string.IsNullOrEmpty(TempData["SuccessMessage"].ToString()))
         {
             <div class="alert alert-success">
-                <strong>Success:</strong> @ViewBag.SuccessMessage
+                <strong>Success:</strong> @TempData["SuccessMessage"]
             </div>
         }
     }

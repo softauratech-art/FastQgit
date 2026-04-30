@@ -1,0 +1,44 @@
+@section PageHeader {
+    <div>
+        <div class="topbar-title">FastQ Admin Menu</div>
+        <div class="topbar-sub">
+            Manage User Accounts, Queue Configurations and Holiday Schedule.
+        </div>
+    </div>
+}
+
+@{ 
+
+    var authsvc = new FastQ.Web.Services.AuthService();
+    //var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
+    //var isProvider = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider);
+    //var isReporter = authsvc.IsInRole(FastQ.Web..Helpers.Utilities.FQRole.Reporter);
+    var isQueueAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin);
+    var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
+}
+
+<div class="grid-3">    
+    <div class="card" style='display: @((isSuperAdmin || isQueueAdmin) ? "" : "none;")'>
+        <div class="card-body">
+            <h5 class="card-title">Queue Settings</h5>
+            <p class="card-text">Add and manage queue configuration, schedules and services.</p>
+            <a href="@Url.Action("Index", "Queue")" class="btn secondary">Manage Queue Settings</a>
+        </div>
+    </div>
+
+    <div class="card" style='display: @((isSuperAdmin) ? "" : "none;")'>
+        <div class="card-body">
+            <h5 class="card-title">User Accounts</h5>
+            <p class="card-text">Add, Update and Delete users and their permissions.</p>
+            <a href="@Url.Action("Index", "User")" class="btn secondary">Manage User Accounts</a>
+        </div>
+    </div>
+
+    <div class="card" style='display: @((isSuperAdmin) ? "" : "none;")'>
+        <div class="card-body">
+            <h5 class="card-title">Holidays</h5>
+            <p class="card-text">Manage official County holidays.</p>
+            <a href="~/ComingSoon.html" target="_blank" class="btn secondary">Manage Holidays</a>
+        </div>
+    </div>
+</div>

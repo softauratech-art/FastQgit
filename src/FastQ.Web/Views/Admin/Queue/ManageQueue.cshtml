@@ -8,8 +8,16 @@
 
 @section Head
     {
+    <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/datatablesFQ.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/Content/modal.css" />
-    <link rel="stylesheet" href="~/Content/queueadmin.css" />
+    <link rel="stylesheet" href="~/Content/siteadmin.css" />
+    <style>
+        tr:hover {
+            background-color: #fff !important;
+        }
+        table#QAccessdata td {padding:8px;}
+    </style>
 }
 
 @section PageHeader {
@@ -43,7 +51,7 @@
         <div class="configuration-header">
             <h2>Configuration @(Model.Id == 0 ? "" : " for Queue " + Model.Id.ToString())</h2>
             <div class="primary-actions">
-                <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "Queue")"/>
+                <input type="submit" value="Back to List" class="btn-cancel" formaction="@Url.Action("Index", "Queue")" />
                 <input type="submit" value="Save Config" class="btn-save" />
             </div>
         </div>
@@ -55,9 +63,9 @@
                 <div class="card-body">
                     <div class="card-title"><i class="bi bi-card-heading"></i>Identity & Translations</div>
                     @*<div class="form-group">
-                    @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
-                    @Html.DisplayFor(model => model.Id)
-                </div>*@
+                            @Html.LabelFor(model => model.Id, "Id:", new { @class = "form-label control-label" })
+                            @Html.DisplayFor(model => model.Id)
+                        </div>*@
                     <div class="form-group mt-2">
                         @Html.LabelFor(model => model.Name, "Name (Primary English)", new { @class = "form-label control-label" })
                         @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
@@ -133,9 +141,9 @@
                             </label>
                         </div>
                         @*<div class="form-check form-switch">
-                        @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
-                        @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
-                    </div>*@
+                                @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
+                                @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
+                            </div>*@
                     </div>
                 </div>
             </div>
@@ -197,7 +205,7 @@
                         @Html.EditorFor(model => model.Address, new { htmlAttributes = new { @class = "form-control" } })
                     </div>
                     <div class="form-group mt-2">
-                        @Html.Label("Phone", htmlAttributes: new { @class = "form-label control-label" })
+                        @Html.Label("Phone", htmlAttributes: new { @class = "form-label control-label", @type = "phone" })
                         @Html.EditorFor(model => model.Phone, new { htmlAttributes = new { @class = "form-control" } })
                     </div>
                 </div>
@@ -247,6 +255,57 @@
         }
     </div>
 </div>
+@using (Html.BeginForm("EditAccess", "Queue", FormMethod.Post, new { @id = "frmQAccess" }))
+{
+    @Html.AntiForgeryToken();
+<div class="card">
+    @Html.HiddenFor(model => model.Id)
+
+    <!--<div class="card-title" style="display:block;">
+        Security-->
+        @*<input type="submit" value="Save Access" class="btn small btn-save" id="btnSaveAccess" style="float:right" />*@
+    <!--</div>-->
+
+    <div class="table-card">
+        <table class="table " id="QAccessdata">
+            <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
+                <tr>
+                    <th>User</th>
+                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host?</th>
+                    <th><input type="checkbox" name="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? </th>
+                    <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</th>
+                    <th><input type="checkbox" name="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? </th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var userlist = Model.UserAccessList;
+                    if (Model.UserAccessList != null)
+                    {
+                        foreach (var acl in userlist)
+                        {
+
+                            var isHost = acl.HostFlag;
+                            var isProvider = acl.ProviderFlag;
+                            var isReporter = acl.ReporterFlag;
+                            var isQueueAdmin = acl.QueueAdminFlag;
+                            var isConfigAdmin = acl.ConfigAdminFlag;
+                            <tr>
+                                <td>@acl.UserName (@acl.UserId) <sup>@(acl.ConfigAdminFlag ? "SuperAdmin" : "")</sup> <span class="text-danger">@(acl.UserActiveFlag == false ? "Inactive" : "")</span></td>
+                                <td><input type="checkbox" name="host" value="@acl.UserId" class="host-role" @(isHost ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="provider" value="@acl.UserId" class="provider-role" @(isProvider ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="reporter" value="@acl.UserId" class="reporter-role" @(isReporter ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="queueadmin" value="@acl.UserId" class="queueadmin-role" @(isQueueAdmin ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+}
+
 
 <div id="form-modal" class="queue-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
     <div class="queue-modal">
@@ -263,10 +322,10 @@
     </div>
 </div>
 @section Scripts{
-    @*included in _Layout: <script src="~/Scripts/jquery-3.7.1.min.js"></script>*@
+
+    <script src="https://cdn.datatables.net/2.3.7/js/dataTables.min.js"></script>
     <script src="~/Scripts/jquery.validate.min.js"></script>
     <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
-    @*<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>*@
     <script src="~/Scripts/jquery-fxtime.js"></script>
     <script>
         function clearModalBody(id) {
@@ -422,5 +481,62 @@
                 }
             });
         });
-    </script> }
 
+        function selectAll(obj, classname) {
+            $('.' + classname).prop('checked', obj.checked);
+        }
+
+
+        $(document).ready(function () {
+            $('#QAccessdata').DataTable({
+                language: {
+                    search: '',
+                    searchPlaceholder: "Search by Name or Id"
+                },
+                pageLength: 20, // Sets the default to 50 rows
+                fixedColumns: true,
+                columnDefs: [
+                    { "targets": [1,2,3,4], "orderable": false }
+                    ],
+                layout: {
+                    topStart: 'search', // Places default search box,
+                    topEnd: {                      
+                            div: {
+                                className: 'action-btn-div'
+                            }
+                    }
+                },
+                initComplete: function () {
+                    // Use initComplete to insert the actual hyperlink after the table is initialized
+                    $('.action-btn-div').wrapInner('<input type="submit" value="Save Changes" class="btn small btn-save" id="btnSaveAccess" style="float:right" />');
+                    $('.dt-search').prepend('<span class="card-title" style="display:inline;margin-right: 20px;">Security</span>');
+
+                }
+            });
+
+
+            $('#frmQAccess').on('submit', function (e) {
+                var form = this;
+                var table = $('#QAccessdata').DataTable();
+
+                // Get data from all pages as an array
+                var params = table.$('input').serializeArray();
+
+                // Iterate through the serialized data
+                $.each(params, function () {
+                    // If the specific input is NOT currently in the DOM (hidden by pagination/filter)
+                    if (!$.contains(document, form[this.name])) {
+                        // Append it as a hidden field so the browser "sees" it during submit
+                        $(form).append(
+                            $('<input>')
+                                .attr('type', 'hidden')
+                                .attr('name', this.name)
+                                .val(this.value)
+                        );
+                    }
+                });
+            });
+        });
+
+    </script> 
+    }

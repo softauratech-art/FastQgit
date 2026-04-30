@@ -44,9 +44,9 @@ namespace FastQ.Web.Helpers
 
             //return string in dd hh:mi:ss format
             TimeSpan timeSpan = System.Xml.XmlConvert.ToTimeSpan(isoduration);
-            string ts = timeSpan.ToString();
+            //string ts = timeSpan.ToString();
             //ts = ts.Contains(".") ? ts.Replace(".", " ") : ts;  //replace . with [space] for Oracle format
-            ts = string.Format("{0:00} {1:00}:{2:00}:{3:00}", timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds);
+            string ts = string.Format("{0:00} {1:00}:{2:00}:{3:00}", timeSpan.Days, timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds);
 
             return ts;
         }

@@ -111,6 +111,7 @@ CREATE OR REPLACE PACKAGE FQ_PROCS AS
     p_target_date       IN DATE,
     p_ref_value         IN VARCHAR2,
     p_notes             IN VARCHAR2,
+    p_servicenotes      IN VARCHAR2,
     p_stampuser         IN VARCHAR2,
     p_new_src_id        OUT NUMBER,
     p_outmsg            OUT VARCHAR2

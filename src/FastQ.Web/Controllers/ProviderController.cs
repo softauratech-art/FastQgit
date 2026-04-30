@@ -544,6 +544,7 @@ namespace FastQ.Web.Controllers
                 TargetDate = parsedTargetDateValue,
                 RefValue = refValue,
                 Notes = notes,
+                ServiceNotes = completionNotes,
                 StampUser = _auth.GetLoggedInWindowsUser()
             };
 
@@ -551,12 +552,12 @@ namespace FastQ.Web.Controllers
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
-            if (!string.IsNullOrWhiteSpace(completionNotes))
-            {
-                var saveRes = _service.SaveServiceInfo(srcId, normalizedSrc[0], null, null, completionNotes, _auth.GetLoggedInWindowsUser());
-                if (!saveRes.Ok)
-                    return Json(new { ok = true, newSrcId = res.Value, warning = saveRes.Error });
-            }
+            //if (!string.IsNullOrWhiteSpace(completionNotes))
+            //{
+            //    var saveRes = _service.SaveServiceInfo(srcId, normalizedSrc[0], null, null, completionNotes, _auth.GetLoggedInWindowsUser());
+            //    if (!saveRes.Ok)
+            //        return Json(new { ok = true, newSrcId = res.Value, warning = saveRes.Error });
+            //}
 
             return Json(new { ok = true, newSrcId = res.Value });
         }
@@ -584,13 +585,13 @@ namespace FastQ.Web.Controllers
             return Json(new { ok = true });
         }
 
-        [HttpPost]
-        public JsonResult SystemClose(int staleHours)
-        {
-            var hours = staleHours <= 0 ? 12 : staleHours;
-            var closed = _service.CloseStaleScheduledAppointments(hours);
-            return Json(new { ok = true, closed = closed });
-        }
+        //[HttpPost]
+        //public JsonResult SystemClose(int staleHours)
+        //{
+        //    var hours = staleHours <= 0 ? 12 : staleHours;
+        //    var closed = _service.CloseStaleScheduledAppointments(hours);
+        //    return Json(new { ok = true, closed = closed });
+        //}
 
         private string ValidateActionPermission(string action, long? queueId)
         {

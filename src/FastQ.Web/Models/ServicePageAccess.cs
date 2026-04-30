@@ -9,5 +9,6 @@ namespace FastQ.Web.Models
 
         public IList<long> ProviderQueueIds { get; set; } = new List<long>();
         public IList<long> QueueAdminQueueIds { get; set; } = new List<long>();
+        public IList<long> HostQueueIds { get; set; } = new List<long>();
     }
 }

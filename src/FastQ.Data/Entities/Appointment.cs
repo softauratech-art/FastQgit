@@ -29,12 +29,12 @@ namespace FastQ.Data.Entities
         public string MeetingUrlHost { get; set; }
         public string LanguagePreference { get; set; }
         public string CreatedBy { get; set; }
-        public DateTime CreatedOnUtc { get; set; }
+        public DateTime CreatedOn { get; set; }
         public string StampUser { get; set; }
-        public DateTime StampDateUtc { get; set; }
+        public DateTime StampDate { get; set; }
 
-        public DateTime CreatedUtc { get; set; }
-        public DateTime UpdatedUtc { get; set; }
+        //public DateTime CreatedOn { get; set; }
+        public DateTime UpdatedOn { get; set; }
 
         public DateTime ScheduledFor
         {

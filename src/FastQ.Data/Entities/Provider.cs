@@ -16,7 +16,7 @@ namespace FastQ.Data.Entities
         public string Password { get; set; }
         public string Title { get; set; }
         public string StampUser { get; set; }
-        public DateTime StampDateUtc { get; set; }
+        public DateTime StampDate { get; set; }
 
         public string Name
         {

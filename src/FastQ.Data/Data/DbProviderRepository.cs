@@ -62,7 +62,7 @@ namespace FastQ.Data.Db
 
             var first = record["FNAME"]?.ToString() ?? string.Empty;
             var last = record["LNAME"]?.ToString() ?? string.Empty;
-            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.UtcNow : Convert.ToDateTime(record["STAMPDATE"]);
+            var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["STAMPDATE"]);
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
             var adminFlag = (record["ADMINFLAG"]?.ToString() ?? "N") == "Y";
             return new Provider
@@ -78,7 +78,7 @@ namespace FastQ.Data.Db
                 AdminFlag = adminFlag,
                 Title = record["TITLE"]?.ToString() ?? string.Empty,
                 StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
-                StampDateUtc = DateTime.SpecifyKind(stampDate, DateTimeKind.Utc)
+                StampDate = stampDate
             };
         }
 

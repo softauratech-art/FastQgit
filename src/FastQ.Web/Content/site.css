@@ -27,12 +27,6 @@ body {
     font-family: var(--font-body);
     color: var(--ink);
     min-height: 100vh;
-    /*background: #7F7FD5;*/ /* fallback for old browsers */
-    /*background: radial-gradient(circle at top left, #fff2dd 0%, transparent 45%), radial-gradient(circle at 20% 60%, #e6f6f2 0%, transparent 50%), linear-gradient(120deg, var(--bg), var(--bg-accent));
-    background: -webkit-linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);*/ /* Chrome 10-25, Safari 5.1-6 */
-    /*PR:background: linear-gradient(to top, #7F7FD5, #91EAE4, #86A8E7);*/ /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-    background-image: linear-gradient(to top, #0c3483 0%, #a2b6df 100%, #6b8cce 100%, #a2b6df 100%);
-    background: linear-gradient(to top, #7F7FD5, #91EAE4, #86A8E7);
     background: linear-gradient(to top, #7F7FD5, #91EAE4, #86A8E7); /*W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
 }
 
@@ -553,7 +547,8 @@ form {
     font-weight: 600;
 }
 
-input[type=text],
+input[type=text], input[type="tel"],
+input[type="email"], input[type="password"],
 select {
     width: 100%;
     padding: 10px 12px;
@@ -565,11 +560,17 @@ select {
 }
 
     input[type=text]:focus,
+    input[type="tel"]:focus,
+    input[type="email"]:focus, 
+    input[type="password"]:focus,
     select:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
     }
+.input-validation-error {
+    border: solid 1px #8B0000 !important;
+}
 
 label {
     font-weight: 600;
