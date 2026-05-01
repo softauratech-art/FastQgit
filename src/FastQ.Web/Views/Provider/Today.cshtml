@@ -36,6 +36,13 @@
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
     var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+    Func<object, string> getStampUser = item =>
+    {
+        if (item == null) return string.Empty;
+        var prop = item.GetType().GetProperty("StampUser");
+        var value = prop == null ? null : prop.GetValue(item, null);
+        return value == null ? string.Empty : value.ToString();
+    };
     var queueOptions = walkinRows.Select(r => r.QueueName)
         .Concat(appointmentRows.Select(r => r.QueueName))
         .Where(q => !string.IsNullOrWhiteSpace(q))
@@ -702,7 +709,8 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            var rowStampUser = getStampUser(row);
+                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
                                 <td><button type="button" class="cell-ellipsis" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
@@ -752,7 +760,7 @@
                                                     data-language="@row.LanguagePreference"
                                                     data-status-text="@row.StatusText"
                                                     data-contact="@row.ContactMethod"
-                                                    data-stamp-user="@row.StampUser"
+                                                    data-stamp-user="@rowStampUser"
                                                     data-meeting-url="@row.MeetingUrl"
                                                     data-meeting-url-host="@row.MeetingUrlHost"
                                                     data-notes="@row.Notes">
@@ -760,7 +768,7 @@
                                             </button>
                                             <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
                                         </div>
-                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUser) ? "-" : row.StampUser)</div>
+                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(rowStampUser) ? "-" : rowStampUser)</div>
                                     </div>
                                 </td>
                             </tr>
@@ -843,7 +851,8 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
-                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(row.StampUser ?? string.Empty, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            var rowStampUser = getStampUser(row);
+                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
                                 <td><button type="button" class="cell-ellipsis" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
@@ -893,7 +902,7 @@
                                                     data-language="@row.LanguagePreference"
                                                     data-status-text="@row.StatusText"
                                                     data-contact="@row.ContactMethod"
-                                                    data-stamp-user="@row.StampUser"
+                                                    data-stamp-user="@rowStampUser"
                                                     data-meeting-url="@row.MeetingUrl"
                                                     data-meeting-url-host="@row.MeetingUrlHost"
                                                     data-notes="@row.Notes">
@@ -901,7 +910,7 @@
                                             </button>
                                             <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
                                         </div>
-                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUser) ? "-" : row.StampUser)</div>
+                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(rowStampUser) ? "-" : rowStampUser)</div>
                                     </div>
                                 </td>
                             </tr>
