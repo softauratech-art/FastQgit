@@ -46,6 +46,7 @@ namespace FastQ.Data.Db
                 {
                     DataAccess.AddParam(cmd, "p_email", customerEmail, DbType.String);
                     DataAccess.AddParam(cmd, "p_json", BuildInsertApptPayload(appointment), DbType.String);
+                    DataAccess.AddParam(cmd, "p_stampuser", string.IsNullOrWhiteSpace(appointment.StampUser) ? "web" : appointment.StampUser.Trim(), DbType.String);
 
                     var confCode = DataAccess.AddParam(cmd, "p_confcode", null, DbType.String);
                     confCode.Direction = ParameterDirection.Output;
