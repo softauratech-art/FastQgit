@@ -1050,7 +1050,7 @@
                     <option value="">Select time</option>
                 </select>
             </div>
-            <div class="route-form-row">
+            <div class="route-form-row" id="routeRefRow">
                 <label for="routeRefValue">Reference</label>
                 <select id="routeRefValue" class="route-input">
                     <option value="">Select reference</option>
@@ -1060,7 +1060,7 @@
                     <option value="REFERRAL">Referral</option>
                 </select>
             </div>
-            <div class="route-form-row">
+            <div class="route-form-row" id="routeNotesRow">
                 <label for="routeNotes">Comments</label>
                 <textarea id="routeNotes" rows="3"></textarea>
             </div>
@@ -2840,11 +2840,14 @@
       var targetServiceId = document.getElementById("routeTargetServiceId");
       var targetDate = document.getElementById("routeTargetDate");
       var targetTime = document.getElementById("routeTargetTime");
+      var refRow = document.getElementById("routeRefRow");
+      var notesRow = document.getElementById("routeNotesRow");
       var refValue = document.getElementById("routeRefValue");
       var notes = document.getElementById("routeNotes");
       var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
       var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
       var lockReference = mode === "end-add";
+      var hideTransferRefAndNotes = mode === "transfer";
 
       if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
         return;
@@ -2866,14 +2869,19 @@
       if (targetServiceId) targetServiceId.value = sourcePrefill ? sourcePrefill.serviceId : "";
       if (targetDate) targetDate.value = "";
       if (targetTime) targetTime.value = "";
+      if (refRow) refRow.classList.toggle("is-hidden", hideTransferRefAndNotes);
+      if (notesRow) notesRow.classList.remove("is-hidden");
       if (refValue) {
-        refValue.disabled = !!lockReference;
+        refValue.disabled = !!lockReference || hideTransferRefAndNotes;
         if (lockReference && sourceContext) {
           ensureSelectOption(refValue, sourceContext.refValue, sourceContext.refValue);
         }
         refValue.value = lockReference && sourceContext ? sourceContext.refValue : (sourcePrefill ? sourcePrefill.refValue : "");
       }
-      if (notes) notes.value = sourcePrefill ? sourcePrefill.notes : "";
+      if (notes) {
+        notes.disabled = false;
+        notes.value = sourcePrefill ? sourcePrefill.notes : "";
+      }
       toggleRouteDateRow();
       loadRouteQueues(sourcePrefill ? sourcePrefill.queueId : "", sourcePrefill ? sourcePrefill.serviceId : "").then(function () {
         lockRouteReferenceFromSource();
@@ -4031,7 +4039,7 @@
               targetKind: targetKind,
               targetServiceId: targetServiceId || "",
               targetDate: targetDateTime || "",
-              refValue: refValue || "",
+              refValue: "",
               notes: notes || ""
             })
             .then(function (res) {

@@ -325,6 +325,10 @@ namespace FastQ.Web.Controllers
             if (!TryParseStartTime(startTime, out var parsedTime))
                 return Json(new { ok = false, error = "Start time is required." });
 
+            var loggedInUser = _auth.GetLoggedInWindowsUser();
+            if (string.IsNullOrWhiteSpace(loggedInUser))
+                return Json(new { ok = false, error = "Could not resolve logged-in user." });
+
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
             var res = _customerService.CreateScheduled(
                 qId,
@@ -342,7 +346,7 @@ namespace FastQ.Web.Controllers
                 languagePreference,
                 notes,
                 meetingUrl,
-                _auth.GetLoggedInWindowsUser());
+                loggedInUser);
 
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
