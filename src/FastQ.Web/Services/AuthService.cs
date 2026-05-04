@@ -29,7 +29,14 @@ namespace FastQ.Web.Services
                 return sessionUser.UserId.Trim();
             }
 
-            return string.Empty;
+            var httpContext = HttpContext.Current;
+            var identityName = httpContext?.User?.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(identityName))
+            {
+                identityName = httpContext?.Request?.LogonUserIdentity?.Name;
+            }
+
+            return ExtractAccountName(identityName).Trim();
         }
 
         private static string ExtractAccountName(string identityName)
