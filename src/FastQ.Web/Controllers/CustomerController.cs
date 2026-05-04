@@ -9,10 +9,12 @@ namespace FastQ.Web.Controllers
     public class CustomerController : Controller
     {
         private readonly CustomerService _service;
+        private readonly AuthService _auth;
 
         public CustomerController()
         {
             _service = new CustomerService();
+            _auth = new AuthService();
         }
 
         [HttpGet]
@@ -105,7 +107,7 @@ namespace FastQ.Web.Controllers
                 null,
                 notes,
                 meetingUrl,
-                "web");
+                _auth.GetLoggedInWindowsUser());
             if (!res.Ok)
             {
                 if (Request.IsAjaxRequest())
