@@ -23,20 +23,15 @@ namespace FastQ.Web.Services
 
         public string GetLoggedInWindowsUser()
         {
-            var httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;
-            httpIdentityName = ExtractAccountName(httpIdentityName);
-            if (!string.IsNullOrWhiteSpace(httpIdentityName))
-            {
-                return httpIdentityName;
-            }
-
             var sessionUser = GetCurrentUser();
             if (!string.IsNullOrWhiteSpace(sessionUser?.UserId))
             {
                 return sessionUser.UserId.Trim();
             }
 
-            return string.Empty;
+            var httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;
+            httpIdentityName = ExtractAccountName(httpIdentityName)?.Trim();
+            return string.IsNullOrWhiteSpace(httpIdentityName) ? string.Empty : httpIdentityName;
         }
 
         private static string ExtractAccountName(string identityName)
