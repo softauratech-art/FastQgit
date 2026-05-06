@@ -7,7 +7,7 @@
     <div>
         @*<div class="eyebrow">Reporting</div>*@
         <div class="topbar-title">Daily summary and provider activity</div>
-        <div class="topbar-sub">Live reporting powered by the in-memory store with instant SignalR refresh.</div>
+        <div class="topbar-sub">Reporting is loaded from the database and refreshed on demand.</div>
     </div>
     <div class="top-actions">
     </div>
@@ -16,12 +16,29 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">Filters</h3>
-        <span class="badge accent">Live</span>
+        <span class="badge accent">DB</span>
     </div>
     <div class="row">
         <div class="col">
             <label for="reportQueue">Queue</label>
             <select id="reportQueue"></select>
+        </div>
+        <div class="col">
+            <label for="reportPeriod">Period</label>
+            <select id="reportPeriod">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="range">Date Range</option>
+            </select>
+        </div>
+        <div class="col range-only" style="display:none;">
+            <label for="reportStartDate">Start date</label>
+            <input type="date" id="reportStartDate" />
+        </div>
+        <div class="col range-only" style="display:none;">
+            <label for="reportEndDate">End date</label>
+            <input type="date" id="reportEndDate" />
         </div>
         <div class="col" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
             <button type="button" class="btn primary" onclick="FastQReport.refresh()">Refresh</button>
@@ -30,21 +47,29 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">7-day booking trend</h3>
+        <span class="pill">Last 7 days</span>
+    </div>
+    <div id="trendChart" class="stack"></div>
+</div>
+
 <div class="report-grid">
     <div class="stat">
-        <div class="stat-label">Booked Today</div>
+        <div class="stat-label" id="bookedLabel">Booked (Daily)</div>
         <div class="stat-value" id="reportBooked">0</div>
     </div>
     <div class="stat">
-        <div class="stat-label">Scheduled Today</div>
+        <div class="stat-label" id="scheduledLabel">Scheduled (Daily)</div>
         <div class="stat-value" id="reportScheduled">0</div>
     </div>
     <div class="stat">
-        <div class="stat-label">Completed</div>
+        <div class="stat-label" id="completedLabel">Completed (Daily)</div>
         <div class="stat-value" id="reportCompleted">0</div>
     </div>
     <div class="stat">
-        <div class="stat-label">Cancellations</div>
+        <div class="stat-label" id="cancelledLabel">Cancellations (Daily)</div>
         <div class="stat-value" id="reportCancelled">0</div>
     </div>
 </div>
@@ -53,25 +78,17 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Provider activity</h3>
-            <span class="pill">Today</span>
+            <span class="pill" id="providerPeriodPill">Daily</span>
         </div>
         <div id="providerTable"></div>
     </div>
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Queue breakdown</h3>
-            <span class="pill">Live</span>
+            <span class="pill" id="queuePeriodPill">Daily</span>
         </div>
         <div id="queueTable"></div>
     </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">7-day booking trend</h3>
-        <span class="pill">EST</span>
-    </div>
-    <div id="trendChart" class="stack"></div>
 </div>
 
 @section Scripts {
@@ -83,8 +100,18 @@
         var FastQReport = {
             refresh: function () {
                 var queueId = document.getElementById("reportQueue").value;
+                var period = document.getElementById("reportPeriod").value;
+                var startDate = document.getElementById("reportStartDate").value;
+                var endDate = document.getElementById("reportEndDate").value;
+
                 $("#reportMsg").removeClass("error ok").text("Loading...");
-                $.getJSON("@Url.Action("ReportingSnapshot", "Reporting")", { entityId: window.FASTQ_CONTEXT.entityId, queueId: queueId })
+                $.getJSON("@Url.Action("ReportingSnapshot", "Reporting")", {
+                    entityId: window.FASTQ_CONTEXT.entityId,
+                    queueId: queueId,
+                    period: period,
+                    startDate: startDate,
+                    endDate: endDate
+                })
                     .done(function (res) {
                         if (!res || !res.ok) {
                             $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
@@ -103,6 +130,7 @@
                 $("#reportScheduled").text(d.ScheduledToday);
                 $("#reportCompleted").text(d.CompletedToday);
                 $("#reportCancelled").text(d.CancelledToday);
+                FastQReport.updatePeriodPills(d.FilterPeriod, d.FilterStart, d.FilterEnd);
 
                 FastQReport.renderQueues(d.Queues || []);
                 FastQReport.renderProviders(d.Providers || []);
@@ -175,10 +203,38 @@
                         "</div>";
                 });
                 $("#trendChart").html(html);
+            },
+
+            updatePeriodPills: function (period, start, end) {
+                var label = "Daily";
+                if (period === "weekly") label = "Weekly";
+                if (period === "monthly") label = "Monthly";
+                if (period === "range") label = (start && end) ? (start + " to " + end) : "Date Range";
+                $("#providerPeriodPill").text(label);
+                $("#queuePeriodPill").text(label);
+                $("#bookedLabel").text("Booked (" + label + ")");
+                $("#scheduledLabel").text("Scheduled (" + label + ")");
+                $("#completedLabel").text("Completed (" + label + ")");
+                $("#cancelledLabel").text("Cancellations (" + label + ")");
+            },
+
+            onPeriodChanged: function () {
+                var showRange = document.getElementById("reportPeriod").value === "range";
+                $(".range-only").toggle(showRange);
             }
         };
 
         $(function () {
+            var now = new Date();
+            var local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            var today = local.toISOString().slice(0, 10);
+            $("#reportStartDate").val(today);
+            $("#reportEndDate").val(today);
+            $("#reportPeriod").on("change", function () {
+                FastQReport.onPeriodChanged();
+                FastQReport.refresh();
+            });
+            FastQReport.onPeriodChanged();
             FastQReport.refresh();
         });
 

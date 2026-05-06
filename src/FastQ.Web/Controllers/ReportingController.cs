@@ -3,6 +3,7 @@ using FastQ.Web.Attributes;
 using FastQ.Web.Helpers;
 using FastQ.Web.Services;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Web.Mvc;
 
@@ -25,7 +26,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public JsonResult ReportingSnapshot(string entityId, string queueId)
+        public JsonResult ReportingSnapshot(string entityId, string queueId, string period, string startDate, string endDate)
         {
             long parsedEntityId;
             long qId;
@@ -38,13 +39,13 @@ namespace FastQ.Web.Controllers
                 appointments = appointments.Where(a => a.QueueId == qId).ToList();
 
             var now = DateTime.Now;
-            var dayStart = now.Date;
-            var dayEnd = dayStart.AddDays(1);
+            var range = ResolvePeriodRange(period, startDate, endDate, now);
+            var filtered = appointments.Where(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive).ToList();
 
-            var bookedToday = appointments.Count(a => a.CreatedOn >= dayStart && a.CreatedOn < dayEnd);
-            var scheduledToday = appointments.Count(a => a.ScheduledFor >= dayStart && a.ScheduledFor < dayEnd);
-            var completedToday = appointments.Count(a => a.UpdatedOn >= dayStart && a.UpdatedOn < dayEnd && a.Status == AppointmentStatus.Completed);
-            var cancelledToday = appointments.Count(a => a.UpdatedOn >= dayStart && a.UpdatedOn < dayEnd &&
+            var bookedToday = appointments.Count(a => a.CreatedOn >= range.Start && a.CreatedOn < range.EndExclusive);
+            var scheduledToday = appointments.Count(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive);
+            var completedToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Completed);
+            var cancelledToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive &&
                                                        (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem));
 
             var providers = _service.ListProviders(hasEntity ? (long?)parsedEntityId : null);
@@ -53,10 +54,10 @@ namespace FastQ.Web.Controllers
             {
                 ProviderId = p.Id,
                 ProviderName = p.Name,
-                Arrived = appointments.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.Arrived),
-                InService = appointments.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.InService),
-                Completed = appointments.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.Completed),
-                Cancelled = appointments.Count(a => a.ProviderId == p.Id &&
+                Arrived = filtered.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.Arrived),
+                InService = filtered.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.InService),
+                Completed = filtered.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.Completed),
+                Cancelled = filtered.Count(a => a.ProviderId == p.Id &&
                                                    (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
             }).ToList();
 
@@ -66,11 +67,11 @@ namespace FastQ.Web.Controllers
             {
                 QueueId = q.Id,
                 QueueName = q.Name,
-                Waiting = appointments.Count(a => a.QueueId == q.Id &&
+                Waiting = filtered.Count(a => a.QueueId == q.Id &&
                                                   (a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived)),
-                InService = appointments.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.InService),
-                Completed = appointments.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.Completed),
-                Cancelled = appointments.Count(a => a.QueueId == q.Id &&
+                InService = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.InService),
+                Completed = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.Completed),
+                Cancelled = filtered.Count(a => a.QueueId == q.Id &&
                                                    (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
             }).ToList();
 
@@ -94,9 +95,59 @@ namespace FastQ.Web.Controllers
                     CancelledToday = cancelledToday,
                     Providers = providerRows,
                     Queues = queueRows,
-                    DailyTrend = dailyTrend
+                    DailyTrend = dailyTrend,
+                    FilterPeriod = range.Period,
+                    FilterStart = range.Start.ToString("yyyy-MM-dd"),
+                    FilterEnd = range.EndExclusive.AddDays(-1).ToString("yyyy-MM-dd")
                 }
             }, JsonRequestBehavior.AllowGet);
+        }
+
+        private static (DateTime Start, DateTime EndExclusive, string Period) ResolvePeriodRange(string period, string startDate, string endDate, DateTime now)
+        {
+            var normalized = (period ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalized != "daily" && normalized != "weekly" && normalized != "monthly" && normalized != "range")
+                normalized = "daily";
+
+            if (normalized == "range")
+            {
+                if (TryParseDate(startDate, out var from) && TryParseDate(endDate, out var to))
+                {
+                    if (to < from)
+                    {
+                        var swap = from;
+                        from = to;
+                        to = swap;
+                    }
+
+                    return (from.Date, to.Date.AddDays(1), normalized);
+                }
+
+                normalized = "daily";
+            }
+
+            if (normalized == "weekly")
+            {
+                var firstDay = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+                var start = now.Date;
+                while (start.DayOfWeek != firstDay)
+                    start = start.AddDays(-1);
+                return (start, start.AddDays(7), normalized);
+            }
+
+            if (normalized == "monthly")
+            {
+                var start = new DateTime(now.Year, now.Month, 1);
+                return (start, start.AddMonths(1), normalized);
+            }
+
+            var dayStart = now.Date;
+            return (dayStart, dayStart.AddDays(1), "daily");
+        }
+
+        private static bool TryParseDate(string value, out DateTime parsed)
+        {
+            return DateTime.TryParseExact((value ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed);
         }
     }
 }

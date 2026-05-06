@@ -931,49 +931,106 @@
 }
 
 <div id="meetingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
-    <div class="modal">
+    <div class="modal info-modal">
         <div class="modal-header">
             <h5 class="modal-title" id="meetingModalTitle">Meeting Details</h5>
             <button class="btn small ghost" type="button" data-modal-close="meetingModal">Close</button>
         </div>
         <div class="modal-body">
             <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
-            <p>Meeting Id: <span id="mid"></span></p>
-            <p>
-                Meeting Date: <span id="meetingDate"></span><br />
-                Meeting Time: <span id="meetingTime"></span><br />
-                Title: <span id="meetingTitle"></span><br />
-            </p>
-            <p>
-                Customer Info:<br />
-                <span id="meetingCustomer"></span> | <span id="meetingPhone"></span><br />
-                Email: <span id="meetingEmail"></span>
-            </p>
-            <p>
-                Queue: <span id="meetingQueue"></span><br />
-                Service: <span id="meetingService"></span><br />
-                Ref Value: <span id="meetingRefValue"></span><br />
-                Contact: <span id="meetingContact"></span><br />
-                Language: <span id="meetingLanguage"></span><br />
-                Status: <span id="meetingStatus"></span><br />
-                Stamp User: <span id="meetingStampUser"></span><br />
-            </p>
-            <div class="field-row">
-                <div>Guest URL:</div>
-                <input id="mGuestURL" type="text" value="" />
+            
+            <div class="info-section">
+                <div class="info-section-title">Meeting Information</div>
+                <div class="info-row">
+                    <div class="info-row-label">Meeting ID:</div>
+                    <div class="info-row-value"><span id="mid"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Date:</div>
+                    <div class="info-row-value"><span id="meetingDate"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Time:</div>
+                    <div class="info-row-value"><span id="meetingTime"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Title:</div>
+                    <div class="info-row-value"><span id="meetingTitle"></span></div>
+                </div>
             </div>
-            <div class="field-row">
-                <div>Host URL:</div>
-                <input id="mURL" type="text" value="" />
+
+            <div class="info-section">
+                <div class="info-section-title">Customer Information</div>
+                <div class="info-row">
+                    <div class="info-row-label">Name:</div>
+                    <div class="info-row-value"><span id="meetingCustomer"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Phone:</div>
+                    <div class="info-row-value"><span id="meetingPhone"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Email:</div>
+                    <div class="info-row-value"><span id="meetingEmail"></span></div>
+                </div>
             </div>
-            <div class="field-row">
-                <div>Previous Notes:</div>
-                <div id="mPreviousNotes" class="route-input" style="min-height:44px; background:#f8fafc; white-space:pre-wrap; word-break:break-word;">-</div>
+
+            <div class="info-section">
+                <div class="info-section-title">Service Details</div>
+                <div class="info-row">
+                    <div class="info-row-label">Queue:</div>
+                    <div class="info-row-value"><span id="meetingQueue"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Service:</div>
+                    <div class="info-row-value"><span id="meetingService"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Ref Value:</div>
+                    <div class="info-row-value"><span id="meetingRefValue"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Contact:</div>
+                    <div class="info-row-value"><span id="meetingContact"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Language:</div>
+                    <div class="info-row-value"><span id="meetingLanguage"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Status:</div>
+                    <div class="info-row-value"><span id="meetingStatus"></span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-row-label">Stamp User:</div>
+                    <div class="info-row-value"><span id="meetingStampUser"></span></div>
+                </div>
             </div>
-            <div class="field-row">
-                <div>Add Notes:</div>
-                <textarea id="mNotes" rows="3"></textarea>
+
+            <div class="info-section">
+                <div class="info-section-title">Meeting URLs</div>
+                <div class="field-row">
+                    <div>Guest URL:</div>
+                    <input id="mGuestURL" type="text" value="" />
+                </div>
+                <div class="field-row">
+                    <div>Host URL:</div>
+                    <input id="mURL" type="text" value="" />
+                </div>
             </div>
+
+            <div class="info-section">
+                <div class="info-section-title">Notes</div>
+                <div class="field-row">
+                    <div>Previous Notes:</div>
+                    <div id="mPreviousNotes" class="route-input" style="min-height:44px; white-space:pre-wrap; word-break:break-word;">-</div>
+                </div>
+                <div class="field-row">
+                    <div>Add Notes:</div>
+                    <textarea id="mNotes" rows="3"></textarea>
+                </div>
+            </div>
+
             <div class="helper-text">Guest URL, host URL, and notes are saved. Text entered in Add Notes is appended to Previous Notes.</div>
         </div>
         <div class="modal-footer">
