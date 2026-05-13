@@ -97,21 +97,21 @@
 
                         <div class="mt-2 form-group">
                             <label for="OpensAt">Opens At</label>
-                            <input class="form-control text-box single-line" id="OpensAt" name="OpensAt"  type="text" value="@oentity.OpensAt">
+                            <input class="form-control text-box single-line" id="OpensAt" name="OpensAt" type="text" value="@oentity.OpensAt">
                         </div>
 
                         <div class="mt-2 form-group">
                             <label for="ClosesAt">Closes At</label>
-                            <input class="form-control text-box single-line" id="ClosesAt" name="ClosesAt"  type="text" value="@oentity.ClosesAt">
+                            <input class="form-control text-box single-line" id="ClosesAt" name="ClosesAt" type="text" value="@oentity.ClosesAt">
                         </div>
                     </div>
 
                     @*for-future-use<div class="switch-group">
-                        <label class="switch">
-                            <input type="checkbox" value="true" name="ActivateOutage" id="ActivateOutage" @(oentity.OutageMessage != "" ? "checked" : "") />
-                            <span class="slider"></span>
-                        </label>
-                    </div>*@
+                            <label class="switch">
+                                <input type="checkbox" value="true" name="ActivateOutage" id="ActivateOutage" @(oentity.OutageMessage != "" ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>*@
 
 
                     <div class="outage-grid-section alert-danger">
@@ -122,17 +122,17 @@
 
                         <div class="mt-2 form-group">
                             <label for="OutageEnd">Outage Ends At</label>
-                            <input class="form-control text-box single-line" id="OutageEnd" name="OutageEnd" type="text" value="@oentity.OutageEnd"  placeholder="@dtplaceholder">
+                            <input class="form-control text-box single-line" id="OutageEnd" name="OutageEnd" type="text" value="@oentity.OutageEnd" placeholder="@dtplaceholder">
                         </div>
 
                         <div class="mt-2 form-group">
                             <label for="OutageNotifyBegin">Notification Begin Date & Time</label>
-                            <input class="form-control text-box single-line" id="OutageNotifyBegin" name="OutageNotifyBegin" type="text" value="@oentity.OutageNotifyBegin"  placeholder="@dtplaceholder">
+                            <input class="form-control text-box single-line" id="OutageNotifyBegin" name="OutageNotifyBegin" type="text" value="@oentity.OutageNotifyBegin" placeholder="@dtplaceholder">
                         </div>
 
                         <div class="mt-2 form-group">
                             <label for="OutageMessage">Outage Display Message</label>
-                            <input class="form-control text-box single-line" id="OutageMessage" name="OutageMessage" type="text" value="@oentity.OutageMessage" >
+                            <input class="form-control text-box single-line" id="OutageMessage" name="OutageMessage" type="text" value="@oentity.OutageMessage">
                         </div>
                     </div>
 
@@ -146,14 +146,26 @@
     }
 }
 
+    <div id="feedbackModal" class="modal-backdrop hide" role="dialog" aria-modal="true" aria-labelledby="feedbackModal">
+        <div class="modal fade" id="" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="feedback-modal-title">Success!</h5>
+                    </div>
+                    <div class="modal-body" id="feedback-modal-body">Operation successful.</div>
+                    <div class="modal-footer" style="justify-content: flex-end;">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="document.getElementById('feedbackModal').classList.remove('show')">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-@section Scripts{
-    <script>
+        @section Scripts{
+        <script>
         $(document).ready(function () {
-            //$('#ActivateOutage').change(function () {
-            //    $('.outage-grid-section').toggle(this.checked);
-            //});
-            
+
             function validateOutageData() {
                 var hasdata = ($.trim($('#OutageBegin').val()) + $.trim($('#OutageEnd').val()) + $.trim($('#OutageNotifyBegin').val()) + $.trim($('#OutageMessage').val())).length > 0;
 
@@ -182,30 +194,50 @@
                 return isvalid;
             }
 
-            $('#submitEntityForm').submit(function (e) {
+            function showFeedbackModal(title, msg) {
+                document.getElementById('feedback-modal-title').innerHTML = title;
+                document.getElementById('feedback-modal-body').innerHTML = msg;
+                document.getElementById('feedbackModal').classList.add("show");
+            }
 
+
+            $('#submitEntityForm').submit(function (e) {
+                e.preventDefault(); // Stops the form from posting to the controller
                 var openDate = new Date($('#OpensAt').val());
                 var closeDate = new Date($('#ClosesAt').val());
-                
+
                 if (($.trim($('#OpensAt').val()) + $.trim($('#ClosesAt').val())).length > 0) {
                     if (isNaN(openDate.getTime()) || isNaN(closeDate.getTime())) {
-                        e.preventDefault();
                         alert("Invalid Open/Close date format(s)");
                     } else if (openDate > closeDate) {
-                        e.preventDefault();
                         alert("Open date cannot be after Close date.");
                     }
                 };
 
+                var formData = $('#submitEntityForm').serializeArray();
                 if (!validateOutageData()) {
-                    e.preventDefault(); // Stops the form from posting to the controller
-                    var formData = $('#submitEntityForm').serializeArray();
+                    // for debugging
                     $.each(formData, function (index, field) {
                         console.log(field.name + ": " + field.value);
                     });
                 }
+                else {
+                    $.ajax({
+                        url: '@Url.Action("EditEntity", "Admin")',
+                        type: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            if (response.response === "success") {
+                                showFeedbackModal('Success', response.message);                                
+                            } else {
+                                showFeedbackModal('Error', response.message);
+                            }
+                        },
+                        error: function () { alert('Error! ' ); }
+                    });
+                }
+                return false;
             });
         });
-
-    </script>
-}
+		</script>
+        }

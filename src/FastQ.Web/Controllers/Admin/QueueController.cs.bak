@@ -1,12 +1,14 @@
+using FastQ.Data.Entities;
+using FastQ.Web.Attributes;
+using FastQ.Web.Helpers;
+using FastQ.Web.Models.Admin;
+using FastQ.Web.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web.Mvc;
-using FastQ.Web.Attributes;
-using FastQ.Web.Models.Admin;
-using FastQ.Web.Services;
-using FastQ.Web.Helpers;
+
 
 namespace FastQ.Web.Controllers.Admin
 {
@@ -70,6 +72,12 @@ namespace FastQ.Web.Controllers.Admin
                 ovm.HasGuidelines = Request.Form["HasGuidelines"] != null ? Request.Form["HasGuidelines"].Equals("true") : false;
                 ovm.HasUploads = Request.Form["HasUploads"] != null ? Request.Form["HasUploads"].Equals("true") : false;
 
+                if (ovm.SelectedRefCriterias == null)
+                    ModelState.AddModelError("RefCriteria", "Ref Criteria is required.");
+
+                if (ovm.SelectedContactMethods == null)
+                    ModelState.AddModelError("AppointmentType", "Appointment Type is required.");
+
                 if (ModelState.IsValid)
                 {
                     Int64 id = _service.AddOrUpdateQueue(ovm);
@@ -85,7 +93,11 @@ namespace FastQ.Web.Controllers.Admin
                         return View(controllerpath + "ManageQueue", oQueue);                    
                 }
 
-                ViewBag.ErrorMessage = "Validation failed. Please check the details.";
+                string allErrors = string.Join(" | ", ModelState.Values
+                                                .SelectMany(v => v.Errors)
+                                                .Select(e => e.ErrorMessage));
+
+                ViewBag.ErrorMessage = "Validation failed. Please check the details. " + allErrors;
                 ReloadSchedulesServices(ovm);
                 return View(controllerpath + "ManageQueue", ovm);
             }

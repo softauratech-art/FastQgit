@@ -31,5 +31,8 @@ namespace FastQ.Data.Repositories
 
         void AddOrUpdateQAccess(long id, string hostids, string providerids, string reporterids, string queueadminids, string stampuser);
 
+        IList <(string, string)> GetValidContactTypes();
+
+        IList <(string, string)> GetValidRefCriterias();
     }
 }

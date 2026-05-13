@@ -88,77 +88,79 @@ namespace FastQ.Web.Services
             return model;
         }
 
-        public Result<Appointment> CreateScheduledAppointment(
-            long queueId,
-            string serviceId,
-            string refValue,
-            string permitNumber,
-            string streetNumber,
-            string streetName,
-            string streetType,
-            string email,
-            string customerName,
-            string phone,
-            string contactType,
-            DateTime scheduledFor,
-            string languagePreference,
-            string notes,
-            string meetingUrl,
-            string stampUser)
-        {
-            return _customerService.CreateScheduled(
-                queueId,
-                serviceId,
-                refValue,
-                permitNumber,
-                streetNumber,
-                streetName,
-                streetType,
-                email,
-                customerName,
-                phone,
-                contactType,
-                scheduledFor,
-                languagePreference,
-                notes,
-                meetingUrl,
-                stampUser);
-        }
+        //public Result<Appointment> CreateScheduledAppointment(
+        //    long queueId,
+        //    string serviceId,
+        //    string refValue,
+        //    string permitNumber,
+        //    string streetNumber,
+        //    string streetName,
+        //    string streetType,
+        //    string email,
+        //    string customerName,
+        //    string phone,
+        //    string contactType,
+        //    DateTime scheduledFor,
+        //    TimeSpan? endsAt,
+        //    string languagePreference,
+        //    string notes,
+        //    string meetingUrl,
+        //    string stampUser)
+        //{
+        //    return _customerService.CreateScheduled(
+        //        queueId,
+        //        serviceId,
+        //        refValue,
+        //        permitNumber,
+        //        streetNumber,
+        //        streetName,
+        //        streetType,
+        //        email,
+        //        customerName,
+        //        phone,
+        //        contactType,
+        //        scheduledFor,
+        //        endsAt,
+        //        languagePreference,
+        //        notes,
+        //        meetingUrl,
+        //        stampUser);
+        //}
 
-        public Result<long> CreateWalkin(
-            long queueId,
-            string serviceId,
-            string refValue,
-            string permitNumber,
-            string streetNumber,
-            string streetName,
-            string streetType,
-            string email,
-            string customerName,
-            string phone,
-            string contactType,
-            string languagePreference,
-            string meetingUrl,
-            string notes,
-            string stampUser)
-        {
-            return _customerService.CreateWalkin(
-                queueId,
-                serviceId,
-                refValue,
-                permitNumber,
-                streetNumber,
-                streetName,
-                streetType,
-                email,
-                customerName,
-                phone,
-                contactType,
-                languagePreference,
-                meetingUrl,
-                notes,
-                stampUser);
-        }
+        //public Result<long> CreateWalkin(
+        //    long queueId,
+        //    string serviceId,
+        //    string refValue,
+        //    string permitNumber,
+        //    string streetNumber,
+        //    string streetName,
+        //    string streetType,
+        //    string email,
+        //    string customerName,
+        //    string phone,
+        //    string contactType,
+        //    string languagePreference,
+        //    string meetingUrl,
+        //    string notes,
+        //    string stampUser)
+        //{
+        //    return _customerService.CreateWalkin(
+        //        queueId,
+        //        serviceId,
+        //        refValue,
+        //        permitNumber,
+        //        streetNumber,
+        //        streetName,
+        //        streetType,
+        //        email,
+        //        customerName,
+        //        phone,
+        //        contactType,
+        //        languagePreference,
+        //        meetingUrl,
+        //        notes,
+        //        stampUser);
+        //}
 
         private static IList<AdminCalendarDay> BuildCalendarDays(DateTime monthStart, DateTime selectedDate, IDictionary<DateTime, int> counts)
         {
@@ -204,7 +206,7 @@ namespace FastQ.Web.Services
                 StampUser = row.StampUser,
                 EntryKind = entryKind,
                 ScheduledFor = row.ScheduledFor,
-                Notes = string.IsNullOrWhiteSpace(row.Notes) ? "Use Info to add meeting details or notes." : row.Notes,
+                Notes = row.Notes,
                 MeetingUrl = row.MeetingUrl,
                 MeetingUrlHost = row.MeetingUrlHost
             };

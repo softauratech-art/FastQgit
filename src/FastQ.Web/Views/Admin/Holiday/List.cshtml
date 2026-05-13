@@ -1,0 +1,272 @@
+﻿@model IEnumerable<FastQ.Data.Entities.Holiday>
+
+@{
+    ViewBag.Title = "View";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+}
+@section Head{
+    <link href="https://cdn.datatables.net/2.3.7/css/dataTables.dataTables.min.css" rel="stylesheet" />
+    <link href="~/Content/datatablesFQ.css" rel="stylesheet" />
+    <link href="~/Content/siteadmin.css" rel="stylesheet" />
+}
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Manage Holidays</div>
+        <div class="topbar-sub">Add, Edit and Remove holidays</div>
+    </div>
+}
+
+<div class="card">
+    <table id="Holidaydata" class="table" style="font-size:0.95em">
+        <thead>
+            <tr>
+                <th style="text-align:left">Date</th>
+                <th>Desc</th>
+                <th>Active?</th>
+                <th>Updated By</th>
+                <th>Updated On</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                var formatteddate = @item.Day.ToString("MM-dd-yyyy");
+                <tr id="row-@formatteddate">
+                    <td data-order="@item.Day.ToString("yyyy-MM-dd")" style="text-align:left">
+                        @item.Day.ToString("dd-MMM-yyyy")
+                    </td>
+
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Description)
+                    </td>
+                    <td>
+                        <span class="@(item.ActiveFlag ? "status-dot" : "inactive-dot")"></span>
+                        <span class="is-hidden">@item.ActiveFlag</span>
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.StampUser)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.StampDate)
+                    </td>
+                    <td class="table-actions">
+                        @*<a href="@Url.Action("Edit", "Holiday", new { id = formatteddate })" class="btn small ghost btn-action-edit">*@
+                        <a href="#" class="btn small ghost btn-action-edit"
+                           data-day="@item.Day" data-desc="@item.Description" data-activeflag="@item.ActiveFlag">
+                            <i class="bi bi-pencil "></i> Edit
+                        </a>
+                        <a href="#" class="btn small ghost btn-action-delete"
+                           data-day="" data-desc="" data-activeflag="Y"
+                           onclick="return showConfirmModal('@formatteddate', `@item.Description`);">
+                            <i class="bi bi-trash"></i> Delete
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+</div>
+
+<dialog id="deleteConfirmModal" class="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete?</h5>
+            </div>
+            <div class="modal-body" id="delete-modal-body">
+                Are you sure you want to delete this record?
+            </div>
+            <div class="modal-footer">
+                <button id="cancelDeleteBtn" class="btn ghost">Cancel</button>
+                <button id="confirmDeleteBtn" class="btn ghost btn-action-delete">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+</dialog>
+
+
+<div id="feedbackModal" class="modal-backdrop hide" role="dialog" aria-modal="true" aria-labelledby="feedbackModal">
+    <div class="modal fade" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="feedback-modal-title">Success!</h5>
+                </div>
+                <div class="modal-body" id="feedback-modal-body">Operation successful.</div>
+                <div class="modal-footer" style="justify-content: flex-end;">
+                    <button type="button" class="btn ghost btn-primary" data-dismiss="modal" onclick="document.getElementById('feedbackModal').classList.remove('show')">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="addeditModal" class="modal-backdrop hide" role="dialog" aria-modal="true" aria-labelledby="addeditModal" >
+    <div class="modal fade"  tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="feedback-modal-title">Manage Holiday</h5>
+                    <button type="button" class="btn-close" onclick="closeModal('addeditModal')" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body" id="feedback-modal-body">
+                    <div style="font-size:0.9em;">All fields are required</div>
+                    <div class="queue-form-grid">                        
+                        <div class="queue-form-field">
+                            Date: <input type="text" id="Hdate" />
+                        </div>
+
+                        <div class="queue-form-field">
+                            Desc: <input type="text" id="Hdesc" />
+                        </div>
+                        <div class="queue-form-field">
+                            Active: <input type="text" id="Hstatus" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content: flex-end;">
+                    <button type="button" class="btn ghost btn-primary" data-dismiss="modal" onclick="closeModal('addeditModal');">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    <script src="https://cdn.datatables.net/2.3.7/js/dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            clearModalBody = (id) => {
+                //$('#' + id + ' .modal-body').empty();
+                $('#' + id + ' .modal-title').empty();
+                document.getElementById('Hdate').value = '';
+                document.getElementById('Hdesc').value = '';
+                document.getElementById('Hstatus').value = '';
+            }
+
+            closeModal = (id) => {
+                var modal = document.getElementById(id);
+                if (modal) {
+                    modal.classList.remove("show");
+                    clearModalBody(id);
+                }
+            }
+
+            openModal = (id) => {
+                var modal = document.getElementById(id);
+                if (modal) {
+                    modal.classList.add("show");
+                }
+            }
+
+            const deletemodal = document.getElementById('deleteConfirmModal');
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const cancelBtn = document.getElementById('cancelDeleteBtn');
+
+            showConfirmModal = (hdate, hdesc) => {
+                const msg = `<div>You are about to delete holiday <strong>` + hdate + ` ` + hdesc + `</strong> permanently.</div><div>Are you sure you want to delete this record ?</div>`;
+
+                document.getElementById('delete-modal-body').innerHTML = msg;
+                confirmBtn.setAttribute('data-hdate', hdate);
+                deletemodal.showModal();
+            }
+
+            function showFeedbackModal(title, msg) {
+                document.getElementById('feedback-modal-title').innerHTML = title;
+                document.getElementById('feedback-modal-body').innerHTML = msg;
+                document.getElementById('feedbackModal').classList.add("show");
+            }
+
+            confirmBtn.addEventListener('click', () => {
+                const hdate = confirmBtn.getAttribute('data-hdate');
+                confirmAndpostdelete(hdate, '@Url.Action("DeleteConfirmed", "Holiday")');
+                deletemodal.close();
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                deletemodal.close();
+            });
+
+            confirmAndpostdelete = (hdate, hurl) => {
+                {
+                    var flag = (hdate); //checks if hdate hasvalue or empty
+                    console.log(hdate);
+                    if (flag) {
+                        $.ajax({
+                            url: hurl,
+                            type: 'POST',
+                            data: { day: hdate },
+                            dataType: 'json',
+                            success: function (response) {
+                                if (response.response === "success") {
+                                    showFeedbackModal("Success", hdate + " deleted successfully.");
+                                    $('#row-' + hdate).remove();
+                                } else {
+                                    showFeedbackModal("Error", "Deletion failed: " + response.message);
+                                }
+                            },
+                            error: function () { alert('Error! ' + result); }
+                        });
+                    }
+                    else {
+                        showFeedbackModal("Error", "Record not found");
+                    }
+                    return false;
+                }
+            }
+
+            $('#Holidaydata').DataTable({
+                language: {
+                    search: '',
+                    searchPlaceholder: "Search by Date, Desc"
+                },
+                pageLength: 50, // Sets the default to 50 rows
+                columnDefs: [
+                    { "targets": [5], "orderable": false }
+                ],
+                fixedColumns: true,
+                layout: {
+                    topEnd: 'search',
+                    topStart: {
+                        div: {
+                            className: 'action-btn-div'
+                        }
+                    }
+                },
+                initComplete: function () {
+                    // Use initComplete to insert the actual hyperlink after the table is initialized
+                    //$('.action-btn-div').wrapInner('@Html.ActionLink("Create New", "#", 0, new { @class = "btn-add", @id = "addNewBtn" })');
+                    $('.action-btn-div').wrapInner('<a href="#" class = "btn-add" id = "addNewBtn">Create New</a>');
+                }
+            });
+
+
+            document.getElementById('addNewBtn').addEventListener('click', () => {
+                clearModalBody('addeditModal');
+                openModal('addeditModal');
+            });
+
+            const editbtns = document.querySelectorAll('.btn-action-edit');
+            editbtns.forEach(element => {
+                element.addEventListener('click', (event) => {
+                    const clickedData = event.currentTarget.dataset;
+                    document.getElementById('Hdate').value = clickedData.day; // getAttribute('data-day');
+                    document.getElementById('Hdesc').value = clickedData.desc;
+                    document.getElementById('Hstatus').value = clickedData.activeflag;
+
+                    openModal('addeditModal');
+                });
+            });
+            //data-day="item.Day" data-desc="item.Description" data-activeflag="item.ActiveFlag"
+
+        });
+    </script>
+}

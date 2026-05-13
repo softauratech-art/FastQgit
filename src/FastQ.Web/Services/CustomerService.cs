@@ -71,6 +71,7 @@ namespace FastQ.Web.Services
             string phone,
             string contactType,
             DateTime scheduledFor,
+            TimeSpan? endsAt,
             string languagePreference,
             string notes,
             string meetingUrl,
@@ -143,7 +144,7 @@ namespace FastQ.Web.Services
                 UpdatedOn = now
             };
             appt.ScheduledFor = scheduledFor;
-            appt.EndTime = ResolveSlotEndTime(queueId, scheduledFor) ?? appt.EndTime;
+            appt.EndTime = endsAt;
 
             _appts.Add(appt);
             var insertedAppt = _appts.Get(appt.Id) ?? appt;
@@ -240,7 +241,6 @@ namespace FastQ.Web.Services
                 UpdatedOn = now,
                 ScheduledFor = now
             };
-            walkin.EndTime = ResolveCurrentSlotEndTime(queueId, now) ?? walkin.EndTime;
 
             var newId = _appts.AddWalkin(walkin);
 
@@ -684,50 +684,6 @@ namespace FastQ.Web.Services
             return parsedBegin.TimeOfDay == localScheduled.TimeOfDay;
         }
 
-        private TimeSpan? ResolveSlotEndTime(long queueId, DateTime localScheduled)
-        {
-            var slots = _appts.GetQueueOpenSlots(queueId, localScheduled.Date);
-            if (slots == null)
-                return null;
-
-            var matched = slots.FirstOrDefault(slot => SlotMatches(slot, localScheduled));
-            return ParseSlotTime(matched?.SlotEnd);
-        }
-
-        private TimeSpan? ResolveCurrentSlotEndTime(long queueId, DateTime localNow)
-        {
-            var slots = _appts.GetQueueOpenSlots(queueId, localNow.Date);
-            if (slots == null)
-                return null;
-
-            var now = localNow.TimeOfDay;
-            foreach (var slot in slots)
-            {
-                var begin = ParseSlotTime(slot?.SlotBegin);
-                var end = ParseSlotTime(slot?.SlotEnd);
-                if (!begin.HasValue || !end.HasValue)
-                    continue;
-
-                var normalizedEnd = end.Value <= begin.Value ? end.Value.Add(TimeSpan.FromDays(1)) : end.Value;
-                var normalizedNow = now < begin.Value && normalizedEnd.Days > 0 ? now.Add(TimeSpan.FromDays(1)) : now;
-                if (normalizedNow >= begin.Value && normalizedNow < normalizedEnd)
-                    return end.Value;
-            }
-
-            return null;
-        }
-
-        private static TimeSpan? ParseSlotTime(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return null;
-
-            if (!DateTime.TryParseExact(value.Trim(), new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-                return null;
-
-            return parsed.TimeOfDay;
-        }
-
         private static JObject ParseJsonObject(string json)
         {
             if (string.IsNullOrWhiteSpace(json))
@@ -890,13 +846,13 @@ namespace FastQ.Web.Services
                 return null;
 
             var loginUrl = ConfigurationManager.AppSettings["AppointmentLoginUrl"] ?? "#";
-            var inPersonLocation = ConfigurationManager.AppSettings["AppointmentInPersonLocation"] ?? "TBD";
+            var inPersonLocation = "[ToDo: Read from DB]"; // ConfigurationManager.AppSettings["AppointmentInPersonLocation"] ?? "TBD";
             var queueName = queue?.Name ?? "Queue";
             var serviceName = _queues.ListServicesByQueue(queue?.Id ?? 0)
                 .FirstOrDefault(s => s.Item1 == serviceId)?.Item2 ?? queueName;
 
             var emailWarning = SendAppointmentConfirmationEmail(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
-            SendAppointmentConfirmationSms(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
+            //SendAppointmentConfirmationSms(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
             return emailWarning;
         }
 
@@ -948,30 +904,30 @@ namespace FastQ.Web.Services
             }
         }
 
-        private void SendAppointmentConfirmationSms(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
-        {
-            try
-            {
-                var phone = (appointment.CustomerPhone ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(phone) || !appointment.CustomerSmsOptIn)
-                    return;
+        //private void SendAppointmentConfirmationSms(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
+        //{
+        //    try
+        //    {
+        //        var phone = (appointment.CustomerPhone ?? string.Empty).Trim();
+        //        if (string.IsNullOrWhiteSpace(phone) || !appointment.CustomerSmsOptIn)
+        //            return;
 
-                var message = BuildAppointmentConfirmationSms(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
-                if (string.IsNullOrWhiteSpace(message))
-                    return;
+        //        var message = BuildAppointmentConfirmationSms(appointment, customerName, queueName, serviceName, inPersonLocation, loginUrl);
+        //        if (string.IsNullOrWhiteSpace(message))
+        //            return;
 
-                var result = SendSmsViaProc(phone, message, string.IsNullOrWhiteSpace(appointment.StampUser) ? "web" : appointment.StampUser.Trim());
-                if (!string.IsNullOrWhiteSpace(result))
-                {
-                    Trace.TraceInformation("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
-                    Console.Error.WriteLine("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogNotificationError("sms", appointment?.Id ?? 0, ex.ToString());
-            }
-        }
+        //        var result = SendSmsViaProc(phone, message, string.IsNullOrWhiteSpace(appointment.StampUser) ? "web" : appointment.StampUser.Trim());
+        //        if (!string.IsNullOrWhiteSpace(result))
+        //        {
+        //            Trace.TraceInformation("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
+        //            Console.Error.WriteLine("SEND_SMS result for appointment {0}: {1}", appointment.Id, result);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogNotificationError("sms", appointment?.Id ?? 0, ex.ToString());
+        //    }
+        //}
 
         private string SendAppointmentCancellationEmail(Appointment appointment, Queue queue)
         {
@@ -1138,72 +1094,6 @@ namespace FastQ.Web.Services
             return html.ToString();
         }
 
-        private static string BuildAppointmentConfirmationSms(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
-        {
-            var appointmentDate = appointment.ScheduledFor.ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture);
-            var appointmentTime = appointment.ScheduledFor.ToString("h:mm tt", CultureInfo.InvariantCulture);
-            var appointmentType = GetContactMethodText(appointment.ContactType);
-            var cleanQueueName = (queueName ?? string.Empty).Trim();
-            var cleanServiceName = (serviceName ?? string.Empty).Trim();
-            var cleanLocation = (inPersonLocation ?? "TBD").Trim();
-            var cleanPhone = (appointment.CustomerPhone ?? string.Empty).Trim();
-            var cleanMeetingUrl = (appointment.MeetingUrl ?? string.Empty).Trim();
-            var cleanLoginUrl = (loginUrl ?? string.Empty).Trim();
-
-            var text = new StringBuilder();
-            text.Append("Appointment Confirmation: ");
-            if (!string.IsNullOrWhiteSpace(cleanQueueName))
-            {
-                text.Append("Orange County ");
-                text.Append(cleanQueueName);
-                text.Append(". ");
-            }
-
-            text.Append("Date: ");
-            text.Append(appointmentDate);
-            text.Append(". Time: ");
-            text.Append(appointmentTime);
-            text.Append(". Type: ");
-            text.Append(appointmentType);
-            text.Append(". ");
-
-            if (!string.IsNullOrWhiteSpace(cleanServiceName))
-            {
-                text.Append("Service: ");
-                text.Append(cleanServiceName);
-                text.Append(". ");
-            }
-
-            if (string.Equals((appointment.ContactType ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(cleanMeetingUrl))
-            {
-                text.Append("Meeting link: ");
-                text.Append(cleanMeetingUrl);
-                text.Append(". ");
-            }
-            else if (string.Equals((appointment.ContactType ?? string.Empty).Trim(), "IP", StringComparison.OrdinalIgnoreCase))
-            {
-                text.Append("Location: ");
-                text.Append(cleanLocation);
-                text.Append(". ");
-            }
-            else if (string.Equals((appointment.ContactType ?? string.Empty).Trim(), "PC", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(cleanPhone))
-            {
-                text.Append("We will call ");
-                text.Append(cleanPhone);
-                text.Append(". ");
-            }
-
-            if (!string.IsNullOrWhiteSpace(cleanLoginUrl) && cleanLoginUrl != "#")
-            {
-                text.Append("Login: ");
-                text.Append(cleanLoginUrl);
-                text.Append(". ");
-            }
-
-            text.Append("Reply STOP to stop");
-            return text.ToString();
-        }
-
         private static string BuildAppointmentCancellationHtml(Appointment appointment, string customerName, string queueName, string serviceName)
         {
             var safeCustomerName = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(customerName) ? "Customer" : customerName.Trim());
@@ -1233,36 +1123,6 @@ namespace FastQ.Web.Services
             html.AppendLine("<p>Orange County Government, FL</p>");
             html.AppendLine("</div></body></html>");
             return html.ToString();
-        }
-
-        private static string SendSmsViaProc(string phone, string msg, string user)
-        {
-            var connectionString = ConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
-            if (string.IsNullOrWhiteSpace(connectionString))
-                return "FastQOracle connection string is missing.";
-
-            using (var conn = new OracleConnection(connectionString))
-            using (var cmd = new OracleCommand("SEND_SMS", conn))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add(new OracleParameter("p_PHONE_NUMBER", OracleDbType.Varchar2, phone ?? string.Empty, ParameterDirection.Input));
-                cmd.Parameters.Add(new OracleParameter("p_BODY", OracleDbType.Varchar2, msg ?? string.Empty, ParameterDirection.Input));
-                cmd.Parameters.Add(new OracleParameter("p_MEDIAURL", OracleDbType.Varchar2, string.Empty, ParameterDirection.Input));
-                cmd.Parameters.Add(new OracleParameter("p_STAMPUSER", OracleDbType.Varchar2, string.IsNullOrWhiteSpace(user) ? "web" : user, ParameterDirection.Input));
-                cmd.Parameters.Add(new OracleParameter("p_APP_COL_NAME", OracleDbType.Varchar2, DBNull.Value, ParameterDirection.Input));
-                cmd.Parameters.Add(new OracleParameter("p_APP_COL_VAL", OracleDbType.Varchar2, DBNull.Value, ParameterDirection.Input));
-
-                var outRes = new OracleParameter("p_out_res", OracleDbType.Varchar2, 4000)
-                {
-                    Direction = ParameterDirection.Output
-                };
-                cmd.Parameters.Add(outRes);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
-
-                return outRes.Value == DBNull.Value ? string.Empty : outRes.Value?.ToString() ?? string.Empty;
-            }
         }
 
         private static string BuildMeetingLinkHtml(string meetingUrl)

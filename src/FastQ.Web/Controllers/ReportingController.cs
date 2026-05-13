@@ -39,6 +39,7 @@ namespace FastQ.Web.Controllers
                 appointments = appointments.Where(a => a.QueueId == qId).ToList();
 
             var now = DateTime.Now;
+            var dayStart = now.Date;
             var range = ResolvePeriodRange(period, startDate, endDate, now);
             var filtered = appointments.Where(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive).ToList();
 

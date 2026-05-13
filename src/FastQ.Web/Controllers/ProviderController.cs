@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Web.Mvc;
+using System.Threading.Tasks;
 
 namespace FastQ.Web.Controllers
 {
@@ -235,7 +236,7 @@ namespace FastQ.Web.Controllers
         {
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." }, JsonRequestBehavior.AllowGet);
-            if (!TryParseStartTime(startTime, out var parsedTime))
+            if (!TryParseTime(startTime, out var parsedTime))
                 return Json(new { ok = false, error = "Start time is required." }, JsonRequestBehavior.AllowGet);
 
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
@@ -304,7 +305,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string languagePreference, string meetingUrl, string notes)
+        public JsonResult AddAppointment(string queueId, string serviceId, string refValue, string permitNumber, string streetNumber, string streetName, string streetType, string email, string firstName, string lastName, string customerName, string phone, string contactType, string appointmentDate, string startTime, string endTime, string languagePreference, string meetingUrl, string notes)
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
@@ -322,12 +323,13 @@ namespace FastQ.Web.Controllers
             if (!DateTime.TryParseExact((appointmentDate ?? string.Empty).Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return Json(new { ok = false, error = "Appointment date is required." });
 
-            if (!TryParseStartTime(startTime, out var parsedTime))
+            if (!TryParseTime(startTime, out var parsedTime))
                 return Json(new { ok = false, error = "Start time is required." });
 
-            var loggedInUser = _auth.GetLoggedInWindowsUser();
-
+            TryParseTime(endTime, out var parsedEndTime);
+               
             var localStart = DateTime.SpecifyKind(parsedDate.Date + parsedTime, DateTimeKind.Local);
+            
             var res = _customerService.CreateScheduled(
                 qId,
                 serviceId,
@@ -341,10 +343,11 @@ namespace FastQ.Web.Controllers
                 phone,
                 contactType,
                 localStart,
+                parsedEndTime,
                 languagePreference,
                 notes,
                 meetingUrl,
-                loggedInUser);
+                _auth.GetLoggedInWindowsUser());
 
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
@@ -443,7 +446,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string refValue, string notes, string sourceAction)
+        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string targetEndDate, string targetNotes, string serviceNotes, string sourceAction)
         {
             if (!long.TryParse(appointmentId, out var srcId) || !long.TryParse(targetQueueId, out var queueId))
                 return Json(new { ok = false, error = "appointmentId and targetQueueId are required numeric values" });
@@ -482,6 +485,10 @@ namespace FastQ.Web.Controllers
                 ? parsedTargetDate
                 : (DateTime?)null;
 
+            var parsedTargetEndDateValue = TryParseTransferTargetDate(targetEndDate, out var parsedTargetEndDate)
+               ? parsedTargetEndDate
+               : (DateTime?)null;
+
             var req = new ProviderService.TransferRequest
             {
                 SrcType = normalizedSrc[0],
@@ -490,8 +497,10 @@ namespace FastQ.Web.Controllers
                 TargetServiceId = targetService,
                 TargetKind = normalizedTarget[0],
                 TargetDate = parsedTargetDateValue,
-                RefValue = refValue,
-                Notes = notes,
+                TargetEndDate = parsedTargetEndDateValue,
+                //RefValue = refValue,
+                TargetNotes = targetNotes,
+                ServiceNotes = serviceNotes,
                 StampUser = _auth.GetLoggedInWindowsUser(),
                 SourceAction = normalizedSourceAction
             };
@@ -504,7 +513,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string refValue, string notes, string completionNotes)
+        public JsonResult EndService(string appointmentId, string srcType, string additionalService, string targetQueueId, string targetServiceId, string targetKind, string targetDate, string targetEndDate, string targetNotes, string completionNotes)
         {
             long srcId;
             if (!long.TryParse(appointmentId, out srcId))
@@ -535,6 +544,11 @@ namespace FastQ.Web.Controllers
                 ? parsedTargetDate
                 : (DateTime?)null;
 
+            var parsedTargetEndDateValue = TryParseTransferTargetDate(targetEndDate, out var parsedTargetEndDate)
+                ? parsedTargetEndDate
+                : (DateTime?)null;
+
+
             var req = new ProviderService.CloseAndAddRequest
             {
                 SrcType = normalizedSrc[0],
@@ -544,8 +558,9 @@ namespace FastQ.Web.Controllers
                 TargetServiceId = serviceId,
                 TargetKind = string.IsNullOrWhiteSpace(normalizedTargetKind) ? (char?)null : normalizedTargetKind[0],
                 TargetDate = parsedTargetDateValue,
-                RefValue = refValue,
-                Notes = notes,
+                TargetEndDate = parsedTargetEndDateValue,
+                //RefValue = refValue,
+                TargetNotes = targetNotes,
                 ServiceNotes = completionNotes,
                 StampUser = _auth.GetLoggedInWindowsUser()
             };
@@ -565,7 +580,8 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult SaveServiceInfo(string appointmentId, string srcType, string webexUrl, string guestUrl, string hostUrl, string notes, string providerId)
+        //public JsonResult SaveServiceInfo(string appointmentId, string srcType, string webexUrl, string guestUrl, string hostUrl, string notes, string providerId)
+        public JsonResult SaveServiceInfo(string appointmentId, string srcType, string guestUrl, string hostUrl, string notes)
         {
             if (!long.TryParse(appointmentId, out var apptId))
                 return Json(new { ok = false, error = "appointmentId must be a number" });
@@ -579,21 +595,13 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = updatePermissionError });
 
             var resolvedUserId = _auth.GetLoggedInWindowsUser();
-            var resolvedHostUrl = string.IsNullOrWhiteSpace(hostUrl) ? webexUrl : hostUrl;
+            var resolvedHostUrl = string.IsNullOrWhiteSpace(hostUrl) ? "" : hostUrl;
             var res = _service.SaveServiceInfo(apptId, normalized[0], guestUrl, resolvedHostUrl, notes, resolvedUserId);
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
             return Json(new { ok = true });
         }
-
-        //[HttpPost]
-        //public JsonResult SystemClose(int staleHours)
-        //{
-        //    var hours = staleHours <= 0 ? 12 : staleHours;
-        //    var closed = _service.CloseStaleScheduledAppointments(hours);
-        //    return Json(new { ok = true, closed = closed });
-        //}
 
         private string ValidateActionPermission(string action, long? queueId)
         {
@@ -615,7 +623,7 @@ namespace FastQ.Web.Controllers
             return allowed ? null : "You do not have permission for this action.";
         }
 
-        private static bool TryParseStartTime(string value, out TimeSpan parsedTime)
+        private static bool TryParseTime(string value, out TimeSpan parsedTime)
         {
             var text = (value ?? string.Empty).Trim();
             if (TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out parsedTime))
@@ -645,7 +653,7 @@ namespace FastQ.Web.Controllers
             var parts = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length >= 2
                 && DateTime.TryParseExact(parts[0], new[] { "yyyy-MM-dd", "yyyy-M-d", "MM/dd/yyyy", "M/d/yyyy", "dd/MM/yyyy", "d/M/yyyy" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate)
-                && TryParseStartTime(string.Join(" ", parts.Skip(1)), out var parsedTime))
+                && TryParseTime(string.Join(" ", parts.Skip(1)), out var parsedTime))
             {
                 parsedDateTime = parsedDate.Date + parsedTime;
                 return true;
@@ -686,6 +694,21 @@ namespace FastQ.Web.Controllers
             }
 
             return false;
+        }
+
+        [HttpGet]
+        public async Task<string> JoinMeeting(string srctype, long srcid)
+        {
+            var webexSvc = new Services.WebexService();
+
+            var response = await webexSvc.LaunchStartLink(srctype, srcid);
+            
+            if (response.ApiError != null)
+                Response.Write(response.ApiError);
+            else
+                Response.Redirect(response.HostUrl);
+
+            return null;
         }
     }
 }

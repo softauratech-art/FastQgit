@@ -2,160 +2,229 @@
 <!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
 <Project>
   <PropertyGroup>
-    <_PublishTargetUrl>C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Web\bin\app.publish\</_PublishTargetUrl>
-    <History>True|2026-02-18T20:28:01.6831498Z||;True|2026-02-17T22:01:06.2435363+06:00||;False|2026-02-17T21:58:54.2967732+06:00||;</History>
+    <_PublishTargetUrl>C:\Users\preddy01\Documents\MyProjects\Akib\Code\src\FastQ.Web\bin\app.publish\</_PublishTargetUrl>
+    <History>True|2026-05-09T17:24:36.5742645Z||;False|2026-05-09T13:21:54.1582649-04:00||;False|2026-05-09T13:21:11.9713994-04:00||;True|2026-02-18T15:28:01.6831498-05:00||;True|2026-02-17T11:01:06.2435363-05:00||;False|2026-02-17T10:58:54.2967732-05:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
   <ItemGroup>
     <File Include="bin/Antlr3.Runtime.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Antlr3.Runtime.pdb">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/FastQ.Data.dll">
-      <publishTime>02/19/2026 02:27:38</publishTime>
+      <publishTime>05/09/2026 12:31:22</publishTime>
     </File>
     <File Include="bin/FastQ.Data.dll.config">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/FastQ.Data.pdb">
-      <publishTime>02/19/2026 02:27:38</publishTime>
+      <publishTime>05/09/2026 12:31:22</publishTime>
     </File>
     <File Include="bin/FastQ.Web.dll">
-      <publishTime>02/19/2026 02:27:40</publishTime>
+      <publishTime>05/09/2026 13:24:36</publishTime>
     </File>
     <File Include="bin/FastQ.Web.pdb">
-      <publishTime>02/19/2026 02:27:40</publishTime>
+      <publishTime>05/09/2026 13:24:36</publishTime>
     </File>
     <File Include="bin/Microsoft.AspNet.SignalR.Core.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.AspNet.SignalR.Core.pdb">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.AspNet.SignalR.SystemWeb.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.AspNet.SignalR.SystemWeb.pdb">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.Bcl.AsyncInterfaces.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.Owin.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.Owin.Host.SystemWeb.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.Owin.Security.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Microsoft.Web.Infrastructure.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Newtonsoft.Json.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="bin/NLog.dll">
+      <publishTime>04/01/2026 02:36:16</publishTime>
     </File>
     <File Include="bin/Oracle.ManagedDataAccess.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/Owin.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Buffers.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Diagnostics.DiagnosticSource.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Formats.Asn1.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="bin/System.IO.Pipelines.dll">
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Memory.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Numerics.Vectors.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Runtime.CompilerServices.Unsafe.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Text.Encodings.Web.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Text.Json.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Threading.Tasks.Extensions.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.ValueTuple.dll">
       <publishTime>02/06/2026 06:27:04</publishTime>
     </File>
     <File Include="bin/System.Web.Helpers.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Web.Mvc.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Web.Optimization.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Web.Razor.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Web.WebPages.Deployment.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Web.WebPages.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/System.Web.WebPages.Razor.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="bin/WebGrease.dll">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="ComingSoon.html">
+      <publishTime>04/06/2026 21:27:26</publishTime>
+    </File>
+    <File Include="Content/calendar.css">
+      <publishTime>05/09/2026 11:46:11</publishTime>
+    </File>
+    <File Include="Content/datatablesFQ.css">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Content/logo-wd.png">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Content/modal.css">
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Content/OC_Logo.png">
-      <publishTime>02/06/2026 16:06:14</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Content/site.css">
-      <publishTime>02/09/2026 06:10:16</publishTime>
+      <publishTime>04/27/2026 20:22:40</publishTime>
+    </File>
+    <File Include="Content/siteadmin.css">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Content/today.css">
+      <publishTime>05/08/2026 20:38:57</publishTime>
     </File>
     <File Include="favicon.ico">
-      <publishTime>02/07/2026 19:10:32</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Global.asax">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Logout.aspx">
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Scripts/fastq.live.js">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Scripts/jquery-3.7.1.js">
-      <publishTime>02/08/2026 11:53:34</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery-3.7.1.min.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery-3.7.1.min.map">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery-3.7.1.slim.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery-3.7.1.slim.min.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery-3.7.1.slim.min.map">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery-fxtime.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Scripts/jquery.signalR-2.4.3.js">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Scripts/jquery.signalR-2.4.3.min.js">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery.validate.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery.validate.min.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery.validate.unobtrusive.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/jquery.validate.unobtrusive.min.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Scripts/table-sortable.js">
-      <publishTime>02/08/2026 11:31:32</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/timepicker/jquery.timepicker.css">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Scripts/timepicker/jquery.timepicker.js">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Unauthorized.aspx">
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Views/Admin/Dashboard.cshtml">
-      <publishTime>02/11/2026 22:13:20</publishTime>
+      <publishTime>05/08/2026 15:18:25</publishTime>
     </File>
     <File Include="Views/Admin/Index.cshtml">
-      <publishTime>02/08/2026 17:17:34</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Views/Admin/Queue/List.cshtml">
-      <publishTime>02/08/2026 13:27:38</publishTime>
+      <publishTime>04/27/2026 21:09:53</publishTime>
     </File>
     <File Include="Views/Admin/Queue/ManageQueue.cshtml">
-      <publishTime>02/08/2026 20:20:12</publishTime>
+      <publishTime>05/05/2026 08:44:11</publishTime>
     </File>
     <File Include="Views/Admin/Queue/View.cshtml">
       <publishTime>02/08/2026 20:11:04</publishTime>
@@ -164,58 +233,73 @@
       <publishTime>02/07/2026 20:33:58</publishTime>
     </File>
     <File Include="Views/Admin/Queue/_QueueSchedules.cshtml">
-      <publishTime>02/07/2026 18:26:40</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Views/Admin/Queue/_QueueServices.cshtml">
-      <publishTime>02/06/2026 16:11:40</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Views/Admin/Queue/_ScheduleEdit.cshtml">
       <publishTime>02/08/2026 20:20:48</publishTime>
     </File>
+    <File Include="Views/Admin/Queue/_ScheduleEditor.cshtml">
+      <publishTime>05/04/2026 15:28:08</publishTime>
+    </File>
+    <File Include="Views/Admin/Queue/_ServiceEditor.cshtml">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
     <File Include="Views/Admin/User/List.cshtml">
-      <publishTime>02/06/2026 18:17:36</publishTime>
+      <publishTime>05/08/2026 15:14:26</publishTime>
     </File>
     <File Include="Views/Admin/User/ManageUser.cshtml">
-      <publishTime>02/06/2026 16:11:28</publishTime>
+      <publishTime>05/06/2026 15:30:16</publishTime>
     </File>
     <File Include="Views/Customer/Book.cshtml">
       <publishTime>02/06/2026 06:27:04</publishTime>
     </File>
     <File Include="Views/Customer/Home.cshtml">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/28/2026 21:20:03</publishTime>
     </File>
     <File Include="Views/Customer/Login.cshtml">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Views/Customer/Status.cshtml">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/28/2026 21:52:19</publishTime>
     </File>
     <File Include="Views/Home/Index.cshtml">
-      <publishTime>02/11/2026 22:13:11</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Views/Home/Restricted.cshtml">
+      <publishTime>04/24/2026 22:42:02</publishTime>
+    </File>
+    <File Include="Views/Provider/Calendar.cshtml">
+      <publishTime>05/09/2026 12:06:49</publishTime>
     </File>
     <File Include="Views/Provider/Today.cshtml">
-      <publishTime>02/17/2026 21:34:38</publishTime>
+      <publishTime>05/08/2026 20:37:21</publishTime>
     </File>
     <File Include="Views/Reporting/Overview.cshtml">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/28/2026 08:58:09</publishTime>
     </File>
     <File Include="Views/Shared/Error.cshtml">
-      <publishTime>02/06/2026 16:38:58</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Views/Shared/Unauthorized.cshtml">
       <publishTime>02/06/2026 16:38:58</publishTime>
     </File>
     <File Include="Views/Shared/_Layout.cshtml">
-      <publishTime>02/11/2026 22:13:01</publishTime>
+      <publishTime>05/09/2026 11:39:24</publishTime>
+    </File>
+    <File Include="Views/Shared/_QueueEntryModals.cshtml">
+      <publishTime>05/09/2026 11:57:48</publishTime>
     </File>
     <File Include="Views/web.config">
       <publishTime>02/06/2026 15:39:34</publishTime>
     </File>
     <File Include="Views/_ViewStart.cshtml">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>04/24/2026 22:42:02</publishTime>
     </File>
     <File Include="Web.config">
-      <publishTime>02/06/2026 06:27:04</publishTime>
+      <publishTime>05/09/2026 13:21:11</publishTime>
     </File>
   </ItemGroup>
 </Project>

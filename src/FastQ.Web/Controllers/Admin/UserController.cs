@@ -124,20 +124,12 @@ namespace FastQ.Web.Controllers.Admin
             try
             {
                 _service.Delete(uid);
-                ViewBag.SuccessMessage = $"User {uid} deleted successfully";
-                //return Json("Record deleted successfully!");
                 return Json(new { response = "success", message = "Record deleted successfully." });
-
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = ex.Message;
-                //return Json(ex.Message);
                 return Json(new { response = "error", message = ex.Message });
-
             }
-
-            //return RedirectToAction("../Admin/User");
         }
 
         private bool IsValid(string action, FormCollection fc)

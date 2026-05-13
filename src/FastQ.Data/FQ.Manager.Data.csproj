@@ -129,10 +129,16 @@
     <Compile Include="Data\DbCustomerRepository.cs" />
     <Compile Include="Data\DbEntityRepository.cs" />
     <Compile Include="Data\DbProviderRepository.cs" />
+    <Compile Include="Data\DbHolidayRepository.cs" />
+    <Compile Include="Data\DbWebexRepository.cs" />
     <Compile Include="Data\DbQueueRepository.cs" />
     <Compile Include="Data\DbRepositoryFactory.cs" />
     <Compile Include="Data\DbServiceTransactionRepository.cs" />
     <Compile Include="Data\DbUserRepository.cs" />
+    <Compile Include="Entities\WebexFastQRecord.cs" />
+    <Compile Include="Entities\Holiday.cs" />
+    <Compile Include="Repositories\IHolidayRepository.cs" />
+    <Compile Include="Repositories\IWebexRepository.cs" />
     <Compile Include="Entities\Appointment.cs" />
     <Compile Include="Entities\AppointmentStatus.cs" />
     <Compile Include="Entities\Customer.cs" />

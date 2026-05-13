@@ -23,8 +23,7 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         #region Queue-Base-Record
-        // GET: User       
-        //[Route("admin")]
+        // GET: Queue/10001     
         public ActionResult Index()
         {
             IList<QueueVM> lQueues;
@@ -72,6 +71,12 @@ namespace FastQ.Web.Controllers.Admin
                 ovm.HasGuidelines = Request.Form["HasGuidelines"] != null ? Request.Form["HasGuidelines"].Equals("true") : false;
                 ovm.HasUploads = Request.Form["HasUploads"] != null ? Request.Form["HasUploads"].Equals("true") : false;
 
+                if (ovm.SelectedRefCriterias == null)
+                    ModelState.AddModelError("RefCriteria", "Ref Criteria is required.");
+
+                if (ovm.SelectedContactMethods == null)
+                    ModelState.AddModelError("AppointmentType", "Appointment Type is required.");
+
                 if (ModelState.IsValid)
                 {
                     Int64 id = _service.AddOrUpdateQueue(ovm);
@@ -87,7 +92,11 @@ namespace FastQ.Web.Controllers.Admin
                         return View(controllerpath + "ManageQueue", oQueue);                    
                 }
 
-                ViewBag.ErrorMessage = "Validation failed. Please check the details.";
+                string allErrors = string.Join(" | ", ModelState.Values
+                                                .SelectMany(v => v.Errors)
+                                                .Select(e => e.ErrorMessage));
+
+                ViewBag.ErrorMessage = "Validation failed. Please check the details. " + allErrors;
                 ReloadSchedulesServices(ovm);
                 return View(controllerpath + "ManageQueue", ovm);
             }

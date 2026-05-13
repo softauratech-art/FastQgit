@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using FastQ.Data.Common;
 using FastQ.Data.Entities;
@@ -209,8 +208,8 @@ namespace FastQ.Web.Services
                     ContactTypeCode = a.ContactType,
                     RefValue = a.RefValue,
                     LanguagePreference = GetLanguagePreferenceText(a.LanguagePreference),
-                    MeetingUrl = NormalizeMeetingUrl(a.MeetingUrl),
-                    MeetingUrlHost = NormalizeMeetingUrl(a.MeetingUrlHost),
+                    MeetingUrl = a.MeetingUrl,          //NormalizeMeetingUrl(a.MeetingUrl),
+                    MeetingUrlHost = a.MeetingUrlHost,  // NormalizeMeetingUrl(a.MeetingUrlHost),
                     StampUser = a.StampUser
                 };
             }).OrderBy(r => r.ScheduledFor).ToList();
@@ -272,11 +271,11 @@ namespace FastQ.Web.Services
                     ContactTypeCode = r.ContactType,
                     RefValue = r.RefValue,
                     LanguagePreference = GetLanguagePreferenceText(r.LanguagePreference),
-                    MeetingUrl = NormalizeMeetingUrl(r.MeetingUrl),
-                    MeetingUrlHost = NormalizeMeetingUrl(r.MeetingUrlHost),
+                    MeetingUrl = r.MeetingUrl,          //NormalizeMeetingUrl(r.MeetingUrl),
+                    MeetingUrlHost = r.MeetingUrlHost,  // NormalizeMeetingUrl(r.MeetingUrlHost),
                     Notes = string.IsNullOrWhiteSpace(r.Notes) ? string.Empty : r.Notes.Trim(),
                     StampUser = r.StampUser
-                };
+                };  
             }).OrderBy(r => r.ScheduledFor).ToList();
         }
 
@@ -484,10 +483,12 @@ namespace FastQ.Web.Services
             public long SrcId { get; set; }
             public long TargetQueueId { get; set; }
             public long? TargetServiceId { get; set; }
-            public char TargetKind { get; set; } // A(new appt) or W(new walkin)
-            public DateTime? TargetDate { get; set; } // required for A
-            public string RefValue { get; set; }
-            public string Notes { get; set; }
+            public char TargetKind { get; set; }        // A(new appt) or W(new walkin)
+            public DateTime? TargetDate { get; set; }   // required for A
+            public DateTime? TargetEndDate { get; set; } // required for A
+            //public string RefValue { get; set; }
+            public string TargetNotes { get; set; }
+            public string ServiceNotes { get; set; }
             public string StampUser { get; set; }
             public string SourceAction { get; set; }
         }
@@ -501,8 +502,9 @@ namespace FastQ.Web.Services
             public long? TargetServiceId { get; set; }
             public char? TargetKind { get; set; }
             public DateTime? TargetDate { get; set; }
-            public string RefValue { get; set; }
-            public string Notes { get; set; }
+            public DateTime? TargetEndDate { get; set; } // required for A
+            //public string RefValue { get; set; }
+            public string TargetNotes { get; set; }
             public string ServiceNotes { get; set; }
             public string StampUser { get; set; }
         }
@@ -544,8 +546,10 @@ namespace FastQ.Web.Services
                 request.TargetServiceId,
                 targetKind,
                 request.TargetDate,
-                request.RefValue,
-                request.Notes,
+                request.TargetEndDate,
+                //request.RefValue,
+                request.TargetNotes,
+                request.ServiceNotes,
                 stampUser,
                 sourceAction);
 
@@ -587,14 +591,6 @@ namespace FastQ.Web.Services
                     return Result<long>.Fail("Target date is required for appointment target.");
             }
 
-            Appointment sourceAppt = null;
-            TimeSpan? sourceEndTime = null;
-            if (srcType == 'A')
-            {
-                sourceAppt = _appts.Get(request.SrcId);
-                sourceEndTime = ResolveSlotEndTime(sourceAppt);
-            }
-
             var stampUser = string.IsNullOrWhiteSpace(request.StampUser) ? "web" : request.StampUser.Trim();
             var newSrcId = _serviceTransactions.CloseAndAddSource(
                 srcType,
@@ -604,19 +600,18 @@ namespace FastQ.Web.Services
                 request.TargetServiceId,
                 request.TargetKind,
                 request.TargetDate,
-                request.RefValue,
-                request.Notes,
+                request.TargetEndDate,
+                //request.RefValue,
+                request.TargetNotes,
                 request.ServiceNotes,
-                stampUser,
-                sourceEndTime);
+                stampUser);
 
             if (srcType == 'A')
             {
-                var appt = sourceAppt ?? _appts.Get(request.SrcId);
+                var appt = _appts.Get(request.SrcId);
                 if (appt != null)
                 {
                     appt.Status = AppointmentStatus.Completed;
-                    appt.EndTime = sourceEndTime ?? appt.EndTime;
                     appt.ProviderId = request.StampUser;
                     appt.UpdatedOn = DateTime.Now; //_clock.UtcNow;
                     appt.StampDate = DateTime.Now; //_clock.UtcNow;
@@ -637,30 +632,6 @@ namespace FastQ.Web.Services
 
             return Result<long>.Success(newSrcId);
         }
-
-        //public int CloseStaleScheduledAppointments(int staleHours)
-        //{
-        //    var now = _clock.UtcNow;
-        //    var cutoff = now.AddHours(-staleHours);
-
-        //    var stale = _appts.ListAll()
-        //        .Where(a => a.Status == AppointmentStatus.Scheduled && a.UpdatedOn <= cutoff)
-        //        .ToList();
-
-        //    foreach (var a in stale)
-        //    {
-        //        a.Status = AppointmentStatus.ClosedBySystem;
-        //        a.UpdatedOn = now;
-        //        a.StampDate = now;
-        //        _appts.Update(a);
-
-        //        PopulateCustomerNotificationFields(a);
-        //        _rt.AppointmentChanged(a);
-        //        _rt.QueueChanged(a.EntityId, a.QueueId);
-        //    }
-
-        //    return stale.Count;
-        //}
 
         private Result QueueCustomer(char srcType, long appointmentId, string providerId)
         {
@@ -741,12 +712,11 @@ namespace FastQ.Web.Services
 
             var now = DateTime.Now;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
-            var endTime = ResolveSlotEndTime(appt);
-            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", stampUser, null, endTime);
+            _serviceTransactions.SetServiceTransaction(srcType, appointmentId, "END", stampUser, null);
             if (upperSrc == 'A' && appt != null)
             {
                 appt.Status = AppointmentStatus.Completed;
-                appt.EndTime = endTime ?? appt.EndTime;
+                //appt.EndTime = DateTime.Now.TimeOfDay; // use ServiceTransRecord for reporting
                 appt.ProviderId = providerId;
                 appt.UpdatedOn = now;
                 appt.StampDate = now;
@@ -757,40 +727,6 @@ namespace FastQ.Web.Services
             }
 
             return Result.Success();
-        }
-
-        private TimeSpan? ResolveSlotEndTime(Appointment appt)
-        {
-            if (appt == null)
-                return null;
-            if (appt.EndTime.HasValue)
-                return appt.EndTime.Value;
-
-            var slots = _appts.GetQueueOpenSlots(appt.QueueId, appt.ScheduledFor.Date);
-            if (slots == null)
-                return null;
-
-            foreach (var slot in slots)
-            {
-                var begin = ParseSlotTime(slot?.SlotBegin);
-                if (begin.HasValue && begin.Value == appt.ScheduledFor.TimeOfDay)
-                {
-                    return ParseSlotTime(slot?.SlotEnd);
-                }
-            }
-
-            return null;
-        }
-
-        private static TimeSpan? ParseSlotTime(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return null;
-
-            if (!DateTime.TryParseExact(value.Trim(), new[] { "h:mm tt", "hh:mm tt" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-                return null;
-
-            return parsed.TimeOfDay;
         }
 
         private Result RemoveAppointment(char srcType, long appointmentId, string providerId)
@@ -805,7 +741,7 @@ namespace FastQ.Web.Services
 
             if (appt != null && (appt.Status == AppointmentStatus.Completed || appt.Status == AppointmentStatus.Cancelled || appt.Status == AppointmentStatus.ClosedBySystem))
                 return Result.Fail("Appointment is already finished.");
-
+            
             var now = DateTime.Now;
             var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
 

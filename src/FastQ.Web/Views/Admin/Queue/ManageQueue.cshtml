@@ -140,10 +140,6 @@
                                 <span class="slider"></span>
                             </label>
                         </div>
-                        @*<div class="form-check form-switch">
-                                @Html.CheckBoxFor(model => model.HasUploads, new { @class = "form-check-input", @role = "switch" })
-                                @Html.Label("HasUploads", "Has Uploads?", new { @class = "form-check-label" })
-                            </div>*@
                     </div>
                 </div>
             </div>
@@ -261,11 +257,6 @@
 <div class="card">
     @Html.HiddenFor(model => model.Id)
 
-    <!--<div class="card-title" style="display:block;">
-        Security-->
-        @*<input type="submit" value="Save Access" class="btn small btn-save" id="btnSaveAccess" style="float:right" />*@
-    <!--</div>-->
-
     <div class="table-card">
         <table class="table " id="QAccessdata">
             <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
@@ -346,6 +337,13 @@
             if (modal) {
                 modal.classList.add("show");
             }
+        }
+
+        function convertToMinutes(timeStr) {
+            // Split "01:30:00" into ["01", "30", "00"]
+            const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+            // Calculation: (Hours * 60) + Minutes + (Seconds / 60)
+            return (hours * 60) + minutes + (seconds / 60);
         }
 
         $(document).ready(function () {
@@ -461,33 +459,51 @@
                 return false;
             }
 
-        });
+            isSchDataValid = (form) => {                
+                var frmerrors = "";
 
-        $(document).on('click', '.btnDeleteSvc', function(){
-            deleteRecord(this);
-        });
+                // 1. Get the values from the inputs
+                var val1 = document.getElementById('BeginDate').value;
+                var val2 = document.getElementById('EndDate').value;
 
-        $(document).on('click', '.btnDeleteSch', function () {
-            deleteRecord(this);
-        });
+                // 2. Convert string values into Date objects
+                var date1 = new Date(val1);
+                var date2 = new Date(val2);
 
-        // Pill tag click handling
-        document.querySelectorAll('.pill-tag input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                if (this.checked) {
-                    this.parentElement.classList.add('active');
-                } else {
-                    this.parentElement.classList.remove('active');
+                // 3. Validation Check
+                if (date1 > date2) {
+                    frmerrors += "Begins-From date cannot be greater than Ends-On date.";
                 }
-            });
-        });
 
-        function selectAll(obj, classname) {
-            $('.' + classname).prop('checked', obj.checked);
-        }
+                val1 = document.getElementById('OpenTime').value;
+                val2 = document.getElementById('CloseTime').value;
 
+                if (!val1 || !val2)
+                    frmerrors += "<br/>Opens At and Closes At are required.";
 
-        $(document).ready(function () {
+                // Create a Date object at Jan 1st, 2026, at your specific time
+                date1 = new Date("2026-01-01 " + val1);
+                date2 = new Date("2026-01-01 " + val2);                                
+                if (date1 > date2) {
+                    frmerrors += "<br/>Opens-At can not be greater than Closes-At";
+                }
+
+                const duration = convertToMinutes(document.getElementById('Duration').value);  
+                const timediff = (date2 - date1) / (1000 * 60 );
+                if (duration > timediff)
+                    frmerrors += "<br/>Open/Close times are not valid for selected duration.";
+
+                var retstatus = (frmerrors == "");
+                if (!retstatus) {
+                    $(".validation-summary-error").html("Validation Error: " + frmerrors);
+                }
+                return retstatus;
+            }
+
+            selectAll = (obj, classname) => {
+                $('.' + classname).prop('checked', obj.checked);
+            }
+
             $('#QAccessdata').DataTable({
                 language: {
                     search: '',
@@ -496,14 +512,14 @@
                 pageLength: 20, // Sets the default to 50 rows
                 fixedColumns: true,
                 columnDefs: [
-                    { "targets": [1,2,3,4], "orderable": false }
-                    ],
+                    { "targets": [1, 2, 3, 4], "orderable": false }
+                ],
                 layout: {
                     topStart: 'search', // Places default search box,
-                    topEnd: {                      
-                            div: {
-                                className: 'action-btn-div'
-                            }
+                    topEnd: {
+                        div: {
+                            className: 'action-btn-div'
+                        }
                     }
                 },
                 initComplete: function () {
@@ -513,7 +529,6 @@
 
                 }
             });
-
 
             $('#frmQAccess').on('submit', function (e) {
                 var form = this;
@@ -536,7 +551,26 @@
                     }
                 });
             });
-        });
 
+            $(document).on('click', '.btnDeleteSvc', function () {
+                deleteRecord(this);
+            });
+
+            $(document).on('click', '.btnDeleteSch', function () {
+                deleteRecord(this);
+            });
+
+            // Pill tag click handling
+            document.querySelectorAll('.pill-tag input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        this.parentElement.classList.add('active');
+                    } else {
+                        this.parentElement.classList.remove('active');
+                    }
+                });
+            });
+
+        });
     </script> 
     }

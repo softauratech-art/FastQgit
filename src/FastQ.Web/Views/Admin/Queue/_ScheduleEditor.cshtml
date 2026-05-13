@@ -4,7 +4,7 @@
     var secname = "ScheduleSection";
 }
 
-<form action="@Url.Action("EditSchedule","Queue")" data-id="@Model.Id" data-secname="@secname" id="submitSchForm" onsubmit="return postQchildForm(this);">
+<form action="@Url.Action("EditSchedule","Queue")" data-id="@Model.Id" data-secname="@secname" id="submitSchForm">
     @Html.AntiForgeryToken()
     <div class="validation-summary-error alert-danger"></div>
     <div class="container-fluid" id="@secname-@Model.Id">
@@ -73,6 +73,14 @@
     $(document).ready(function () {
         $("input.time").fxtime();
         $("#OpenTime").fxtime('val', '@Model.OpenTime');
-        $("#CloseTime").fxtime('val','@Model.CloseTime');
+        $("#CloseTime").fxtime('val', '@Model.CloseTime');
+
+        document.getElementById('submitSchForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Stops form from posting
+            if (isSchDataValid(this)) {
+                var ret = postQchildForm(this);
+            }
+        });
     });
+
 </script>

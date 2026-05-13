@@ -89,6 +89,9 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=6.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NLog.6.1.2\lib\net46\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="Oracle.ManagedDataAccess, Version=4.122.23.1, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Oracle.ManagedDataAccess.23.26.100\lib\net472\Oracle.ManagedDataAccess.dll</HintPath>
     </Reference>
@@ -169,10 +172,10 @@
     <Compile Include="Attributes\AuthorizeUsers.cs" />
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\Admin\QueueController.cs" />
+    <Compile Include="Controllers\Admin\HolidayController.cs" />
     <Compile Include="Controllers\Admin\UserController.cs" />
     <Compile Include="Controllers\BaseController.cs" />
     <Compile Include="Controllers\CalendarController.cs" />
-    <Compile Include="Controllers\CustomerController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ProviderController.cs" />
     <Compile Include="Controllers\ReportingController.cs" />
@@ -199,18 +202,25 @@
     <Compile Include="Services\QueueService.cs" />
     <Compile Include="Services\ReportingService.cs" />
     <Compile Include="Services\SignalRRealtimeNotifier.cs" />
+    <Compile Include="Services\HolidayService.cs" />
     <Compile Include="Services\UserService.cs" />
+    <Compile Include="Services\WebexService.cs" />
     <Compile Include="Startup.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ComingSoon.html" />
+    <Content Include="Content\calendar.css" />
     <Content Include="Content\datatablesFQ.css" />
     <Content Include="Content\logo-wd.png" />
     <Content Include="Content\modal.css" />
-    <Content Include="Content\queueadmin.css" />
     <Content Include="Content\siteadmin.css" />
+    <Content Include="Content\today.css" />
     <Content Include="favicon.ico" />
     <Content Include="Content\OC_Logo.png" />
     <Content Include="Content\site.css" />
+    <Content Include="nlog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="Scripts\jquery-3.7.1.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.1.js" />
     <Content Include="Scripts\jquery-3.7.1.min.js" />
@@ -228,7 +238,6 @@
     <Content Include="Scripts\timepicker\jquery.timepicker.js" />
     <Content Include="Logout.aspx" />
     <Content Include="Views\Admin\Dashboard.cshtml" />
-    <Content Include="Views\Customer\Book.cshtml" />
     <Content Include="Views\Customer\Home.cshtml" />
     <Content Include="Views\Customer\Login.cshtml" />
     <Content Include="Views\Customer\Status.cshtml" />
@@ -244,6 +253,25 @@
     <Content Include="Global.asax" />
     <Content Include="Unauthorized.aspx" />
     <Content Include="Views\Home\Restricted.cshtml" />
+    <Content Include="Views\Shared\_QueueEntryModals.cshtml" />
+    <Content Include="Views\Admin\Index.cshtml" />
+    <Content Include="Views\Admin\Queue\List.cshtml" />
+    <Content Include="Views\Admin\Queue\ManageQueue.cshtml" />
+    <Content Include="Views\Admin\Queue\_QueueSchedules.cshtml" />
+    <Content Include="Views\Admin\Queue\_QueueServices.cshtml" />
+    <Content Include="Views\Admin\Queue\_ScheduleEditor.cshtml" />
+    <Content Include="Views\Admin\Queue\_ServiceEditor.cshtml" />
+    <Content Include="Views\Admin\User\List.cshtml" />
+    <Content Include="Views\Admin\User\ManageUser.cshtml" />
+    <Content Include="Scripts\jquery-3.7.1.slim.min.map" />
+    <Content Include="Scripts\jquery-3.7.1.min.map" />
+    <Content Include="Views\Admin\Holiday\List.cshtml" />
+    <None Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FastQ.Data\FQ.Manager.Data.csproj">
@@ -257,18 +285,6 @@
     </None>
     <None Include="Oracle.ManagedDataAccess.Client.Configuration.Section.xsd" />
     <None Include="packages.config" />
-    <Content Include="Views\Admin\Index.cshtml" />
-    <Content Include="Views\Admin\Queue\List.cshtml" />
-    <Content Include="Views\Admin\Queue\ManageQueue.cshtml" />
-    <Content Include="Views\Admin\Queue\_QueueSchedules.cshtml" />
-    <Content Include="Views\Admin\Queue\_QueueServices.cshtml" />
-    <Content Include="Views\Admin\Queue\_ScheduleEditor.cshtml" />
-    <Content Include="Views\Admin\Queue\_ServiceEditor.cshtml" />
-    <Content Include="Views\Admin\User\List.cshtml" />
-    <Content Include="Views\Admin\User\ManageUser.cshtml" />
-    <Content Include="Views\Shared\_Layout - Copy.cshtml" />
-    <Content Include="Scripts\jquery-3.7.1.slim.min.map" />
-    <Content Include="Scripts\jquery-3.7.1.min.map" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

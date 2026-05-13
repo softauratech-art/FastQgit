@@ -40,6 +40,17 @@ namespace FastQ.Data.Db
         {
             return new DbUserRepository();
         }
+        public static IHolidayRepository CreateHolidayRepository()
+        {
+            return new DbHolidayRepository();
+        }
+
+        public static IWebexRepository CreateWebexRepository()
+        {
+            return new DbWebexRepository();
+        }
+
+
         //private static string GetConnectionString()
         //{
         //    var connString = ConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;

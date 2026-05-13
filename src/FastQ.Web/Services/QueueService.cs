@@ -3,6 +3,7 @@ using FastQ.Data.Db;
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
 using FastQ.Web.Models.Admin;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,11 +28,6 @@ namespace FastQ.Web.Services
         }
         public IList<QueueVM> ListQueues()
         {
-            //if (HttpContext.Current.Session["fq_this_entity"]  == null  ||
-            //        !Int32.TryParse(HttpContext.Current.Session["fq_this_entity"].ToString(), out _stampuserentity))
-            //    throw new Exception("Entity is missing for this session");
-            //_stampuserentity = 1;
-
             _stampuserentity = new AuthService().GetSessionEntityId();
             var rows = _queues.ListByEntity(_stampuserentity, new AuthService().GetLoggedInWindowsUser());
             return BuildQueueRows(rows);
@@ -190,20 +186,6 @@ namespace FastQ.Web.Services
             }).OrderBy(r => r.Id).ToList();
         }
 
-        public Result HandleQueueAction(string action, string json)
-        {
-            //action = (action ?? string.Empty).Trim().ToLowerInvariant();
-            //return action switch
-            //{
-            //    "update" => UpdateQueue( json),
-            //    "delete" => DeleteQueue( json),
-            //    "create" => CreateQueue( json),
-            //    _ => Result.Fail("Unknown action")
-            //};
-
-            return Result.Fail("Not Implemented");
-        }
-
         public void AddOrUpdateQService(QueueServiceVM qsvm)
         {
             _queues.AddOrUpdateQService(new QService
@@ -250,6 +232,18 @@ namespace FastQ.Web.Services
         public void AddOrUpdateQAccess(long id, string hostids, string providerids, string reporterids, string queueadminids)
         {
             _queues.AddOrUpdateQAccess(id, hostids, providerids, reporterids, queueadminids, _stampuser);
+        }
+
+        public IList<(string, string)> GetValidContactTypes()
+        {
+            IList<(string, string)> items = _queues.GetValidContactTypes();            
+            return items;
+        }
+
+        public IList<(string, string)> GetValidRefCriterias()
+        {        
+            IList<(string, string)> items = _queues.GetValidRefCriterias();            
+            return items;
         }
     }
 }

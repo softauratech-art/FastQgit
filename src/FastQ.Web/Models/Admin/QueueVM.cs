@@ -1,18 +1,16 @@
-using FastQ.Data.Entities;
-using Microsoft.Ajax.Utilities;
+using FastQ.Web.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Web;
 using System.Web.Mvc;
 
 namespace FastQ.Web.Models.Admin
 {
     public class QueueVM
     {
+        private QueueService _service = new();
         public long Id { get; set; }
         
         [DisplayName("Entity")]
@@ -96,13 +94,18 @@ namespace FastQ.Web.Models.Admin
         {
             get
             {
-                return new List<RefCriteriaItem>
-                    {
-                        new RefCriteriaItem {Name="Address", Value="A", IsChecked=this.SelectedRefCriterias!=null && this.SelectedRefCriterias.Contains("A")},
-                        new RefCriteriaItem {Name="Case", Value="C", IsChecked=this.SelectedRefCriterias!=null && this.SelectedRefCriterias.Contains("C")},
-                        new RefCriteriaItem { Name = "General", Value = "G", IsChecked = this.SelectedRefCriterias!=null && this.SelectedRefCriterias.Contains("G") },
-                        new RefCriteriaItem { Name = "Permit", Value = "P", IsChecked = this.SelectedRefCriterias!=null && this.SelectedRefCriterias.Contains("P") }
-                    };
+                List<RefCriteriaItem> list = new List<RefCriteriaItem>();
+                IList<(string, string)> items = _service.GetValidRefCriterias();
+                foreach ((string, string) item in items)
+                {
+                    list.Add(new RefCriteriaItem
+                                {
+                                    Name = item.Item2,
+                                    Value = item.Item1,
+                                    IsChecked = this.SelectedRefCriterias != null && this.SelectedRefCriterias.Contains(item.Item1)
+                                });
+                }
+                return list;
             }
         }
 
@@ -115,18 +118,23 @@ namespace FastQ.Web.Models.Admin
         {
             get
             {
-                List<ContactMethodItem> ret = new List<ContactMethodItem>
-                    {
-                        new ContactMethodItem {Name="Online Meeting", Value="OM", IsChecked=(this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("OM"))},
-                        new ContactMethodItem {Name="Phone Call", Value="PC", IsChecked=(this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("PC"))},
-                        new ContactMethodItem { Name = "In Person", Value = "IP", IsChecked = (this.SelectedContactMethods!=null && this.SelectedContactMethods.Contains("IP")) }
-                    };
-                return ret;
+                List<ContactMethodItem> list = new List<ContactMethodItem>();
+                IList<(string, string)> items = _service.GetValidContactTypes();
+                foreach ((string, string) item in items)
+                {
+                    list.Add(new ContactMethodItem
+                                    {
+                                        Name = item.Item2,
+                                        Value = item.Item1,
+                                        IsChecked = this.SelectedContactMethods != null && this.SelectedContactMethods.Contains(item.Item1)
+                                    });
+                }
+                return list;
             }
         }
 
         // This property contains the selected options
-        [Required(ErrorMessage = "Appointment Type(s) required")]
+        //[Required(ErrorMessage = "Appointment Type(s) required")]
         [DisplayName("Appointment Types")]
         //public IEnumerable<ContactMethodItem> SelectedContactMethods { get; set; }
         public string[] SelectedContactMethods { get; set; }

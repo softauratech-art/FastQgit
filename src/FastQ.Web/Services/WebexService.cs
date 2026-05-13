@@ -1,0 +1,212 @@
+﻿
+using FastQ.Data.Db;
+using FastQ.Data.Repositories;
+using Microsoft.Ajax.Utilities;
+using NLog;
+using System;
+using System.Configuration;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading.Tasks;
+
+namespace FastQ.Web.Services
+{
+    //public class FastQSourceRecord
+    //{
+    //    public long Id { get; set; }
+    //    public string WebexMeetingId { get; set; }
+    //    public DateTime AppointmentDateTime { get; set; }
+    //    public DateTime EndDateTime { get; set; }
+    //    public string CustomerName { get; set; }
+    //    public string Status { get; set; }
+    //    public string EmailAddress { get; set; }
+    //}
+
+    public class WebexMeeting
+    {
+        public string BaseUrl { get; set; }
+        public string HostUrl { get; set; }
+        public string GuestUrl { get; set; }
+
+        public string ApiError { get; set; }
+    }
+
+
+    public class WebexService
+    {
+        private static readonly Logger _logger = NLog.LogManager.GetLogger("FastQWebexSVC");
+        private static readonly HttpClient client = new HttpClient();
+        private static readonly string clientID = ConfigurationManager.AppSettings["WebexClientid"];
+        private static readonly string secretID = ConfigurationManager.AppSettings["WebexSecretid"];
+        private static readonly string access_token = ConfigurationManager.AppSettings["WebexAccesstoken"];
+        private static readonly string refresh_token = ConfigurationManager.AppSettings["WebexRefreshtoken"];
+        private static readonly string webexUrl = ConfigurationManager.AppSettings["WebexApiBaseUrl"]; // "https://webexapis.com/v1/meetings/" | "https://mtg-broker-a.wbx2.com/api/v2/joseencrypt";
+       
+
+        private readonly IWebexRepository _webexrepo;
+
+        public WebexService()
+           : this(
+               DbRepositoryFactory.CreateWebexRepository())
+        {
+
+        }
+        public WebexService(IWebexRepository webexrepo)
+        {
+            _webexrepo = webexrepo;
+        }
+
+        // PReddy: This call has been moved to Windows Scheduled Task
+        //private async Task<HttpResponseMessage> CreateG2GMeeting(string title, DateTime start)
+        //{
+        //    var meetingData = new
+        //    {
+        //        title = title,
+        //        start = start.ToUniversalTime().AddDays(30).ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        //        end = start.ToUniversalTime().AddDays(30).AddHours(1).ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        //        // Essential G2G scheduling options
+        //        schedulingOptions = new
+        //        {
+        //            enabledJoinBeforeHost = true,
+        //            joinBeforeHostMinutes = 5
+        //        },
+        //        // Required for G2G to bypass standard host locks
+        //        unlockedMeetingJoinSecurity = "allowJoin"
+        //    };
+
+        //    var jsonBody = JsonSerializer.Serialize(meetingData);
+        //    _logger.Info($"CreateG2GMeeting Request: {jsonBody}");
+
+        //    var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+        //    var response = await client.PostAsync(webexUrl, content);
+        //    var jsonResponse = await response.Content.ReadAsStringAsync();
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        _logger.Info($"CreateG2GMeeting Response: {jsonResponse}");
+        //    }
+        //    else
+        //    {
+        //        _logger.Error("CreateG2GMeeting Error: " + (int)response.StatusCode + " " + jsonResponse);
+
+        //    }
+        //    return response;
+        //}
+
+        public async Task<WebexMeeting> LaunchStartLink(string srcType, long srcId)
+        {
+            //Ex: returns: https://ocfl.webex.com/.../StartMeeting?meetingid=013f0afb7cb74a1cb4b9243940fcb40b           
+            WebexMeeting omeeting = new WebexMeeting();
+            var user = (new AuthService()).GetCurrentUser();
+            
+            //Get Webex-meetingId from Appointment.HostURL-field           
+            FastQ.Data.Repositories.IWebexRepository repo = DbRepositoryFactory.CreateWebexRepository();
+            var srcdata = repo.GetSourceDetails(srcType, srcId);
+
+            if (srcdata == null) return omeeting;   //no-data-found
+
+            if (srcdata.WebexMeetingId.StartsWith("https://") )
+            {
+                //someone has set the meeting URL manually, so use it for Admin/Staff/Host
+                omeeting = new WebexMeeting() { HostUrl = srcdata.WebexMeetingId };
+            }
+            else 
+            {   
+                //use the WebexMeetingId to create Join-Links
+                var response = await CreateJoinLinks(srcdata);
+                var responsedata = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                    omeeting = WebexService.BuildMeetingUrls(responsedata);
+                else
+                    omeeting.ApiError = responsedata;
+            }
+            return omeeting;
+        }
+
+
+        public async Task<HttpResponseMessage> CreateJoinLinks(Data.Entities.WebexFastQRecord appt)
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
+            client.DefaultRequestHeaders.Add("Accept", "application/json;charset=UTF-8");
+
+            _logger.Info("Generating Meeting Links...");
+            var payload = new
+            {
+                meetingId = appt.WebexMeetingId,
+                joinDirectly = false,
+                email = appt.EmailAddress,
+                displayName = appt.CustomerName,
+                expiration = 60
+            };
+
+            string jsonBody = System.Text.Json.JsonSerializer.Serialize(payload);
+            var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{webexUrl}/join", content);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.Info($"GenerateLinks.Response: {jsonResponse}");
+            }
+            else
+            {
+                _logger.Error("GenerateLinks Error: " + (int)response.StatusCode + " " + jsonResponse);
+            }
+
+            _webexrepo.LogWebexRequestToDB(appt.SrcType, appt.SrcId, $"{webexUrl}join", jsonBody, (int)response.StatusCode, jsonResponse, new AuthService().GetLoggedInWindowsUser());
+
+            return response;
+            // The response contains:
+            // "joinLink": For standard guests
+            // "startLink": For the user who will act as the host
+        }
+
+        public static WebexMeeting BuildMeetingUrls(string json)
+        {
+            JsonNode meetingNode = JsonNode.Parse(json);
+            string baseurl = meetingNode["joinLink"].ToString();
+            string hosturl = meetingNode["startLink"].ToString();
+            string guesturl = meetingNode["joinLink"].ToString();
+            return new WebexMeeting
+            {
+                BaseUrl = (string)baseurl,
+                HostUrl = hosturl,
+                GuestUrl = guesturl
+            };
+        }
+
+        public static async Task<(string, string)> GetTokensRefresh()
+        {
+            _logger.Info ("function : get_token_refresh()");
+
+            var url = string.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["WebexApiRefreshUrl"]?.ToString()) ? "https://webexapis.com/v1/access_token": ConfigurationManager.AppSettings["WebexApiRefreshUrl"].ToString();
+            var payload = new StringContent(
+                $"grant_type=refresh_token&client_id={clientID}&client_secret={secretID}&refresh_token={refresh_token}",
+                Encoding.UTF8,
+                "application/x-www-form-urlencoded"
+            );
+
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = payload;
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var response = await client.SendAsync(request);
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            var doc = JsonDocument.Parse(responseString);
+            var root = doc.RootElement;
+
+            var newAccessToken = root.GetProperty("access_token").GetString();
+            var newRefreshToken = root.GetProperty("refresh_token").GetString();
+
+            _logger.Info ("Token returned in refresh result : " + newAccessToken);
+            _logger.Info("Refresh Token returned in refresh result : " + newRefreshToken);
+
+            return (newAccessToken, newRefreshToken);
+        }
+    }
+       
+}

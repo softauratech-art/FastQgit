@@ -51,490 +51,7 @@
         .ToList();
 }
 @section Head {
-    <style>
-        .table-striped tbody tr:nth-child(even) {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        .accordion-toggle {
-            cursor: pointer;
-        }
-
-            .accordion-toggle.locked {
-                opacity: 0.45;
-            }
-
-        .row-actions {
-            display: none;
-        }
-
-            .row-actions.is-open {
-                display: table-row;
-            }
-
-            .row-actions.locked {
-                opacity: 0.45;
-            }
-
-                .row-actions.locked .action-bar {
-                    pointer-events: none;
-                }
-
-            .row-actions td {
-                padding: 0 8px 12px;
-            }
-
-        .action-bar {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .action-bar-main {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .action-bar-meta {
-            margin-left: auto;
-            font-size: 12px;
-            color: #64748b;
-            white-space: nowrap;
-        }
-
-        .table-card {
-            overflow-x: auto;
-        }
-
-        .cell-ellipsis {
-            display: block;
-            max-width: 180px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            padding: 0;
-            border: 0;
-            background: none;
-            text-align: left;
-            color: inherit;
-            cursor: pointer;
-        }
-
-        .cell-ellipsis:hover,
-        .cell-ellipsis:focus-visible {
-            text-decoration: underline;
-            outline: none;
-        }
-
-        .cell-ellipsis.is-expanded {
-            max-width: none;
-            white-space: normal;
-            overflow: visible;
-            text-overflow: clip;
-            word-break: break-word;
-        }
-
-        .date-nav {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: var(--font-heading);
-        }
-
-            .date-nav a {
-                color: var(--accent);
-                font-weight: 700;
-            }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .field-row {
-            display: grid;
-            grid-template-columns: 120px 1fr;
-            gap: 12px;
-            align-items: center;
-        }
-
-        
-/*
-        .route-modal .modal {
-            width: min(680px, 92vw);
-            border-radius: 10px;
-            background: #f8fafc;
-            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        .route-modal .modal-header {
-            padding: 16px 18px 6px;
-        }
-
-        .route-modal .modal-title {
-            font-size: 20px;
-            color: #1f2937;
-        }
-
-        .route-modal .modal-body {
-            padding: 0 18px 12px;
-            gap: 12px;
-        }*/
-
-        .route-form-row {
-            display: grid;
-            grid-template-columns: 160px 1fr;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .route-form-row label {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .route-form-row .route-input,
-        .route-form-row select,
-        .route-form-row textarea,
-        .route-form-row input {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 6px;
-            border: 1px solid #cbd5f5;
-            background: #ffffff;
-            font-size: 13px;
-            color: #1f2937;
-        }
-
-        .route-form-row textarea {
-            min-height: 96px;
-            resize: vertical;
-        }
-
-        .route-modal .modal-footer {
-            padding: 8px 18px 16px;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-/*        .route-modal .modal-footer .btn.primary {
-            background: #19a24b;
-            border-color: #19a24b;
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        .route-modal .modal-footer .btn.primary:hover {
-            background: #15803d;
-            border-color: #15803d;
-        }
-
-        .route-modal .modal-footer .btn.ghost {
-            color: #3b82f6;
-        }*/
-
-        @@media (max-width: 640px) {
-            .route-form-row {
-                grid-template-columns: 1fr;
-                align-items: start;
-            }
-        }
-
-        .table-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: end;
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 10px;
-            margin-bottom: 12px;
-        }
-
-        .filter-group {
-            display: grid;
-            gap: 4px;
-            min-width: 160px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #4b4b4b;
-        }
-
-        .filter-input {
-            padding: 6px 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 0, 0, 0.15);
-            font-size: 13px;
-            background: #fff;
-        }
-
-        .date-range {
-            flex-wrap: nowrap;
-            align-items: center;
-            white-space: nowrap;
-        }
-
-        .is-hidden {
-            display: none;
-        }
-
-        .table-name-label {
-            margin: 0 0 8px;
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            color: #1f2937;
-        }
-
-        .autofilled-lock {
-            background: #f3f4f6 !important;
-            color: #6b7280;
-            cursor: not-allowed;
-        }
-
-        .lookup-input-wrap {
-            position: relative;
-        }
-
-        .lookup-spinner {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            width: 14px;
-            height: 14px;
-            margin-top: -7px;
-            border: 2px solid #cbd5e1;
-            border-top-color: #0f766e;
-            border-radius: 50%;
-            animation: lookup-spin 0.8s linear infinite;
-            display: none;
-        }
-
-        .lookup-input-wrap.is-loading .lookup-spinner {
-            display: block;
-        }
-
-        .lookup-input-wrap.is-loading input {
-            padding-right: 34px;
-        }
-
-        .entry-date-picker {
-            position: relative;
-            display: grid;
-            gap: 8px;
-        }
-
-        .entry-date-picker-trigger {
-            position: relative;
-        }
-
-        .entry-date-picker-trigger .route-input {
-            padding-right: 44px;
-            cursor: pointer;
-            background: #fff;
-        }
-
-        .entry-date-picker-toggle {
-            position: absolute;
-            top: 50%;
-            right: 8px;
-            transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
-            border: 0;
-            border-radius: 8px;
-            background: #eef2ff;
-            color: #4f46e5;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .entry-date-picker-toggle:hover {
-            background: #e0e7ff;
-        }
-
-        .entry-date-picker-panel {
-            display: none;
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            z-index: 20;
-            width: min(320px, 100%);
-            padding: 12px;
-            border: 1px solid #dbe4f0;
-            border-radius: 14px;
-            background: #ffffff;
-            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
-        }
-
-        .entry-date-picker.is-open .entry-date-picker-panel {
-            display: grid;
-            gap: 8px;
-        }
-
-        .entry-date-picker-header {
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .entry-date-picker-month {
-            text-align: center;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .entry-date-picker-weekdays,
-        .entry-date-picker-grid {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: 6px;
-        }
-
-        .entry-date-picker-weekdays span {
-            text-align: center;
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-        }
-
-        .entry-date-cell {
-            min-height: 38px;
-            padding: 0;
-            border: 1px solid #dbe4f0;
-            border-radius: 10px;
-            background: #ffffff;
-            color: #0f172a;
-            font: inherit;
-            font-weight: 600;
-        }
-
-        .entry-date-cell.is-muted {
-            visibility: hidden;
-        }
-
-        .entry-date-cell:disabled {
-            background: #f8fafc;
-            border-color: #e2e8f0;
-            color: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        .entry-date-cell.is-selected {
-            background: #0f766e;
-            border-color: #0f766e;
-            color: #ffffff;
-        }
-
-        .entry-date-cell.is-today:not(.is-selected) {
-            border-color: #0f766e;
-            color: #0f766e;
-        }
-
-        .notif-wrap {
-            position: relative;
-        }
-
-        .notif-count {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 5px;
-            border-radius: 999px;
-            background: #dc2626;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            line-height: 18px;
-            text-align: center;
-            display: none;
-        }
-
-        .notif-count.show {
-            display: inline-block;
-        }
-
-        .notif-panel {
-            position: absolute;
-            top: calc(100% + 10px);
-            right: 0;
-            width: min(380px, 88vw);
-            background: #ffffff;
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            border-radius: 14px;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
-            display: none;
-            z-index: 50;
-            overflow: hidden;
-        }
-
-        .notif-panel.show {
-            display: block;
-        }
-
-        .notif-panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 12px 14px;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-        }
-
-        .notif-panel-title {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .notif-panel-body {
-            max-height: 360px;
-            overflow-y: auto;
-        }
-
-        .notif-empty {
-            padding: 16px 14px;
-            color: #64748b;
-            font-size: 13px;
-        }
-
-        .notif-item {
-            padding: 12px 14px;
-            border-bottom: 1px solid rgba(241, 245, 249, 0.95);
-        }
-
-        .notif-item:last-child {
-            border-bottom: 0;
-        }
-
-        .notif-message {
-            margin: 0;
-            color: #111827;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-
-        .notif-time {
-            margin-top: 4px;
-            color: #6b7280;
-            font-size: 11px;
-        }
-
-        @@keyframes lookup-spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+    <link rel="stylesheet" href="~/Content/today.css" />
 }
 
 @section PageHeader {
@@ -585,16 +102,8 @@
 }
 
 <div class="card note">
-    <div class="date-nav">
-        @*<a href="@Url.Action(actionName, "Provider", new { start = prevStart, end = prevEnd })" aria-label="Previous day">&lt;&lt;</a>*@
-        @*<div>@Model.DateText</div>*@
-        @*<a href="@Url.Action(actionName, "Provider", new { start = nextStart, end = nextEnd })" aria-label="Next day">&gt;&gt;</a>*@
-    </div>
-    @*<div class="action-bar" style="padding: 10px 0;">
-            <a class="btn small primary" href="@Url.Action("Today", "Provider", new { start = defaultDate, end = endDate })">Both Appts and Walkins</a>
-            <a class="btn small secondary" href="@Url.Action("Appointments", "Provider", new { start = defaultDate, end = endDate })">Appointments ONLY</a>
-            <a class="btn small secondary" href="@Url.Action("Walkins", "Provider", new { start = defaultDate, end = endDate })">Walkins ONLY</a>
-        </div>*@
+    <div class="date-nav"></div>
+
 
     <div class="table-filters" data-table-filter="walkins">
         <div class="filter-group">
@@ -641,41 +150,7 @@
 @if (showWalkins)
 {
     <div class="card">
-        <div class="card-header">
-            <div>
-                <div class="eyebrow">Provider</div>
-                @*<h2 class="page-title">Today's Schedule</h2>*@
-            </div>
-            <span class="badge accent">Walk-Ins</span>
-        </div>
-
-        @*<div class="table-filters" data-table-filter="walkins">
-                <div class="filter-group">
-                    <label for="walkinsStatus">Status</label>
-                    <select id="walkinsStatus" class="filter-input" data-filter="status">
-                        <option value="all">All</option>
-                        @foreach (var status in statusOptions)
-                        {
-                            <option value="@status">@status</option>
-                        }
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="walkinsStartDate">Date</label>
-                    <div class="action-bar date-range">
-                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
-                        <input id="walkinsStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
-                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
-                        <span>to</span>
-                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
-                        <input id="walkinsEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
-                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
-                    </div>
-                </div>
-                <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
-            </div>*@
-
-        <div class="table-name-label">Walkins</div>
+        <div class="table-name-label">Walk-ins</div>
         <div class="table-card">
             <table class="table table-striped table-sm">
                 <thead>
@@ -713,18 +188,18 @@
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
-                                <td><button type="button" class="cell-ellipsis" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
-                                <td><button type="button" class="cell-ellipsis" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
+                                <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
+                                <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
-                                <td><button type="button" class="cell-ellipsis" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
+                                <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">
                                     @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
                                     {
-                                        <a class="btn small ghost" href="@row.MeetingUrl" target="_blank" rel="noopener">Join Meeting</a>
+                                        <a class="btn small ghost" href="@Url.Action("JoinMeeting", "Provider", new {srctype='W', srcid = row.AppointmentId })" target="_blank" rel="noopener">Join Meeting</a>
                                     }
                                 </td>
                                 <td class="text-center">&darr;</td>
@@ -791,32 +266,6 @@
 @if (showAppointments)
 {
     <div class="card">
-        @*<div class="table-filters" data-table-filter="appointments">
-                <div class="filter-group">
-                    <label for="apptStatus">Status</label>
-                    <select id="apptStatus" class="filter-input" data-filter="status">
-                        <option value="all">All</option>
-                        @foreach (var status in statusOptions)
-                        {
-                            <option value="@status">@status</option>
-                        }
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="apptStartDate">Date</label>
-                    <div class="action-bar date-range">
-                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="start" aria-label="Previous day">&lt;</button>
-                        <input id="apptStartDate" class="filter-input" type="date" data-filter="start" value="@defaultDate" />
-                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="start" aria-label="Next day">&gt;</button>
-                        <span>to</span>
-                        <button class="btn small ghost" type="button" data-date-shift="-1" data-date-target="end" aria-label="Previous day">&lt;</button>
-                        <input id="apptEndDate" class="filter-input" type="date" data-filter="end" value="@endDate" />
-                        <button class="btn small ghost" type="button" data-date-shift="1" data-date-target="end" aria-label="Next day">&gt;</button>
-                    </div>
-                </div>
-                <button class="btn small ghost" type="button" data-filter-reset="true">Reset</button>
-            </div>*@
-
         <div class="table-name-label">Appointments</div>
         <div class="table-card">
             <table class="table table-striped table-sm">
@@ -855,18 +304,18 @@
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td>@row.StartDateText<br />@row.StartTimeText</td>
-                                <td><button type="button" class="cell-ellipsis" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
-                                <td><button type="button" class="cell-ellipsis" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
+                                <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
+                                <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
                                 <td>@row.CustomerName</td>
                                 <td>@row.Phone</td>
-                                <td><button type="button" class="cell-ellipsis" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
+                                <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">
                                     @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
                                     {
-                                        <a class="btn small ghost" href="@row.MeetingUrl" target="_blank" rel="noopener">Join Meeting</a>
+                                        <a class="btn small ghost" href="@Url.Action("JoinMeeting", "Provider", new {srctype='A', srcid = row.AppointmentId })" target="_blank" rel="noopener">Join Meeting</a>
                                     }
                                 </td>
                                 <td class="text-center">&darr;</td>
@@ -930,107 +379,56 @@
     </div>
 }
 
-<div id="meetingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
-    <div class="modal info-modal">
+<div id="meetingModal" class="modal-backdrop info-modal" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
+    <div class="modal">
         <div class="modal-header">
             <h5 class="modal-title" id="meetingModalTitle">Meeting Details</h5>
             <button class="btn small ghost" type="button" data-modal-close="meetingModal">Close</button>
         </div>
         <div class="modal-body">
             <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
-            
+            <div class="info-summary-grid">
+                <div class="info-chip"><span class="info-chip-label">Meeting Id</span><span id="mid"></span></div>
+                <div class="info-chip"><span class="info-chip-label">Date</span><span id="meetingDate"></span></div>
+                <div class="info-chip"><span class="info-chip-label">Time</span><span id="meetingTime"></span></div>
+                <div class="info-chip info-chip-wide"><span class="info-chip-label">Title</span><span id="meetingTitle"></span></div>
+            </div>
             <div class="info-section">
-                <div class="info-section-title">Meeting Information</div>
-                <div class="info-row">
-                    <div class="info-row-label">Meeting ID:</div>
-                    <div class="info-row-value"><span id="mid"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Date:</div>
-                    <div class="info-row-value"><span id="meetingDate"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Time:</div>
-                    <div class="info-row-value"><span id="meetingTime"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Title:</div>
-                    <div class="info-row-value"><span id="meetingTitle"></span></div>
+                <div class="info-section-title">Customer</div>
+                <div class="info-kv-grid">
+                    <div class="info-kv"><span>Name</span><strong id="meetingCustomer"></strong></div>
+                    <div class="info-kv"><span>Phone</span><strong id="meetingPhone"></strong></div>
+                    <div class="info-kv info-kv-wide"><span>Email</span><strong id="meetingEmail"></strong></div>
                 </div>
             </div>
-
             <div class="info-section">
-                <div class="info-section-title">Customer Information</div>
-                <div class="info-row">
-                    <div class="info-row-label">Name:</div>
-                    <div class="info-row-value"><span id="meetingCustomer"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Phone:</div>
-                    <div class="info-row-value"><span id="meetingPhone"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Email:</div>
-                    <div class="info-row-value"><span id="meetingEmail"></span></div>
+                <div class="info-section-title">Service</div>
+                <div class="info-kv-grid">
+                    <div class="info-kv"><span>Queue</span><strong id="meetingQueue"></strong></div>
+                    <div class="info-kv"><span>Service</span><strong id="meetingService"></strong></div>
+                    <div class="info-kv"><span>Ref Value</span><strong id="meetingRefValue"></strong></div>
+                    <div class="info-kv"><span>Contact</span><strong id="meetingContact"></strong></div>
+                    <div class="info-kv"><span>Language</span><strong id="meetingLanguage"></strong></div>
+                    <div class="info-kv"><span>Status</span><strong id="meetingStatus"></strong></div>
+                    <div class="info-kv info-kv-wide"><span>Stamp User</span><strong id="meetingStampUser"></strong></div>
                 </div>
             </div>
-
-            <div class="info-section">
-                <div class="info-section-title">Service Details</div>
-                <div class="info-row">
-                    <div class="info-row-label">Queue:</div>
-                    <div class="info-row-value"><span id="meetingQueue"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Service:</div>
-                    <div class="info-row-value"><span id="meetingService"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Ref Value:</div>
-                    <div class="info-row-value"><span id="meetingRefValue"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Contact:</div>
-                    <div class="info-row-value"><span id="meetingContact"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Language:</div>
-                    <div class="info-row-value"><span id="meetingLanguage"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Status:</div>
-                    <div class="info-row-value"><span id="meetingStatus"></span></div>
-                </div>
-                <div class="info-row">
-                    <div class="info-row-label">Stamp User:</div>
-                    <div class="info-row-value"><span id="meetingStampUser"></span></div>
-                </div>
+            <div class="field-row">
+                <div>Guest URL:</div>
+                <input id="mGuestURL" type="text" value="" />
             </div>
-
-            <div class="info-section">
-                <div class="info-section-title">Meeting URLs</div>
-                <div class="field-row">
-                    <div>Guest URL:</div>
-                    <input id="mGuestURL" type="text" value="" />
-                </div>
-                <div class="field-row">
-                    <div>Host URL:</div>
-                    <input id="mURL" type="text" value="" />
-                </div>
+            <div class="field-row">
+                <div>Host URL:</div>
+                <input id="mURL" type="text" value="" />
             </div>
-
-            <div class="info-section">
-                <div class="info-section-title">Notes</div>
-                <div class="field-row">
-                    <div>Previous Notes:</div>
-                    <div id="mPreviousNotes" class="route-input" style="min-height:44px; white-space:pre-wrap; word-break:break-word;">-</div>
-                </div>
-                <div class="field-row">
-                    <div>Add Notes:</div>
-                    <textarea id="mNotes" rows="3"></textarea>
-                </div>
+            <div class="field-row">
+                <div>Previous Notes:</div>
+                <div id="mPreviousNotes" class="route-input info-readonly">-</div>
             </div>
-
+            <div class="field-row">
+                <div>Add Notes:</div>
+                <textarea id="mNotes" rows="3"></textarea>
+            </div>
             <div class="helper-text">Guest URL, host URL, and notes are saved. Text entered in Add Notes is appended to Previous Notes.</div>
         </div>
         <div class="modal-footer">
@@ -1040,7 +438,7 @@
     </div>
 </div>
 
-<div id="webexModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="webexModalTitle">
+@*<div id="webexModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="webexModalTitle">
     <div class="modal">
         <div class="modal-header">
             <h5 class="modal-title" id="webexModalTitle">WebEx</h5>
@@ -1048,7 +446,7 @@
         </div>
         <div class="modal-body">This will launch WebEx meeting link.</div>
     </div>
-</div>
+</div>*@
 
 <div id="serviceRouteModal" class="modal-backdrop route-modal" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
     <div class="modal">
@@ -1118,7 +516,7 @@
                 </select>
             </div>
             <div class="route-form-row" id="routeNotesRow">
-                <label for="routeNotes">Comments</label>
+                <label for="routeNotes">Customer Comments</label>
                 <textarea id="routeNotes" rows="3"></textarea>
             </div>
             <input id="routeMode" type="hidden" value="" />
@@ -1144,7 +542,7 @@
             <div class="modal-feedback" data-modal-feedback="endServiceModal"></div>
             <p>Does the customer need any additional service today?</p>
             <div class="route-form-row">
-                <label for="endServiceCompletionNotes">Notes</label>
+                <label for="endServiceCompletionNotes">Completion Notes</label>
                 <textarea id="endServiceCompletionNotes" rows="3"></textarea>
             </div>
             <input id="endServiceSrcId" type="hidden" value="" />
@@ -1295,7 +693,10 @@
       };
     }
 
-    function normalizeMeetingUrl(value) {
+      function normalizeMeetingUrl(value) {
+          return value;
+
+
       var trimmed = (value || "").trim();
       if (!trimmed) {
         return "";
@@ -1312,7 +713,7 @@
       return "https://" + trimmed.replace(/^\/+/, "");
     }
 
-    function updateTodayMeetingLinkUi(appointmentId, srcType, rawGuestUrl, rawHostUrl, notes) {
+    function updateMeetingLinkUi(appointmentId, srcType, rawGuestUrl, rawHostUrl, notes) {
       var normalizedSrcType = (srcType || "A").toUpperCase();
       var normalizedGuestUrl = normalizeMeetingUrl(rawGuestUrl);
 
@@ -2420,9 +1821,10 @@
           var timeOptions = res && res.ok
             ? (res.data || []).map(function (slot) {
                 var slotValue = slot.slotBegin || "";
+                var slotEndTime = slot.slotEnd || "";
                 var totalMinutes = parseClockMinutes(slotValue);
                 var isPast = minimumFutureMinutes !== null && totalMinutes !== null && totalMinutes < minimumFutureMinutes;
-                return isPast ? null : { value: slotValue, label: slotValue };
+                return isPast ? null : { value: slotValue, label: slotValue, endtime: slotEndTime };
               }).filter(function (slot) {
                 return !!slot;
               }).sort(function (a, b) {
@@ -2493,7 +1895,13 @@
           showModalFeedback("addAppointmentModal", message, true);
           return false;
         })
-        .catch(function () {
+        .catch(function (err) {
+              console.error("Add-entry customer time validation failed.", {
+                  prefix: prefix,
+                  dateValue: dateValue,
+                  timeValue: timeValue,
+                  error: err
+              });
           if (!timeSelectionState[prefix] || timeSelectionState[prefix].seq !== requestSeq) {
             return false;
           }
@@ -2728,6 +2136,8 @@
         option.value = item.value;
         option.textContent = item.label;
         option.disabled = !!item.disabled;
+        if (!(typeof item.endtime === "undefined"))
+              option.setAttribute('data-slotEnd', item.endtime);
         selectElement.appendChild(option);
       });
     }
@@ -2904,7 +2314,7 @@
       var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
       var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
       var lockReference = mode === "end-add";
-      var hideTransferRefAndNotes = mode === "transfer";
+      var hideTransferRefAndNotes = mode === "transfer" || mode === "cancel-transfer";
 
       if (!routeMode || !routeSrcType || !routeSrcId || !targetKind) {
         return;
@@ -3759,6 +3169,27 @@
       });
     });
 
+    document.querySelectorAll("[data-modal-open]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var modalId = btn.getAttribute("data-modal-open");
+            if (modalId === "addAppointmentModal") {
+                clearAddEntryModal("addAppt");
+                loadEntryQueues("addAppt").then(function () {
+                    openModal(modalId);
+                });
+                return;
+            }
+            if (modalId === "addWalkinModal") {
+                clearAddEntryModal("addWalkin");
+                loadEntryQueues("addWalkin").then(function () {
+                    openModal(modalId);
+                });
+                return;
+            }
+            openModal(modalId);
+        });
+    });
+
     document.querySelectorAll("[data-end-choice]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var choice = btn.getAttribute("data-end-choice");
@@ -3896,13 +3327,13 @@
       });
     }
 
-    function bindExpandableEllipsis() {
-      document.querySelectorAll(".cell-ellipsis").forEach(function (toggle) {
-        if (toggle.getAttribute("data-bound-ellipsis") === "1") {
+    function bindExpandableText() {
+      document.querySelectorAll(".expandable-text").forEach(function (toggle) {
+          if (toggle.getAttribute("data-bound-expandable") === "1") {
           return;
         }
 
-        toggle.setAttribute("data-bound-ellipsis", "1");
+        toggle.setAttribute("data-bound-expandable", "1");
         toggle.addEventListener("click", function (event) {
           event.preventDefault();
           event.stopPropagation();
@@ -3942,8 +3373,11 @@
               showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
               return;
             }
-            updateTodayMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", payload.notes || "");
+            updateMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", payload.notes || "");
             closeModal("meetingModal");
+          })
+         .catch(function () {
+                showModalFeedback("meetingModal", "Save failed.", true);
           });
       });
     }
@@ -4048,7 +3482,7 @@
         var targetDateDisplayInput = document.getElementById("routeTargetDateDisplay");
         var targetTimeInput = document.getElementById("routeTargetTime");
         var refValueInput = document.getElementById("routeRefValue");
-        var notesInput = document.getElementById("routeNotes");
+        var notesInput = document.getElementById("routeNotes");  //new-record notes
 
         var mode = routeMode ? routeMode.value : "";
         var srcType = routeSrcType ? routeSrcType.value : "";
@@ -4067,16 +3501,19 @@
           }
         }
         var targetTime = targetTimeInput ? targetTimeInput.value : "";
+        var targetSlotEndTime = targetDateInput ? targetTimeInput.options[targetTimeInput.selectedIndex].dataset.slotend : "";
         var refValue = refValueInput ? refValueInput.value : "";
-        var notes = appendNotes(originalNotes, notesInput ? notesInput.value : "");
+          //var notes = appendNotes(originalNotes, notesInput ? notesInput.value : "");
+        var notes = notesInput ? notesInput.value : "";
         var targetDateTime = buildRouteTargetDateTime(targetDate, targetTime);
+        var targetEndDateTime = buildRouteTargetDateTime(targetDate, targetSlotEndTime);
 
         if (!appointmentId || !srcType || !targetQueueId) {
           showModalFeedback("serviceRouteModal", "Source and target queue are required.", true);
           return;
         }
-        if (mode === "end-add" && (!completionNotes || !completionNotes.trim())) {
-          showModalFeedback("serviceRouteModal", "Notes are required.", true);
+          if (mode === "end-add" && (!completionNotes || !completionNotes.trim())) {
+          showModalFeedback("serviceRouteModal", "Service Notes are required.", true);
           return;
         }
         if (targetKind === "A" && !targetDate) {
@@ -4088,7 +3525,7 @@
           return;
         }
 
-        if (mode === "transfer") {
+          if (mode === "transfer" || mode === "cancel-transfer") {
           postForm(transferUrl, {
               appointmentId: appointmentId,
               srcType: srcType,
@@ -4096,12 +3533,14 @@
               targetKind: targetKind,
               targetServiceId: targetServiceId || "",
               targetDate: targetDateTime || "",
-              refValue: "",
-              notes: notes || ""
+              targetEndDate: targetEndDateTime || "",
+              targetNotes: notes || "",
+              serviceNotes: completionNotes || "",
+              sourceAction: mode === "cancel-transfer" ? "REMOVE" : ""
             })
             .then(function (res) {
               if (!res || !res.ok) {
-                showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Transfer failed.", true);
+                  showModalFeedback("serviceRouteModal", res && res.error ? res.error : (mode === "transfer" ? "Transfer failed." : "Cancel and reschedule failed."), true);
                 return;
               }
               closeModal("serviceRouteModal");
@@ -4110,28 +3549,28 @@
           return;
         }
 
-        if (mode === "cancel-transfer") {
-          postForm(transferUrl, {
-              appointmentId: appointmentId,
-              srcType: srcType,
-              targetQueueId: targetQueueId,
-              targetKind: targetKind,
-              targetServiceId: targetServiceId || "",
-              targetDate: targetDateTime || "",
-              refValue: refValue || "",
-              notes: notes || "",
-              sourceAction: "REMOVE"
-            })
-            .then(function (res) {
-              if (!res || !res.ok) {
-                showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and reschedule failed.", true);
-                return;
-              }
-              closeModal("serviceRouteModal");
-              queueLiveSync();
-            });
-          return;
-        }
+        //if (mode === "cancel-transfer") {
+        //  postForm(transferUrl, {
+        //      appointmentId: appointmentId,
+        //      srcType: srcType,
+        //      targetQueueId: targetQueueId,
+        //      targetKind: targetKind,
+        //      targetServiceId: targetServiceId || "",
+        //      targetDate: targetDateTime || "",
+        //      refValue: refValue || "",
+        //      notes: notes || "",
+        //      sourceAction: "REMOVE"
+        //    })
+        //    .then(function (res) {
+        //      if (!res || !res.ok) {
+        //        showModalFeedback("serviceRouteModal", res && res.error ? res.error : "Cancel and reschedule failed.", true);
+        //        return;
+        //      }
+        //      closeModal("serviceRouteModal");
+        //      queueLiveSync();
+        //    });
+        //  return;
+        //}
 
         if (mode === "end-add") {
           postForm(endServiceUrl, {
@@ -4142,8 +3581,9 @@
               targetServiceId: targetServiceId || "",
               targetKind: targetKind,
               targetDate: targetDateTime || "",
-              refValue: refValue || "",
-              notes: notes || "",
+              targetEndDate: targetEndDateTime || "",
+              //refValue: refValue || "",
+              targetNotes: notes || "",
               completionNotes: completionNotes || ""
             })
             .then(function (res) {
@@ -4160,27 +3600,6 @@
         }
       });
     }
-
-    document.querySelectorAll("[data-modal-open]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var modalId = btn.getAttribute("data-modal-open");
-        if (modalId === "addAppointmentModal") {
-          clearAddEntryModal("addAppt");
-          loadEntryQueues("addAppt").then(function () {
-            openModal(modalId);
-          });
-          return;
-        }
-        if (modalId === "addWalkinModal") {
-          clearAddEntryModal("addWalkin");
-          loadEntryQueues("addWalkin").then(function () {
-            openModal(modalId);
-          });
-          return;
-        }
-        openModal(modalId);
-      });
-    });
 
     var addApptQueueId = document.getElementById("addApptQueueId");
     if (addApptQueueId) {
@@ -4368,11 +3787,13 @@
           phone: document.getElementById("addApptPhone") ? document.getElementById("addApptPhone").value : "",
           appointmentDate: document.getElementById("addApptDate") ? document.getElementById("addApptDate").value : "",
           startTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").value : "",
+          endTime: document.getElementById("addApptTime") ? document.getElementById("addApptTime").options[document.getElementById("addApptTime").selectedIndex].dataset.slotend : "",
           languagePreference: document.getElementById("addApptLanguagePreference") ? document.getElementById("addApptLanguagePreference").value : "",
           meetingUrl: "",
           notes: document.getElementById("addApptNotes") ? document.getElementById("addApptNotes").value : ""
         };
-
+          console.log(payload);
+         
         var apptRefMeta = getReferenceFieldMeta(payload.refValue);
         var apptHasReferenceValue = apptRefMeta.useAddressFields
           ? !!(payload.streetNumber && payload.streetName)
@@ -4478,7 +3899,7 @@
     bindTodaySorting();
     bindProviderActionButtons();
     bindMeetingLinks();
-    bindExpandableEllipsis();
+    bindExpandableText();
     renderNotifications();
 
     var todayGlobalSearch = document.getElementById("todayGlobalSearch");

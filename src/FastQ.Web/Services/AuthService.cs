@@ -23,20 +23,9 @@ namespace FastQ.Web.Services
 
         public string GetLoggedInWindowsUser()
         {
-            var sessionUser = GetCurrentUser();
-            if (!string.IsNullOrWhiteSpace(sessionUser?.UserId))
-            {
-                return sessionUser.UserId.Trim();
-            }
-
-            var httpContext = HttpContext.Current;
-            var identityName = httpContext?.User?.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(identityName))
-            {
-                identityName = httpContext?.Request?.LogonUserIdentity?.Name;
-            }
-
-            return ExtractAccountName(identityName).Trim();
+            var httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;
+            httpIdentityName = ExtractAccountName(httpIdentityName);
+            return httpIdentityName;
         }
 
         private static string ExtractAccountName(string identityName)
@@ -185,7 +174,7 @@ namespace FastQ.Web.Services
             return HasQueueActionAccess(access, queueId);
         }
 
-        private User GetCurrentUser()
+        public User GetCurrentUser()
         {
             var httpContext = HttpContext.Current;
             if (httpContext?.Session?["fq_user"] is User user)

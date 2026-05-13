@@ -2,6 +2,7 @@ using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace FastQ.Data.Db
         }
 
         #region Queue Base-record
-        public Queue Get(long id)
+        public Entities.Queue Get(long id)
         {
             if (id <= 0) return null;
 
@@ -147,9 +148,6 @@ namespace FastQ.Data.Db
 
         public Tuple<string, string, string> GetQueueDetailsJson(long queueId)
         {
-            //@"SELECT Q_SERVICES, Q_SCHEDULES, Q_DETAILS
-            //      FROM fqowner.VW_QUEUE_DETAILS_JSON
-            //      WHERE QUEUE_ID = :queueId"
             if (queueId <= 0)
             {
                 return null;
@@ -188,7 +186,7 @@ namespace FastQ.Data.Db
             var hasGuidelines = (record["HAS_GUIDELINES"]?.ToString() ?? "N") == "Y";
             var hasUploads = (record["HAS_UPLOADS"]?.ToString() ?? "N") == "Y";
 
-            var queue = new Queue
+            var queue = new Entities.Queue
             {
                 Id = queueId,
                 EntityId = entityId,
@@ -206,9 +204,6 @@ namespace FastQ.Data.Db
                 HasGuidelines = hasGuidelines,
                 HasUploads = hasUploads
             };
-
-            //if (int.TryParse(leadMinText, out var leadMin)) queue.Config.MinHoursLead = leadMin;
-            //if (int.TryParse(leadMaxText, out var leadMax)) queue.Config.MaxDaysAhead = leadMax;
 
             return queue;
         }
@@ -337,7 +332,6 @@ namespace FastQ.Data.Db
             return items;
         }
 
-
         private static IList<QAccess> MapUsers(long queueId)
         {
             List<QAccess> items = [];
@@ -369,6 +363,36 @@ namespace FastQ.Data.Db
             }
             return items;
         }
+
+        public IList<(string, string)> GetValidContactTypes()
+        {
+            return GetValidLookups("VALIDCONTACTTYPES");
+        }
+
+        public IList<(string, string)> GetValidRefCriterias()
+        {
+            return GetValidLookups("VALIDREFERENCECRITERIAS");
+        }
+
+        private IList<(string, string)> GetValidLookups(string tablename)
+        {
+            var list = new List<(string, string)>();
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_VALID_LOOKUPS"))
+            {
+                DataAccess.AddParam(cmd, "p_lookuptable", tablename, DbType.String);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {                       
+                        list.Add((reader["KEY"].ToString(), reader["VAL"].ToString()));
+                    }
+                }
+            }
+            return list;
+        }
+
 
         #endregion
 

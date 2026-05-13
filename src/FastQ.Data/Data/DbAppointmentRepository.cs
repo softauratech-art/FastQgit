@@ -18,14 +18,13 @@ namespace FastQ.Data.Db
 
             using (var conn = DataAccess.Open())
             {
-                var entityByQueue = LoadQueueEntities(conn);
                 using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_APPT_DETAILS"))
                 {
                     DataAccess.AddParam(cmd, "p_apptid", id, DbType.Int64);
                     DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                     using (var reader = cmd.ExecuteReader())
                     {
-                        return reader.Read() ? MapAppointment(reader, entityByQueue) : null;
+                        return reader.Read() ? MapAppointment(reader) : null;
                     }
                 }
             }
@@ -430,7 +429,7 @@ namespace FastQ.Data.Db
                 {
                     while (reader.Read())
                     {
-                        list.Add(MapAppointment(reader, null));
+                        list.Add(MapAppointment(reader));
                     }
                 }
             }
@@ -481,12 +480,12 @@ namespace FastQ.Data.Db
             return ReadField(record, "MEETINGURL_HOST");
         }
 
-        private static Appointment MapAppointment(IDataRecord record, IDictionary<long, long> entityByQueue)
+        private static Appointment MapAppointment(IDataRecord record)
         {
             var apptId = Convert.ToInt64(record["APPOINTMENT_ID"]);
             var customerId = Convert.ToInt64(record["CUSTOMER_ID"]);
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
-            var entityId = ResolveEntityId(record, queueId, entityByQueue);
+            var entityId = Convert.ToInt64(record["ENTITY_ID"]);
             var apptDate = record["APPT_DATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["APPT_DATE"]);
             var startTime = ReadInterval(record, "START_TIME");
             var endTime = ReadInterval(record, "END_TIME");

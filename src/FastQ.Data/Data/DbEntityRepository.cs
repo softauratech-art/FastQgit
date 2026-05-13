@@ -29,39 +29,6 @@ namespace FastQ.Data.Db
             }
         }
 
-        //public void Add(Entity entity)
-        //{
-        //    using (var conn = DataAccess.Open())
-        //    {
-        //        var entityId = entity.Id;
-        //        if (entityId <= 0)
-        //        {
-        //            using (var cmd = DataAccess.CreateCommand(conn, "SELECT NVL(MAX(ENTITY_ID),0) + 1 FROM fqowner.VALIDENTITIES"))
-        //            {
-        //                entityId = Convert.ToInt64(cmd.ExecuteScalar());
-        //            }
-        //            entity.Id = entityId;
-        //        }
-
-        //        using (var cmd = DataAccess.CreateCommand(conn,
-        //            @"INSERT INTO VALIDENTITIES
-        //                (ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG)
-        //              VALUES
-        //                (:entityId, :name, :address, :phone, :opensAt, :closesAt, :description, :activeFlag)"))
-        //        {
-        //            DataAccess.AddParam(cmd, "entityId", entityId, DbType.Int64);
-        //            DataAccess.AddParam(cmd, "name", entity.Name ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "address", entity.Address ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "phone", entity.Phone ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "opensAt", entity.OpensAt, DbType.DateTime);
-        //            DataAccess.AddParam(cmd, "closesAt", entity.ClosesAt, DbType.DateTime);
-        //            DataAccess.AddParam(cmd, "description", entity.Description ?? string.Empty, DbType.String);
-        //            DataAccess.AddParam(cmd, "activeFlag", entity.ActiveFlag ? "Y" : "N", DbType.String);
-        //            cmd.ExecuteNonQuery();
-        //        }
-        //    }
-        //}
-
         public void Update(Entity entity, string stampuser)
         {
             var entityId = entity.Id;
@@ -85,13 +52,19 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_outagebeginat", entity.OutageBegin.ToString(), DbType.String);
                 DataAccess.AddParam(cmd, "p_outageendat", entity.OutageEnd.ToString(), DbType.String);
                 DataAccess.AddParam(cmd, "outage_message", entity.OutageMessage, DbType.String);
-
                 DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
+                DataAccess.AddParam(cmd, "p_outappts", 0, DbType.Int32).Direction = ParameterDirection.Output;
                 DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String).Direction = ParameterDirection.Output;
                 cmd.Parameters["p_outmsg"].Size = 4000;
                 cmd.ExecuteNonQuery();
                 var dberr = cmd.Parameters["p_outmsg"].Value as string;
                 if (dberr != null) throw new InvalidOperationException("DB Error: " + dberr);
+
+                if (Int32.TryParse(cmd.Parameters["p_outappts"].Value.ToString(), out var affectedappts))
+                {
+                    if (affectedappts > 0) 
+                        throw new InvalidOperationException($"Note: There are <strong>{affectedappts} appointments</strong> scheduled during this Outage period.<p>Please contact the customers to service, cancel or reschedule these {affectedappts} appointments.</p>");
+                }
             }
         }
 
@@ -99,17 +72,18 @@ namespace FastQ.Data.Db
         {
             var list = new List<Entity>();
             using (var conn = DataAccess.Open())
-            using (var cmd = DataAccess.CreateCommand(conn,
-                @"SELECT ENTITY_ID, ENTITY_NAME, ADDRESS, PHONE, OPENS_AT, CLOSES_AT, DESCRIPTION, ACTIVEFLAG
-                  FROM VALIDENTITIES"))
-            using (var reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    list.Add(MapEntity(reader));
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_ENTITIES_ALL"))
+            {                
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                using (var reader = cmd.ExecuteReader())
+                {                    
+                    while (reader.Read())
+                    {
+                        list.Add(MapEntity(reader));
+                    }
                 }
             }
-
+            
             return list;
         }
 
