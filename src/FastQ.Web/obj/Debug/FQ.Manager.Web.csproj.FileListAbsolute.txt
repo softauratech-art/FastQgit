@@ -333,3 +333,5 @@ C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\8198d516ae7660d3\src\FastQ.Web\
 C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\8198d516ae7660d3\src\FastQ.Web\obj\Debug\FQ.Manag.FCF4034E.Up2Date
 C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\8198d516ae7660d3\src\FastQ.Web\obj\Debug\FastQ.Web.dll
 C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\8198d516ae7660d3\src\FastQ.Web\obj\Debug\FastQ.Web.pdb
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Web\bin\nlog.config
+C:\Users\sahid\OneDrive\Desktop\FastQ\src\FastQ.Web\bin\NLog.xml

@@ -18,7 +18,7 @@ namespace FastQ.Web.Controllers
 
         private class ProviderReportRow
         {
-            public long ProviderId { get; set; }
+            public string ProviderId { get; set; }
             public string ProviderName { get; set; }
             public int Arrived { get; set; }
             public int InService { get; set; }
