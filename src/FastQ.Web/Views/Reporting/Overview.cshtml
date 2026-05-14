@@ -32,16 +32,24 @@
                 <option value="range">Date Range</option>
             </select>
         </div>
-        <div class="col range-only" style="display:none;">
-            <label for="reportStartDate">Start date</label>
-            <input type="date" id="reportStartDate" />
-        </div>
-        <div class="col range-only" style="display:none;">
-            <label for="reportEndDate">End date</label>
-            <input type="date" id="reportEndDate" />
+        <div class="col range-only report-range-col" style="display:none;">
+            <label>Date range</label>
+            <div class="report-date-range">
+                <div class="report-date-field">
+                    <label for="reportStartDate">Start date</label>
+                    <input type="date" id="reportStartDate" />
+                </div>
+                <span class="report-date-sep">to</span>
+                <div class="report-date-field">
+                    <label for="reportEndDate">End date</label>
+                    <input type="date" id="reportEndDate" />
+                </div>
+            </div>
         </div>
         <div class="col" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
             <button type="button" class="btn primary" onclick="FastQReport.refresh()">Refresh</button>
+            <button type="button" class="btn secondary" onclick="FastQReport.exportData('csv')">Export CSV</button>
+            <button type="button" class="btn secondary" onclick="FastQReport.exportData('excel')">Export Excel</button>
             <span id="reportMsg" class="muted"></span>
         </div>
     </div>
@@ -221,6 +229,18 @@
             onPeriodChanged: function () {
                 var showRange = document.getElementById("reportPeriod").value === "range";
                 $(".range-only").toggle(showRange);
+            },
+
+            exportData: function (format) {
+                var action = format === "excel" ? "@Url.Action("ExportExcel", "Reporting")" : "@Url.Action("ExportCsv", "Reporting")";
+                var query = $.param({
+                    entityId: window.FASTQ_CONTEXT.entityId,
+                    queueId: document.getElementById("reportQueue").value,
+                    period: document.getElementById("reportPeriod").value,
+                    startDate: document.getElementById("reportStartDate").value,
+                    endDate: document.getElementById("reportEndDate").value
+                });
+                window.location.href = action + "?" + query;
             }
         };
 

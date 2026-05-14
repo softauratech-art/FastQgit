@@ -549,6 +549,7 @@ form {
 
 input[type=text], input[type="tel"],
 input[type="email"], input[type="password"],
+input[type="date"],
 select {
     width: 100%;
     padding: 10px 12px;
@@ -563,11 +564,52 @@ select {
     input[type="tel"]:focus,
     input[type="email"]:focus, 
     input[type="password"]:focus,
+    input[type="date"]:focus,
     select:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
     }
+
+.report-range-col {
+    min-width: 420px;
+}
+
+.report-date-range {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(18, 18, 18, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.55);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.report-date-field {
+    flex: 1 1 0;
+    display: grid;
+    gap: 6px;
+}
+
+.report-date-field label {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.report-date-sep {
+    height: 40px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 0 2px;
+}
 .input-validation-error {
     border: solid 1px #8B0000 !important;
 }
@@ -1134,6 +1176,19 @@ border-color: #c3e6cb;
 
         .time-row {
             grid-template-columns: 1fr;
+        }
+
+        .report-range-col {
+            min-width: 0;
+        }
+
+        .report-date-range {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .report-date-sep {
+            display: none;
         }
     }
 
