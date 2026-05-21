@@ -18,15 +18,15 @@ namespace FastQ.Web.Controllers.Admin
         {
             _service = new HolidayService();
         }
-        
-        public ActionResult Index()        
+
+        public ActionResult Index()
         {
             IList<Holiday> lHolidays;
             try
             {
-                lHolidays = _service.ListHolidays();
+                lHolidays = _service.ListHolidays().Where(h => h.Day >= DateTime.Today.AddDays(-30)).ToList();                
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 ViewBag.ErrorMessage = "An error occurred: " + ex.Message;
                 return View("Error");
@@ -34,60 +34,28 @@ namespace FastQ.Web.Controllers.Admin
             return View("../Admin/Holiday/List", lHolidays);
         }
 
-        // GET: Holiday/Details/2026-01-01        
-        public ActionResult Details(string day)
+        [HttpPost]
+        public JsonResult AddOrUpdateHoliday(FormCollection collection)
         {
-            try 
+            if (!DateTime.TryParse(collection["HolidayDate"].ToString(), out var dt)
+                || string.IsNullOrEmpty(collection["HolidayDesc"]?.ToString()))
+                return Json(new { response = "success", message = "Record saved successfully." });
+            Boolean.TryParse(collection["ActiveFlag"]?.ToString(), out bool isactive);
+            try
             {
-                if(DateTime.TryParse(day, out var dt))
-                {
-                    var oHoliday = _service.GetHoliday(dt);                
-                    return View("../Admin/User/ManageUser", oHoliday);
-                }
-                return View("Index");
+                Data.Entities.Holiday hvm = new Data.Entities.Holiday
+                                            {
+                                                Day = dt,
+                                                Description = collection["HolidayDesc"]?.ToString(),
+                                                ActiveFlag = isactive
+                                            };
+                _service.AddOrUpdateHoliday(hvm);
+                return Json(new { response = "success", message = "Record saved successfully." });
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = "An error occurred: " + ex.Message;
-                return View("Error");
-            }            
-        }
-
-        // GET: User/Create        
-        public ActionResult Create()
-        {            
-            var oUser = new UserVM { UserId = "", IsActive = true };
-            return View("../Admin/Holiday/ManageHoliday", oUser);
-        }
-
-        // POST: User/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(FormCollection collection, UserVM ovm)
-        {
-            return AddOrUpdateHoliday("A", collection, ovm);
-        }
-
-        // GET: User/Edit/ocuser01        
-        public ActionResult Edit(string id)
-        {                       
-            //var oUser = _service.GetUser(id);
-            return View("../Admin/Holiday/ManageHoliday");
-        }
-
-        // POST: User/Edit/ocuser01
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(string id, FormCollection collection, UserVM ovm)
-        {
-            return AddOrUpdateHoliday("U", collection, ovm);
-        }
-
-        private ActionResult AddOrUpdateHoliday(string action, FormCollection collection, UserVM ovm)
-        {
-            return null;
-
-            return View("../Admin/User/ManageUser", ovm);            
+                return Json(new { response = "error", message = ex.Message });
+            }
         }
 
         // POST: Queue/DeleteSchedule/5
@@ -104,34 +72,5 @@ namespace FastQ.Web.Controllers.Admin
                 return Json(new { response = "error", message = ex.Message });
             }
         }
-
-        private bool IsValid(string action, FormCollection fc)
-        {
-            string[] requiredflds = ["UserId", "FirstName", "LastName", "Email" ];    
-            foreach (string flds in requiredflds)
-            {
-                if (string.IsNullOrEmpty(fc[flds]?.Trim()))
-                {
-                    ViewBag.ErrorMessage = $"{string.Join(", ", requiredflds)} are required.";
-                    return false;
-                }
-            }
-
-            //check fld-permissions too - for Create New User only
-            if (action == "A")
-            {
-                string[] requiredperms = ["host", "queueadmin", "provider", "reporter"];               
-                foreach (string flds in requiredperms)
-                {
-                    if (!string.IsNullOrEmpty(fc[flds]?.Trim()))
-                        return true;                    
-                }
-
-                ViewBag.ErrorMessage = "At least one permission is required.";
-                return false;
-            }
-            return true;
-        }
-
     }
 }

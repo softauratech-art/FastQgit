@@ -179,7 +179,7 @@
                                 <div class="agenda-detail" aria-expanded="false" title="@item.QueueName">@item.QueueName</div>
                                 @if (string.Equals((item.ContactMethod ?? string.Empty).Trim(), "Online Meeting", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(item.MeetingUrl))
                                 {
-                                    <div class="agenda-detail"><a href="@Url.Action("JoinMeeting", "Provider", new { apptid = item.AppointmentId })" target="_blank" rel="noopener">Open meeting link</a></div>
+                                    <div class="agenda-detail"><a href="@Url.Action("JoinMeeting", "Provider", new { srctype = item.SrcType, srcid = item.AppointmentId })" target="_blank" rel="noopener">Open meeting link</a></div>
                                 }
                                 <button type="button" class="agenda-notes expandable-text is-collapsed" aria-expanded="false" title="@item.Notes">@item.Notes</button>
                                 <div class="agenda-actions">

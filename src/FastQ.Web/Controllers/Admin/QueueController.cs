@@ -97,7 +97,8 @@ namespace FastQ.Web.Controllers.Admin
                                                 .Select(e => e.ErrorMessage));
 
                 ViewBag.ErrorMessage = "Validation failed. Please check the details. " + allErrors;
-                ReloadSchedulesServices(ovm);
+                ReloadSchedulesServicesAccess(ovm);
+
                 return View(controllerpath + "ManageQueue", ovm);
             }
             catch (Exception ex) 
@@ -107,13 +108,14 @@ namespace FastQ.Web.Controllers.Admin
             }
         }
 
-        private void ReloadSchedulesServices(QueueVM ovm)
+        private void ReloadSchedulesServicesAccess(QueueVM ovm)
         {
             var oqueue = _service.GetQueue(ovm.Id);
             if (oqueue == null) return;
             
             ovm.Schedules = oqueue.Schedules;
             ovm.Services = oqueue.Services;
+            ovm.UserAccessList = oqueue.UserAccessList;
         }
 
         // GET: Queue/Delete/10001

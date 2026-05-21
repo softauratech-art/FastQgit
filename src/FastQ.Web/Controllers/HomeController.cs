@@ -23,5 +23,10 @@ namespace FastQ.Web.Controllers
             ViewBag.ErrMsg = path;
             return View();
         }
+
+        public ActionResult MyProfile()
+        {
+            return View("Profile");
+        }
     }
 }

@@ -72,14 +72,14 @@ namespace FastQ.Data.Db
             return list;
         }
 
-        public void AddOrUpdateHoliday(string action, Holiday oholiday, string stampuser)
+        public void AddOrUpdateHoliday(Holiday oholiday, string stampuser)
         {
             using var conn = DataAccess.Open();
             string sp_name = "FQOWNER.FQ_PROCS_ADMIN.UPSERT_HOLIDAY";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
-                DataAccess.AddParam(cmd, "p_action", action, DbType.String); 
-                DataAccess.AddParam(cmd, "p_day", oholiday.Day.ToString(), DbType.String);
+                //DataAccess.AddParam(cmd, "p_action", action, DbType.String); 
+                DataAccess.AddParam(cmd, "p_day", oholiday.Day, DbType.Date);
                 DataAccess.AddParam(cmd, "p_description", oholiday.Description, DbType.String);
                 DataAccess.AddParam(cmd, "p_activeflag", oholiday.ActiveFlag ? "Y" : "N", DbType.String);               
                 DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);

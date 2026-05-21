@@ -17,15 +17,19 @@
         <aside class="drawer">
             <div class="brand">
                 <div class="brand-top">
-                    <div class="logo-mark"></div>
+                   
+
+                    <a href="<%=HttpContext.Current.Request.ApplicationPath%>" class="logo-container">
+                        <img src="<%=HttpContext.Current.Request.ApplicationPath%>/Content/Horzontal_HighRes.jpg" alt="Logo" class="logo">
+                    </a>
+                   
 <%--                    <button class="nav-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M15 6l-6 6 6 6"></path>
                         </svg>
                     </button>--%>
                 </div>
-                <div class="brand-title"><!--FastQ--></div>
-                <div class="brand-sub">Queue orchestration</div>
+                 <div class="brand-title">FastQ Manager</div>
             </div>
             <nav class="drawer-nav">
                 <div class="nav-section">

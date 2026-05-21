@@ -4,6 +4,7 @@ using FastQ.Data.Repositories;
 using Microsoft.Ajax.Utilities;
 using NLog;
 using System;
+using System.CodeDom;
 using System.Configuration;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -41,10 +42,10 @@ namespace FastQ.Web.Services
         private static readonly HttpClient client = new HttpClient();
         private static readonly string clientID = ConfigurationManager.AppSettings["WebexClientid"];
         private static readonly string secretID = ConfigurationManager.AppSettings["WebexSecretid"];
-        private static readonly string access_token = ConfigurationManager.AppSettings["WebexAccesstoken"];
-        private static readonly string refresh_token = ConfigurationManager.AppSettings["WebexRefreshtoken"];
-        private static readonly string webexUrl = ConfigurationManager.AppSettings["WebexApiBaseUrl"]; // "https://webexapis.com/v1/meetings/" | "https://mtg-broker-a.wbx2.com/api/v2/joseencrypt";
-       
+        private string access_token = ConfigurationManager.AppSettings["WebexAccesstoken"];
+        private string refresh_token = ConfigurationManager.AppSettings["WebexRefreshtoken"];
+        private static readonly string webexUrl = ConfigurationManager.AppSettings["WebexApiBaseUrl"]; 
+        // "https://webexapis.com/v1/meetings/" | "https://mtg-broker-a.wbx2.com/api/v2/joseencrypt";       
 
         private readonly IWebexRepository _webexrepo;
 
@@ -116,12 +117,23 @@ namespace FastQ.Web.Services
             {   
                 //use the WebexMeetingId to create Join-Links
                 var response = await CreateJoinLinks(srcdata);
-                var responsedata = await response.Content.ReadAsStringAsync();
+
+                // Refresh access_token if expired & then re-try.
+                // NOTE: For PRD Instant Connect use: BOT Token (valid for 100 years)
+                if ((int)response.StatusCode == 401)
+                {
+                    (access_token, refresh_token) = await GetTokensRefresh();
+                    response = await CreateJoinLinks(srcdata);
+                }
 
                 if (response.IsSuccessStatusCode)
-                    omeeting = WebexService.BuildMeetingUrls(responsedata);
-                else
-                    omeeting.ApiError = responsedata;
+                {
+                    var responsedata = await response.Content.ReadAsStringAsync();
+                    if (response.IsSuccessStatusCode)
+                        omeeting = WebexService.BuildMeetingUrls(responsedata);
+                    else
+                        omeeting.ApiError = responsedata;
+                }
             }
             return omeeting;
         }
@@ -133,12 +145,14 @@ namespace FastQ.Web.Services
             client.DefaultRequestHeaders.Add("Accept", "application/json;charset=UTF-8");
 
             _logger.Info("Generating Meeting Links...");
+            
+            var currentUser = new AuthService().GetCurrentUser();
             var payload = new
             {
                 meetingId = appt.WebexMeetingId,
                 joinDirectly = false,
-                email = appt.EmailAddress,
-                displayName = appt.CustomerName,
+                email = currentUser == null ? appt.EmailAddress: currentUser.Email,
+                displayName = currentUser == null ? appt.CustomerName : $"{currentUser.FirstName} {currentUser.LastName}",
                 expiration = 60
             };
 
@@ -178,7 +192,7 @@ namespace FastQ.Web.Services
             };
         }
 
-        public static async Task<(string, string)> GetTokensRefresh()
+        public async Task<(string, string)> GetTokensRefresh()
         {
             _logger.Info ("function : get_token_refresh()");
 

@@ -413,7 +413,7 @@ namespace FastQ.Web.Services
             customer.UpdatedOn = now;
             customer.StampDate = now;
             customer.StampUser = stampUser;
-            _customers.Update(customer);
+            //_customers.Update(customer);
             return customer;
         }
 

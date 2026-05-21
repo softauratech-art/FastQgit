@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Mvc;
 
@@ -100,6 +101,19 @@ namespace FastQ.Web.Helpers
 
         }
 
+        public static string GetServerEnvironment()
+        {
+            string connDB = System.Configuration.ConfigurationManager.ConnectionStrings["FastQOracle"]?.ConnectionString;
+            string env = System.Configuration.ConfigurationManager.AppSettings["Environment"]?.ToString();
+            if (connDB == null) { return env; }
+
+            var match = Regex.Match(connDB, @"\(SID=(?<sid>[^)]+)\)");
+            string sid = match.Groups["sid"].Value;
+
+            //if (env == "PRD") return null;
+
+            return $"{env} : {sid}";
+        }
     }
 
 }

@@ -40,12 +40,9 @@ namespace FastQ.Web.Services
             }
         }
 
-        public void AddOrUpdateHoliday(string action, Data.Entities.Holiday hvm)
+        public void AddOrUpdateHoliday(Data.Entities.Holiday hvm)
         {
-            _Holidays.AddOrUpdateHoliday(action, 
-                                    new Data.Entities.Holiday {
-                                        Day = hvm.Day, Description = hvm.Description, ActiveFlag = hvm.ActiveFlag 
-                                    }, _stampUser);
+            _Holidays.AddOrUpdateHoliday(hvm, _stampUser);
         }
 
         public void Delete(string day)

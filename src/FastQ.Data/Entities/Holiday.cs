@@ -6,7 +6,7 @@ namespace FastQ.Data.Entities
     {
         public DateTime Day { get; set; }
         public string Description { get; set; }       
-        public bool ActiveFlag { get; set; } = true;
+        public bool ActiveFlag { get; set; }
         public string StampUser { get; set; }
         public DateTime StampDate { get; set; }
     }

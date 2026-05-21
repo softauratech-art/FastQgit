@@ -46,9 +46,9 @@ namespace FastQ.Data.Db
                     }
                 }
             }
-            catch
+            catch (Exception ex) 
             {
-                return null;
+                throw new Exception("DB Error: " + ex.Message);
             }
         }
 
@@ -145,7 +145,8 @@ namespace FastQ.Data.Db
                                     ReporterFlag = (reader["reporter_Flag"]?.ToString() ?? "Y") == "Y",
                                     QueueAdminFlag = (reader["queueadmin_Flag"]?.ToString() ?? "Y") == "Y",
                                     EntityId  =  ReadInt32(reader, "ENTITY_ID"),
-                                    QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"
+                                    QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y",
+                                    QueueName = reader["NAME"]?.ToString()
                             });
                         }
                         return list;

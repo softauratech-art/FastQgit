@@ -1,0 +1,73 @@
+﻿@using FastQ.Web.Services
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">My Profile</div>
+        <div class="topbar-sub">
+            Account details and queue access
+        </div>
+    </div>
+}
+
+<div class="card grid-2">
+
+    @{
+        var authsvc = new FastQ.Web.Services.AuthService();
+        var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
+        var entities = Request.Cookies["fq_user_entities"] == null ? "" : Request.Cookies["fq_user_entities"].Value;
+        var currententity = authsvc.GetSessionEntityId();
+        var myProfile = authsvc.GetCurrentUser();       
+
+        <div class="card">
+            @if (myProfile.BusinessEntities != null) {
+            <div class="card-title">
+                @(myProfile.BusinessEntities.FirstOrDefault(e => e.EntityId == currententity).EntityName)
+
+                @if (myProfile.BusinessEntities.FirstOrDefault(e => e.EntityId == currententity).ConfigAdminFlag) { 
+                <span class="pill" style="float:right;">
+                    @(myProfile.BusinessEntities.FirstOrDefault(e => e.EntityId == currententity).ConfigAdminFlag ? "Super Admin" : "")
+                </span>
+                }
+            </div>
+            }
+
+            <div class="card-body">
+                <table class="table table-card">
+                    <tr><td>UserId</td><td>@myProfile.UserId</td></tr>
+                    <tr><td>Name</td><td>@myProfile.FirstName @myProfile.LastName</td></tr>
+                    <tr><td>Email</td><td>@myProfile.Email</td></tr>
+                    <tr><td>Phone</td><td>@myProfile.Phone</td></tr>
+                    <tr><td>Last Updated On</td><td>@myProfile.StampDate</td></tr>
+                    <tr><td>Last Updated By</td><td>@myProfile.StampUser</td></tr>
+
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            @if (myProfile.Queues.Count > 0)
+            {
+                <table class="table table-striped table-sm">
+                    <thead><tr><th>Queue Access</th><th></th></tr></thead>
+
+                    @foreach (var q in myProfile.Queues)
+                    {
+                        if (q.EntityId == currententity && (q.HostFlag || q.HostFlag || q.ReporterFlag || q.QueueAdminFlag))
+                        {
+                            <tr>
+                                <td>@q.QueueName </td>
+                                <td>
+                                    <span class="muted pill">@(q.ProviderFlag ? "Provider" : "")</span>
+                                    <span class="muted badge accent-2">@(q.HostFlag ? "Host" : "")</span>
+                                    <span class="muted badge accent-3">@(q.ReporterFlag ? "Reporter" : "")</span>
+                                    <span class="muted badge accent">@(q.QueueAdminFlag ? "QueueAdmin" : "")</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </table>
+            }
+        </div>
+    }
+</div>
+

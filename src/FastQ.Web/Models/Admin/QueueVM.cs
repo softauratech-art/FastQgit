@@ -40,7 +40,7 @@ namespace FastQ.Web.Models.Admin
         [DisplayName("Emp Only?")]
         public bool EmpOnly { get; set; }
 
-        [DisplayName("Hide in kisok?")] 
+        [DisplayName("Hide in kiosk?")] 
         public bool HideInKiosk { get; set; }
 
         [DisplayName("Hide in monitor?")]

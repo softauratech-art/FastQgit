@@ -8,7 +8,7 @@ namespace FastQ.Data.Repositories
     {
         public Holiday Get(DateTime day);
         public IList<Holiday> ListAll();
-        public void AddOrUpdateHoliday(string action, Holiday oholiday, string stampuser);
+        public void AddOrUpdateHoliday(Holiday oholiday, string stampuser);
         public void Delete(DateTime day, string stampuser);
     }
 }
