@@ -27,6 +27,7 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
+        private readonly IEntityRepository _entities;
         //private readonly ILocationRepository _locations;
         //private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
@@ -36,6 +37,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
+                DbRepositoryFactory.CreateEntityRepository(),
                 //DbRepositoryFactory.CreateLocationRepository(),
                 //new SystemClock(),
                 new SignalRRealtimeNotifier())
@@ -46,6 +48,7 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
+            IEntityRepository entities,
             //ILocationRepository locations,
             //IClock clock,
             IRealtimeNotifier rt)
@@ -53,6 +56,7 @@ namespace FastQ.Web.Services
             _appts = appts;
             _customers = customers;
             _queues = queues;
+            _entities = entities;
             //_locations = locations;
             //_clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
@@ -846,7 +850,7 @@ namespace FastQ.Web.Services
                 return null;
 
             var loginUrl = ConfigurationManager.AppSettings["AppointmentLoginUrl"] ?? "#";
-            var inPersonLocation = "[ToDo: Read from DB]"; // ConfigurationManager.AppSettings["AppointmentInPersonLocation"] ?? "TBD";
+            var inPersonLocation = ResolveInPersonLocation(appointment, queue);
             var queueName = queue?.Name ?? "Queue";
             var serviceName = _queues.ListServicesByQueue(queue?.Id ?? 0)
                 .FirstOrDefault(s => s.Item1 == serviceId)?.Item2 ?? queueName;
@@ -1029,13 +1033,38 @@ namespace FastQ.Web.Services
             Console.Error.WriteLine(output);
         }
 
+        private string ResolveInPersonLocation(Appointment appointment, Queue queue)
+        {
+            var entityId = appointment?.EntityId ?? 0;
+            if (entityId <= 0)
+            {
+                entityId = queue?.EntityId ?? 0;
+            }
+
+            if (entityId > 0)
+            {
+                var entity = _entities.Get(entityId);
+                if (!string.IsNullOrWhiteSpace(entity?.Address))
+                {
+                    return entity.Address.Trim();
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(queue?.Address))
+            {
+                return queue.Address.Trim();
+            }
+
+            return string.Empty;
+        }
+
         private static string BuildAppointmentConfirmationHtml(Appointment appointment, string customerName, string queueName, string serviceName, string inPersonLocation, string loginUrl)
         {
             var safeCustomerName = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(customerName) ? "Customer" : customerName.Trim());
             var safeQueueName = HttpUtility.HtmlEncode(queueName ?? string.Empty);
             var safeServiceName = HttpUtility.HtmlEncode(serviceName ?? string.Empty);
             var safeAppointmentType = HttpUtility.HtmlEncode(GetContactMethodText(appointment.ContactType));
-            var safeLocation = HttpUtility.HtmlEncode(inPersonLocation ?? "TBD");
+            var safeLocation = HttpUtility.HtmlEncode(inPersonLocation ?? string.Empty);
             var safePhone = HttpUtility.HtmlEncode(appointment.CustomerPhone ?? string.Empty);
             var safeLoginUrl = HttpUtility.HtmlAttributeEncode(loginUrl ?? "#");
             var appointmentDate = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy"));
