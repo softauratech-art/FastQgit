@@ -955,13 +955,17 @@ namespace FastQ.Web.Services
                 var queueName = queue?.Name ?? "Queue";
                 var serviceName = _queues.ListServicesByQueue(queue?.Id ?? 0)
                     .FirstOrDefault(s => s.Item1 == (appointment.ServiceId ?? 0))?.Item2 ?? queueName;
+                var portalUrl = ConfigurationManager.AppSettings["AppointmentPortalUrl"]
+                    ?? ConfigurationManager.AppSettings["AppointmentLoginUrl"]
+                    ?? "#";
+                var cancellationReason = appointment.MoreInfo;
 
                 using (var message = new MailMessage())
                 {
                     message.From = new MailAddress(fromEmail);
                     message.To.Add(toEmail);
                     message.Subject = "Appointment Cancellation";
-                    message.Body = BuildAppointmentCancellationHtml(appointment, customerName, queueName, serviceName);
+                    message.Body = BuildAppointmentCancellationHtml(appointment, customerName, queueName, serviceName, portalUrl, cancellationReason);
                     message.IsBodyHtml = true;
 
                     using (var client = new SmtpClient(host, port))
@@ -1038,6 +1042,8 @@ namespace FastQ.Web.Services
             var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("h:mm tt"));
             var displayLink = BuildMeetingLinkHtml(appointment.MeetingUrl);
             var contactType = (appointment.ContactType ?? string.Empty).Trim().ToUpperInvariant();
+            var languagePreference = HttpUtility.HtmlEncode((appointment.LanguagePreference ?? string.Empty).Trim());
+            var smsOptInText = appointment.CustomerSmsOptIn ? "Yes" : "No";
 
             var html = new StringBuilder();
             html.AppendLine("<!DOCTYPE html>");
@@ -1067,6 +1073,9 @@ namespace FastQ.Web.Services
             html.AppendLine($"            <p><strong>Appointment Type:</strong> {safeAppointmentType}</p>");
             html.AppendLine($"            <p><strong>Queue:</strong> {safeQueueName}</p>");
             html.AppendLine($"            <p><strong>Service:</strong> {safeServiceName}</p>");
+            if (!string.IsNullOrWhiteSpace(languagePreference))
+                html.AppendLine($"            <p><strong>Language Preference:</strong> {languagePreference}</p>");
+            html.AppendLine($"            <p><strong>SMS Opt-in:</strong> {smsOptInText}</p>");
             html.AppendLine("        </div>");
             if (contactType == "OM")
             {
@@ -1084,7 +1093,7 @@ namespace FastQ.Web.Services
             html.AppendLine("        <p>Sincerely,</p>");
             html.AppendLine("        <p>Orange County Government, FL</p>");
             html.AppendLine("        <div class=\"footer\">");
-            html.AppendLine($"            <p>You are responsible to <a href=\"{safeLoginUrl}\">Log In</a> to the Appointment System to review your Upcoming Appointments.</p>");
+            html.AppendLine($"            <p>You are responsible to <a href=\"{safeLoginUrl}\">Log In</a> to the Appointment System to review your Current Appointments.</p>");
             html.AppendLine("            <p>Orange County reserves the right to modify or reschedule your appointment date and time, based on the availability of staff and other considerations.</p>");
             html.AppendLine("            <p>If you cannot attend this appointment, as a courtesy, please cancel this appointment from your dashboard as soon as possible.</p>");
             html.AppendLine("        </div>");
@@ -1094,34 +1103,57 @@ namespace FastQ.Web.Services
             return html.ToString();
         }
 
-        private static string BuildAppointmentCancellationHtml(Appointment appointment, string customerName, string queueName, string serviceName)
+        private static string BuildAppointmentCancellationHtml(Appointment appointment, string customerName, string queueName, string serviceName, string portalUrl, string cancellationReason)
         {
             var safeCustomerName = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(customerName) ? "Customer" : customerName.Trim());
             var safeQueueName = HttpUtility.HtmlEncode(queueName ?? string.Empty);
             var safeServiceName = HttpUtility.HtmlEncode(serviceName ?? string.Empty);
             var safeAppointmentType = HttpUtility.HtmlEncode(GetContactMethodText(appointment.ContactType));
+            var safeCancellationReason = HttpUtility.HtmlEncode(string.IsNullOrWhiteSpace(cancellationReason) ? "N/A" : cancellationReason.Trim());
+            var safePortalUrl = HttpUtility.HtmlAttributeEncode(portalUrl ?? "#");
             var appointmentDate = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy"));
             var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("h:mm tt"));
 
             var html = new StringBuilder();
             html.AppendLine("<!DOCTYPE html>");
             html.AppendLine("<html lang=\"en\">");
-            html.AppendLine("<head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><title>Appointment Cancellation</title></head>");
-            html.AppendLine("<body style=\"font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#333;margin:0;padding:20px;\">");
-            html.AppendLine("<div style=\"max-width:600px;margin:0 auto;\">");
-            html.AppendLine($"<p>Dear {safeCustomerName},</p>");
-            html.AppendLine("<p>Your appointment has been cancelled.</p>");
-            html.AppendLine("<div style=\"margin:16px 0;padding:12px;background:#f5f5f5;border-radius:4px;\">");
-            html.AppendLine($"<p><strong>Appointment Date:</strong> {appointmentDate}</p>");
-            html.AppendLine($"<p><strong>Appointment Time:</strong> {appointmentTime}</p>");
-            html.AppendLine($"<p><strong>Appointment Type:</strong> {safeAppointmentType}</p>");
-            html.AppendLine($"<p><strong>Queue:</strong> {safeQueueName}</p>");
-            html.AppendLine($"<p><strong>Service:</strong> {safeServiceName}</p>");
-            html.AppendLine("</div>");
-            html.AppendLine("<p>If you still need assistance, please create a new appointment.</p>");
-            html.AppendLine("<p>Sincerely,</p>");
-            html.AppendLine("<p>Orange County Government, FL</p>");
-            html.AppendLine("</div></body></html>");
+            html.AppendLine("<head>");
+            html.AppendLine("    <meta charset=\"utf-8\" />");
+            html.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
+            html.AppendLine("    <title>Appointment Cancellation</title>");
+            html.AppendLine("    <style>");
+            html.AppendLine("        body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; margin: 0; padding: 20px; }");
+            html.AppendLine("        .container { max-width: 600px; margin: 0 auto; }");
+            html.AppendLine("        h2 { color: #667eea; font-size: 18px; margin-bottom: 16px; }");
+            html.AppendLine("        p { margin: 0 0 12px 0; }");
+            html.AppendLine("        .details { margin: 16px 0; padding: 12px; background: #f5f5f5; border-radius: 4px; }");
+            html.AppendLine("        .details p { margin: 6px 0; }");
+            html.AppendLine("        .footer { margin-top: 24px; font-size: 12px; color: #666; }");
+            html.AppendLine("        a { color: #007bff; }");
+            html.AppendLine("    </style>");
+            html.AppendLine("</head>");
+            html.AppendLine("<body>");
+            html.AppendLine("    <div class=\"container\">");
+            html.AppendLine($"        <p>Dear {safeCustomerName},</p>");
+            html.AppendLine($"        <p>Your appointment with Orange County {safeQueueName} is cancelled. See below for details:</p>");
+            html.AppendLine("        <div class=\"details\">");
+            html.AppendLine($"            <p><strong>Appointment Date:</strong> {appointmentDate}</p>");
+            html.AppendLine($"            <p><strong>Appointment Time:</strong> {appointmentTime}</p>");
+            html.AppendLine($"            <p><strong>Appointment Type:</strong> {safeAppointmentType}</p>");
+            html.AppendLine($"            <p><strong>Queue:</strong> {safeQueueName}</p>");
+            html.AppendLine($"            <p><strong>Service:</strong> {safeServiceName}</p>");
+            html.AppendLine($"            <p><strong>Reason for Cancellation:</strong> {safeCancellationReason}</p>");
+            html.AppendLine("        </div>");
+            html.AppendLine("        <p>Your appointment has been cancelled per your request.</p>");
+            html.AppendLine($"        <p>Please visit our <a href=\"{safePortalUrl}\">portal</a> if you would like to schedule another appointment.</p>");
+            html.AppendLine("        <p>Sincerely,</p>");
+            html.AppendLine("        <p>Orange County Government, FL</p>");
+            html.AppendLine("        <div class=\"footer\">");
+            html.AppendLine("            <p>Orange County reserves the right to modify scheduling based on the availability of staff and other considerations.</p>");
+            html.AppendLine("        </div>");
+            html.AppendLine("    </div>");
+            html.AppendLine("</body>");
+            html.AppendLine("</html>");
             return html.ToString();
         }
 
