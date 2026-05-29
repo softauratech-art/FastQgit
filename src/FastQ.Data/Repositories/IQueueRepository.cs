@@ -14,8 +14,10 @@ namespace FastQ.Data.Repositories
         IList<Tuple<long, string>> ListServicesByQueue(long queueId);
 
         IList<Queue> ListByEntity(long? entityid, string stampuser);
-
-        Tuple<string, string, string> GetQueueDetailsJson(long queueId);
+        
+		IList<Entities.Queue> ListByEntity(long? entityid);
+        
+		Tuple<string, string, string> GetQueueDetailsJson(long queueId);
 
         QService GetQService(long id, string stampuser);
 

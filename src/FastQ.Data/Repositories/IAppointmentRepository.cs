@@ -16,8 +16,8 @@ namespace FastQ.Data.Repositories
         IList<Appointment> ListByEntity(long entityId);
         IList<Appointment> ListAll();
         IList<QueueOpenSlot> GetQueueOpenSlots(long queueId, DateTime dateLocal);
-        IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStart, DateTime rangeEnd);
-        IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStart, DateTime rangeEnd);
+        IList<ProviderAppointmentData> ListForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd);
+        IList<ProviderAppointmentData> ListWalkinsForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd);
         bool ValidatePermitNumber(long queueId, string permitNumber, out string message);
         long? GetQueueIdForSource(char srcType, long sourceId);
     }

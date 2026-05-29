@@ -47,6 +47,7 @@ namespace FastQ.Web.Controllers
 
         private ActionResult BuildTodayView(string start, string end, bool showWalkins, bool showAppointments)
         {
+            long entityId = _auth.GetSessionEntityId();
             var userId = _auth.GetLoggedInWindowsUser();
 
             var rangeStart = ParseDateOrDefault(start, DateTime.Now.Date);  //ParseDateOrDefault(start, DateTime.UtcNow.Date);
@@ -57,10 +58,10 @@ namespace FastQ.Web.Controllers
             }
 
             var walkins = showWalkins && !string.IsNullOrWhiteSpace(userId)
-                ? _service.BuildWalkinsForUser(userId, rangeStart, rangeEnd)
+                ? _service.BuildWalkinsForUser(entityId, userId, rangeStart, rangeEnd)
                 : Enumerable.Empty<ProviderAppointmentRow>();
             var appointments = showAppointments && !string.IsNullOrWhiteSpace(userId)
-                ? _service.BuildRowsForUser(userId, rangeStart, rangeEnd)
+                ? _service.BuildRowsForUser(entityId, userId, rangeStart, rangeEnd)
                 : Enumerable.Empty<ProviderAppointmentRow>();
 
             //var dateText = rangeStart == rangeEnd
@@ -130,6 +131,8 @@ namespace FastQ.Web.Controllers
         [HttpGet]
         public JsonResult GetTransferQueues(string entityId)
         {
+            entityId ??= _auth.GetSessionEntityId().ToString();
+
             long parsedEntityId;
             long? selectedEntityId = long.TryParse(entityId, out parsedEntityId) ? parsedEntityId : (long?)null;
             var queues = _service.ListTransferQueues(selectedEntityId)
@@ -265,6 +268,12 @@ namespace FastQ.Web.Controllers
 
             var resolvedUserId = _auth.GetLoggedInWindowsUser();
 
+
+            if (action == "remove" && string.IsNullOrWhiteSpace(notes) )
+            {
+                return Json(new { ok = false, error = "cancellation reason is required" });
+            }            
+            
             var res = _service.HandleProviderAction(action, normalizedSrc[0], apptId, resolvedUserId);
 
             if (!res.Ok)
@@ -463,6 +472,9 @@ namespace FastQ.Web.Controllers
                 return Json(new { ok = false, error = transferPermissionError });
             if (normalizedSourceAction == "REMOVE")
             {
+                if (string.IsNullOrWhiteSpace(serviceNotes))
+                    return Json(new { ok = false, error = "cancellation reason is required" });
+           
                 var removePermissionError = ValidateActionPermission("remove", sourceQueueId);
                 if (!string.IsNullOrWhiteSpace(removePermissionError))
                     return Json(new { ok = false, error = removePermissionError });
@@ -697,7 +709,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<string> JoinMeeting(string srctype, long srcid)
+        public  async Task<string> JoinMeeting(string srctype, long srcid)
         {
             var webexSvc = new Services.WebexService();
 

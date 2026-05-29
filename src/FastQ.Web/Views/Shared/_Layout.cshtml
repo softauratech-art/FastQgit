@@ -2,9 +2,9 @@
 @using System.Configuration
 @{
     Layout = null;
-    var env = ConfigurationManager.AppSettings["Environment"]== null ? "LIVE" : ConfigurationManager.AppSettings["Environment"].ToString(); 
-	var providerTodayUrl = Url.Action("Today", "Provider");
-
+    
+    var providerTodayUrl = Url.Action("Today", "Provider");
+    var env = FastQ.Web.Helpers.Utilities.GetServerEnvironment();
 
     var authsvc = new FastQ.Web.Services.AuthService();
     var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
@@ -15,9 +15,6 @@
     var entities = Request.Cookies["fq_user_entities"] == null ? "" : Request.Cookies["fq_user_entities"].Value;
     var isSessionTimeout = (Session["fq_current_entity"] == null || Session["fq_current_entity"].ToString() == "0");
     var returnURL = Request["path"] == null ? @Url.Action("Index", "Home") : Request["path"];
-    //var appRelativeReturnUrl = string.IsNullOrWhiteSpace(returnURL)
-    //    ? Url.Content("~/")
-    //    : Url.Content("~" + (returnURL.StartsWith("/") ? returnURL : "/" + returnURL));
 }
 <!DOCTYPE html>
 <html>
@@ -92,17 +89,16 @@
             <div class="brand">
                 <div class="brand-top">
                     <a href="@Url.Content("~")" class="logo-container">
-                        <img src="~/Content/logo-wd.png" alt="Logo" class="logo">
+                        <img src="~/Content/Horzontal_HighRes.jpg" alt="Logo" class="logo">
                     </a>
-                    @*<div class="Xlogo-mark"></div>*@
                     <button class="nav-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M15 6l-6 6 6 6"></path>
                         </svg>
                     </button>
                 </div>
-                <div class="brand-title"><!--FastQ--></div>
-                <div class="brand-sub">Queue orchestration</div>
+                <div class="brand-title">FastQ Manager</div>
+                @*<div class="brand-sub">Queue orchestration</div>*@
             </div>
             <nav class="drawer-nav">
                 @if (isHost || isProvider || isSuperAdmin || isQueueAdmin)
@@ -119,25 +115,11 @@
                             <span class="nav-text">My Queues</span>
                         </a>
 
-                        <a class="nav-link" href="@Url.Action("Index", "Calendar")">
+                        <a class="nav-link" href="@Url.Action("Index", "Calendar")" title="Calendar" aria-label="Calendar">
                             <i class="bi bi-calendar"></i>
                             <span class="nav-text">Calendar</span>
                         </a>
                     </div>
-
-                    @*<div class="nav-section">
-                        <div class="nav-title">Customers</div>
-
-                        <a class="nav-link" href="/Customer/Book">
-                            <i class="bi bi-plus-circle"></i>
-                            <span class="nav-text">Appointment</span>
-                        </a>
-
-                        <a class="nav-link" href="/Customer/Walkin">
-                            <i class="bi bi-person-walking"></i>
-                            <span class="nav-text">Walkin</span>
-                        </a>
-                    </div>*@
                 }
 
                 @if (isSuperAdmin || isQueueAdmin)
@@ -145,19 +127,19 @@
                     <div class="nav-section">
                         <div class="nav-title">Admin</div>
 
-                        <a class="nav-link" href="@Url.Action("Index", "Queue")">
+                        <a class="nav-link" href="@Url.Action("Index", "Queue")" title="Manage Queues" aria-label="Manage Queues">
                             <i class="bi bi-list-task"></i>
                             <span class="nav-text">Queues</span>
                         </a>
 
                         @if (isSuperAdmin)
                         {
-                            <a class="nav-link" href="@Url.Action("Index", "User")">
+                            <a class="nav-link" href="@Url.Action("Index", "User")" title="Manage Users" aria-label="Manage Users">
                                 <i class="bi bi-people"></i>
                                 <span class="nav-text">Users</span>
                             </a>
-                            <a class="nav-link" href="@Url.Action("Index", "Holiday")">
-                                <i class="bi bi-people"></i>
+                            <a class="nav-link" href="@Url.Action("Index", "Holiday")" title="Manage Holidays" aria-label="Manage Holidays">
+                                <i class="bi bi-calendar3"></i>
                                 <span class="nav-text">Holidays</span>
                             </a>
                         }
@@ -165,57 +147,45 @@
                 }
 
 
-                <div class="nav-section">
-                    @if (isReporter || isSuperAdmin || isQueueAdmin)
-                    {
-                        <div class="nav-title">Reports</div>
-                        <a class="nav-link" href="@Url.Action("Overview", "Reporting")">
-                            <!--/Reporting/Overview-->
-                            <i class="bi bi-bar-chart-line"></i>
-                            <span class="nav-text">Reports</span>
-                        </a>
-                    }
-                    <a class="nav-link" href="~/Logout.aspx">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span class="nav-text">Logout</span>
+            <div class="nav-section">
+                @if (isReporter || isSuperAdmin || isQueueAdmin)
+                {
+                    <div class="nav-title">Reports</div>
+                    <a class="nav-link" href="@Url.Action("Overview", "Reporting")" title="Reports" aria-label="Reports">
+                        <!--/Reporting/Overview-->
+                        <i class="bi bi-bar-chart-line"></i>
+                        <span class="nav-text">Reports</span>
                     </a>
-            </div>
-              
-                @*<div class="nav-section">
-                <a class="nav-link" href="/Admin/Dashboard">
-                    <i class="bi bi-gear"></i>
-                    <span class="nav-text">Settings</span>
-                </a>
-                <a class="nav-link" href="/">
-                    <i class="bi bi-search"></i>
-                    <span class="nav-text">Search</span>
-                </a>
-                <a class="nav-link" href="/">
-                    <i class="bi bi-question-circle"></i>
-                    <span class="nav-text">Help</span>
+                }
+
+                <div class="nav-title">My Account</div>
+                <a class="nav-link" href="@Url.Action("MyProfile", "Home")" title="My Profile" aria-label="My Profile">                   
+                    <i class="bi bi-person-circle"></i>
+                    <span class="nav-text">Profile</span>
                 </a>
 
-                <a class="nav-link" href="/Customer/Login">
-                    <i class="bi bi-person"></i>
-                    <span class="nav-text"></span>
-                </a>*@
+                <a class="nav-link" href="~/Logout.aspx" title="Logout" aria-label="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="nav-text">Logout</span>
+                </a>
+            </div>
 
             </nav>
             <div class="drawer-footer">
                 <div class="status-card">
-                    <div class="status-title">Logged as:</div>
+                    <div class="status-title">Logged in as:</div>
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span class="pill">@(new FastQ.Web.Services.AuthService().GetLoggedInWindowsUser())</span>
                         <span class="muted"></span>
                     </div>
                     <div style="font-size:small">
-                        @{ if (Request["debug"] != null && Request["debug"].ToString() == "1")
+                        @{ if (Request["debug"] != null)
                             {
                                 foreach (string sessionKey in HttpContext.Current.Session.Keys)
                                 {
                                     object sessionValue = HttpContext.Current.Session[sessionKey];
                                     <div>@sessionKey : @sessionValue</div>
-                                }                            
+                                }
                             <small>@entities</small>
                             }
                         }
@@ -228,8 +198,6 @@
             <header class="topbar">
                 @RenderSection("PageHeader", required: false)
                 <div class="badge accent">
-                    @*@(new FastQ.Web.Services.AuthService().GetLoggedInWindowsUser())
-                    @User.Identity.Name*@
 					@env         
 				</div>
             </header>
@@ -309,7 +277,7 @@
             });
         })();
 
-        
+
         (function () {
             var modal = document.getElementById("fastq_error_modal");
             var titleEl = document.getElementById("fastqErrorTitle");
@@ -370,7 +338,6 @@
         }
         var newsession = "@(isSessionTimeout && entities.Length > 1)";
         showTimeoutModal(newsession);
-
 </script>
 </body>
 </html>

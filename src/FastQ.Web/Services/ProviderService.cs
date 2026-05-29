@@ -17,9 +17,7 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
-        //private readonly ILocationRepository _locations;
         private readonly IServiceTransactionRepository _serviceTransactions;
-        //private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
         public ProviderService()
@@ -27,9 +25,7 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
-                //DbRepositoryFactory.CreateLocationRepository(),
                 DbRepositoryFactory.CreateServiceTransactionRepository(),
-                //new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
         }
@@ -38,17 +34,13 @@ namespace FastQ.Web.Services
             IAppointmentRepository appts,
             ICustomerRepository customers,
             IQueueRepository queues,
-            //ILocationRepository locations,
             IServiceTransactionRepository serviceTransactions,
-            //IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
             _customers = customers;
             _queues = queues;
-            //_locations = locations;
             _serviceTransactions = serviceTransactions;
-            //_clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
@@ -80,7 +72,7 @@ namespace FastQ.Web.Services
 
         public IList<Queue> ListTransferQueues(long? entityId)
         {
-            return ListEligibleQueues(entityId);
+            return _queues.ListByEntity(entityId);
         }
 
         public IList<Tuple<long, string>> ListTransferServices(long queueId)
@@ -215,7 +207,7 @@ namespace FastQ.Web.Services
             }).OrderBy(r => r.ScheduledFor).ToList();
         }
 
-        public IList<ProviderAppointmentRow> BuildRowsForUser(string userId, DateTime rangeStart, DateTime rangeEnd)
+        public IList<ProviderAppointmentRow> BuildRowsForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -224,12 +216,12 @@ namespace FastQ.Web.Services
 
             var startDate = rangeStart.Date;
             var endDate = rangeEnd.Date;
-            var rows = _appts.ListForUser(userId, startDate, endDate);
+            var rows = _appts.ListForUser(entityId, userId, startDate, endDate);
 
             return BuildProviderRows(rows);
         }
 
-        public IList<ProviderAppointmentRow> BuildWalkinsForUser(string userId, DateTime rangeStart, DateTime rangeEnd)
+        public IList<ProviderAppointmentRow> BuildWalkinsForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -238,7 +230,7 @@ namespace FastQ.Web.Services
 
             var startDate = rangeStart.Date;
             var endDate = rangeEnd.Date;
-            var rows = _appts.ListWalkinsForUser(userId, startDate, endDate);
+            var rows = _appts.ListWalkinsForUser(entityId, userId, startDate, endDate);
 
             return BuildProviderRows(rows);
         }

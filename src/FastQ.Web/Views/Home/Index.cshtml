@@ -1,4 +1,5 @@
 @using FastQ.Web.Services
+@{ var _auth = new AuthService(); }
 
 @section PageHeader {
     <div>
@@ -11,37 +12,57 @@
 }
 <div class="card grid-3">
     @*<div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Customer Journey</h3>
-            <span class="pill">Live booking</span>
-        </div>
-        <p class="muted">Submit a new appointment and immediately receive a live status screen with queue position and updates.</p>
-        <a class="btn secondary" href="/Customer/Book">New Appointment</a>
-        <a class="btn secondary" href="/Customer/Walkin">New Walkin</a>
-    </div>*@
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Provider Console</h3>
-            <span class="pill">Real-time queue</span>
-        </div>
-        <p class="muted">Manage arrivals, service start, completion, and transfers while customers see every change.</p>
-        <a class="btn secondary" href="@Url.Action("Today", "Provider")">Go to Provider Today</a>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Admin Controls</h3>
-            <span class="pill">Queue settings</span>
-        </div>
-        <p class="muted">Manage queue configuration, review provider roster, and run maintenance actions.</p>
-        <a class="btn secondary" href="@Url.Action("Dashboard", "Admin")">Open Admin</a>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Reporting</h3>
-            <span class="pill">Live metrics</span>
-        </div>
-        <p class="muted">Track provider activity, cancellations, and daily performance with live updates.</p>
-        <a class="btn secondary" href="@Url.Action("Overview", "Reporting")">Open Reporting</a>
-    </div>
+            <div class="card-header">
+                <h3 class="card-title">Customer Journey</h3>
+                <span class="pill">Live booking</span>
+            </div>
+            <p class="muted">Submit a new appointment and immediately receive a live status screen with queue position and updates.</p>
+            <a class="btn secondary" href="/Customer/Book">New Appointment</a>
+            <a class="btn secondary" href="/Customer/Walkin">New Walkin</a>
+        </div>*@
 
-</div>
+
+    @{ if ( _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host) 
+                || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider) 
+                || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin) 
+                || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin) )
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Provider Console</h3>
+                    <span class="pill">Real-time queue</span>
+                </div>
+                <p class="muted">Manage arrivals, service start, completion, and transfers while customers see every change.</p>
+                <a class="btn secondary" href="@Url.Action("Today", "Provider")">Go to Provider Today</a>
+            </div>
+        }
+    }
+
+    @{ if (_auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin) || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin))
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Admin Controls</h3>
+                    <span class="pill">Queue settings</span>
+                </div>
+                <p class="muted">Manage queue configuration, review provider roster, and run maintenance actions.</p>
+                <a class="btn secondary" href="@Url.Action("Dashboard", "Admin")">Open Admin</a>
+            </div>
+
+        }         
+    }
+
+    @{ if (_auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Reporter) || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin))
+        {
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Reporting</h3>
+                    <span class="pill">Live metrics</span>
+                </div>
+                <p class="muted">Track provider activity, cancellations, and daily performance with live updates.</p>
+                <a class="btn secondary" href="@Url.Action("Overview", "Reporting")">Open Reporting</a>
+            </div>
+        }
+    }
+    </div>

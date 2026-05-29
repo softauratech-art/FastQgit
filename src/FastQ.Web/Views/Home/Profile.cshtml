@@ -10,7 +10,6 @@
 }
 
 <div class="card grid-2">
-
     @{
         var authsvc = new FastQ.Web.Services.AuthService();
         var isSuperAdmin = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
@@ -52,7 +51,7 @@
 
                     @foreach (var q in myProfile.Queues)
                     {
-                        if (q.EntityId == currententity && (q.HostFlag || q.HostFlag || q.ReporterFlag || q.QueueAdminFlag))
+                        if (q.EntityId == currententity && (q.HostFlag || q.ProviderFlag || q.ReporterFlag || q.QueueAdminFlag))
                         {
                             <tr>
                                 <td>@q.QueueName </td>

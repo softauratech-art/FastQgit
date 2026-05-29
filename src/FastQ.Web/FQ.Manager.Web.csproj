@@ -184,7 +184,7 @@
     </Compile>
     <Compile Include="Helpers\Utilities.cs" />
     <Compile Include="Hubs\QueueHub.cs" />
-    <Compile Include="Models\AdminDashboardViewModel.cs" />
+    <Compile Include="Models\CalendarViewModel.cs" />
     <Compile Include="Models\Admin\QueueVM.cs" />
     <Compile Include="Models\Admin\UserVM.cs" />
     <Compile Include="Models\DTOs\AppointmentSnapshotDto.cs" />
@@ -208,7 +208,6 @@
     <Compile Include="Startup.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ComingSoon.html" />
     <Content Include="Content\calendar.css" />
     <Content Include="Content\datatablesFQ.css" />
     <Content Include="Content\logo-wd.png" />

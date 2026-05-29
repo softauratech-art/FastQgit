@@ -13,4 +13,16 @@ namespace FastQ.Data.Entities
         public string Status { get; set; }
         public string EmailAddress { get; set; }
     }
+
+    public class WebexApiSettings
+    {
+        public string Environment { get; set; }
+        public string Access_Token { get; set; }
+        public string Refresh_Token { get; set; }
+        public string Client_Id { get; set; }
+        public string Client_Secret { get; set; }
+        public string Base_Url { get; set; }
+        public string Refresh_Url { get; set; }
+    }
+
 }

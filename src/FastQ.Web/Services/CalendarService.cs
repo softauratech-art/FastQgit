@@ -34,7 +34,7 @@ namespace FastQ.Web.Services
             _queues = queues;
         }
 
-        public AdminDashboardViewModel BuildCalendarModel(string userId, DateTime displayMonth, DateTime selectedDate, string selectedEntry, string selectedQueue)
+        public CalendarViewModel BuildCalendarModel(long entityId, string userId, DateTime displayMonth, DateTime selectedDate, string selectedEntry, string selectedQueue)
         {
             selectedEntry = selectedEntry ?? "both";
             selectedQueue = selectedQueue ?? "all";
@@ -43,13 +43,13 @@ namespace FastQ.Web.Services
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
             var selected = selectedDate.Date;
 
-            var rows = new List<AdminAppointmentRow>();
+            var rows = new List<CalendarAppointmentRow>();
             if (!string.IsNullOrWhiteSpace(userId))
             {
                 if (selectedEntry.ToLower().Equals("a") || selectedEntry.Equals("both"))
-                    rows.AddRange(_providerService.BuildRowsForUser(userId, monthStart, monthEnd).Select(r => MapRow(r, "A", "Appointment")));
+                    rows.AddRange(_providerService.BuildRowsForUser(entityId, userId, monthStart, monthEnd).Select(r => MapRow(r, "A", "Appointment")));
                 if (selectedEntry.ToLower().Equals("w") || selectedEntry.Equals("both")) 
-                    rows.AddRange(_providerService.BuildWalkinsForUser(userId, monthStart, monthEnd).Select(r => MapRow(r, "W", "Walk-In")));
+                    rows.AddRange(_providerService.BuildWalkinsForUser(entityId,userId, monthStart, monthEnd).Select(r => MapRow(r, "W", "Walk-In")));
             }
 
             var oMonthAppointments = rows
@@ -61,14 +61,14 @@ namespace FastQ.Web.Services
                 .GroupBy(r => r.ScheduledFor.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            var model = new AdminDashboardViewModel
+            var model = new CalendarViewModel
             {
                 DisplayMonth = monthStart,
                 SelectedDate = selected,
                 EntityName = string.IsNullOrWhiteSpace(userId) ? "Assigned provider schedule" : userId,
                 QueueOptions = _providerService.ListQueues()
                     .OrderBy(q => q.Name)
-                    .Select(q => new AdminOptionItem
+                    .Select(q => new SelectOptionItem
                     {
                         Value = q.Id.ToString(CultureInfo.InvariantCulture),
                         Text = q.Name
@@ -88,89 +88,15 @@ namespace FastQ.Web.Services
             return model;
         }
 
-        //public Result<Appointment> CreateScheduledAppointment(
-        //    long queueId,
-        //    string serviceId,
-        //    string refValue,
-        //    string permitNumber,
-        //    string streetNumber,
-        //    string streetName,
-        //    string streetType,
-        //    string email,
-        //    string customerName,
-        //    string phone,
-        //    string contactType,
-        //    DateTime scheduledFor,
-        //    TimeSpan? endsAt,
-        //    string languagePreference,
-        //    string notes,
-        //    string meetingUrl,
-        //    string stampUser)
-        //{
-        //    return _customerService.CreateScheduled(
-        //        queueId,
-        //        serviceId,
-        //        refValue,
-        //        permitNumber,
-        //        streetNumber,
-        //        streetName,
-        //        streetType,
-        //        email,
-        //        customerName,
-        //        phone,
-        //        contactType,
-        //        scheduledFor,
-        //        endsAt,
-        //        languagePreference,
-        //        notes,
-        //        meetingUrl,
-        //        stampUser);
-        //}
-
-        //public Result<long> CreateWalkin(
-        //    long queueId,
-        //    string serviceId,
-        //    string refValue,
-        //    string permitNumber,
-        //    string streetNumber,
-        //    string streetName,
-        //    string streetType,
-        //    string email,
-        //    string customerName,
-        //    string phone,
-        //    string contactType,
-        //    string languagePreference,
-        //    string meetingUrl,
-        //    string notes,
-        //    string stampUser)
-        //{
-        //    return _customerService.CreateWalkin(
-        //        queueId,
-        //        serviceId,
-        //        refValue,
-        //        permitNumber,
-        //        streetNumber,
-        //        streetName,
-        //        streetType,
-        //        email,
-        //        customerName,
-        //        phone,
-        //        contactType,
-        //        languagePreference,
-        //        meetingUrl,
-        //        notes,
-        //        stampUser);
-        //}
-
-        private static IList<AdminCalendarDay> BuildCalendarDays(DateTime monthStart, DateTime selectedDate, IDictionary<DateTime, int> counts)
+        private static IList<CalendarDay> BuildCalendarDays(DateTime monthStart, DateTime selectedDate, IDictionary<DateTime, int> counts)
         {
             var gridStart = monthStart.AddDays(-(int)monthStart.DayOfWeek);
-            var days = new List<AdminCalendarDay>(42);
+            var days = new List<CalendarDay>(42);
 
             for (var i = 0; i < 42; i++)
             {
                 var date = gridStart.AddDays(i).Date;
-                days.Add(new AdminCalendarDay
+                days.Add(new CalendarDay
                 {
                     Date = date,
                     IsCurrentMonth = date.Month == monthStart.Month && date.Year == monthStart.Year,
@@ -183,9 +109,9 @@ namespace FastQ.Web.Services
             return days;
         }
 
-        private static AdminAppointmentRow MapRow(ProviderAppointmentRow row, string srcType, string entryKind)
+        private static CalendarAppointmentRow MapRow(ProviderAppointmentRow row, string srcType, string entryKind)
         {
-            return new AdminAppointmentRow
+            return new CalendarAppointmentRow
             {
                 AppointmentId = row.AppointmentId,
                 QueueId = row.QueueId,

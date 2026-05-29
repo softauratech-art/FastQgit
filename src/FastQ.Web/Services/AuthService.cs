@@ -1,14 +1,16 @@
+using FastQ.Data.Db;
+using FastQ.Data.Entities;
+using FastQ.Data.Repositories;
+using FastQ.Web.Models;
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Web;
-using FastQ.Data.Entities;
-using FastQ.Data.Db;
-using FastQ.Data.Repositories;
-using FastQ.Web.Models;
 
 namespace FastQ.Web.Services
 {
@@ -23,6 +25,25 @@ namespace FastQ.Web.Services
 
         public string GetLoggedInWindowsUser()
         {
+            string debugkey = ConfigurationManager.AppSettings["debugkey"]?.ToString();
+
+            HttpContext httpContext = HttpContext.Current;            
+            if (httpContext.Request["debug"] != null && httpContext.Request["debug"].ToString() == debugkey)
+                 httpContext.Session["debug"] = httpContext.Request["debug"];
+
+            bool isDebug = (httpContext.Session["debug"] != null && httpContext.Session["debug"].ToString() == debugkey);
+            
+            if (isDebug)
+            {                
+                //check if impersonation userid is in Session
+                var impersonatedUserId = httpContext.Session?["debug_impersonateuserid"]?.ToString();
+                if (impersonatedUserId != null) { return impersonatedUserId; }
+                //otherwise read from querystring
+                impersonatedUserId = httpContext.Request["debuguserid"]?.ToString();
+                HttpContext.Current.Session["debug_impersonateuserid"] = impersonatedUserId;  
+                return impersonatedUserId;
+            }
+
             var httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;
             httpIdentityName = ExtractAccountName(httpIdentityName);
             return httpIdentityName;
@@ -44,7 +65,7 @@ namespace FastQ.Web.Services
             return identityName;
         }
 
-        public int GetSessionEntityId()
+        public long GetSessionEntityId()
         {
             var httpContext = HttpContext.Current;
             string seid = httpContext.Session?["fq_current_entity"]?.ToString();
@@ -84,7 +105,7 @@ namespace FastQ.Web.Services
 
             bool result= false;
             FastQ.Data.Entities.User ousr = GetCurrentUser();
-            int eid = new AuthService().GetSessionEntityId();            
+            long eid = new AuthService().GetSessionEntityId();            
 
             // Allow only if User has active access to This entity
             if (ousr.BusinessEntities?.FirstOrDefault(e => e.EntityId == eid && e.ActiveFlag == true) == null)

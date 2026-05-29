@@ -1,5 +1,6 @@
 ﻿
 using FastQ.Data.Db;
+using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
 using Microsoft.Ajax.Utilities;
 using NLog;
@@ -15,17 +16,6 @@ using System.Threading.Tasks;
 
 namespace FastQ.Web.Services
 {
-    //public class FastQSourceRecord
-    //{
-    //    public long Id { get; set; }
-    //    public string WebexMeetingId { get; set; }
-    //    public DateTime AppointmentDateTime { get; set; }
-    //    public DateTime EndDateTime { get; set; }
-    //    public string CustomerName { get; set; }
-    //    public string Status { get; set; }
-    //    public string EmailAddress { get; set; }
-    //}
-
     public class WebexMeeting
     {
         public string BaseUrl { get; set; }
@@ -40,26 +30,21 @@ namespace FastQ.Web.Services
     {
         private static readonly Logger _logger = NLog.LogManager.GetLogger("FastQWebexSVC");
         private static readonly HttpClient client = new HttpClient();
-        private static readonly string clientID = ConfigurationManager.AppSettings["WebexClientid"];
-        private static readonly string secretID = ConfigurationManager.AppSettings["WebexSecretid"];
-        private string access_token = ConfigurationManager.AppSettings["WebexAccesstoken"];
-        private string refresh_token = ConfigurationManager.AppSettings["WebexRefreshtoken"];
-        private static readonly string webexUrl = ConfigurationManager.AppSettings["WebexApiBaseUrl"]; 
-        // "https://webexapis.com/v1/meetings/" | "https://mtg-broker-a.wbx2.com/api/v2/joseencrypt";       
-
+        private static readonly string env = ConfigurationManager.AppSettings["Environment"];
         private readonly IWebexRepository _webexrepo;
+        private static Data.Entities.WebexApiSettings _webexapi;
+
 
         public WebexService()
            : this(
                DbRepositoryFactory.CreateWebexRepository())
         {
-
         }
         public WebexService(IWebexRepository webexrepo)
         {
             _webexrepo = webexrepo;
         }
-
+        
         // PReddy: This call has been moved to Windows Scheduled Task
         //private async Task<HttpResponseMessage> CreateG2GMeeting(string title, DateTime start)
         //{
@@ -98,13 +83,13 @@ namespace FastQ.Web.Services
 
         public async Task<WebexMeeting> LaunchStartLink(string srcType, long srcId)
         {
+            
             //Ex: returns: https://ocfl.webex.com/.../StartMeeting?meetingid=013f0afb7cb74a1cb4b9243940fcb40b           
             WebexMeeting omeeting = new WebexMeeting();
             var user = (new AuthService()).GetCurrentUser();
             
             //Get Webex-meetingId from Appointment.HostURL-field           
-            FastQ.Data.Repositories.IWebexRepository repo = DbRepositoryFactory.CreateWebexRepository();
-            var srcdata = repo.GetSourceDetails(srcType, srcId);
+            var srcdata = _webexrepo.GetSourceDetails(srcType, srcId);
 
             if (srcdata == null) return omeeting;   //no-data-found
 
@@ -114,7 +99,9 @@ namespace FastQ.Web.Services
                 omeeting = new WebexMeeting() { HostUrl = srcdata.WebexMeetingId };
             }
             else 
-            {   
+            {
+                _webexapi = _webexrepo.GetApiSettings(env);
+
                 //use the WebexMeetingId to create Join-Links
                 var response = await CreateJoinLinks(srcdata);
 
@@ -122,7 +109,7 @@ namespace FastQ.Web.Services
                 // NOTE: For PRD Instant Connect use: BOT Token (valid for 100 years)
                 if ((int)response.StatusCode == 401)
                 {
-                    (access_token, refresh_token) = await GetTokensRefresh();
+                    (_webexapi.Access_Token, _webexapi.Refresh_Token) = await GetTokensRefresh();
                     response = await CreateJoinLinks(srcdata);
                 }
 
@@ -141,7 +128,7 @@ namespace FastQ.Web.Services
 
         public async Task<HttpResponseMessage> CreateJoinLinks(Data.Entities.WebexFastQRecord appt)
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", access_token);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _webexapi.Access_Token);
             client.DefaultRequestHeaders.Add("Accept", "application/json;charset=UTF-8");
 
             _logger.Info("Generating Meeting Links...");
@@ -158,7 +145,7 @@ namespace FastQ.Web.Services
 
             string jsonBody = System.Text.Json.JsonSerializer.Serialize(payload);
             var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync($"{webexUrl}/join", content);
+            var response = await client.PostAsync($"{_webexapi.Base_Url}/join", content);
             var jsonResponse = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -170,7 +157,7 @@ namespace FastQ.Web.Services
                 _logger.Error("GenerateLinks Error: " + (int)response.StatusCode + " " + jsonResponse);
             }
 
-            _webexrepo.LogWebexRequestToDB(appt.SrcType, appt.SrcId, $"{webexUrl}join", jsonBody, (int)response.StatusCode, jsonResponse, new AuthService().GetLoggedInWindowsUser());
+            _webexrepo.LogWebexRequestToDB(appt.SrcType, appt.SrcId, $"{_webexapi.Base_Url}join", jsonBody, (int)response.StatusCode, jsonResponse, new AuthService().GetLoggedInWindowsUser());
 
             return response;
             // The response contains:
@@ -196,9 +183,9 @@ namespace FastQ.Web.Services
         {
             _logger.Info ("function : get_token_refresh()");
 
-            var url = string.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["WebexApiRefreshUrl"]?.ToString()) ? "https://webexapis.com/v1/access_token": ConfigurationManager.AppSettings["WebexApiRefreshUrl"].ToString();
+            var url = string.IsNullOrWhiteSpace(_webexapi.Refresh_Url) ? "https://webexapis.com/v1/access_token": _webexapi.Refresh_Url;
             var payload = new StringContent(
-                $"grant_type=refresh_token&client_id={clientID}&client_secret={secretID}&refresh_token={refresh_token}",
+                $"grant_type=refresh_token&client_id={_webexapi.Client_Id}&client_secret={_webexapi.Client_Secret}&refresh_token={_webexapi.Refresh_Token}",
                 Encoding.UTF8,
                 "application/x-www-form-urlencoded"
             );
@@ -221,6 +208,7 @@ namespace FastQ.Web.Services
 
             return (newAccessToken, newRefreshToken);
         }
+
     }
        
 }

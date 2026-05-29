@@ -89,11 +89,27 @@ namespace FastQ.Data.Db
                 if (dberr != null) throw new InvalidOperationException(dberr);
             }
         }
-        
-        //public IList<Entities.Queue> ListByLocation(long entityid)
-        //{
-        //    return ListByEntity(entityid, string.Empty);
-        //}
+
+        public IList<Entities.Queue> ListByEntity(long? entityid)
+        {
+            if (entityid <= 0) return new List<Entities.Queue>();
+
+            var list = new List<Entities.Queue>();
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_QUEUES"))
+            {                
+                DataAccess.AddParam(cmd, "p_entityid", entityid, DbType.Int64);
+                DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(MapQueue(reader));
+                    }
+                }
+            }
+            return list;
+        }
 
         public IList<Entities.Queue> ListByEntity(long? entityid, string stampuser)
         {

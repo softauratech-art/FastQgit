@@ -171,7 +171,7 @@
                 <tbody>
                     @if (walkinRows.Count == 0)
                     {
-                        <tr>
+                        <tr class="table-empty">
                             <td colspan="11" class="text-center">No walk-ins for today.</td>
                         </tr>
                     }
@@ -287,7 +287,7 @@
                 <tbody>
                     @if (appointmentRows.Count == 0)
                     {
-                        <tr>
+                        <tr class="table-empty">
                             <td colspan="11" class="text-center">No appointments scheduled for today.</td>
                         </tr>
                     }
@@ -3244,9 +3244,14 @@
         }
 
         if (choice === "cancel-transfer") {
-          closeModal("cancelServiceModal");
-          openRouteModal("cancel-transfer", appointmentId, srcType, notes);
-          return;
+            if (notes == "") {
+                showModalFeedback("cancelServiceModal", "Cancellation Notes are required.", true);
+            }               
+            else { 
+                closeModal("cancelServiceModal");
+                openRouteModal("cancel-transfer", appointmentId, srcType, notes);               
+            }
+            return;
         }
 
         postForm(providerActionUrl, {

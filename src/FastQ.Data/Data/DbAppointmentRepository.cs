@@ -236,14 +236,14 @@ namespace FastQ.Data.Db
             return list;
         }
 
-        public IList<ProviderAppointmentData> ListForUser(string userId, DateTime rangeStart, DateTime rangeEnd)
+        public IList<ProviderAppointmentData> ListForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd)
         {
-            return ListForUserProc(userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
+            return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
         }
 
-        public IList<ProviderAppointmentData> ListWalkinsForUser(string userId, DateTime rangeStart, DateTime rangeEnd)
+        public IList<ProviderAppointmentData> ListWalkinsForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd)
         {
-            return ListForUserProc(userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
+            return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
         }
 
         public bool ValidatePermitNumber(long queueId, string permitNumber, out string message)
@@ -303,7 +303,7 @@ namespace FastQ.Data.Db
             }
         }
 
-        private IList<ProviderAppointmentData> ListForUserProc(string userId, DateTime rangeStart, DateTime rangeEnd, string procName)
+        private IList<ProviderAppointmentData> ListForUserProc(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd, string procName)
         {
             var list = new List<ProviderAppointmentData>();
             if (string.IsNullOrWhiteSpace(userId))
@@ -314,6 +314,7 @@ namespace FastQ.Data.Db
             using (var conn = DataAccess.Open())
             using (var cmd = DataAccess.CreateStoredProc(conn, procName))
             {
+                DataAccess.AddParam(cmd, "p_entityid", entityId, DbType.Int64); 
                 DataAccess.AddParam(cmd, "p_userid", userId.Trim(), DbType.String);
                 DataAccess.AddParam(cmd, "p_range_startdate", rangeStart.Date, DbType.DateTime);
                 DataAccess.AddParam(cmd, "p_range_enddate", rangeEnd.Date, DbType.DateTime);

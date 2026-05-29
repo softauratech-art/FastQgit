@@ -4,23 +4,23 @@ using FastQ.Data.Entities;
 
 namespace FastQ.Web.Models
 {
-    public class AdminDashboardViewModel
+    public class CalendarViewModel
     {
         public long EntityId { get; set; }
         public string EntityName { get; set; }
         public DateTime DisplayMonth { get; set; }
         public DateTime SelectedDate { get; set; }
-        public IList<AdminAppointmentRow> TodayAppointments { get; set; } = new List<AdminAppointmentRow>();
-        public IList<AdminAppointmentRow> UpcomingAppointments { get; set; } = new List<AdminAppointmentRow>();
-        public IList<AdminAppointmentRow> SelectedDayAppointments { get; set; } = new List<AdminAppointmentRow>();
-        public IList<AdminAppointmentRow> MonthAppointments { get; set; } = new List<AdminAppointmentRow>();
-        public IList<AdminCalendarDay> CalendarDays { get; set; } = new List<AdminCalendarDay>();
-        public IList<AdminOptionItem> QueueOptions { get; set; } = new List<AdminOptionItem>();
+        public IList<CalendarAppointmentRow> TodayAppointments { get; set; } = new List<CalendarAppointmentRow>();
+        public IList<CalendarAppointmentRow> UpcomingAppointments { get; set; } = new List<CalendarAppointmentRow>();
+        public IList<CalendarAppointmentRow> SelectedDayAppointments { get; set; } = new List<CalendarAppointmentRow>();
+        public IList<CalendarAppointmentRow> MonthAppointments { get; set; } = new List<CalendarAppointmentRow>();
+        public IList<CalendarDay> CalendarDays { get; set; } = new List<CalendarDay>();
+        public IList<SelectOptionItem> QueueOptions { get; set; } = new List<SelectOptionItem>();
         public string FeedbackMessage { get; set; }
         public bool FeedbackIsError { get; set; }
     }
 
-    public class AdminAppointmentRow
+    public class CalendarAppointmentRow
     {
         public long AppointmentId { get; set; }
         public long QueueId { get; set; }
@@ -46,7 +46,7 @@ namespace FastQ.Web.Models
         public DateTime ScheduledFor { get; set; }
     }
 
-    public class AdminCalendarDay
+    public class CalendarDay
     {
         public DateTime Date { get; set; }
         public bool IsCurrentMonth { get; set; }
@@ -55,7 +55,7 @@ namespace FastQ.Web.Models
         public int AppointmentCount { get; set; }
     }
 
-    public class AdminOptionItem
+    public class SelectOptionItem
     {
         public string Value { get; set; }
         public string Text { get; set; }
