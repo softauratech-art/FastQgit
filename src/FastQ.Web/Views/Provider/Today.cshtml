@@ -2497,7 +2497,7 @@
         );
         var emptyRow = table.querySelector("tbody tr.table-empty");
         if (emptyRow) {
-          emptyRow.classList.toggle("is-hidden", dataRows.length === 0 || visibleRows.length > 0);
+          emptyRow.classList.toggle("is-hidden", dataRows.length > 0 && visibleRows.length > 0);
         }
       });
     }
