@@ -1,0 +1,4 @@
+﻿debugUser,entityId,queueId,serviceId,appointmentId,srcType,targetQueueId,targetServiceId,targetKind,targetDate,targetEndDate,email,firstName,lastName,phone,contactType,refValue,permitNumber,streetNumber,streetName,streetType,languagePreference,meetingUrl,notes
+superadmin1,1,101,1001,500001,A,102,1002,A,2026-06-01 10:00,2026-06-01 10:15,superadmin1@example.com,Sam,Admin,5551111001,Email,REF-101,PERM-101,10,Main,St,EN,https://example.com/meet/1,load test scenario 1
+queueadmin1,1,102,1002,500002,A,103,1003,W,2026-06-01 11:00,2026-06-01 11:15,queueadmin1@example.com,Quin,Admin,5551111002,Phone,REF-102,PERM-102,20,Oak,Ave,EN,https://example.com/meet/2,load test scenario 2
+provider1,1,103,1003,500003,W,101,1001,W,2026-06-01 12:00,2026-06-01 12:15,provider1@example.com,Pat,Provider,5551111003,SMS,REF-103,PERM-103,30,Pine,Rd,EN,https://example.com/meet/3,load test scenario 3

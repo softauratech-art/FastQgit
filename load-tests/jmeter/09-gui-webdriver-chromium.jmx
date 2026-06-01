@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="FastQ GUI WebDriver (Chromium)" enabled="true">
+      <stringProp name="TestPlan.comments">JMeter WebDriver Sampler plugin plan for realtime browser scenarios.</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="Variables" enabled="true">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="baseUrl" elementType="Argument"><stringProp name="Argument.name">baseUrl</stringProp><stringProp name="Argument.value">http://localhost</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="debugKey" elementType="Argument"><stringProp name="Argument.name">debugKey</stringProp><stringProp name="Argument.value">USR</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="debugUser" elementType="Argument"><stringProp name="Argument.name">debugUser</stringProp><stringProp name="Argument.value">superadmin1</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="entityId" elementType="Argument"><stringProp name="Argument.name">entityId</stringProp><stringProp name="Argument.value">1</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+          <elementProp name="queueId" elementType="Argument"><stringProp name="Argument.name">queueId</stringProp><stringProp name="Argument.value">101</stringProp><stringProp name="Argument.metadata">=</stringProp></elementProp>
+        </collectionProp>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="WebDriver GUI Users" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">5</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">20</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <com.googlecode.jmeter.plugins.webdriver.config.ChromeDriverConfig guiclass="com.googlecode.jmeter.plugins.webdriver.config.gui.ChromeDriverConfigGui" testclass="com.googlecode.jmeter.plugins.webdriver.config.ChromeDriverConfig" testname="Chrome Driver Config" enabled="true">
+          <stringProp name="WebDriverConfig.browser_path"></stringProp>
+          <stringProp name="WebDriverConfig.driver_path"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_type">DIRECT</stringProp>
+          <stringProp name="WebDriverConfig.proxy_pac_url"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_http_host"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_http_port"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_ssl_host"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_ssl_port"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_socks_host"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_socks_port"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_socks_version"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_username"></stringProp>
+          <stringProp name="WebDriverConfig.proxy_password"></stringProp>
+          <stringProp name="WebDriverConfig.accept_insecure_certs">true</stringProp>
+          <stringProp name="WebDriverConfig.additional_args">--disable-gpu --window-size=1366,768</stringProp>
+        </com.googlecode.jmeter.plugins.webdriver.config.ChromeDriverConfig>
+        <hashTree/>
+
+        <com.googlecode.jmeter.plugins.webdriver.sampler.WebDriverSampler guiclass="com.googlecode.jmeter.plugins.webdriver.sampler.gui.WebDriverSamplerGui" testclass="com.googlecode.jmeter.plugins.webdriver.sampler.WebDriverSampler" testname="Browser Journey: Login + Provider + Admin" enabled="true">
+          <stringProp name="WebDriverSampler.script">WDS.sampleResult.sampleStart()
+
+def base = WDS.props.get("baseUrl")
+if (!base.endsWith("/")) {
+    base = base + "/"
+}
+
+def debugKey = WDS.props.get("debugKey")
+def debugUser = WDS.props.get("debugUser")
+def entityId = WDS.props.get("entityId")
+
+WDS.browser.get(base + "Home/Index?debug=" + debugKey + "&amp;debuguserid=" + debugUser + "&amp;eid=" + entityId)
+WDS.browser.get(base + "Provider/Today")
+WDS.browser.get(base + "Admin/Dashboard")
+
+WDS.sampleResult.sampleEnd()
+WDS.sampleResult.setSuccessful(true)
+WDS.sampleResult.setResponseCode("200")
+WDS.sampleResult.setResponseMessage("Browser scenario completed")</stringProp>
+          <stringProp name="WebDriverSampler.language">groovy</stringProp>
+          <boolProp name="WebDriverSampler.parameters">false</boolProp>
+        </com.googlecode.jmeter.plugins.webdriver.sampler.WebDriverSampler>
+        <hashTree/>
+
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <stringProp name="filename"></stringProp>
+        </ResultCollector>
+        <hashTree/>
+        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <stringProp name="filename"></stringProp>
+        </ResultCollector>
+        <hashTree/>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
+
+

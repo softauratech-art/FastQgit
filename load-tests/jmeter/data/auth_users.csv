@@ -1,0 +1,4 @@
+﻿debugUser,entityId,queueId,serviceId,appointmentId,srcType
+superadmin1,1,101,1001,500001,A
+queueadmin1,1,102,1002,500002,A
+provider1,1,103,1003,500003,W
