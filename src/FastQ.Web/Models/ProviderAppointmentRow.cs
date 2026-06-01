@@ -26,5 +26,6 @@ namespace FastQ.Web.Models
         public string Notes { get; set; }
         public string StampUser { get; set; }
         public DateTime ScheduledFor { get; set; }
+        public string StampUserName { get; set; }
     }
 }

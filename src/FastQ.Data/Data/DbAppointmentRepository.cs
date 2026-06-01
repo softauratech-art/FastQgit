@@ -185,10 +185,10 @@ namespace FastQ.Data.Db
             return ListByFilter("q.ENTITY_ID = :entityId", cmd => DataAccess.AddParam(cmd, "entityId", entityId, DbType.Int64));
         }
 
-        public IList<Appointment> ListAll()
-        {
-            return ListByFilter(null, null);
-        }
+        //public IList<Appointment> ListAll()
+        //{
+        //    return ListByFilter(null, null);
+        //}
 
         public IList<QueueOpenSlot> GetQueueOpenSlots(long queueId, DateTime dateLocal)
         {
@@ -383,6 +383,7 @@ namespace FastQ.Data.Db
                             MeetingUrlHost = ReadMeetingUrlHost(reader),
                             Notes = ReadField(reader, "MOREINFO"),
                             StampUser = ReadField(reader, "STAMPUSER"),
+                            StampUserName = ReadField(reader, "STAMPUSERNAME"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
                         });
                     }
@@ -523,7 +524,7 @@ namespace FastQ.Data.Db
                 CreatedBy = record["CREATEDBY"]?.ToString(),
                 CreatedOn = createdOn,
                 StampUser = record["STAMPUSER"]?.ToString(),
-                StampDate = stampDate,
+                StampDate = stampDate,                
                 //CreatedOn = createdOn,
                 UpdatedOn = stampDate
             };

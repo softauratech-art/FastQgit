@@ -34,12 +34,14 @@ namespace FastQ.Web.Controllers
             public int InService { get; set; }
             public int Completed { get; set; }
             public int Cancelled { get; set; }
+            public int ClosedBySystem { get; set; }
         }
 
         private class TrendReportRow
         {
             public string Date { get; set; }
             public int Booked { get; set; }
+            public int Scheduled { get; set; }
         }
 
         private class ReportSnapshotData
@@ -124,19 +126,17 @@ namespace FastQ.Web.Controllers
                 BookedToday = appointments.Count(a => a.CreatedOn >= range.Start && a.CreatedOn < range.EndExclusive),
                 ScheduledToday = appointments.Count(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive),
                 CompletedToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Completed),
-                CancelledToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive &&
-                                                         (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem)),
-                Providers = providers.Select(p => new ProviderReportRow
+                CancelledToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Cancelled),
+                Providers = (providers.Select(p => new ProviderReportRow
                 {
                     ProviderId = p.Id,
                     ProviderName = p.Name,
-                    Arrived = filtered.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.Arrived),
-                    InService = filtered.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.InService),
-                    Completed = filtered.Count(a => a.ProviderId == p.Id && a.Status == AppointmentStatus.Completed),
-                    Cancelled = filtered.Count(a => a.ProviderId == p.Id &&
-                                                     (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
-                }).ToList(),
-                Queues = queues.Select(q => new QueueReportRow
+                    Arrived = filtered.Count(a => a.StampUser == p.Id && a.Status == AppointmentStatus.Arrived),
+                    InService = filtered.Count(a => a.StampUser == p.Id && a.Status == AppointmentStatus.InService),
+                    Completed = filtered.Count(a => a.StampUser == p.Id && a.Status == AppointmentStatus.Completed),
+                    Cancelled = filtered.Count(a => a.StampUser == p.Id && a.Status == AppointmentStatus.Cancelled)                    
+                })).Where(u => u.Arrived > 0 || u.InService > 0 || u.Completed > 0 || u.Cancelled > 0).ToList(),
+                Queues = (queues.Select(q => new QueueReportRow
                 {
                     QueueId = q.Id,
                     QueueName = q.Name,
@@ -144,15 +144,16 @@ namespace FastQ.Web.Controllers
                                                   (a.Status == AppointmentStatus.Scheduled || a.Status == AppointmentStatus.Arrived)),
                     InService = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.InService),
                     Completed = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.Completed),
-                    Cancelled = filtered.Count(a => a.QueueId == q.Id &&
-                                                    (a.Status == AppointmentStatus.Cancelled || a.Status == AppointmentStatus.ClosedBySystem))
-                }).ToList(),
+                    Cancelled = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.Cancelled),
+                    ClosedBySystem = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.ClosedBySystem)
+                })).Where(fq => fq.Waiting > 0 || fq.InService > 0 || fq.Completed > 0 || fq.Cancelled > 0 || fq.ClosedBySystem > 0).ToList(),
                 DailyTrend = Enumerable.Range(0, 7)
                     .Select(i => dayStart.AddDays(i - 6))
                     .Select(day => new TrendReportRow
                     {
                         Date = day.ToString("yyyy-MM-dd"),
-                        Booked = appointments.Count(a => a.CreatedOn >= day && a.CreatedOn < day.AddDays(1))
+                        Booked = appointments.Count(a => a.CreatedOn >= day && a.CreatedOn < day.AddDays(1)),
+                        Scheduled = appointments.Count(a => a.ApptDate >= day && a.ApptDate < day.AddDays(1))
                     })
                     .ToList(),
                 FilterPeriod = range.Period,
@@ -180,7 +181,7 @@ namespace FastQ.Web.Controllers
             AddLine("Booked", "Scheduled", "Completed", "Cancelled");
             AddLine(data.BookedToday.ToString(), data.ScheduledToday.ToString(), data.CompletedToday.ToString(), data.CancelledToday.ToString());
             AddLine();
-
+           
             AddLine("Provider Activity");
             AddLine("Provider", "Arrived", "In Service", "Completed", "Cancelled");
             foreach (var row in data.Providers ?? new List<ProviderReportRow>())

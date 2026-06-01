@@ -28,8 +28,6 @@ namespace FastQ.Web.Services
         private readonly ICustomerRepository _customers;
         private readonly IQueueRepository _queues;
         private readonly IEntityRepository _entities;
-        //private readonly ILocationRepository _locations;
-        //private readonly IClock _clock;
         private readonly IRealtimeNotifier _rt;
 
         public CustomerService()
@@ -38,8 +36,6 @@ namespace FastQ.Web.Services
                 DbRepositoryFactory.CreateCustomerRepository(),
                 DbRepositoryFactory.CreateQueueRepository(),
                 DbRepositoryFactory.CreateEntityRepository(),
-                //DbRepositoryFactory.CreateLocationRepository(),
-                //new SystemClock(),
                 new SignalRRealtimeNotifier())
         {
         }
@@ -49,16 +45,12 @@ namespace FastQ.Web.Services
             ICustomerRepository customers,
             IQueueRepository queues,
             IEntityRepository entities,
-            //ILocationRepository locations,
-            //IClock clock,
             IRealtimeNotifier rt)
         {
             _appts = appts;
             _customers = customers;
             _queues = queues;
             _entities = entities;
-            //_locations = locations;
-            //_clock = clock;
             _rt = rt ?? NullRealtimeNotifier.Instance;
         }
 
@@ -1035,6 +1027,11 @@ namespace FastQ.Web.Services
 
         private string ResolveInPersonLocation(Appointment appointment, Queue queue)
         {
+            if (!string.IsNullOrWhiteSpace(queue?.Address))
+            {
+                return queue.Address.Trim();
+            }
+
             var entityId = appointment?.EntityId ?? 0;
             if (entityId <= 0)
             {
@@ -1048,11 +1045,6 @@ namespace FastQ.Web.Services
                 {
                     return entity.Address.Trim();
                 }
-            }
-
-            if (!string.IsNullOrWhiteSpace(queue?.Address))
-            {
-                return queue.Address.Trim();
             }
 
             return string.Empty;
@@ -1069,7 +1061,7 @@ namespace FastQ.Web.Services
             var safeLoginUrl = HttpUtility.HtmlAttributeEncode(loginUrl ?? "#");
             var appointmentDate = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("MMMM dd, yyyy"));
             var appointmentTime = HttpUtility.HtmlEncode(appointment.ScheduledFor.ToString("h:mm tt"));
-            var displayLink = BuildMeetingLinkHtml(appointment.MeetingUrl);
+            var displayLink = BuildMeetingLinkHtml(appointment.ConfirmationCode);
             var contactType = (appointment.ContactType ?? string.Empty).Trim().ToUpperInvariant();
             var languagePreference = HttpUtility.HtmlEncode((appointment.LanguagePreference ?? string.Empty).Trim());
             var smsOptInText = appointment.CustomerSmsOptIn ? "Yes" : "No";
@@ -1108,8 +1100,8 @@ namespace FastQ.Web.Services
             html.AppendLine("        </div>");
             if (contactType == "OM")
             {
-                html.AppendLine($"        <p><strong>Online:</strong> A virtual appointment request has been submitted and will be conducted through Webex at {displayLink}. Prior to the meeting, please follow the instructions below:</p>");
-                html.AppendLine("        <p>Webex Instructions, English | Spanish | Creole</p>");
+                html.AppendLine($"        <p><strong>Online:</strong> A virtual appointment request has been submitted and will be conducted through Webex at {displayLink}</p>");
+                html.AppendLine($"        <p>Important: Prior to the meeting, if you plan to join the meeting from a smartphone or tablet, please visit <a href='https://www.webex.com/downloads.html'>Cisco Webex</a> page to install the app on your smart device.</p>");
             }
             else if (contactType == "PC")
             {
@@ -1186,12 +1178,13 @@ namespace FastQ.Web.Services
             return html.ToString();
         }
 
-        private static string BuildMeetingLinkHtml(string meetingUrl)
+        private static string BuildMeetingLinkHtml(string confCode)
         {
-            var safeUrl = (meetingUrl ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(safeUrl))
+            var portalJoinUrl = ConfigurationManager.AppSettings["AppointmentOnlineMeetingUrl"]?.ToString();
+            if (string.IsNullOrWhiteSpace(portalJoinUrl) || string.IsNullOrWhiteSpace(confCode))
                 return "the provided meeting link";
-
+            
+            string safeUrl = $"{portalJoinUrl}{confCode}";
             var encodedUrl = HttpUtility.HtmlAttributeEncode(safeUrl);
             var encodedText = HttpUtility.HtmlEncode(safeUrl);
             return $"<a href=\"{encodedUrl}\">{encodedText}</a>";

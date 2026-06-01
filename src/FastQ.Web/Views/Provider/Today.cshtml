@@ -39,7 +39,7 @@
     Func<object, string> getStampUser = item =>
     {
         if (item == null) return string.Empty;
-        var prop = item.GetType().GetProperty("StampUser");
+        var prop = item.GetType().GetProperty("StampUserName");
         var value = prop == null ? null : prop.GetValue(item, null);
         return value == null ? string.Empty : value.ToString();
     };

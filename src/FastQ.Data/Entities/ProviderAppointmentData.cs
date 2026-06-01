@@ -21,6 +21,7 @@ namespace FastQ.Data.Entities
         public string MeetingUrlHost { get; set; }
         public string Notes { get; set; }
         public string StampUser { get; set; }
+        public string StampUserName { get; set; }
         public bool SmsOptIn { get; set; }
     }
 }

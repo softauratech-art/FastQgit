@@ -36,14 +36,14 @@
             <label>Date range</label>
             <div class="report-date-range">
                 <div class="report-date-field">
-                    <label for="reportStartDate">Start date</label>
-                    <input type="date" id="reportStartDate" />
-                </div>
+            <label for="reportStartDate">Start date</label>
+            <input type="date" id="reportStartDate" />
+        </div>
                 <span class="report-date-sep">to</span>
                 <div class="report-date-field">
-                    <label for="reportEndDate">End date</label>
-                    <input type="date" id="reportEndDate" />
-                </div>
+            <label for="reportEndDate">End date</label>
+            <input type="date" id="reportEndDate" />
+        </div>
             </div>
         </div>
         <div class="col" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
@@ -55,15 +55,27 @@
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">7-day booking trend</h3>
-        <span class="pill">Last 7 days</span>
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">7-day booking trend</h3>
+            <span class="pill">Last 7 days</span>
+        </div>
+        <div id="trendBookedChart" class="stack"></div>
     </div>
-    <div id="trendChart" class="stack"></div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">7-day scheduled trend</h3>
+            <span class="pill">Last 7 days</span>
+        </div>
+        <div id="trendScheduledChart" class="stack"></div>
+    </div>
 </div>
-
 <div class="report-grid">
+    @*<div class="stat">
+        <div class="stat-label" id="customersLabel">Customers (Daily)</div>
+        <div class="stat-value" id="reportCustomers">0</div>
+    </div>*@
     <div class="stat">
         <div class="stat-label" id="bookedLabel">Booked (Daily)</div>
         <div class="stat-value" id="reportBooked">0</div>
@@ -142,7 +154,8 @@
 
                 FastQReport.renderQueues(d.Queues || []);
                 FastQReport.renderProviders(d.Providers || []);
-                FastQReport.renderTrend(d.DailyTrend || []);
+                FastQReport.renderBookedTrend(d.DailyTrend || []);
+                FastQReport.renderScheduledTrend(d.DailyTrend || []);
 
                 var queueSelect = document.getElementById("reportQueue");
                 if (queueSelect && queueSelect.options.length === 0) {
@@ -159,7 +172,7 @@
                     return;
                 }
                 var html = "<table class='table'><thead><tr>" +
-                    "<th>Queue</th><th>Waiting</th><th>In Service</th><th>Completed</th><th>Cancelled</th>" +
+                    "<th>Queue</th><th>Waiting</th><th>In Service</th><th>Completed</th><th>Cancelled</th><th>SysClosed</th>" +
                     "</tr></thead><tbody>";
                 rows.forEach(function (r) {
                     html += "<tr>" +
@@ -168,6 +181,7 @@
                         "<td>" + r.InService + "</td>" +
                         "<td>" + r.Completed + "</td>" +
                         "<td>" + r.Cancelled + "</td>" +
+                        "<td>" + r.ClosedBySystem + "</td>" +
                         "</tr>";
                 });
                 html += "</tbody></table>";
@@ -195,9 +209,9 @@
                 $("#providerTable").html(html);
             },
 
-            renderTrend: function (rows) {
+            renderBookedTrend: function (rows) {
                 if (!rows || rows.length === 0) {
-                    $("#trendChart").html("<div class='muted'>No trend data yet.</div>");
+                    $("#trendBookedChart").html("<div class='muted'>No trend data yet.</div>");
                     return;
                 }
                 var max = Math.max.apply(null, rows.map(function (r) { return r.Booked; }).concat([1]));
@@ -210,7 +224,25 @@
                         "<div>" + r.Booked + "</div>" +
                         "</div>";
                 });
-                $("#trendChart").html(html);
+                $("#trendBookedChart").html(html);
+            },
+
+            renderScheduledTrend: function (rows) {
+                if (!rows || rows.length === 0) {
+                    $("#trendScheduledChart").html("<div class='muted'>No trend data yet.</div>");
+                    return;
+                }
+                var max = Math.max.apply(null, rows.map(function (r) { return r.Scheduled; }).concat([1]));
+                var html = "";
+                rows.forEach(function (r) {
+                    var pct = Math.round((r.Scheduled / max) * 100);
+                    html += "<div class='trend-row'>" +
+                        "<div class='muted'>" + r.Date + "</div>" +
+                        "<div class='bar-track'><div class='bar-fill' style='width:" + pct + "%'></div></div>" +
+                        "<div>" + r.Scheduled + "</div>" +
+                        "</div>";
+                });
+                $("#trendScheduledChart").html(html);
             },
 
             updatePeriodPills: function (period, start, end) {

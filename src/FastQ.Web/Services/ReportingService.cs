@@ -30,7 +30,7 @@ namespace FastQ.Web.Services
 
         public IList<Appointment> ListAppointments(long? entityId)
         {
-            return entityId.HasValue ? _appts.ListByEntity(entityId.Value) : _appts.ListAll();
+            return entityId.HasValue ? _appts.ListByEntity(entityId.Value) : null;
         }
 
         public IList<Provider> ListProviders(long? entityId)

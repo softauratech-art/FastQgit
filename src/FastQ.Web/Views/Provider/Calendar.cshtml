@@ -211,7 +211,7 @@
                                         </button>
                                         <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
                                     </div>
-                                    <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUser) ? "-" : item.StampUser)</div>
+                                    <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUserName) ? "-" : item.StampUserName)</div>
                                 </div>
                             </div>
                         }

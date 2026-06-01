@@ -160,13 +160,13 @@ namespace FastQ.Web.Services
             return _customers.ListAll();
         }
 
-        public IList<Appointment> ListAppointmentsForDate(DateTime date)
-        {
-            var selectedDate = date.Date;
-            return _appts.ListAll()
-                .Where(a => a.ScheduledFor.Date == selectedDate)
-                .ToList();
-        }
+        //public IList<Appointment> ListAppointmentsForDate(DateTime date)
+        //{
+        //    var selectedDate = date.Date;
+        //    return _appts.ListAll()
+        //        .Where(a => a.ScheduledFor.Date == selectedDate)
+        //        .ToList();
+        //}
 
         public IList<ProviderAppointmentRow> BuildRows(
             IList<Appointment> appointments,
@@ -266,7 +266,8 @@ namespace FastQ.Web.Services
                     MeetingUrl = r.MeetingUrl,          //NormalizeMeetingUrl(r.MeetingUrl),
                     MeetingUrlHost = r.MeetingUrlHost,  // NormalizeMeetingUrl(r.MeetingUrlHost),
                     Notes = string.IsNullOrWhiteSpace(r.Notes) ? string.Empty : r.Notes.Trim(),
-                    StampUser = r.StampUser
+                    StampUser = r.StampUser,
+                    StampUserName = r.StampUserName
                 };  
             }).OrderBy(r => r.ScheduledFor).ToList();
         }
