@@ -283,7 +283,7 @@
 @Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 @section Scripts {
-    <script src="~/Scripts/provider-common.js"></script>
+    <script src="@Url.Content("~/Scripts/provider-common.js?v=20260607-1")"></script>
     <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
@@ -340,6 +340,15 @@
     };
 
     var providerCommon = window.FastQProviderCommon;
+    if (typeof providerCommon.getPreferredEntryDateValue !== "function") {
+      providerCommon.getPreferredEntryDateValue = function (dateSelect, selectedDate) {
+        var value = dateSelect ? (dateSelect.getAttribute("data-current-value") || dateSelect.value || "") : "";
+        if (value) {
+          return value;
+        }
+        return selectedDate instanceof Date ? providerCommon.toIsoDate(selectedDate) : (selectedDate || "");
+      };
+    }
     var isValidDateValue = providerCommon.isValidDateValue;
     var startOfMonth = providerCommon.startOfMonth;
     var addMonths = providerCommon.addMonths;
