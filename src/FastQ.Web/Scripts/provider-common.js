@@ -20,6 +20,122 @@
     return dateHost ? (dateHost.getAttribute("data-date") || "") : "";
   }
 
+  function twoDigits(value) {
+    return value < 10 ? "0" + value : String(value);
+  }
+
+  common.toIsoDate = function (dateValue) {
+    if (!common.isValidDateValue(dateValue)) {
+      return "";
+    }
+    return dateValue.getFullYear() + "-" + twoDigits(dateValue.getMonth() + 1) + "-" + twoDigits(dateValue.getDate());
+  };
+
+  common.isValidDateValue = function (dateValue) {
+    return dateValue instanceof Date && !isNaN(dateValue.getTime());
+  };
+
+  common.startOfMonth = function (dateValue) {
+    var safeDate = common.isValidDateValue(dateValue) ? dateValue : new Date();
+    return new Date(safeDate.getFullYear(), safeDate.getMonth(), 1);
+  };
+
+  common.addMonths = function (dateValue, count) {
+    var safeDate = common.isValidDateValue(dateValue) ? dateValue : new Date();
+    return new Date(safeDate.getFullYear(), safeDate.getMonth() + count, 1);
+  };
+
+  common.getEntryCalendarMonthLabel = function (dateValue) {
+    if (!common.isValidDateValue(dateValue)) {
+      dateValue = new Date();
+    }
+    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    return months[dateValue.getMonth()] + " " + dateValue.getFullYear();
+  };
+
+  common.getEntryCalendarMonthKey = function (dateValue) {
+    if (!common.isValidDateValue(dateValue)) {
+      dateValue = new Date();
+    }
+    return dateValue.getFullYear() + "-" + twoDigits(dateValue.getMonth() + 1);
+  };
+
+  common.formatEntryDateDisplay = function (value) {
+    if (!value) {
+      return "";
+    }
+
+    var parts = value.split("-");
+    if (parts.length !== 3) {
+      return value;
+    }
+
+    return parts[1] + "/" + parts[2] + "/" + parts[0];
+  };
+
+  common.parseEntryDateDisplay = function (value) {
+    var match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(value || "");
+    if (!match) {
+      return "";
+    }
+
+    var month = parseInt(match[1], 10);
+    var day = parseInt(match[2], 10);
+    var year = parseInt(match[3], 10);
+    var candidate = new Date(year, month - 1, day);
+    if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
+      return "";
+    }
+
+    return common.toIsoDate(candidate);
+  };
+
+  common.getPreferredEntryDateValue = function (dateSelect, selectedCalendarDate) {
+    var value = dateSelect ? (dateSelect.getAttribute("data-current-value") || dateSelect.value || "") : "";
+    if (value) {
+      return value;
+    }
+    if (selectedCalendarDate instanceof Date) {
+      return common.isValidDateValue(selectedCalendarDate) ? common.toIsoDate(selectedCalendarDate) : "";
+    }
+    return selectedCalendarDate || "";
+  };
+
+  common.setEntryDateDisplay = function (prefix, value) {
+    var displayInput = document.getElementById(prefix + "DateDisplay");
+    if (!displayInput) {
+      return;
+    }
+
+    displayInput.value = common.formatEntryDateDisplay(value);
+  };
+
+  common.openEntryDatePicker = function (prefix) {
+    var picker = document.getElementById(prefix + "DatePicker");
+    var displayInput = document.getElementById(prefix + "DateDisplay");
+    if (!picker) {
+      return;
+    }
+
+    picker.classList.add("is-open");
+    if (displayInput) {
+      displayInput.setAttribute("aria-expanded", "true");
+    }
+  };
+
+  common.closeEntryDatePicker = function (prefix) {
+    var picker = document.getElementById(prefix + "DatePicker");
+    var displayInput = document.getElementById(prefix + "DateDisplay");
+    if (!picker) {
+      return;
+    }
+
+    picker.classList.remove("is-open");
+    if (displayInput) {
+      displayInput.setAttribute("aria-expanded", "false");
+    }
+  };
+
   common.refreshProviderActionButtonStates = function (container) {
     var options = providerActionOptions || {};
     var root = container || document;

@@ -310,6 +310,16 @@
                 }
             };
 
+            var providerCommon = window.FastQProviderCommon;
+            var isValidDateValue = providerCommon.isValidDateValue;
+            var startOfMonth = providerCommon.startOfMonth;
+            var addMonths = providerCommon.addMonths;
+            var getEntryCalendarMonthLabel = providerCommon.getEntryCalendarMonthLabel;
+            var getEntryCalendarMonthKey = providerCommon.getEntryCalendarMonthKey;
+            var parseEntryDateDisplay = providerCommon.parseEntryDateDisplay;
+            var setEntryDateDisplay = providerCommon.setEntryDateDisplay;
+            var openEntryDatePicker = providerCommon.openEntryDatePicker;
+            var closeEntryDatePicker = providerCommon.closeEntryDatePicker;
 
             function postForm(url, data) {
                 return fetch(url, {
@@ -1015,23 +1025,6 @@
                 };
             }
 
-            function startOfMonth(dateValue) {
-                return new Date(dateValue.getFullYear(), dateValue.getMonth(), 1);
-            }
-
-            function addMonths(dateValue, count) {
-                return new Date(dateValue.getFullYear(), dateValue.getMonth() + count, 1);
-            }
-
-            function getEntryCalendarMonthLabel(dateValue) {
-                var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                return months[dateValue.getMonth()] + " " + dateValue.getFullYear();
-            }
-
-            function getEntryCalendarMonthKey(dateValue) {
-                return dateValue.getFullYear() + "-" + toTwoDigits(dateValue.getMonth() + 1);
-            }
-
             function getEntryCalendarState(prefix) {
                 if (!entryCalendarState[prefix]) {
                     entryCalendarState[prefix] = {
@@ -1060,71 +1053,6 @@
                 }
                 status.textContent = message || "";
                 status.style.color = isError ? "#b91c1c" : "#5b5b5b";
-            }
-
-            function formatEntryDateDisplay(value) {
-                if (!value) {
-                    return "";
-                }
-
-                var parts = value.split("-");
-                if (parts.length !== 3) {
-                    return value;
-                }
-
-                return parts[1] + "/" + parts[2] + "/" + parts[0];
-            }
-
-            function parseEntryDateDisplay(value) {
-                var match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(value || "");
-                if (!match) {
-                    return "";
-                }
-
-                var month = parseInt(match[1], 10);
-                var day = parseInt(match[2], 10);
-                var year = parseInt(match[3], 10);
-                var candidate = new Date(year, month - 1, day);
-                if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
-                    return "";
-                }
-
-                return toIsoDate(candidate);
-            }
-
-            function setEntryDateDisplay(prefix, value) {
-                var displayInput = document.getElementById(prefix + "DateDisplay");
-                if (!displayInput) {
-                    return;
-                }
-
-                displayInput.value = formatEntryDateDisplay(value);
-            }
-
-            function openEntryDatePicker(prefix) {
-                var picker = document.getElementById(prefix + "DatePicker");
-                var displayInput = document.getElementById(prefix + "DateDisplay");
-                if (!picker) {
-                    return;
-                }
-
-                picker.classList.add("is-open");
-                if (displayInput) {
-                    displayInput.setAttribute("aria-expanded", "true");
-                }
-            }
-
-            function closeEntryDatePicker(prefix) {
-                var picker = document.getElementById(prefix + "DatePicker");
-                var displayInput = document.getElementById(prefix + "DateDisplay");
-                if (!picker) {
-                    return;
-                }
-
-                picker.classList.remove("is-open");
-                if (displayInput) {
-                    displayInput.setAttribute("aria-expanded", "false");
-                }
             }
 
             function setEntryDateValue(prefix, selectedDate, suppressChange) {
@@ -1222,7 +1150,7 @@
                 }
 
                 var bounds = getEntryCalendarBounds();
-                var monthStart = state.monthStart || startOfMonth(bounds.min);
+                var monthStart = isValidDateValue(state.monthStart) ? state.monthStart : startOfMonth(bounds.min);
                 state.monthStart = monthStart;
                 monthLabel.textContent = getEntryCalendarMonthLabel(monthStart);
 
@@ -1449,9 +1377,9 @@
                     return Promise.resolve();
                 }
 
-                var preferredDateValue = dateSelect.getAttribute("data-current-value") || dateSelect.value || selectedCalendarDate || "";
+                var preferredDateValue = providerCommon.getPreferredEntryDateValue(dateSelect, selectedCalendarDate);
                 var state = getEntryCalendarState(prefix);
-                if (!state.monthStart) {
+                if (!isValidDateValue(state.monthStart)) {
                     var initialDate = preferredDateValue ? new Date(preferredDateValue + "T00:00:00") : new Date();
                     state.monthStart = startOfMonth(initialDate);
                 }
@@ -2107,7 +2035,7 @@
             }
 
             function bindProviderActionButtons() {
-                window.FastQProviderCommon.bindProviderActionButtons({
+                providerCommon.bindProviderActionButtons({
                     canAction: canAction,
                     getStatusForAppointment: getStatusForAppointment,
                     openRouteModal: openRouteModal,
@@ -2117,161 +2045,17 @@
                     providerActionUrl: providerActionUrl,
                     queueLiveSync: queueLiveSync
                 });
-                return;
-
-                document.querySelectorAll("[data-provider-action]").forEach(function (btn) {
-                    var action = (btn.getAttribute("data-action") || "").toLowerCase();
-                    var appointmentId = btn.getAttribute("data-appointment-id");
-                    var queueId = btn.getAttribute("data-queue-id");
-                    var rowDate = (btn.closest("[data-date]") && btn.closest("[data-date]").getAttribute("data-date")) || "";
-                    var status = appointmentId ? getStatusForAppointment(appointmentId) : "";
-                    btn.disabled = !canAction(status, action, queueId, rowDate);
-
-                    if (btn.getAttribute("data-bound-provider-action") === "1") {
-                        return;
-                    }
-                    btn.setAttribute("data-bound-provider-action", "1");
-                    btn.addEventListener("click", function (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-
-                        var appointmentId = btn.getAttribute("data-appointment-id");
-                        var action = (btn.getAttribute("data-action") || "").toLowerCase();
-                        var srcType = (btn.getAttribute("data-src-type") || "A").toUpperCase();
-                        var queueId = btn.getAttribute("data-queue-id");
-                        var rowDate = (btn.closest("[data-date]") && btn.closest("[data-date]").getAttribute("data-date")) || "";
-                        if (!appointmentId || !action) {
-                            return;
-                        }
-
-                        var status = getStatusForAppointment(appointmentId);
-                        if (!canAction(status, action, queueId, rowDate)) {
-                            window.alert("Action not allowed for the current status.");
-                            return;
-                        }
-
-                        if (action === "transfer") {
-                            openRouteModal("transfer", appointmentId, srcType);
-                            return;
-                        }
-
-                        if (action === "end") {
-                            openEndServiceModal(appointmentId, srcType);
-                            return;
-                        }
-
-                        if (action === "remove") {
-                            openCancelServiceModal(appointmentId, srcType);
-                            return;
-                        }
-
-                        postForm(providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
-                            .then(function (res) {
-                                if (!res || !res.ok) {
-                                    window.alert(res && res.error ? res.error : "Action failed.");
-                                    return;
-                                }
-                                queueLiveSync();
-                            });
-                    });
-                });
             }
 
             function bindMeetingLinks() {
-                window.FastQProviderCommon.bindMeetingLinks({
+                providerCommon.bindMeetingLinks({
                     clearModalFeedback: clearModalFeedback,
                     openModal: openModal
-                });
-                return;
-
-                document.querySelectorAll(".meeting-link").forEach(function (link) {
-                    if (link.getAttribute("data-bound-meeting-link") === "1") {
-                        return;
-                    }
-                    link.setAttribute("data-bound-meeting-link", "1");
-                    link.addEventListener("click", function (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-
-                        var appointmentId = link.getAttribute("data-appointment-id") || "";
-                        var srcType = link.getAttribute("data-src-type") || "A";
-
-                        var mid = document.getElementById("mid");
-                        var meetingDate = document.getElementById("meetingDate");
-                        var meetingTime = document.getElementById("meetingTime");
-                        var meetingTitle = document.getElementById("meetingTitle");
-                        var meetingCustomer = document.getElementById("meetingCustomer");
-                        var meetingEmail = document.getElementById("meetingEmail");
-                        var meetingPhone = document.getElementById("meetingPhone");
-                        var meetingQueue = document.getElementById("meetingQueue");
-                        var meetingService = document.getElementById("meetingService");
-                        var meetingRefValue = document.getElementById("meetingRefValue");
-                        var meetingContact = document.getElementById("meetingContact");
-                        var meetingLanguage = document.getElementById("meetingLanguage");
-                        var meetingStatus = document.getElementById("meetingStatus");
-                        var meetingStampUser = document.getElementById("meetingStampUser");
-                        var guestUrlInput = document.getElementById("mGuestURL");
-                        var urlInput = document.getElementById("mURL");
-                        var previousNotes = document.getElementById("mPreviousNotes");
-                        var notesInput = document.getElementById("mNotes");
-
-                        if (mid) {
-                            mid.textContent = appointmentId;
-                            mid.setAttribute("data-appointment-id", appointmentId);
-                            mid.setAttribute("data-src-type", srcType);
-                        }
-                        if (meetingDate) meetingDate.textContent = link.getAttribute("data-date") || "";
-                        if (meetingTime) meetingTime.textContent = link.getAttribute("data-time") || "";
-                        if (meetingTitle) meetingTitle.textContent = link.getAttribute("data-title") || "";
-                        if (meetingCustomer) meetingCustomer.textContent = link.getAttribute("data-customer") || "";
-                        if (meetingEmail) meetingEmail.textContent = link.getAttribute("data-email") || "";
-                        if (meetingPhone) meetingPhone.textContent = link.getAttribute("data-phone") || "";
-                        if (meetingQueue) meetingQueue.textContent = link.getAttribute("data-queue-name") || "";
-                        if (meetingService) meetingService.textContent = link.getAttribute("data-service-name") || "";
-                        if (meetingRefValue) meetingRefValue.textContent = link.getAttribute("data-ref-value") || "";
-                        if (meetingContact) meetingContact.textContent = link.getAttribute("data-contact") || "";
-                        if (meetingLanguage) meetingLanguage.textContent = link.getAttribute("data-language") || "";
-                        if (meetingStatus) meetingStatus.textContent = link.getAttribute("data-status-text") || "";
-                        if (meetingStampUser) meetingStampUser.textContent = link.getAttribute("data-stamp-user") || "";
-                        if (guestUrlInput) guestUrlInput.value = link.getAttribute("data-meeting-url") || "";
-                        if (urlInput) urlInput.value = link.getAttribute("data-meeting-url-host") || "";
-                        if (previousNotes) previousNotes.textContent = link.getAttribute("data-notes") || "-";
-                        if (notesInput) notesInput.value = "";
-                        if (mid) mid.setAttribute("data-original-notes", link.getAttribute("data-notes") || "");
-
-                        var meetingUrlInputs = document.querySelectorAll('.online-meeting-data-row');
-                        meetingUrlInputs.forEach(function (element) {
-                            if (link.getAttribute("data-contact") !== "Online Meeting") {
-                                element.style.display = 'none';
-                            } else {
-                                element.style.display = '';
-                            }
-                        });
-                        clearModalFeedback("meetingModal");
-
-                        openModal("meetingModal");
-                    });
                 });
             }
 
             function bindExpandableText() {
-                window.FastQProviderCommon.bindExpandableText();
-                return;
-
-                document.querySelectorAll(".expandable-text").forEach(function (toggle) {
-                    if (toggle.getAttribute("data-bound-expandable") === "1") {
-                        return;
-                    }
-
-                    toggle.setAttribute("data-bound-expandable", "1");
-                    toggle.addEventListener("click", function (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-
-          				var isExpanded = toggle.classList.toggle("is-expanded");
-          				toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-                    });
-                });
+                providerCommon.bindExpandableText();
             }
  
             function goToCalendar(monthDate, preferredDay) {
