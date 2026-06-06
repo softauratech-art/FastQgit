@@ -12,7 +12,7 @@
     --radius: 18px;
     --radius-sm: 12px;
     --drawer-width: 200px;
-    --drawer-collapsed-width: 86px;
+    --drawer-collapsed-width: 95px;
     --font-heading: "Space Grotesk", "Trebuchet MS", sans-serif;
     --font-body: "Source Sans 3", "Segoe UI", sans-serif;
     
@@ -110,6 +110,14 @@ code {
 .brand-sub {
     font-size: 12px;
     color: var(--muted);
+}
+
+.brand-env:not(:empty)  {
+    font-size: 14px;
+	font-weight: bold;
+    color: var(--accent);
+	border: solid 1px var(--accent);
+	padding: 5px;
 }
 
 .logo {
@@ -271,6 +279,14 @@ body.nav-collapsed .logo-mark,
 body.nav-collapsed .logo
 {
     display: none;
+}
+
+.mt-2 {
+    margin-top: .5rem !important;
+}
+
+.mt-3 {
+    margin-top: 1rem !important;
 }
 
 form {
@@ -670,6 +686,8 @@ table {
 .table tbody tr:hover {
     background: rgba(255, 255, 255, 0.65);
 }
+
+tbody:empty {display:none;}
 
 .report-grid {
     display: grid;

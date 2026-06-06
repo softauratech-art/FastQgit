@@ -233,6 +233,7 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\table-sortable.js" />
+    <Content Include="Scripts\provider-common.js" />
     <Content Include="Scripts\timepicker\jquery.timepicker.css" />
     <Content Include="Scripts\timepicker\jquery.timepicker.js" />
     <Content Include="Logout.aspx" />
@@ -246,6 +247,8 @@
     <Content Include="Views\Reporting\Overview.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
+    <Content Include="Views\Shared\_ListProviderWalkins.cshtml" />
+    <Content Include="Views\Shared\_ProviderRowActionModals.cshtml" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Scripts\fastq.live.js" />
     <Content Include="Web.config" />

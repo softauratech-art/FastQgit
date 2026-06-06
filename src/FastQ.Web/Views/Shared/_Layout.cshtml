@@ -2,10 +2,10 @@
 @using System.Configuration
 @{
     Layout = null;
-    
+
     var providerTodayUrl = Url.Action("Today", "Provider");
     var env = FastQ.Web.Helpers.Utilities.GetServerEnvironment();
-
+    env = env.StartsWith("PRD") ? "" : env ;
     var authsvc = new FastQ.Web.Services.AuthService();
     var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
     var isProvider = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider);
@@ -99,6 +99,7 @@
                 </div>
                 <div class="brand-title">FastQ Manager</div>
                 @*<div class="brand-sub">Queue orchestration</div>*@
+            <div class="brand-env">@env</div>
             </div>
             <nav class="drawer-nav">
                 @if (isHost || isProvider || isSuperAdmin || isQueueAdmin)
@@ -197,9 +198,6 @@
         <div class="main-area">
             <header class="topbar">
                 @RenderSection("PageHeader", required: false)
-                <div class="badge accent">
-					@env         
-				</div>
             </header>
 
             <main class="page">

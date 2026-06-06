@@ -1,0 +1,121 @@
+﻿@using System
+@using System.Collections.Generic
+@using System.Globalization
+@using FastQ.Data.Entities
+@using FastQ.Web.Models
+@using Newtonsoft.Json
+@model ProviderTodayViewModel
+@{
+
+    var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
+    var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+}
+
+
+<div class="table-name-label">Walk-ins</div>
+<div class="table-card">
+    <table class="table table-striped table-sm" id="tblWalkins">
+        <thead>
+            <tr>
+                <th data-sort-key="time">Start</th>
+                <th data-sort-key="text">Queue</th>
+                <th data-sort-key="text">Type of Service</th>
+                <th data-sort-key="text">Name</th>
+                <th data-sort-key="text">Phone</th>
+                <th>Reference</th>
+                <th>Lang Pref</th>
+                <th data-sort-key="text">Status</th>
+                <th data-sort-key="text">Contact</th>
+                <th class="text-center">Join Meeting</th>
+                <th class="text-center">Expand</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (walkinRows.Count == 0)
+            {
+                <tr class="table-empty">
+                    <td colspan="11" class="text-center">No walk-ins for today.</td>
+                </tr>
+            }
+            else
+            {
+                for (var i = 0; i < walkinRows.Count; i++)
+                {
+                    var row = walkinRows[i];
+                    var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
+                    var rowStatus = row.Status.ToString();
+                    var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
+                    var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
+                    var rowStampUser = row.StampUser;
+                    var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                    <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
+                        <td nowrap>@row.StartDateText<br />@row.StartTimeText</td>
+                        <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
+                        <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
+                        <td>@row.CustomerName</td>
+                        <td nowrap>@row.Phone</td>
+                        <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
+                        <td>@row.LanguagePreference</td>
+                        <td class="@statusClass">@row.StatusText</td>
+                        <td>@row.ContactMethod</td>
+                        <td class="text-center">
+                            @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
+                            {
+                                <a class="btn small ghost" href="@Url.Action("JoinMeeting", "Provider", new {srctype='W', srcid = row.AppointmentId })" target="_blank" rel="noopener">Join Meeting</a>
+                            }
+                        </td>
+                        <td class="text-center">&darr;</td>
+                    </tr>
+                    <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId"
+                        data-appointment-id="@row.AppointmentId"
+                        data-src-type="W"
+                        data-queue-id="@row.QueueId"
+                        data-service-id="@row.ServiceId"
+                        data-ref-value="@row.RefValue"
+                        data-notes="@row.Notes"
+                        data-date="@rowDate"
+                        data-time="@row.StartTimeText">
+                        <td colspan="11">
+                            <div class="action-bar">
+                                <div class="action-bar-main">
+                                    <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Check-In</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="begin" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Start</button>
+                                    <button class="btn small secondary" type="button" data-provider-action="true" data-action="end" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">End</button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="transfer" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Transfer</button>
+                                    <button class="btn small ghost meeting-link" type="button"
+                                            data-appointment-id="@row.AppointmentId"
+                                            data-src-type="W"
+                                            data-date="@row.StartDateText"
+                                            data-time="@row.StartTimeText"
+                                            data-title="@row.ServiceType"
+                                            data-customer="@row.CustomerName"
+                                            data-email="@row.CustomerEmail"
+                                            data-phone="@row.Phone"
+                                            data-queue-name="@row.QueueName"
+                                            data-service-name="@row.ServiceType"
+                                            data-ref-value="@row.RefValue"
+                                            data-language="@row.LanguagePreference"
+                                            data-status-text="@row.StatusText"
+                                            data-contact="@row.ContactMethod"
+                                            data-stamp-user="@rowStampUser"
+                                            data-meeting-url="@row.MeetingUrl"
+                                            data-meeting-url-host="@row.MeetingUrlHost"
+                                            data-notes="@row.Notes">
+                                        Info
+                                    </button>
+                                    <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
+                                </div>
+                                <div class="action-bar-meta">Stampuser: @(string.IsNullOrWhiteSpace(row.StampUserName) ? "-" : row.StampUserName)</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            <tr class="table-empty is-hidden">
+                <td colspan="11" class="text-center">No results match the selected filters.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+

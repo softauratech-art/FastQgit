@@ -8,7 +8,7 @@ namespace FastQ.Data.Repositories
     {
         User Get(string uid, string stampuser);
         void AddOrUpdateUser(string action, User ouser, long entityid, string hostqueues, string providerqueues, string reporterqueues, string queueadminqueues, string stampuser);
- 		IList<User> ListAll(long entityid, string stampuser);
+ 		IList<User> ListAll(long entityid, string stampuser, bool loadfullprofile);
         public void Delete(string uid, long entityid, string stampuser);
         IList<UserQueuePermission> GetActionQueuePermissions(string uid);
     }

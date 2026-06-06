@@ -51,10 +51,6 @@
     white-space: nowrap;
 }
 
-.table-card {
-    overflow-x: auto;
-}
-
 .expandable-text {
     display: block;
     max-width: 250px;
@@ -106,30 +102,6 @@
     align-items: center;
 }
 
-
-/*
-        .route-modal .modal {
-            width: min(680px, 92vw);
-            border-radius: 10px;
-            background: #f8fafc;
-            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        .route-modal .modal-header {
-            padding: 16px 18px 6px;
-        }
-
-        .route-modal .modal-title {
-            font-size: 20px;
-            color: #1f2937;
-        }
-
-        .route-modal .modal-body {
-            padding: 0 18px 12px;
-            gap: 12px;
-        }*/
-
 .route-form-row {
     display: grid;
     grid-template-columns: 160px 1fr;
@@ -166,21 +138,16 @@
     align-items: center;
 }
 
-/*        .route-modal .modal-footer .btn.primary {
-            background: #19a24b;
-            border-color: #19a24b;
-            color: #ffffff;
-            font-weight: 600;
-        }
+    /* Automatically adds sort styles to any existing or dynamically loaded sorting headers */
+    .table-card table thead th[data-sort-key] {
+        cursor: pointer;
+    }
 
-        .route-modal .modal-footer .btn.primary:hover {
-            background: #15803d;
-            border-color: #15803d;
-        }
-
-        .route-modal .modal-footer .btn.ghost {
-            color: #3b82f6;
-        }*/
+    .table-card table thead th[data-sort-key]:hover::after {
+        content: " (Sort)";
+        font-size: 0.85em;
+        opacity: 0.7;
+    }
 
 @@media (max-width: 640px) {
     .route-form-row {
@@ -229,8 +196,7 @@
 }
 
 .table-name-label {
-    margin: 0 0 8px;
-    font-size: 18px;
+    margin: 0 0 8px;    
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;

@@ -390,7 +390,7 @@
     color: #475569;
     line-height: 1.35;
 }
-
+/*
 .expandable-text {
     display: block;
     width: 100%;
@@ -421,7 +421,35 @@
 .expandable-text:focus-visible {
     text-decoration: underline;
     outline: none;
+}*/
+
+.expandable-text {
+    display: block;
+    max-width:500px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
 }
+
+    .expandable-text:hover,
+    .expandable-text:focus-visible {
+        text-decoration: underline;
+        outline: none;
+    }
+
+    .expandable-text.is-expanded {
+        max-width: none;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+    }
 
 .agenda-notes {
     margin-top: 6px;
@@ -487,55 +515,7 @@
     border: 1px dashed #cbd5e1;
     color: #64748b;
 }
-/*
-.calendar-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    padding: 24px;
-}
 
-    .calendar-modal-backdrop.show {
-        display: flex;
-    }
-
-.calendar-modal {
-    width: min(720px, 100%);
-    background: #fff;
-    border-radius: 24px;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-    overflow: hidden;
-}
-
-.calendar-modal-header,
-.calendar-modal-footer {
-    padding: 18px 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.calendar-modal-footer {
-    border-bottom: 0;
-    border-top: 1px solid #e2e8f0;
-    justify-content: flex-end;
-}
-
-.calendar-modal-header h3 {
-    margin: 0;
-    font-size: 20px;
-}
-
-.calendar-modal-body {
-    padding: 22px;
-}
-*/
 .calendar-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -581,49 +561,6 @@
     gap: 12px;
     align-items: center;
 }
-/*
-.modal-backdrop.show {
-    display: flex;
-}
-
-.modal {
-    width: min(560px, 92vw);
-    border-radius: 18px;
-    background: #ffffff;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-    padding: 18px 20px;
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.modal-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-}
-
-.modal-body {
-    display: grid;
-    gap: 10px;
-    margin-top: 12px;
-}
-
-
-.modal-body input,
-.modal-body textarea,
-.modal-body select {
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    font-size: 13px;
-    width: 100%;
-}
-*/
 
 .helper-text {
     font-size: 12px;

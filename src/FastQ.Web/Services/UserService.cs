@@ -43,7 +43,7 @@ namespace FastQ.Web.Services
         }
 
         private UserVM TransformToModel(Data.Entities.User userentity) {
-            return new UserVM
+            UserVM ouser = new UserVM
             {
                 FirstName = userentity.FirstName,
                 LastName = userentity.LastName,
@@ -51,17 +51,23 @@ namespace FastQ.Web.Services
                 Title = userentity.Title,
                 OtherLanguage = userentity.Language,
                 IsActive = userentity.ActiveFlag,
-                Email = userentity.Email,
-                IsAdmin = userentity.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag,
-                Permissions = userentity.Queues.Where(q => q.EntityId == _sessionentity && q.QueueActiveFlag == true).ToList()
+                Email = userentity.Email
             };
+
+            if (userentity.BusinessEntities != null)
+                ouser.IsAdmin = userentity.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag;
+            
+            if (userentity.Queues != null)
+                ouser.Permissions = userentity.Queues?.Where(q => q.EntityId == _sessionentity && q.QueueActiveFlag == true).ToList();
+          
+            return ouser;
         }
         public IList<UserVM> TransformToModelList()
         {
             if (string.IsNullOrWhiteSpace(_stampuser))
                 return new List<UserVM>();
                         
-            var rows = _users.ListAll(_sessionentity, _stampuser);
+            var rows = _users.ListAll(_sessionentity, _stampuser, false);
             return rows.Select(r =>
             {
                 return TransformToModel(r);

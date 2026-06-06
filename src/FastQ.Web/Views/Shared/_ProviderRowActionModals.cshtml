@@ -1,0 +1,194 @@
+﻿
+<div id="meetingModal" class="modal-backdrop info-modal" role="dialog" aria-modal="true" aria-labelledby="meetingModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="meetingModalTitle">Meeting Details</h5>
+            <button class="btn small ghost" type="button" data-modal-close="meetingModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="meetingModal"></div>
+            <div class="info-summary-grid">
+                <div class="info-chip"><span class="info-chip-label">Meeting Id</span><span id="mid"></span></div>
+                <div class="info-chip"><span class="info-chip-label">Date</span><span id="meetingDate"></span></div>
+                <div class="info-chip"><span class="info-chip-label">Time</span><span id="meetingTime"></span></div>
+                <div class="info-chip"><span>Status</span><strong id="meetingStatus"></strong></div>
+            </div>
+            <div class="info-section">
+                <div class="info-section-title">Customer</div>
+                <div class="info-kv-grid">
+                    <div class="info-kv"><span>Name</span><strong id="meetingCustomer"></strong></div>
+                    <div class="info-kv"><span>Phone</span><strong id="meetingPhone"></strong></div>
+                    <div class="info-kv"><span>Email</span><strong id="meetingEmail"></strong></div>
+                </div>
+            </div>
+            <div class="info-section">
+                <div class="info-section-title">Service</div>
+                <div class="info-kv-grid">
+                    <div class="info-kv info-kv-wide"><span>Queue</span><strong id="meetingQueue"></strong></div>
+                    <div class="info-kv"><span>Contact</span><strong id="meetingContact"></strong></div>
+
+                    <div class="info-kv info-kv-wide"><span>Service</span><strong id="meetingService"></strong></div>
+                    <div class="info-kv"><span>Language</span><strong id="meetingLanguage"></strong></div>
+
+                    <div class="info-kv info-kv-wide"><span>Ref Value</span><strong id="meetingRefValue"></strong></div>
+                    <div class="info-kv"><span>Stamp User</span><strong id="meetingStampUser"></strong></div>
+                </div>
+            </div>
+
+            <div class="field-row online-meeting-data-row">
+                <div>Guest URL:</div>
+                <input id="mGuestURL" type="text" value="" />
+            </div>
+            <div class="field-row online-meeting-data-row">
+                <div>Host URL:</div>
+                <input id="mURL" type="text" value="" />
+            </div>
+            <div class="field-row">
+                <div>Previous Notes:</div>
+                <div id="mPreviousNotes" class="route-input info-readonly">-</div>
+            </div>
+            <div class="field-row">
+                <div>Add Notes:</div>
+                <textarea id="mNotes" rows="3"></textarea>
+            </div>
+            <div class="helper-text">Guest URL, host URL, and notes are saved. Text entered in Add Notes is appended to Previous Notes.</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
+            <button class="btn primary" type="button" id="saveMeeting">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="serviceRouteModal" class="modal-backdrop route-modal" role="dialog" aria-modal="true" aria-labelledby="serviceRouteModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="serviceRouteModalTitle">Route Appointment</h5>
+            <button class="btn small ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="serviceRouteModal"></div>
+            <div class="route-form-row">
+                <label for="routeTargetKind">Target Type</label>
+                <select id="routeTargetKind" class="route-input">
+                    <option value="W">Walkin (FCFS)</option>
+                    <option value="A">Appointment</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="routeTargetQueueId">Queue</label>
+                <select id="routeTargetQueueId" class="route-input">
+                    <option value="">Select queue</option>
+                </select>
+            </div>
+            <div class="route-form-row">
+                <label for="routeTargetServiceId">Service</label>
+                <select id="routeTargetServiceId" class="route-input">
+                    <option value="">Select service</option>
+                </select>
+            </div>
+            <div class="route-form-row route-appointment-only" id="routeDateRow">
+                <label for="routeTargetDateDisplay">Target Date</label>
+                <input id="routeTargetDate" type="hidden" value="" data-current-value="" />
+                <div class="entry-date-picker" id="routeTargetDatePicker">
+                    <div class="entry-date-picker-trigger">
+                        <input id="routeTargetDateDisplay" class="route-input" type="text" placeholder="mm/dd/yyyy" autocomplete="off" aria-expanded="false" />
+                        <button id="routeTargetDateToggle" class="entry-date-picker-toggle" type="button" aria-label="Open calendar">
+                            <i class="bi bi-calendar3"></i>
+                        </button>
+                    </div>
+                    <div class="entry-date-picker-panel">
+                        <div class="entry-date-picker-header">
+                            <button id="routeTargetDatePrev" class="btn small ghost" type="button" aria-label="Previous month">&lt;</button>
+                            <div id="routeTargetDateMonthLabel" class="entry-date-picker-month"></div>
+                            <button id="routeTargetDateNext" class="btn small ghost" type="button" aria-label="Next month">&gt;</button>
+                        </div>
+                        <div class="entry-date-picker-weekdays">
+                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                        </div>
+                        <div id="routeTargetDateCalendar" class="entry-date-picker-grid"></div>
+                    </div>
+                </div>
+                <div id="routeTargetDateStatus" class="helper-text"></div>
+            </div>
+            <div class="route-form-row route-appointment-only" id="routeTimeRow">
+                <label for="routeTargetTime">Target Time</label>
+                <select id="routeTargetTime" class="route-input">
+                    <option value="">Select time</option>
+                </select>
+            </div>
+            <div class="route-form-row" id="routeRefRow">
+                <label for="routeRefValue">Reference</label>
+                <select id="routeRefValue" class="route-input">
+                    <option value="">Select reference</option>
+                    <option value="PHONE">Phone Follow-up</option>
+                    <option value="EMAIL">Email Follow-up</option>
+                    <option value="WALKIN">Walk-in Return</option>
+                    <option value="REFERRAL">Referral</option>
+                </select>
+            </div>
+            <div class="route-form-row" id="routeNotesRow">
+                <label for="routeNotes">Customer Comments</label>
+                <textarea id="routeNotes" rows="3"></textarea>
+            </div>
+            <input id="routeMode" type="hidden" value="" />
+            <input id="routeSrcType" type="hidden" value="" />
+            <input id="routeSrcId" type="hidden" value="" />
+            <input id="routeOriginalNotes" type="hidden" value="" />
+            <input id="routeCompletionNotes" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="serviceRouteModal">Close</button>
+            <button class="btn primary" type="button" id="saveRoute">Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="endServiceModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="endServiceModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="endServiceModalTitle">End Service</h5>
+            <button class="btn small ghost" type="button" data-modal-close="endServiceModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="endServiceModal"></div>
+            <p>Does the customer need any additional service today?</p>
+            <div class="route-form-row">
+                <label for="endServiceCompletionNotes">Completion Notes</label>
+                <textarea id="endServiceCompletionNotes" rows="3"></textarea>
+            </div>
+            <input id="endServiceSrcId" type="hidden" value="" />
+            <input id="endServiceSrcType" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="endServiceModal">Cancel</button>
+            <button class="btn secondary" type="button" data-end-choice="end-only">End Only</button>
+            <button class="btn primary" type="button" data-end-choice="end-add">End + New</button>
+        </div>
+    </div>
+</div>
+
+<div id="cancelServiceModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelServiceModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="cancelServiceModalTitle">Cancel Service</h5>
+            <button class="btn small ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-feedback" data-modal-feedback="cancelServiceModal"></div>
+            <p>Does the customer need to be cancelled only, or cancelled and rescheduled?</p>
+            <div class="route-form-row">
+                <label for="cancelServiceNotes">Cancellation Notes</label>
+                <textarea id="cancelServiceNotes" rows="3"></textarea>
+            </div>
+            <input id="cancelServiceSrcId" type="hidden" value="" />
+            <input id="cancelServiceSrcType" type="hidden" value="" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="cancelServiceModal">Close</button>
+            <button class="btn secondary" type="button" data-cancel-choice="cancel-only">Cancel Only</button>
+            <button class="btn primary" type="button" data-cancel-choice="cancel-transfer">Cancel + Reschedule</button>
+        </div>
+    </div>
+</div>
+

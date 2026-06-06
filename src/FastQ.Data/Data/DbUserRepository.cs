@@ -52,7 +52,7 @@ namespace FastQ.Data.Db
             }
         }
 
-        public IList<User> ListAll(long entityid, string stampuser)
+        public IList<User> ListAll(long entityid, string stampuser, bool loadfullprofile)
         {
             var list = new List<User>();
             using (var conn = DataAccess.Open())
@@ -73,7 +73,7 @@ namespace FastQ.Data.Db
                         }
                         while (reader.Read())
                         {
-                            list.Add(MapUser(reader, stampuser));
+                            list.Add(MapUser(reader, stampuser, loadfullprofile));
                         }
                     }
                 }
@@ -81,8 +81,12 @@ namespace FastQ.Data.Db
 
             return list;
         }
-
         private static User MapUser(IDataRecord record, string stampuser)
+        {
+            return MapUser(record,stampuser,true);
+        }
+
+        private static User MapUser(IDataRecord record, string stampuser, bool loadfullprofile = true)
         {
             var userIdText = record["USER_ID"]?.ToString() ?? string.Empty;
             if (userIdText == string.Empty)
@@ -95,7 +99,7 @@ namespace FastQ.Data.Db
             var stampDate = record["STAMPDATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["STAMPDATE"]);
             var activeFlag = (record["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y";
             var adminFlag = (record["ADMINFLAG"]?.ToString() ?? "N") == "Y";
-            return new User
+            User ouser =  new User
             {
                 UserId = record["USER_ID"]?.ToString() ?? string.Empty,
                 //LocationId = locationId == Guid.Empty ? Guid.Empty : locationId,
@@ -109,9 +113,12 @@ namespace FastQ.Data.Db
                 Title = record["TITLE"]?.ToString() ?? string.Empty,
                 StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
                 StampDate = stampDate,
-                Queues = GetUserQueuePermissions(userIdText, stampuser),
-                BusinessEntities = GetUserEntities(userIdText, stampuser)
+                // Query and load Queues & BusinessEnities ONLY IF loadfullprofile is TRUE (default) - improves performacnce of ListAll page
+                Queues = loadfullprofile ? GetUserQueuePermissions(userIdText, stampuser) : null,
+                BusinessEntities = loadfullprofile ? GetUserEntities(userIdText, stampuser) : null
             };
+
+            return ouser;
         }
 
         public static IList<UserQueuePermission> GetUserQueuePermissions(string uid, string stampuser)
