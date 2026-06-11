@@ -102,20 +102,19 @@ namespace FastQ.Data.Db
             User ouser =  new User
             {
                 UserId = record["USER_ID"]?.ToString() ?? string.Empty,
-                //LocationId = locationId == Guid.Empty ? Guid.Empty : locationId,
                 FirstName = first,
                 LastName = last,
                 Email = record["EMAIL"]?.ToString() ?? string.Empty,
                 Phone = record["PHONE"]?.ToString() ?? string.Empty,
                 Language = record["LANGUAGE"]?.ToString() ?? string.Empty,
                 ActiveFlag = activeFlag,
-                // AdminFlag set in BusinessWEntities collection for each entity
+                // AdminFlag set in BusinessEntities collection for each entity
                 Title = record["TITLE"]?.ToString() ?? string.Empty,
                 StampUser = record["STAMPUSER"]?.ToString() ?? string.Empty,
                 StampDate = stampDate,
-                // Query and load Queues & BusinessEnities ONLY IF loadfullprofile is TRUE (default) - improves performacnce of ListAll page
-                Queues = loadfullprofile ? GetUserQueuePermissions(userIdText, stampuser) : null,
-                BusinessEntities = loadfullprofile ? GetUserEntities(userIdText, stampuser) : null
+                BusinessEntities = GetUserEntities(userIdText, stampuser),
+                // Query and load Queues ONLY IF loadfullprofile is TRUE (default) - improves performacnce of ListAll page
+                Queues = loadfullprofile ? GetUserQueuePermissions(userIdText, stampuser) : null
             };
 
             return ouser;

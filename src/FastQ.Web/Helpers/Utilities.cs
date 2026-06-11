@@ -114,6 +114,20 @@ namespace FastQ.Web.Helpers
 
             return $"{env} : {sid}";
         }
+
+        public static string FormatPhoneForDisplay(string phone)
+        {
+            string raw = phone ?? string.Empty;
+            string number = new string(raw.Where(char.IsDigit).ToArray());
+            if (number.Length == 11 && number[0] == '1')
+            {
+                number = number.Substring(1);
+            }
+
+            return number.Length == 10
+                ? string.Format(CultureInfo.InvariantCulture, "({0})-{1}-{2}", number.Substring(0, 3), number.Substring(3, 3), number.Substring(6, 4))
+                : raw;
+        }
     }
 
 }

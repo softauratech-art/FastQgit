@@ -39,6 +39,7 @@ namespace FastQ.Web.Models
         public string LanguagePreference { get; set; }
         public string RefValue { get; set; }
         public string StampUser { get; set; }
+        public string StampUserName { get; set; }
         public string EntryKind { get; set; }
         public string Notes { get; set; }
         public string MeetingUrl { get; set; }

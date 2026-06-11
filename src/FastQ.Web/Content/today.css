@@ -143,11 +143,10 @@
         cursor: pointer;
     }
 
-    .table-card table thead th[data-sort-key]:hover::after {
-        content: " (Sort)";
-        font-size: 0.85em;
-        opacity: 0.7;
-    }
+        .table-card table thead th[data-sort-key]:hover::after {
+            font-size: 0.85em;
+            opacity: 0.7;
+        }
 
 @@media (max-width: 640px) {
     .route-form-row {

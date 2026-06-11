@@ -45,42 +45,6 @@ namespace FastQ.Web.Controllers
             return BuildTodayView(start, end, true, false);
         }
 
-        [HttpGet]
-        public ActionResult ReloadWalkins(string start, string end)
-        {
-            long entityId = _auth.GetSessionEntityId();
-            var userId = _auth.GetLoggedInWindowsUser();
-
-            var rangeStart = ParseDateOrDefault(start, DateTime.Now.Date);
-            var rangeEnd = ParseDateOrDefault(end, rangeStart);
-            if (rangeEnd < rangeStart)
-            {
-                rangeEnd = rangeStart;
-            }
-
-            var walkins = !string.IsNullOrWhiteSpace(userId)
-                ? _service.BuildWalkinsForUser(entityId, userId, rangeStart, rangeEnd)
-                : Enumerable.Empty<ProviderAppointmentRow>();
-
-
-            var dateText = rangeStart == rangeEnd
-                            ? rangeStart.ToString("ddd, MMM dd yyyy", CultureInfo.InvariantCulture)
-                            : string.Format(CultureInfo.InvariantCulture, "{0:ddd, MMM dd yyyy} - {1:ddd, MMM dd yyyy}", rangeStart, rangeEnd);
-
-            var model = new ProviderTodayViewModel
-            {
-                DateText = dateText,
-                Walkins = walkins.ToList()
-            };
-
-            ViewBag.ProviderId = userId ?? string.Empty;
-            ViewBag.StartDate = rangeStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            ViewBag.EndDate = rangeEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            ViewBag.ShowWalkins = true;
-            ViewBag.ServiceAccess = _auth.GetServicePageAccess();
-            return PartialView("_ListProviderWalkins", model);
-        }
-
         private ActionResult BuildTodayView(string start, string end, bool showWalkins, bool showAppointments)
         {
             long entityId = _auth.GetSessionEntityId();

@@ -52,11 +52,11 @@ namespace FastQ.Web.Models.Admin
         [DisplayName("Requires Uploads?")]
         public bool HasUploads { get; set; }
         
-        [Required(ErrorMessage = "Field is required")]
+        [Required(ErrorMessage = "Min. Lead Time is required")]
         [DisplayName("Min. Lead Time")] 
         public string LeadTimeMin { get; set; }
 
-        [Required(ErrorMessage = "Field is required")]
+        [Required(ErrorMessage = "Max. Lead Time is required")]
         [DisplayName("Max. Lead Time")]        
         public string LeadTimeMax { get; set; }
 

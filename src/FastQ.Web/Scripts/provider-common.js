@@ -24,6 +24,8 @@
     return value < 10 ? "0" + value : String(value);
   }
 
+  common.toTwoDigits = twoDigits;
+
   common.toIsoDate = function (dateValue) {
     if (!common.isValidDateValue(dateValue)) {
       return "";
@@ -134,6 +136,324 @@
     if (displayInput) {
       displayInput.setAttribute("aria-expanded", "false");
     }
+  };
+
+  common.normalizeUsPhoneNumber = function (value) {
+    var digits = (value || "").replace(/\D/g, "");
+    if (digits.length === 11 && digits.charAt(0) === "1") {
+      digits = digits.substring(1);
+    }
+    if (digits.length !== 10) {
+      return "";
+    }
+    if (digits.charAt(0) === "0" || digits.charAt(0) === "1" || digits.charAt(3) === "0" || digits.charAt(3) === "1") {
+      return "";
+    }
+    return "(" + digits.substring(0, 3) + ")-" + digits.substring(3, 6) + "-" + digits.substring(6);
+  };
+
+  common.validateUsPhoneNumber = function (value) {
+    var normalized = common.normalizeUsPhoneNumber(value);
+    return {
+      ok: !!normalized,
+      value: normalized,
+      error: normalized ? "" : "Enter a valid US phone number."
+    };
+  };
+
+  common.attachPhoneFormatting = function (inputId, modalId, showModalFeedback) {
+    var input = document.getElementById(inputId);
+    if (!input) {
+      return;
+    }
+    input.addEventListener("blur", function () {
+      var value = (input.value || "").trim();
+      if (!value) {
+        return;
+      }
+      var validation = common.validateUsPhoneNumber(value);
+      if (!validation.ok) {
+        (showModalFeedback || noop)(modalId, validation.error, true);
+        return;
+      }
+    });
+  };
+
+  common.postForm = function (url, data) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+      credentials: "same-origin",
+      body: new URLSearchParams(data).toString()
+    }).then(function (r) {
+      return r.text().then(function (text) {
+        try {
+          var parsed = JSON.parse(text);
+          if (!r.ok && parsed && parsed.ok !== false) {
+            parsed.ok = false;
+          }
+          return parsed;
+        } catch (err) {
+          var fallbackMessage = "Request failed.";
+          if (r.status) {
+            fallbackMessage = "Request failed (" + r.status + " " + (r.statusText || "Error") + ").";
+          }
+          console.error("postForm JSON parse failed.", {
+            url: url,
+            status: r.status,
+            bodyPreview: (text || "").slice(0, 500),
+            error: err
+          });
+          return {
+            ok: false,
+            error: fallbackMessage
+          };
+        }
+      });
+    }).catch(function (err) {
+      console.error("postForm request failed.", {
+        url: url,
+        error: err
+      });
+      return {
+        ok: false,
+        error: "Network error. Please try again."
+      };
+    });
+  };
+
+  common.getJson = function (url) {
+    return fetch(url, {
+      method: "GET",
+      credentials: "same-origin"
+    }).then(function (r) { return r.json(); });
+  };
+
+  common.appendNotes = function (existingNotes, newNotes) {
+    var current = (existingNotes || "").trim();
+    var incoming = (newNotes || "").trim();
+    if (!incoming) {
+      return current;
+    }
+    if (!current) {
+      return incoming;
+    }
+    if (incoming === current || incoming.indexOf(current) === 0) {
+      return incoming;
+    }
+    return current + "\n" + incoming;
+  };
+
+  common.buildCustomerName = function (firstName, lastName) {
+    return [firstName || "", lastName || ""].join(" ").trim();
+  };
+
+  common.setFieldDisabled = function (id, disabled) {
+    var input = document.getElementById(id);
+    if (input) {
+      input.readOnly = !!disabled;
+      input.classList.toggle("autofilled-lock", !!disabled);
+      input.setAttribute("aria-disabled", disabled ? "true" : "false");
+    }
+  };
+
+  common.setSelectOptions = function (selectElement, items, placeholderText) {
+    if (!selectElement) {
+      return;
+    }
+
+    selectElement.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = placeholderText;
+    selectElement.appendChild(placeholder);
+
+    (items || []).forEach(function (item) {
+      var option = document.createElement("option");
+      option.value = item.code || "";
+      option.textContent = item.name || item.code || "";
+      selectElement.appendChild(option);
+    });
+  };
+
+  common.setSelectValues = function (selectElement, values, placeholder) {
+    if (!selectElement) {
+      return;
+    }
+
+    selectElement.innerHTML = "";
+    var placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    selectElement.appendChild(placeholderOption);
+
+    (values || []).forEach(function (item) {
+      var option = document.createElement("option");
+      option.value = item.value;
+      option.textContent = item.label;
+      option.disabled = !!item.disabled;
+      if (!(typeof item.endtime === "undefined")) {
+        option.setAttribute("data-slotEnd", item.endtime);
+      }
+      selectElement.appendChild(option);
+    });
+  };
+
+  common.parseIsoDurationToMinutes = function (text) {
+    var match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/i.exec((text || "").trim());
+    if (!match) {
+      return 0;
+    }
+    var days = parseInt(match[1] || "0", 10);
+    var hours = parseInt(match[2] || "0", 10);
+    var minutes = parseInt(match[3] || "0", 10);
+    return (((days * 24) + hours) * 60) + minutes;
+  };
+
+  common.normalizeScheduleWindow = function (openMinutes, closeMinutes) {
+    var dayMinutes = 24 * 60;
+    if (openMinutes < 0 || closeMinutes < 0) {
+      return null;
+    }
+    if (closeMinutes <= openMinutes) {
+      closeMinutes += 12 * 60;
+    }
+    if (closeMinutes <= openMinutes) {
+      closeMinutes += 12 * 60;
+    }
+    if (closeMinutes > dayMinutes) {
+      closeMinutes = dayMinutes;
+    }
+    if (closeMinutes <= openMinutes) {
+      return null;
+    }
+    return { open: openMinutes, close: closeMinutes };
+  };
+
+  common.getWeekdayCode = function (dateValue) {
+    var day = dateValue.getDay();
+    return day === 0 ? "7" : String(day);
+  };
+
+  common.parseDateOnly = function (value) {
+    if (!value) {
+      return null;
+    }
+    var raw = value.toString().trim();
+    if (!raw) {
+      return null;
+    }
+
+    var date = new Date(raw);
+    if (!isNaN(date.getTime())) {
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+
+    var iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+    if (iso) {
+      date = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+
+    var mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw);
+    if (mdy) {
+      date = new Date(parseInt(mdy[3], 10), parseInt(mdy[1], 10) - 1, parseInt(mdy[2], 10));
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+
+    return null;
+  };
+
+  common.isScheduleActiveOnDate = function (schedule, dateValue) {
+    if (!schedule || !dateValue) {
+      return false;
+    }
+    var day = new Date(dateValue.getTime());
+    day.setHours(0, 0, 0, 0);
+    var begin = common.parseDateOnly(schedule.dateBegin || "");
+    var end = common.parseDateOnly(schedule.dateEnd || "");
+    if (begin && day < begin) {
+      return false;
+    }
+    if (end && day > end) {
+      return false;
+    }
+    var weekly = (schedule.weeklySch || "").toString();
+    if (!weekly) {
+      return true;
+    }
+    return weekly.indexOf(common.getWeekdayCode(dateValue)) >= 0;
+  };
+
+  common.getMinimumFutureMinutes = function (dateValue) {
+    if (!(dateValue instanceof Date)) {
+      return null;
+    }
+
+    var now = new Date();
+    if (now.getFullYear() !== dateValue.getFullYear() ||
+        now.getMonth() !== dateValue.getMonth() ||
+        now.getDate() !== dateValue.getDate()) {
+      return null;
+    }
+
+    return (now.getHours() * 60) + now.getMinutes() + 1;
+  };
+
+  common.getEntryDateWindowLimits = function () {
+    var minDate = new Date();
+    minDate.setHours(0, 0, 0, 0);
+    var maxDate = new Date(minDate.getTime());
+    maxDate.setMonth(maxDate.getMonth() + 6);
+    return {
+      min: common.toIsoDate(minDate),
+      max: common.toIsoDate(maxDate)
+    };
+  };
+
+  common.getEntryCalendarBounds = function () {
+    var limits = common.getEntryDateWindowLimits();
+    return {
+      min: new Date(limits.min + "T00:00:00"),
+      max: new Date(limits.max + "T00:00:00")
+    };
+  };
+
+  common.to24Hour = function (value) {
+    var match = /^\s*(\d{1,2})\:(\d{2})\s*([AaPp][Mm])\s*$/.exec(value || "");
+    if (!match) {
+      return "00:00";
+    }
+    var hour = parseInt(match[1], 10) % 12;
+    if (match[3].toUpperCase() === "PM") {
+      hour += 12;
+    }
+    return twoDigits(hour) + ":" + match[2];
+  };
+
+  common.parseClockMinutes = function (value) {
+    var text = common.to24Hour(value);
+    var parts = text.split(":");
+    if (parts.length !== 2) {
+      return null;
+    }
+
+    var hour = parseInt(parts[0], 10);
+    var minute = parseInt(parts[1], 10);
+    if (isNaN(hour) || isNaN(minute)) {
+      return null;
+    }
+
+    return (hour * 60) + minute;
+  };
+
+  common.formatRouteDateLabel = function (dateValue) {
+    var labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return labels[dateValue.getDay()] + ", " + months[dateValue.getMonth()] + " " + dateValue.getDate() + ", " + dateValue.getFullYear();
   };
 
   common.refreshProviderActionButtonStates = function (container) {

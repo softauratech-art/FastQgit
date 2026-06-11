@@ -134,7 +134,9 @@ namespace FastQ.Web.Services
                 ScheduledFor = row.ScheduledFor,
                 Notes = row.Notes,
                 MeetingUrl = row.MeetingUrl,
-                MeetingUrlHost = row.MeetingUrlHost
+                MeetingUrlHost = row.MeetingUrlHost,
+                StampUserName = row.StampUserName
+                
             };
         }
     }

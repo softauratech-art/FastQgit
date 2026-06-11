@@ -2,6 +2,7 @@
 @using System.Collections.Generic
 @using System.Globalization
 @using FastQ.Data.Entities
+@using FastQ.Web.Helpers
 @using FastQ.Web.Models
 @using Newtonsoft.Json
 @model ProviderTodayViewModel
@@ -9,6 +10,20 @@
 
     var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+    var defaultDate = (ViewBag.StartDate as string) ?? DateTime.Now.ToString("yyyy-MM-dd");
+    var endDate = (ViewBag.EndDate as string) ?? defaultDate;
+    DateTime parsedStart;
+    var startDateValue = DateTime.TryParseExact(defaultDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedStart)
+        ? parsedStart.Date
+        : DateTime.Now.Date;
+    DateTime parsedEnd;
+    var endDateValue = DateTime.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedEnd)
+        ? parsedEnd.Date
+        : startDateValue;
+    if (endDateValue < startDateValue)
+    {
+        endDateValue = startDateValue;
+    }
 }
 
 
@@ -22,8 +37,8 @@
                 <th data-sort-key="text">Type of Service</th>
                 <th data-sort-key="text">Name</th>
                 <th data-sort-key="text">Phone</th>
-                <th>Reference</th>
-                <th>Lang Pref</th>
+                <th data-sort-key="text">Reference</th>
+                <th data-sort-key="text">Lang Pref</th>
                 <th data-sort-key="text">Status</th>
                 <th data-sort-key="text">Contact</th>
                 <th class="text-center">Join Meeting</th>
@@ -48,12 +63,22 @@
                     var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                     var rowStampUser = row.StampUser;
                     var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                    var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
                     <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
-                        <td nowrap>@row.StartDateText<br />@row.StartTimeText</td>
+                        <td nowrap>
+                            @if (endDateValue.Equals(startDateValue))
+                            {
+                                @row.StartTimeText
+                            }
+                            else
+                            {
+                                @row.StartDateText<br />@row.StartTimeText
+                            }
+                        </td>
                         <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
                         <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
                         <td>@row.CustomerName</td>
-                        <td nowrap>@row.Phone</td>
+                        <td nowrap>@rowPhoneDisplay</td>
                         <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                         <td>@row.LanguagePreference</td>
                         <td class="@statusClass">@row.StatusText</td>
@@ -90,7 +115,7 @@
                                             data-title="@row.ServiceType"
                                             data-customer="@row.CustomerName"
                                             data-email="@row.CustomerEmail"
-                                            data-phone="@row.Phone"
+                                            data-phone="@rowPhoneDisplay"
                                             data-queue-name="@row.QueueName"
                                             data-service-name="@row.ServiceType"
                                             data-ref-value="@row.RefValue"
@@ -117,5 +142,3 @@
         </tbody>
     </table>
 </div>
-
-

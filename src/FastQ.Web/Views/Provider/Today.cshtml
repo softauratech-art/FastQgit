@@ -1,7 +1,9 @@
 @using System
 @using System.Collections.Generic
 @using System.Globalization
+@using System.Linq
 @using FastQ.Data.Entities
+@using FastQ.Web.Helpers
 @using FastQ.Web.Models
 @using Newtonsoft.Json
 @model ProviderTodayViewModel
@@ -151,9 +153,7 @@
 {
     <div class="card">
 
-        <div id="partialWalkinsContainer">
-            @Html.Partial("~/Views/Shared/_ListProviderWalkins.cshtml", Model)
-        </div>
+        @Html.Partial("~/Views/Shared/_ListProviderWalkins.cshtml", Model)
 
         @if (serviceAccess.CanAddEntries)
         {
@@ -175,8 +175,8 @@
                         <th data-sort-key="text">Type of Service</th>
                         <th data-sort-key="text">Name</th>
                         <th data-sort-key="text">Phone</th>
-                        <th>Reference</th>
-                        <th>Lang Pref</th>
+                        <th data-sort-key="text">Reference</th>
+                        <th data-sort-key="text">Lang Pref</th>
                         <th data-sort-key="text">Status</th>
                         <th data-sort-key="text">Contact</th>
                         <th class="text-center">Join Meeting</th>
@@ -201,12 +201,22 @@
                             var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var rowStampUser = getStampUser(row);
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                            var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
-                                <td nowrap>@row.StartDateText<br />@row.StartTimeText</td>
+                                <td nowrap>
+                                    @if (endDateValue.Equals(startDateValue))
+                                    {
+                                        @row.StartTimeText
+                                    }
+                                    else
+                                    {
+                                        @row.StartDateText<br/>@row.StartTimeText
+                                    }
+                                </td>
                                 <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
                                 <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
                                 <td>@row.CustomerName</td>
-                                <td nowrap>@row.Phone</td>
+                                <td nowrap>@rowPhoneDisplay</td>
                                 <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass">@row.StatusText</td>
@@ -243,7 +253,7 @@
                                                     data-title="@row.ServiceType"
                                                     data-customer="@row.CustomerName"
                                                     data-email="@row.CustomerEmail"
-                                                    data-phone="@row.Phone"
+                                                    data-phone="@rowPhoneDisplay"
                                                     data-queue-name="@row.QueueName"
                                                     data-service-name="@row.ServiceType"
                                                     data-ref-value="@row.RefValue"
@@ -340,15 +350,8 @@
     };
 
     var providerCommon = window.FastQProviderCommon;
-    if (typeof providerCommon.getPreferredEntryDateValue !== "function") {
-      providerCommon.getPreferredEntryDateValue = function (dateSelect, selectedDate) {
-        var value = dateSelect ? (dateSelect.getAttribute("data-current-value") || dateSelect.value || "") : "";
-        if (value) {
-          return value;
-        }
-        return selectedDate instanceof Date ? providerCommon.toIsoDate(selectedDate) : (selectedDate || "");
-      };
-    }
+    var toIsoDate = providerCommon.toIsoDate;
+    var toTwoDigits = providerCommon.toTwoDigits;
     var isValidDateValue = providerCommon.isValidDateValue;
     var startOfMonth = providerCommon.startOfMonth;
     var addMonths = providerCommon.addMonths;
@@ -358,64 +361,25 @@
     var setEntryDateDisplay = providerCommon.setEntryDateDisplay;
     var openEntryDatePicker = providerCommon.openEntryDatePicker;
     var closeEntryDatePicker = providerCommon.closeEntryDatePicker;
-
-    function postForm(url, data) {
-      return fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-        credentials: "same-origin",
-        body: new URLSearchParams(data).toString()
-      }).then(function (r) {
-        return r.text().then(function (text) {
-          try {
-            var parsed = JSON.parse(text);
-            if (!r.ok && parsed && parsed.ok !== false) {
-              parsed.ok = false;
-            }
-            return parsed;
-          } catch (err) {
-            var fallbackMessage = "Request failed.";
-            if (r.status) {
-              fallbackMessage = "Request failed (" + r.status + " " + (r.statusText || "Error") + ").";
-            }
-            console.error("postForm JSON parse failed.", {
-              url: url,
-              status: r.status,
-              bodyPreview: (text || "").slice(0, 500),
-              error: err
-            });
-            return {
-              ok: false,
-              error: fallbackMessage
-            };
-          }
-        });
-      }).catch(function (err) {
-        console.error("postForm request failed.", {
-          url: url,
-          error: err
-        });
-        return {
-          ok: false,
-          error: "Network error. Please try again."
-        };
-      });
-    }
-
-    function toIsoDate(dateValue) {
-      return dateValue.getFullYear() + "-" + toTwoDigits(dateValue.getMonth() + 1) + "-" + toTwoDigits(dateValue.getDate());
-    }
-
-    function getEntryDateWindowLimits() {
-      var minDate = new Date();
-      minDate.setHours(0, 0, 0, 0);
-      var maxDate = new Date(minDate.getTime());
-      maxDate.setMonth(maxDate.getMonth() + 6);
-      return {
-        min: toIsoDate(minDate),
-        max: toIsoDate(maxDate)
-      };
-    }
+    var validateUsPhoneNumber = providerCommon.validateUsPhoneNumber;
+    var postForm = providerCommon.postForm;
+    var getEntryDateWindowLimits = providerCommon.getEntryDateWindowLimits;
+    var appendNotes = providerCommon.appendNotes;
+    var getJson = providerCommon.getJson;
+    var setSelectOptions = providerCommon.setSelectOptions;
+    var buildCustomerName = providerCommon.buildCustomerName;
+    var setFieldDisabled = providerCommon.setFieldDisabled;
+    var parseIsoDurationToMinutes = providerCommon.parseIsoDurationToMinutes;
+    var normalizeScheduleWindow = providerCommon.normalizeScheduleWindow;
+    var getWeekdayCode = providerCommon.getWeekdayCode;
+    var parseDateOnly = providerCommon.parseDateOnly;
+    var isScheduleActiveOnDate = providerCommon.isScheduleActiveOnDate;
+    var getMinimumFutureMinutes = providerCommon.getMinimumFutureMinutes;
+    var getEntryCalendarBounds = providerCommon.getEntryCalendarBounds;
+    var setSelectValues = providerCommon.setSelectValues;
+    var parseClockMinutes = providerCommon.parseClockMinutes;
+    var to24Hour = providerCommon.to24Hour;
+    var formatRouteDateLabel = providerCommon.formatRouteDateLabel;
 
     function updateMeetingLinkUi(appointmentId, srcType, rawGuestUrl, rawHostUrl, notes) {
       var normalizedSrcType = (srcType || "A").toUpperCase();
@@ -440,47 +404,6 @@
         }
 
         joinCell.innerHTML = '<a class="btn small ghost" href="' + normalizedGuestUrl.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener">Join Meeting</a>';
-      });
-    }
-
-    function appendNotes(existingNotes, newNotes) {
-      var current = (existingNotes || "").trim();
-      var incoming = (newNotes || "").trim();
-      if (!incoming) {
-        return current;
-      }
-      if (!current) {
-        return incoming;
-      }
-      if (incoming === current || incoming.indexOf(current) === 0) {
-        return incoming;
-      }
-      return current + "\n" + incoming;
-    }
-
-    function getJson(url) {
-      return fetch(url, {
-        method: "GET",
-        credentials: "same-origin"
-      }).then(function (r) { return r.json(); });
-    }
-
-    function setSelectOptions(selectElement, items, placeholderText) {
-      if (!selectElement) {
-        return;
-      }
-
-      selectElement.innerHTML = "";
-      var placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = placeholderText;
-      selectElement.appendChild(placeholder);
-
-      (items || []).forEach(function (item) {
-        var option = document.createElement("option");
-        option.value = item.code || "";
-        option.textContent = item.name || item.code || "";
-        selectElement.appendChild(option);
       });
     }
 
@@ -764,59 +687,8 @@
       });
     }
 
-    function buildCustomerName(firstName, lastName) {
-      return [firstName || "", lastName || ""].join(" ").trim();
-    }
-
-    function normalizeUsPhoneNumber(value) {
-      var digits = (value || "").replace(/\D/g, "");
-      if (digits.length === 11 && digits.charAt(0) === "1") {
-        digits = digits.substring(1);
-      }
-      if (digits.length !== 10) {
-        return "";
-      }
-      if (digits.charAt(0) === "0" || digits.charAt(0) === "1" || digits.charAt(3) === "0" || digits.charAt(3) === "1") {
-        return "";
-      }
-      return "(" + digits.substring(0, 3) + ") " + digits.substring(3, 6) + "-" + digits.substring(6);
-    }
-
-    function validateUsPhoneNumber(value) {
-      var normalized = normalizeUsPhoneNumber(value);
-      return {
-        ok: !!normalized,
-        value: normalized,
-        error: normalized ? "" : "Enter a valid US phone number."
-      };
-    }
-
     function attachPhoneFormatting(inputId, modalId) {
-      var input = document.getElementById(inputId);
-      if (!input) {
-        return;
-      }
-      input.addEventListener("blur", function () {
-        var value = (input.value || "").trim();
-        if (!value) {
-          return;
-        }
-        var validation = validateUsPhoneNumber(value);
-        if (!validation.ok) {
-          showModalFeedback(modalId, validation.error, true);
-          return;
-        }
-        input.value = validation.value;
-      });
-    }
-
-    function setFieldDisabled(id, disabled) {
-      var input = document.getElementById(id);
-      if (input) {
-        input.readOnly = !!disabled;
-        input.classList.toggle("autofilled-lock", !!disabled);
-        input.setAttribute("aria-disabled", disabled ? "true" : "false");
-      }
+      providerCommon.attachPhoneFormatting(inputId, modalId, showModalFeedback);
     }
 
     function getCustomerLookupFieldIds(prefix) {
@@ -936,118 +808,6 @@
         customerLookupTimers[timerKey] = 0;
         lookupCustomerByEmail(prefix);
       }, 700);
-    }
-
-    function parseIsoDurationToMinutes(text) {
-      var match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/i.exec((text || "").trim());
-      if (!match) {
-        return 0;
-      }
-      var days = parseInt(match[1] || "0", 10);
-      var hours = parseInt(match[2] || "0", 10);
-      var minutes = parseInt(match[3] || "0", 10);
-      return (((days * 24) + hours) * 60) + minutes;
-    }
-
-    function normalizeScheduleWindow(openMinutes, closeMinutes) {
-      var dayMinutes = 24 * 60;
-      if (openMinutes < 0 || closeMinutes < 0) {
-        return null;
-      }
-      if (closeMinutes <= openMinutes) {
-        closeMinutes += 12 * 60;
-      }
-      if (closeMinutes <= openMinutes) {
-        closeMinutes += 12 * 60;
-      }
-      if (closeMinutes > dayMinutes) {
-        closeMinutes = dayMinutes;
-      }
-      if (closeMinutes <= openMinutes) {
-        return null;
-      }
-      return { open: openMinutes, close: closeMinutes };
-    }
-
-    function getWeekdayCode(dateValue) {
-      var day = dateValue.getDay();
-      return day === 0 ? "7" : String(day);
-    }
-
-    function parseDateOnly(value) {
-      if (!value) {
-        return null;
-      }
-      var raw = value.toString().trim();
-      if (!raw) {
-        return null;
-      }
-
-      var date = new Date(raw);
-      if (!isNaN(date.getTime())) {
-        date.setHours(0, 0, 0, 0);
-        return date;
-      }
-
-      var iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
-      if (iso) {
-        date = new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
-        date.setHours(0, 0, 0, 0);
-        return date;
-      }
-
-      var mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw);
-      if (mdy) {
-        date = new Date(parseInt(mdy[3], 10), parseInt(mdy[1], 10) - 1, parseInt(mdy[2], 10));
-        date.setHours(0, 0, 0, 0);
-        return date;
-      }
-
-      return null;
-    }
-
-    function isScheduleActiveOnDate(schedule, dateValue) {
-      if (!schedule || !dateValue) {
-        return false;
-      }
-      var day = new Date(dateValue.getTime());
-      day.setHours(0, 0, 0, 0);
-      var begin = parseDateOnly(schedule.dateBegin || "");
-      var end = parseDateOnly(schedule.dateEnd || "");
-      if (begin && day < begin) {
-        return false;
-      }
-      if (end && day > end) {
-        return false;
-      }
-      var weekly = (schedule.weeklySch || "").toString();
-      if (!weekly) {
-        return true;
-      }
-      return weekly.indexOf(getWeekdayCode(dateValue)) >= 0;
-    }
-
-    function getMinimumFutureMinutes(dateValue) {
-      if (!(dateValue instanceof Date)) {
-        return null;
-      }
-
-      var now = new Date();
-      if (now.getFullYear() !== dateValue.getFullYear() ||
-          now.getMonth() !== dateValue.getMonth() ||
-          now.getDate() !== dateValue.getDate()) {
-        return null;
-      }
-
-      return (now.getHours() * 60) + now.getMinutes() + 1;
-    }
-
-    function getEntryCalendarBounds() {
-      var limits = getEntryDateWindowLimits();
-      return {
-        min: new Date(limits.min + "T00:00:00"),
-        max: new Date(limits.max + "T00:00:00")
-      };
     }
 
     function getEntryCalendarState(prefix) {
@@ -1718,66 +1478,6 @@
       el.classList.add("show");
       el.classList.toggle("error", !!isError);
       el.classList.toggle("success", !isError);
-    }
-
-    function setSelectValues(selectElement, values, placeholder) {
-      if (!selectElement) {
-        return;
-      }
-
-      selectElement.innerHTML = "";
-      var placeholderOption = document.createElement("option");
-      placeholderOption.value = "";
-      placeholderOption.textContent = placeholder;
-      selectElement.appendChild(placeholderOption);
-
-      (values || []).forEach(function (item) {
-        var option = document.createElement("option");
-        option.value = item.value;
-        option.textContent = item.label;
-        option.disabled = !!item.disabled;
-        if (!(typeof item.endtime === "undefined"))
-              option.setAttribute('data-slotEnd', item.endtime);
-        selectElement.appendChild(option);
-      });
-    }
-
-    function parseClockMinutes(value) {
-      var text = to24Hour(value);
-      var parts = text.split(":");
-      if (parts.length !== 2) {
-        return null;
-      }
-
-      var hour = parseInt(parts[0], 10);
-      var minute = parseInt(parts[1], 10);
-      if (isNaN(hour) || isNaN(minute)) {
-        return null;
-      }
-
-      return (hour * 60) + minute;
-    }
-
-    function to24Hour(value) {
-      var match = /^\s*(\d{1,2})\:(\d{2})\s*([AaPp][Mm])\s*$/.exec(value || "");
-      if (!match) {
-        return "00:00";
-      }
-      var hour = parseInt(match[1], 10) % 12;
-      if (match[3].toUpperCase() === "PM") {
-        hour += 12;
-      }
-      return toTwoDigits(hour) + ":" + match[2];
-    }
-
-    function formatRouteDateLabel(dateValue) {
-      var labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      return labels[dateValue.getDay()] + ", " + months[dateValue.getMonth()] + " " + dateValue.getDate() + ", " + dateValue.getFullYear();
-    }
-
-    function toTwoDigits(value) {
-      return value < 10 ? "0" + value : String(value);
     }
 
     function populateRouteDateOptions(selectedDateValue) {
@@ -2529,6 +2229,10 @@
         pair.detail.parentNode.removeChild(pair.detail);
       });
 
+      currentBody.querySelectorAll("tr.table-empty:not(.is-hidden)").forEach(function (row) {
+        row.parentNode.removeChild(row);
+      });
+
       var emptyRow = currentBody.querySelector("tr.table-empty");
       incomingPairs.forEach(function (pair) {
         var keyParts = pair.key.split(":");
@@ -2563,6 +2267,17 @@
           currentBody.appendChild(incomingDetail);
         }
       });
+
+      if (incomingPairs.length === 0) {
+        var incomingEmptyRow = incomingBody.querySelector("tr.table-empty:not(.is-hidden)");
+        var importedEmptyRow = incomingEmptyRow ? document.importNode(incomingEmptyRow, true) : null;
+        var filterEmptyRow = currentBody.querySelector("tr.table-empty.is-hidden");
+        if (importedEmptyRow && filterEmptyRow) {
+          currentBody.insertBefore(importedEmptyRow, filterEmptyRow);
+        } else if (importedEmptyRow) {
+          currentBody.appendChild(importedEmptyRow);
+        }
+      }
 
       return collectProviderRowChanges(before, getProviderRowSnapshot(currentBody));
     }
@@ -3344,10 +3059,6 @@
           showModalFeedback("addAppointmentModal", appointmentPhoneValidation.error, true);
           return;
         }
-        payload.phone = appointmentPhoneValidation.value;
-        if (document.getElementById("addApptPhone")) {
-          document.getElementById("addApptPhone").value = appointmentPhoneValidation.value;
-        }
 
         validatePermitNumber("addAppt", true).then(function (isValid) {
           if (!isValid) {
@@ -3410,10 +3121,6 @@
           showModalFeedback("addWalkinModal", walkinPhoneValidation.error, true);
           return;
         }
-        payload.phone = walkinPhoneValidation.value;
-        if (document.getElementById("addWalkinPhone")) {
-          document.getElementById("addWalkinPhone").value = walkinPhoneValidation.value;
-        }
 
         validatePermitNumber("addWalkin", true).then(function (isValid) {
           if (!isValid) {
@@ -3455,51 +3162,8 @@
       });
     }
 
-    function refreshWalkinsPartial() {
-      var container = document.getElementById("partialWalkinsContainer");
-      if (!container) {
-        return;
-      }
-
-      var startInput = document.getElementById("walkinsStartDate");
-      var endInput = document.getElementById("walkinsEndDate");
-      var url = new URL("@Url.Action("ReloadWalkins", "Provider")", window.location.origin);
-      if (startInput && startInput.value) {
-        url.searchParams.set("start", startInput.value);
-      }
-      if (endInput && endInput.value) {
-        url.searchParams.set("end", endInput.value);
-      }
-
-      fetch(url.toString(), {
-        method: "GET",
-        credentials: "same-origin"
-      })
-        .then(function (res) { return res.text(); })
-        .then(function (html) {
-          var before = getProviderRowSnapshot(container);
-          container.innerHTML = html;
-          notifyProviderRowChanges(collectProviderRowChanges(before, getProviderRowSnapshot(container)));
-          bindAccordionRows();
-          bindTodaySorting();
-          bindProviderActionButtons();
-          bindMeetingLinks();
-          bindExpandableText();
-
-          var filterContainer = document.querySelector('[data-table-filter="walkins"]');
-          if (filterContainer) {
-            applyTableFilters(filterContainer);
-          }
-        });
-    }
-
     function refreshExternalProviderRows() {
-      if (@(showAppointments ? "true" : "false")) {
-        queueLiveSync(true);
-        return;
-      }
-
-      refreshWalkinsPartial();
+      queueLiveSync(true);
     }
 
     setInterval(refreshExternalProviderRows, 30 * 1000);

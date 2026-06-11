@@ -72,10 +72,10 @@ namespace FastQ.Web.Controllers.Admin
                 ovm.HasUploads = Request.Form["HasUploads"] != null ? Request.Form["HasUploads"].Equals("true") : false;
 
                 if (ovm.SelectedRefCriterias == null)
-                    ModelState.AddModelError("RefCriteria", "Ref Criteria is required.");
+                    ModelState.AddModelError("RefCriteria", "Ref Criteria(s) required.");
 
                 if (ovm.SelectedContactMethods == null)
-                    ModelState.AddModelError("AppointmentType", "Appointment Type is required.");
+                    ModelState.AddModelError("AppointmentType", "Appointment Type(s) required.");
 
                 if (ModelState.IsValid)
                 {
@@ -110,6 +110,7 @@ namespace FastQ.Web.Controllers.Admin
 
         private void ReloadSchedulesServicesAccess(QueueVM ovm)
         {
+            if (ovm == null || ovm.Id == 0) return;
             var oqueue = _service.GetQueue(ovm.Id);
             if (oqueue == null) return;
             
