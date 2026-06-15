@@ -20,6 +20,10 @@
     return dateHost ? (dateHost.getAttribute("data-date") || "") : "";
   }
 
+  function isInsideLockedActionRow(button) {
+    return !!closest(button, ".row-actions.locked");
+  }
+
   function twoDigits(value) {
     return value < 10 ? "0" + value : String(value);
   }
@@ -467,7 +471,7 @@
       var appointmentId = button.getAttribute("data-appointment-id") || "";
       var queueId = button.getAttribute("data-queue-id") || "";
       var status = appointmentId ? getStatus(appointmentId) : "";
-      button.disabled = !canAction(status, action, queueId, getRowDate(button));
+      button.disabled = isInsideLockedActionRow(button) || !canAction(status, action, queueId, getRowDate(button));
     });
   };
 
@@ -502,7 +506,7 @@
       var getStatus = options.getStatusForAppointment || function () { return ""; };
       var canAction = options.canAction || function () { return true; };
       var status = getStatus(appointmentId);
-      if (!canAction(status, action, queueId, getRowDate(button))) {
+      if (isInsideLockedActionRow(button) || !canAction(status, action, queueId, getRowDate(button))) {
         window.alert("Action not allowed for the current status.");
         return;
       }

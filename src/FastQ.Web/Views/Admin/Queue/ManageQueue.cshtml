@@ -524,7 +524,7 @@
                 },
                 initComplete: function () {
                     // Use initComplete to insert the actual hyperlink after the table is initialized
-                    $('.action-btn-div').wrapInner('<input type="submit" value="Save Changes" class="btn small btn-save" id="btnSaveAccess" style="float:right" />');
+                    $('.action-btn-div').wrapInner('<button type="submit" class="btn small btn-save" id="btnSaveAccess" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>Save Changes</button>');
                     $('.dt-search').prepend('<span class="card-title" style="display:inline;margin-right: 20px;">Security</span>');
 
                 }

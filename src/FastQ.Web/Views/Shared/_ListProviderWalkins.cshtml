@@ -81,7 +81,7 @@
                         <td nowrap>@rowPhoneDisplay</td>
                         <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                         <td>@row.LanguagePreference</td>
-                        <td class="@statusClass">@row.StatusText</td>
+                        <td class="@statusClass" data-provider-status-cell="true">@row.StatusText</td>
                         <td>@row.ContactMethod</td>
                         <td class="text-center">
                             @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))

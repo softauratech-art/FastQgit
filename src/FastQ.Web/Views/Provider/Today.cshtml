@@ -219,7 +219,7 @@
                                 <td nowrap>@rowPhoneDisplay</td>
                                 <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
-                                <td class="@statusClass">@row.StatusText</td>
+                                <td class="@statusClass" data-provider-status-cell="true">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">
                                     @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
@@ -317,6 +317,8 @@
     var todayNotifications = [];
     var todayNotificationUnreadCount = 0;
     var maxNotificationItems = 25;
+    var lastFastQNotifyAt = 0;
+    var recentNotificationKeys = {};
 
     var activeRouteQueueDetails = null;
     var activeEntryQueueDetails = {
@@ -2062,10 +2064,19 @@
       });
     }
 
-    function lockAppointment(appointmentId) {
-      document.querySelectorAll('[data-appointment-id="' + appointmentId + '"]').forEach(function (el) {
-        el.classList.add("locked");
+    function setAppointmentLocked(appointmentId, locked) {
+      document.querySelectorAll(
+        'tr.accordion-toggle[data-appointment-id="' + appointmentId + '"],'
+        + 'tr.row-actions[data-appointment-id="' + appointmentId + '"]'
+      ).forEach(function (el) {
+        el.classList.toggle("locked", !!locked);
       });
+
+      providerCommon.refreshProviderActionButtonStates();
+    }
+
+    function lockAppointment(appointmentId) {
+      setAppointmentLocked(appointmentId, true);
     }
 
     function getStatusTextForDisplay(normalizedStatus) {
@@ -2086,11 +2097,12 @@
 
       var normalized = normalizeStatus(status);
       row.setAttribute("data-status", status || "");
-      var statusCell = row.children.length > 5 ? row.children[5] : null;
+      var statusCell = row.querySelector('[data-provider-status-cell="true"]') || (row.children.length > 7 ? row.children[7] : null);
       if (statusCell) {
         statusCell.textContent = getStatusTextForDisplay(normalized);
         statusCell.classList.toggle("error", normalized === "cancelled");
       }
+      providerCommon.refreshProviderActionButtonStates();
     }
 
     var liveSyncTimer = null;
@@ -2422,6 +2434,14 @@
       if (!message) {
         return;
       }
+      var notificationKey = (message || "").toString().trim().toLowerCase();
+      var now = Date.now();
+      if (notificationKey && recentNotificationKeys[notificationKey] && now - recentNotificationKeys[notificationKey] < 3000) {
+        return;
+      }
+      if (notificationKey) {
+        recentNotificationKeys[notificationKey] = now;
+      }
       todayNotifications.unshift({
         message: message,
         timeText: formatNotificationTime(new Date())
@@ -2436,6 +2456,49 @@
       renderNotifications();
     }
 
+    function getLiveStatusNotificationMessage(appointmentId, status, isSelf) {
+      var normalized = normalizeStatus(status);
+      var statusText = getStatusTextForDisplay(normalized);
+      var row = document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
+      var customer = row ? (row.getAttribute("data-customer") || "").trim() : "";
+      var subject = customer || ("#" + appointmentId);
+      var ownerText = isSelf ? "by you" : "by another provider";
+
+      if (normalized === "inservice") {
+        return "Service started for " + subject + " " + ownerText + ".";
+      }
+      if (normalized === "completed") {
+        return "Service completed for " + subject + ".";
+      }
+      if (normalized === "cancelled") {
+        return "Appointment cancelled for " + subject + ".";
+      }
+      if (normalized === "transferredout") {
+        return "Appointment transferred for " + subject + ".";
+      }
+      if (normalized === "arrived") {
+        return "Customer arrived: " + subject + ".";
+      }
+      if (normalized === "scheduled") {
+        return "Appointment scheduled: " + subject + ".";
+      }
+      return statusText ? ("Appointment updated for " + subject + " (" + statusText + ").") : "";
+    }
+
+    function queueAppointmentUpdateFallbackNotification(appointmentId, status, isSelf) {
+      var notifyMarker = lastFastQNotifyAt;
+      var message = getLiveStatusNotificationMessage(appointmentId, status, isSelf);
+      if (!message) {
+        return;
+      }
+
+      setTimeout(function () {
+        if (lastFastQNotifyAt === notifyMarker) {
+          addNotification(message);
+        }
+      }, 800);
+    }
+
     window.onFastQQueueUpdated = function () {
       queueLiveSync();
     };
@@ -2446,14 +2509,15 @@
       var isSelf = (providerId || "").toString().toLowerCase() === (currentProviderId || "").toString().toLowerCase();
       var hasRow = !!document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
       applyLiveStatus(appointmentId, status);
-      if (normalized === "inservice" || normalized === "completed" || normalized === "cancelled" || normalized === "transferredout" || normalized === "scheduled" || normalized === "arrived") {
-        if (!isSelf) {
-          lockAppointment(appointmentId);
-          document.querySelectorAll(".table-filters").forEach(function (container) {
-            applyTableFilters(container);
-          });
-        }
+      if (normalized === "inservice") {
+        setAppointmentLocked(appointmentId, !isSelf);
+      } else if (normalized === "completed" || normalized === "cancelled" || normalized === "transferredout" || normalized === "scheduled" || normalized === "arrived") {
+        setAppointmentLocked(appointmentId, false);
       }
+      document.querySelectorAll(".table-filters").forEach(function (container) {
+        applyTableFilters(container);
+      });
+      queueAppointmentUpdateFallbackNotification(appointmentId, status, isSelf);
       // New rows (e.g. transfer target) may not exist locally yet.
       if (!hasRow && (normalized === "scheduled" || normalized === "arrived")) {
         queueLiveSync();
@@ -2461,6 +2525,7 @@
     };
 
     window.onFastQNotify = function (message) {
+      lastFastQNotifyAt = Date.now();
       addNotification(message);
     };
 
@@ -3166,7 +3231,7 @@
       queueLiveSync(true);
     }
 
-    setInterval(refreshExternalProviderRows, 30 * 1000);
+    setInterval(refreshExternalProviderRows, 60 * 1000);
 
   })();
     </script>
