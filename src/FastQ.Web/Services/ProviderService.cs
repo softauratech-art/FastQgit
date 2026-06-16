@@ -557,6 +557,13 @@ namespace FastQ.Web.Services
                 _rt.AppointmentChanged(sourceAppt);
                 _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
             }
+            else
+            {
+                var sourceStatus = sourceAction == "REMOVE"
+                    ? AppointmentStatus.Cancelled
+                    : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
+                NotifySourceChanged(srcType, request.SrcId, sourceStatus, stampUser);
+            }
 
             _rt.QueueChanged(targetQueue.EntityId, targetQueue.Id);
             return Result<long>.Success(newSrcId);
@@ -613,6 +620,10 @@ namespace FastQ.Web.Services
                     _rt.QueueChanged(appt.EntityId, appt.QueueId);
                 }
             }
+            else
+            {
+                NotifySourceChanged(srcType, request.SrcId, AppointmentStatus.Completed, stampUser);
+            }
 
             if (request.TargetQueueId.HasValue && request.TargetQueueId.Value > 0)
             {
@@ -654,6 +665,10 @@ namespace FastQ.Web.Services
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
+            else
+            {
+                NotifySourceChanged(srcType, appointmentId, AppointmentStatus.Arrived, providerId);
+            }
 
             return Result.Success();
         }
@@ -685,6 +700,10 @@ namespace FastQ.Web.Services
                 PopulateCustomerNotificationFields(appt);
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
+            }
+            else
+            {
+                NotifySourceChanged(srcType, appointmentId, AppointmentStatus.InService, providerId);
             }
 
             return Result.Success();
@@ -718,6 +737,10 @@ namespace FastQ.Web.Services
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
+            else
+            {
+                NotifySourceChanged(srcType, appointmentId, AppointmentStatus.Completed, providerId);
+            }
 
             return Result.Success();
         }
@@ -750,8 +773,45 @@ namespace FastQ.Web.Services
                 _rt.AppointmentChanged(appt);
                 _rt.QueueChanged(appt.EntityId, appt.QueueId);
             }
+            else
+            {
+                NotifySourceChanged(srcType, appointmentId, AppointmentStatus.Cancelled, providerId);
+            }
 
             return Result.Success();
+        }
+
+        private void NotifySourceChanged(char srcType, long sourceId, AppointmentStatus status, string providerId)
+        {
+            var queueId = _appts.GetQueueIdForSource(srcType, sourceId);
+            if (!queueId.HasValue || queueId.Value <= 0)
+            {
+                Trace.TraceWarning("NotifySourceChanged skipped: sourceType={0}, sourceId={1}, status={2}, queueId not found.", srcType, sourceId, status);
+                return;
+            }
+
+            var queue = _queues.Get(queueId.Value);
+            if (queue == null)
+            {
+                Trace.TraceWarning("NotifySourceChanged skipped: sourceType={0}, sourceId={1}, status={2}, queueId={3}, queue not found.", srcType, sourceId, status, queueId.Value);
+                return;
+            }
+
+            var stampUser = string.IsNullOrWhiteSpace(providerId) ? "web" : providerId.Trim();
+            var changed = new Appointment
+            {
+                Id = sourceId,
+                EntityId = queue.EntityId,
+                QueueId = queue.Id,
+                Status = status,
+                ProviderId = stampUser,
+                StampUser = stampUser,
+                UpdatedOn = DateTime.Now,
+                StampDate = DateTime.Now
+            };
+
+            _rt.AppointmentChanged(changed);
+            _rt.QueueChanged(changed.EntityId, changed.QueueId);
         }
 
         private static JObject ParseJsonObject(string json)
