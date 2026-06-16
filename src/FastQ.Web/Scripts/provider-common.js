@@ -24,6 +24,13 @@
     return !!closest(button, ".row-actions.locked");
   }
 
+  function log() {
+    if (!window.console || !console.log) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift("[Provider Common]");
+    console.log.apply(console, args);
+  }
+
   function twoDigits(value) {
     return value < 10 ? "0" + value : String(value);
   }
@@ -498,8 +505,16 @@
       var action = (button.getAttribute("data-action") || "").toLowerCase();
       var srcType = (button.getAttribute("data-src-type") || "A").toUpperCase();
       var queueId = button.getAttribute("data-queue-id") || "";
+      log("provider action click", {
+        appointmentId: appointmentId,
+        action: action,
+        srcType: srcType,
+        queueId: queueId,
+        locked: isInsideLockedActionRow(button)
+      });
 
       if (!appointmentId || !action) {
+        log("provider action ignored; missing appointmentId or action");
         return;
       }
 
@@ -507,6 +522,14 @@
       var canAction = options.canAction || function () { return true; };
       var status = getStatus(appointmentId);
       if (isInsideLockedActionRow(button) || !canAction(status, action, queueId, getRowDate(button))) {
+        log("provider action blocked", {
+          appointmentId: appointmentId,
+          action: action,
+          status: status,
+          queueId: queueId,
+          rowDate: getRowDate(button),
+          locked: isInsideLockedActionRow(button)
+        });
         window.alert("Action not allowed for the current status.");
         return;
       }
@@ -533,6 +556,12 @@
 
       postForm(options.providerActionUrl, { action: action, appointmentId: appointmentId, srcType: srcType })
         .then(function (res) {
+          log("provider action response", {
+            appointmentId: appointmentId,
+            action: action,
+            srcType: srcType,
+            response: res
+          });
           if (!res || !res.ok) {
             window.alert(res && res.error ? res.error : "Action failed.");
             return;

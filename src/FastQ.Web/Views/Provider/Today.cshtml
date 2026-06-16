@@ -383,6 +383,13 @@
     var to24Hour = providerCommon.to24Hour;
     var formatRouteDateLabel = providerCommon.formatRouteDateLabel;
 
+    function todayDebugLog(message, data) {
+      if (!window.console || !console.log) {
+        return;
+      }
+      console.log("[Provider Today] " + message, data || {});
+    }
+
     function updateMeetingLinkUi(appointmentId, srcType, rawGuestUrl, rawHostUrl, notes) {
       var normalizedSrcType = (srcType || "A").toUpperCase();
       var normalizedGuestUrl = rawGuestUrl;
@@ -2065,14 +2072,21 @@
     }
 
     function setAppointmentLocked(appointmentId, locked) {
+      var affectedRows = 0;
       document.querySelectorAll(
         'tr.accordion-toggle[data-appointment-id="' + appointmentId + '"],'
         + 'tr.row-actions[data-appointment-id="' + appointmentId + '"]'
       ).forEach(function (el) {
+        affectedRows += 1;
         el.classList.toggle("locked", !!locked);
       });
 
       providerCommon.refreshProviderActionButtonStates();
+      todayDebugLog("setAppointmentLocked", {
+        appointmentId: appointmentId,
+        locked: !!locked,
+        affectedRows: affectedRows
+      });
     }
 
     function lockAppointment(appointmentId) {
@@ -2092,10 +2106,15 @@
     function applyLiveStatus(appointmentId, status) {
       var row = document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
       if (!row) {
+        todayDebugLog("applyLiveStatus skipped; row not found", {
+          appointmentId: appointmentId,
+          status: status
+        });
         return;
       }
 
       var normalized = normalizeStatus(status);
+      var previousStatus = row.getAttribute("data-status") || "";
       row.setAttribute("data-status", status || "");
       var statusCell = row.querySelector('[data-provider-status-cell="true"]') || (row.children.length > 7 ? row.children[7] : null);
       if (statusCell) {
@@ -2103,6 +2122,14 @@
         statusCell.classList.toggle("error", normalized === "cancelled");
       }
       providerCommon.refreshProviderActionButtonStates();
+      todayDebugLog("applyLiveStatus completed", {
+        appointmentId: appointmentId,
+        previousStatus: previousStatus,
+        nextStatus: status,
+        normalizedStatus: normalized,
+        statusCellFound: !!statusCell,
+        rowClasses: row.className
+      });
     }
 
     var liveSyncTimer = null;
@@ -2296,10 +2323,15 @@
 
     function syncTablesFromServer(notifyUpdates) {
       if (liveSyncInFlight) {
+        todayDebugLog("syncTablesFromServer skipped; already in flight", { notifyUpdates: !!notifyUpdates });
         return;
       }
 
       liveSyncInFlight = true;
+      todayDebugLog("syncTablesFromServer start", {
+        notifyUpdates: !!notifyUpdates,
+        url: window.location.pathname + window.location.search
+      });
       var openRowIds = Array.prototype.map.call(
         document.querySelectorAll(".row-actions.is-open"),
         function (el) { return el.id; }
@@ -2329,6 +2361,11 @@
           if (notifyUpdates) {
             notifyProviderRowChanges(changes);
           }
+          todayDebugLog("syncTablesFromServer applied", {
+            tableCount: count,
+            changeCount: changes.length,
+            changes: changes
+          });
 
           bindAccordionRows();
           bindProviderActionButtons();
@@ -2354,14 +2391,17 @@
           liveSyncInFlight = false;
         })
         .catch(function () {
+          todayDebugLog("syncTablesFromServer failed");
           liveSyncInFlight = false;
         });
     }
 
     function queueLiveSync(notifyUpdates) {
       if (liveSyncTimer) {
+        todayDebugLog("queueLiveSync skipped; timer already queued", { notifyUpdates: !!notifyUpdates });
         return;
       }
+      todayDebugLog("queueLiveSync queued", { notifyUpdates: !!notifyUpdates });
       liveSyncTimer = setTimeout(function () {
         liveSyncTimer = null;
         syncTablesFromServer(!!notifyUpdates);
@@ -2500,14 +2540,23 @@
     }
 
     window.onFastQQueueUpdated = function () {
+      todayDebugLog("onFastQQueueUpdated received");
       queueLiveSync();
     };
 
     window.onFastQAppointmentUpdated = function (appointmentId, status, providerId) {
-      console.log("SignalR appointmentUpdated:", appointmentId, status, providerId, currentProviderId);
       var normalized = (status || "").toString().toLowerCase();
       var isSelf = (providerId || "").toString().toLowerCase() === (currentProviderId || "").toString().toLowerCase();
       var hasRow = !!document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
+      todayDebugLog("onFastQAppointmentUpdated received", {
+        appointmentId: appointmentId,
+        status: status,
+        normalizedStatus: normalized,
+        providerId: providerId,
+        currentProviderId: currentProviderId,
+        isSelf: isSelf,
+        hasRow: hasRow
+      });
       applyLiveStatus(appointmentId, status);
       if (normalized === "inservice") {
         setAppointmentLocked(appointmentId, !isSelf);
@@ -2520,12 +2569,17 @@
       queueAppointmentUpdateFallbackNotification(appointmentId, status, isSelf);
       // New rows (e.g. transfer target) may not exist locally yet.
       if (!hasRow && (normalized === "scheduled" || normalized === "arrived")) {
+        todayDebugLog("onFastQAppointmentUpdated queueing sync because row is missing", {
+          appointmentId: appointmentId,
+          status: status
+        });
         queueLiveSync();
       }
     };
 
     window.onFastQNotify = function (message) {
       lastFastQNotifyAt = Date.now();
+      todayDebugLog("onFastQNotify received", { message: message });
       addNotification(message);
     };
 

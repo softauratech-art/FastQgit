@@ -4,6 +4,18 @@
 */
 (function () {
   function safe(v) { return (v || "").toString(); }
+  function log() {
+    if (!window.console || !console.log) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift("[FastQ Live]");
+    console.log.apply(console, args);
+  }
+  function warn() {
+    if (!window.console || !console.warn) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift("[FastQ Live]");
+    console.warn.apply(console, args);
+  }
 
   window.FastQLive = {
     hub: null,
@@ -11,43 +23,89 @@
     joined: { loc: null, queue: null, appt: null },
 
     start: function () {
-      if (!window.$ || !$.connection || !$.connection.queueHub) return;
+      log("start requested", {
+        hasJquery: !!window.$,
+        hasSignalR: !!(window.$ && $.connection),
+        hasQueueHub: !!(window.$ && $.connection && $.connection.queueHub),
+        path: window.location.pathname
+      });
+
+      if (!window.$ || !$.connection || !$.connection.queueHub) {
+        warn("cannot start; missing jquery, signalR, or queueHub proxy");
+        return;
+      }
 
       this.hub = $.connection.queueHub;
 
       var self = this;
 
       this.hub.client.queueUpdated = function (locationId, queueId) {
+        log("queueUpdated received", { locationId: safe(locationId), queueId: safe(queueId) });
         if (window.onFastQQueueUpdated) window.onFastQQueueUpdated(safe(locationId), safe(queueId));
+        else warn("queueUpdated hook missing on page");
       };
 
       this.hub.client.appointmentUpdated = function (appointmentId, status, providerId) {
+        log("appointmentUpdated received", {
+          appointmentId: safe(appointmentId),
+          status: safe(status),
+          providerId: safe(providerId),
+          hasPageHook: !!window.onFastQAppointmentUpdated
+        });
         if (window.onFastQAppointmentUpdated) {
           window.onFastQAppointmentUpdated(safe(appointmentId), safe(status), safe(providerId));
+        } else {
+          warn("appointmentUpdated hook missing on page");
         }
       };
 
       this.hub.client.notify = function (message) {
         if (!message) return;
         var safeMsg = safe(message);
+        log("notify received", { message: safeMsg, hasPageHook: !!window.onFastQNotify });
         if (window.onFastQNotify) window.onFastQNotify(safeMsg);
+        else warn("notify hook missing on page");
         self.toast(safeMsg);
       };
+
+      $.connection.hub.stateChanged(function (change) {
+        log("stateChanged", { oldState: change.oldState, newState: change.newState });
+      });
+
+      $.connection.hub.disconnected(function () {
+        warn("disconnected");
+      });
+
+      $.connection.hub.reconnecting(function () {
+        warn("reconnecting");
+      });
+
+      $.connection.hub.reconnected(function () {
+        log("reconnected");
+        self.tryJoinGroups();
+      });
 
       $.connection.hub.start()
         .done(function () {
           self.started = true;
+          log("connected", {
+            connectionId: $.connection.hub.id,
+            transport: $.connection.hub.transport && $.connection.hub.transport.name
+          });
           self.toast("Live connected");
           self.tryJoinGroups();
         })
         .fail(function (err) {
+          warn("connect failed", err);
           self.toast("Live connect failed");
-          // console && console.error(err);
         });
     },
 
     tryJoinGroups: function () {
-      if (!this.started || !this.hub) return;
+      if (!this.started || !this.hub) {
+        log("tryJoinGroups skipped", { started: this.started, hasHub: !!this.hub });
+        return;
+      }
 
       var ctx = window.FASTQ_CONTEXT || {};
       var loc = safe(ctx.locationId);
@@ -55,22 +113,32 @@
       var appt = safe(ctx.appointmentId);
 
       var self = this;
+      log("tryJoinGroups", { context: ctx, joined: this.joined });
 
       if (loc && this.joined.loc !== loc) {
         this.hub.server.joinLocation(loc).done(function () {
           self.joined.loc = loc;
+          log("joined location group", { locationId: loc });
+        }).fail(function (err) {
+          warn("join location failed", { locationId: loc, error: err });
         });
       }
 
       if (q && this.joined.queue !== q) {
         this.hub.server.joinQueue(q).done(function () {
           self.joined.queue = q;
+          log("joined queue group", { queueId: q });
+        }).fail(function (err) {
+          warn("join queue failed", { queueId: q, error: err });
         });
       }
 
       if (appt && this.joined.appt !== appt) {
         this.hub.server.joinAppointment(appt).done(function () {
           self.joined.appt = appt;
+          log("joined appointment group", { appointmentId: appt });
+        }).fail(function (err) {
+          warn("join appointment failed", { appointmentId: appt, error: err });
         });
       }
     },
@@ -95,6 +163,7 @@
   // Start after DOM ready
   if (window.$) {
     $(function () {
+      log("document ready; starting live client");
       window.FastQLive.start();
 
       // Some pages set context after first AJAX snapshot; keep trying a bit.
