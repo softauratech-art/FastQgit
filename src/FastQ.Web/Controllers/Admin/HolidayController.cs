@@ -39,7 +39,8 @@ namespace FastQ.Web.Controllers.Admin
         {
             if (!DateTime.TryParse(collection["HolidayDate"].ToString(), out var dt)
                 || string.IsNullOrEmpty(collection["HolidayDesc"]?.ToString()))
-                return Json(new { response = "success", message = "Record saved successfully." });
+                return Json(new { response = "error", message = "Date and Description are required" });
+
             Boolean.TryParse(collection["ActiveFlag"]?.ToString(), out bool isactive);
             try
             {

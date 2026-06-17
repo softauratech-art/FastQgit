@@ -148,7 +148,7 @@ namespace FastQ.Web.Services
                     HasGuidelines = r.HasGuidelines,
                     HasUploads = r.HasUploads
                 };
-            }).OrderBy(r => r.Id).ToList();
+            }).ToList();
         }
         private static IList<QueueScheduleVM> BuildSchedules(IList<QSchedule> rows)
         {
@@ -183,7 +183,7 @@ namespace FastQ.Web.Services
                     NameES = r.NameEs,
                     ActiveFlag = r.ActiveFlag
                 };
-            }).OrderBy(r => r.Id).ToList();
+            }).OrderBy(r => r.Name).ToList();
         }
 
         public void AddOrUpdateQService(QueueServiceVM qsvm)

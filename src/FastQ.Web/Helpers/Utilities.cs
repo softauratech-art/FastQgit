@@ -125,7 +125,7 @@ namespace FastQ.Web.Helpers
             }
 
             return number.Length == 10
-                ? string.Format(CultureInfo.InvariantCulture, "({0})-{1}-{2}", number.Substring(0, 3), number.Substring(3, 3), number.Substring(6, 4))
+                ? string.Format(CultureInfo.InvariantCulture, "({0}) {1}-{2}", number.Substring(0, 3), number.Substring(3, 3), number.Substring(6, 4))
                 : raw;
         }
     }
