@@ -20,7 +20,5 @@ namespace FastQ.Data.Repositories
         IList<ProviderAppointmentData> ListWalkinsForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd);
         bool ValidatePermitNumber(long queueId, string permitNumber, out string message);
         long? GetQueueIdForSource(char srcType, long sourceId);
-        long? GetCustomerIdForSource(char srcType, long sourceId);
-        bool HasCustomerScheduleConflict(long customerId, DateTime scheduledFor, char? excludedSourceType = null, long? excludedSourceId = null);
     }
 }

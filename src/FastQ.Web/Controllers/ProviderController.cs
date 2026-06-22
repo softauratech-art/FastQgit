@@ -455,7 +455,7 @@ namespace FastQ.Web.Controllers
         }
 
         [HttpPost]
-        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string targetEndDate, string targetNotes, string serviceNotes, string sourceAction)
+        public JsonResult TransferAppointment(string appointmentId, string targetQueueId, string srcType, string targetKind, string targetServiceId, string targetDate, string targetEndDate, string targetNotes, string serviceNotes, string sourceAction, string customerEmail, string customerPhone)
         {
             if (!long.TryParse(appointmentId, out var srcId) || !long.TryParse(targetQueueId, out var queueId))
                 return Json(new { ok = false, error = "appointmentId and targetQueueId are required numeric values" });
@@ -496,6 +496,18 @@ namespace FastQ.Web.Controllers
             var parsedTargetDateValue = TryParseTransferTargetDate(targetDate, out var parsedTargetDate)
                 ? parsedTargetDate
                 : (DateTime?)null;
+
+            if (normalizedTarget == "A" && parsedTargetDateValue.HasValue)
+            {
+                var excludedAppointmentId = normalizedSrc == "A" ? (long?)srcId : null;
+                var customerTimeValidation = _customerService.ValidateCustomerTimeSelection(
+                    customerEmail,
+                    customerPhone,
+                    parsedTargetDateValue.Value,
+                    excludedAppointmentId);
+                if (!customerTimeValidation.Ok)
+                    return Json(new { ok = false, error = customerTimeValidation.Error });
+            }
 
             var parsedTargetEndDateValue = TryParseTransferTargetDate(targetEndDate, out var parsedTargetEndDate)
                ? parsedTargetEndDate

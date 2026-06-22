@@ -236,6 +236,8 @@
                                 data-service-id="@row.ServiceId"
                                 data-ref-value="@row.RefValue"
                                 data-notes="@row.Notes"
+                                data-email="@row.CustomerEmail"
+                                data-phone="@rowPhoneDisplay"
                                 data-date="@rowDate"
                                 data-time="@row.StartTimeText">
                                 <td colspan="11">
@@ -1186,7 +1188,9 @@
         return Promise.resolve();
       }
 
-      return loadEntryCalendarMonth(prefix, state.monthStart, preferredDateValue);
+      return loadEntryCalendarMonth(prefix, state.monthStart, preferredDateValue).then(function () {
+        return refreshEntryModalTimeOptions(prefix);
+      });
     }
 
     function refreshEntryModalTimeOptions(prefix) {
@@ -1559,6 +1563,8 @@
         serviceId: source.getAttribute("data-service-id") || "",
         refValue: source.getAttribute("data-ref-value") || "",
         notes: source.getAttribute("data-notes") || "",
+        email: source.getAttribute("data-email") || "",
+        phone: source.getAttribute("data-phone") || "",
         date: source.getAttribute("data-date") || "",
         time: source.getAttribute("data-time") || ""
       };
@@ -2839,6 +2845,17 @@
       });
     }
 
+    var routeTargetServiceId = document.getElementById("routeTargetServiceId");
+    if (routeTargetServiceId) {
+      routeTargetServiceId.addEventListener("change", function () {
+        var routeDate = document.getElementById("routeTargetDate");
+        var selectedDate = routeDate ? (routeDate.value || routeDate.getAttribute("data-current-value") || "") : "";
+        populateRouteDateOptions(selectedDate).then(function () {
+          return populateRouteTimeOptions("");
+        });
+      });
+    }
+
     document.addEventListener("click", function (event) {
       var picker = document.getElementById("routeTargetDatePicker");
       if (!picker || !picker.classList.contains("is-open")) {
@@ -2889,6 +2906,7 @@
         var notes = notesInput ? notesInput.value : "";
         var targetDateTime = buildRouteTargetDateTime(targetDate, targetTime);
         var targetEndDateTime = buildRouteTargetDateTime(targetDate, targetSlotEndTime);
+        var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
 
         if (!appointmentId || !srcType || !targetQueueId) {
           showModalFeedback("serviceRouteModal", "Source and target queue are required.", true);
@@ -2918,6 +2936,8 @@
               targetEndDate: targetEndDateTime || "",
               targetNotes: notes || "",
               serviceNotes: completionNotes || "",
+              customerEmail: sourceContext ? sourceContext.email : "",
+              customerPhone: sourceContext ? sourceContext.phone : "",
               sourceAction: mode === "cancel-transfer" ? "REMOVE" : ""
             })
             .then(function (res) {
@@ -2971,6 +2991,13 @@
     if (addApptDate) {
       addApptDate.addEventListener("change", function () {
         refreshEntryModalTimeOptions("addAppt");
+      });
+    }
+
+    var addApptServiceId = document.getElementById("addApptServiceId");
+    if (addApptServiceId) {
+      addApptServiceId.addEventListener("change", function () {
+        populateEntryModalDateTime("addAppt", activeEntryQueueDetails.addAppt);
       });
     }
 

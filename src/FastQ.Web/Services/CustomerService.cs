@@ -349,7 +349,7 @@ namespace FastQ.Web.Services
             return _appts.GetQueueOpenSlots(queueId, dateLocal.Date);
         }
 
-        public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledFor)
+        public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledFor, long? excludedAppointmentId = null)
         {
             var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
             var normalizedPhone = NormalizePhone(phone);
@@ -361,7 +361,7 @@ namespace FastQ.Web.Services
             if (customer == null)
                 return Result.Success();
 
-            return ValidateCustomerTimeAvailability(customer.Id, scheduledFor);
+            return ValidateCustomerTimeAvailability(customer.Id, scheduledFor, excludedAppointmentId);
         }
 
         private Customer GetOrCreateCustomer(string name, string email, string phone, bool smsOptIn, string stampUser, DateTime now)
@@ -650,7 +650,7 @@ namespace FastQ.Web.Services
                 : Result.Fail("Selected time is no longer available for this queue.");
         }
 
-        private Result ValidateCustomerTimeAvailability(long customerId, DateTime scheduledFor)
+        private Result ValidateCustomerTimeAvailability(long customerId, DateTime scheduledFor, long? excludedAppointmentId = null)
         {
             if (customerId <= 0)
                 return Result.Success();
@@ -658,6 +658,7 @@ namespace FastQ.Web.Services
             var conflict = _appts.ListByCustomer(customerId)
                 .Any(a =>
                     a.Id > 0 &&
+                    (!excludedAppointmentId.HasValue || a.Id != excludedAppointmentId.Value) &&
                     a.ScheduledFor == scheduledFor &&
                     a.Status != AppointmentStatus.Cancelled &&
                     a.Status != AppointmentStatus.ClosedBySystem &&
