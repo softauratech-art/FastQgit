@@ -211,9 +211,6 @@ namespace FastQ.Web.Services
             var now = DateTime.Now;
             var user = string.IsNullOrWhiteSpace(stampUser) ? "fastQ" : stampUser.Trim();
             var customer = GetOrCreateCustomer(customerName, email, phone, false, user, now);
-            var customerTimeValidation = ValidateCustomerTimeAvailability(customer.Id, now);
-            if (!customerTimeValidation.Ok)
-                return Result<long>.Fail(customerTimeValidation.Error);
 
             var walkin = new Appointment
             {
@@ -658,7 +655,14 @@ namespace FastQ.Web.Services
             if (customerId <= 0)
                 return Result.Success();
 
-            var conflict = _appts.HasCustomerScheduleConflict(customerId, scheduledFor);
+            var conflict = _appts.ListByCustomer(customerId)
+                .Any(a =>
+                    a.Id > 0 &&
+                    a.ScheduledFor == scheduledFor &&
+                    a.Status != AppointmentStatus.Cancelled &&
+                    a.Status != AppointmentStatus.ClosedBySystem &&
+                    a.Status != AppointmentStatus.Completed &&
+                    a.Status != AppointmentStatus.TransferredOut);
 
             return conflict
                 ? Result.Fail("Customer already has an appointment scheduled for this date and time.")

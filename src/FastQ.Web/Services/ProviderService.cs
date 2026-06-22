@@ -519,22 +519,6 @@ namespace FastQ.Web.Services
             if (targetKind == 'A' && !request.TargetDate.HasValue)
                 return Result<long>.Fail("Target date is required for appointment transfer.");
 
-            if (targetKind == 'A')
-            {
-                var customerId = _appts.GetCustomerIdForSource(srcType, request.SrcId);
-                if (!customerId.HasValue)
-                    return Result<long>.Fail("Source customer not found.");
-
-                var hasCustomerConflict = _appts.HasCustomerScheduleConflict(
-                    customerId.Value,
-                    request.TargetDate.Value,
-                    srcType,
-                    request.SrcId);
-
-                if (hasCustomerConflict)
-                    return Result<long>.Fail("Customer already has an appointment scheduled for this date and time.");
-            }
-
             var targetQueue = _queues.Get(request.TargetQueueId);
             if (targetQueue == null) return Result<long>.Fail("Target queue not found.");
 
