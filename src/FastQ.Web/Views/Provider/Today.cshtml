@@ -2839,6 +2839,13 @@
       });
     }
 
+    var routeTargetServiceId = document.getElementById("routeTargetServiceId");
+    if (routeTargetServiceId) {
+      routeTargetServiceId.addEventListener("change", function () {
+        populateRouteTimeOptions("");
+      });
+    }
+
     document.addEventListener("click", function (event) {
       var picker = document.getElementById("routeTargetDatePicker");
       if (!picker || !picker.classList.contains("is-open")) {
@@ -2970,6 +2977,13 @@
     var addApptDate = document.getElementById("addApptDate");
     if (addApptDate) {
       addApptDate.addEventListener("change", function () {
+        refreshEntryModalTimeOptions("addAppt");
+      });
+    }
+
+    var addApptServiceId = document.getElementById("addApptServiceId");
+    if (addApptServiceId) {
+      addApptServiceId.addEventListener("change", function () {
         refreshEntryModalTimeOptions("addAppt");
       });
     }
