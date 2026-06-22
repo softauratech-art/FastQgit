@@ -1526,6 +1526,26 @@
       });
     }
 
+    function refreshTimeOptionsAfterServiceSelection(prefix) {
+      var dateInput = document.getElementById(prefix + "Date");
+      var dateDisplayInput = document.getElementById(prefix + "DateDisplay");
+      if (!dateInput) {
+        return;
+      }
+
+      var selectedDate = dateInput.value || dateInput.getAttribute("data-current-value") || "";
+      if (!selectedDate && dateDisplayInput) {
+        selectedDate = parseEntryDateDisplay(dateDisplayInput.value || "");
+      }
+      if (!selectedDate) {
+        return;
+      }
+
+      dateInput.value = selectedDate;
+      dateInput.setAttribute("data-current-value", selectedDate);
+      dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
     function buildRouteTargetDateTime(dateValue, timeValue) {
       if (!dateValue) {
         return "";
@@ -2842,7 +2862,7 @@
     var routeTargetServiceId = document.getElementById("routeTargetServiceId");
     if (routeTargetServiceId) {
       routeTargetServiceId.addEventListener("change", function () {
-        populateRouteTimeOptions("");
+        refreshTimeOptionsAfterServiceSelection("routeTarget");
       });
     }
 
@@ -2984,7 +3004,7 @@
     var addApptServiceId = document.getElementById("addApptServiceId");
     if (addApptServiceId) {
       addApptServiceId.addEventListener("change", function () {
-        refreshEntryModalTimeOptions("addAppt");
+        refreshTimeOptionsAfterServiceSelection("addAppt");
       });
     }
 

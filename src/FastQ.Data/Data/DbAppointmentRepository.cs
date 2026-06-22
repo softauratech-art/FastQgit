@@ -429,8 +429,8 @@ namespace FastQ.Data.Db
 
             var normalizedSrcType = char.ToUpperInvariant(srcType);
             var tableName = normalizedSrcType == 'A'
-                ? "APPOINTMENTS"
-                : normalizedSrcType == 'W' ? "WALKINS" : null;
+                ? "fqowner.APPOINTMENTS"
+                : normalizedSrcType == 'W' ? "fqowner.WALKINS" : null;
             var idColumn = normalizedSrcType == 'A'
                 ? "APPOINTMENT_ID"
                 : normalizedSrcType == 'W' ? "WALKIN_ID" : null;
@@ -477,13 +477,13 @@ SELECT COUNT(1)
   FROM (
         SELECT 'A' SRC_TYPE, a.APPOINTMENT_ID SRC_ID,
                CAST(TRUNC(a.APPT_DATE) + a.START_TIME AS DATE) SCHEDULED_FOR
-         FROM APPOINTMENTS a
+          FROM fqowner.APPOINTMENTS a
          WHERE a.CUSTOMER_ID = :customerId
            AND UPPER(TRIM(a.STATUS)) IN ('SCHEDULED', 'ARRIVED', 'IN PROGRESS', 'INSERVICE', 'QUEUED', 'REJOINED', 'STARTED')
         UNION ALL
         SELECT 'W' SRC_TYPE, w.WALKIN_ID SRC_ID,
                CAST(TRUNC(w.CREATEDON) + w.JOIN_TIME AS DATE) SCHEDULED_FOR
-          FROM WALKINS w
+          FROM fqowner.WALKINS w
          WHERE w.CUSTOMER_ID = :walkinCustomerId
            AND UPPER(TRIM(w.STATUS)) IN ('SCHEDULED', 'ARRIVED', 'IN PROGRESS', 'INSERVICE', 'QUEUED', 'REJOINED', 'STARTED')
        ) entries
