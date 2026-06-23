@@ -349,7 +349,7 @@ namespace FastQ.Web.Services
             return _appts.GetQueueOpenSlots(queueId, dateLocal.Date);
         }
 
-        public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledFor, long? excludedAppointmentId = null)
+        public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledFor, long? excludedAppointmentId = null, bool requireExistingCustomer = false)
         {
             var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
             var normalizedPhone = NormalizePhone(phone);
@@ -359,7 +359,9 @@ namespace FastQ.Web.Services
             if (customer == null && !string.IsNullOrWhiteSpace(normalizedPhone))
                 customer = _customers.GetByPhone(normalizedPhone);
             if (customer == null)
-                return Result.Success();
+                return requireExistingCustomer
+                    ? Result.Fail("Could not identify the source customer for schedule validation.")
+                    : Result.Success();
 
             return ValidateCustomerTimeAvailability(customer.Id, scheduledFor, excludedAppointmentId);
         }
@@ -659,7 +661,9 @@ namespace FastQ.Web.Services
                 .Any(a =>
                     a.Id > 0 &&
                     (!excludedAppointmentId.HasValue || a.Id != excludedAppointmentId.Value) &&
-                    a.ScheduledFor == scheduledFor &&
+                    a.ScheduledFor.Date == scheduledFor.Date &&
+                    a.ScheduledFor.Hour == scheduledFor.Hour &&
+                    a.ScheduledFor.Minute == scheduledFor.Minute &&
                     a.Status != AppointmentStatus.Cancelled &&
                     a.Status != AppointmentStatus.ClosedBySystem &&
                     a.Status != AppointmentStatus.Completed &&

@@ -504,7 +504,8 @@ namespace FastQ.Web.Controllers
                     customerEmail,
                     customerPhone,
                     parsedTargetDateValue.Value,
-                    excludedAppointmentId);
+                    excludedAppointmentId,
+                    true);
                 if (!customerTimeValidation.Ok)
                     return Json(new { ok = false, error = customerTimeValidation.Error });
             }
