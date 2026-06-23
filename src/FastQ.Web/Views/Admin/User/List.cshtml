@@ -18,9 +18,7 @@
 }
 
 <div class="card">
-    <table id="Usrdata" class="table" style="font-size:0.95em"
-           data-debug-server="@System.Environment.MachineName"
-           data-debug-entity="@(new FastQ.Web.Services.AuthService().GetSessionEntityId())">
+    <table id="Usrdata" class="table" style="font-size:0.95em">
         <thead>
             <tr>
                 <th>@Html.DisplayNameFor(model => model.UserId)</th>
@@ -37,7 +35,7 @@
         <tbody>
             @foreach (var item in Model)
             {
-                <tr id="row-@item.UserId" data-debug-user-id="@item.UserId" data-debug-is-admin="@(item.IsAdmin.ToString().ToLowerInvariant())">
+                <tr id="row-@item.UserId">
                     <td>
                         @Html.DisplayFor(modelItem => item.UserId)
                     </td>
@@ -116,25 +114,6 @@
     <script src="https://cdn.datatables.net/2.3.7/js/dataTables.min.js"></script>
     <script>
         $(document).ready(function () {
-
-            const userTable = document.getElementById('Usrdata');
-            const userAdminRows = Array.from(userTable.querySelectorAll('tbody tr')).map(function (row) {
-                const adminDot = row.querySelector('td:nth-child(5) span:first-child');
-                return {
-                    server: userTable.dataset.debugServer,
-                    currentEntity: userTable.dataset.debugEntity,
-                    userId: row.dataset.debugUserId,
-                    modelIsAdmin: row.dataset.debugIsAdmin,
-                    renderedDotClass: adminDot ? adminDot.className : '(missing)'
-                };
-            });
-            console.group('[FastQ User Debug] User List');
-            console.info('Request context', {
-                server: userTable.dataset.debugServer,
-                currentEntity: userTable.dataset.debugEntity
-            });
-            console.table(userAdminRows);
-            console.groupEnd();
 
             const deletemodal = document.getElementById('deleteConfirmModal');
             const confirmBtn = document.getElementById('confirmDeleteBtn');
