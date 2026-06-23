@@ -169,6 +169,17 @@
     <script src="~/Scripts/jquery.validate.min.js"></script>
     <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
     <script>
+        $(document).ready(function () {
+            const adminCheckbox = document.getElementById('IsAdmin');
+            console.info('[FastQ User Debug] Edit User', {
+                server: '@System.Environment.MachineName',
+                currentEntity: '@(new FastQ.Web.Services.AuthService().GetSessionEntityId())',
+                userId: '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.UserId ?? string.Empty))',
+                modelIsAdmin: @(Model.IsAdmin.ToString().ToLowerInvariant()),
+                checkboxChecked: adminCheckbox ? adminCheckbox.checked : null
+            });
+        });
+
         function selectAll(obj, classname) {
             $('.' + classname).prop('checked', obj.checked);
         }
