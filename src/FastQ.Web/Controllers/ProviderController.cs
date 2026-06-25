@@ -640,8 +640,8 @@ namespace FastQ.Web.Controllers
                 "transfer" => _auth.CanAccessQueueActions(queueId.Value),
                 "remove" => _auth.CanAccessQueueActions(queueId.Value),
                 "info" => _auth.CanAccessQueueActions(queueId.Value),
-                "begin" => _auth.CanAccessQueueActions(queueId.Value),
-                "end" => _auth.CanAccessQueueActions(queueId.Value),
+                "begin" => _auth.CanAccessProviderServiceActions(queueId.Value),
+                "end" => _auth.CanAccessProviderServiceActions(queueId.Value),
                 _ => false
             };
 

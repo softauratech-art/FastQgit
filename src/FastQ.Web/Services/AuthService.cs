@@ -189,6 +189,15 @@ namespace FastQ.Web.Services
             return HasQueueActionAccess(access, queueId);
         }
 
+        public bool CanAccessProviderServiceActions(long queueId)
+        {
+            var access = GetServicePageAccess();
+            return access != null
+                   && (access.IsAdmin
+                       || access.QueueAdminQueueIds.Contains(queueId)
+                       || access.ProviderQueueIds.Contains(queueId));
+        }
+
         public bool CanAddEntries(long queueId)
         {
             var access = GetServicePageAccess();
