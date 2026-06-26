@@ -1,4 +1,4 @@
-
+﻿
 @model FastQ.Web.Models.Admin.UserVM
 @{
     ViewBag.Title = "User Settings";
@@ -95,7 +95,7 @@
                                     <div class="switch-group">
                                         <div>
                                             @Html.Label("IsAdmin", "Super Admin?", new { @class = "switch-label" })
-                                            <span style="font-size:10px; display:block;">(Queues, Users and Holidays)</span>
+                                            <span style="font-size:10px; display:block;">(Configure Queues, Users and Holidays + ServiceProvider for site)</span>
                                         </div>
                                         <label class="switch">
                                             <input type="checkbox" value="true" name="IsAdmin" id="IsAdmin" @(Model.IsAdmin ? "checked" : "") />
@@ -127,14 +127,15 @@
                     </div>
                 </div>
                 <div class="card">
+					<div class="alert alert-info">Note: QueueAdmin access will also include Provider-access to the selected queue(s).</div>
                     <table class="table table-striped">
                         <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
                             <tr>
-                                <td>Queue</td>
-                                <td><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host?</td>
-                                <td><input type="checkbox" name="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? </td>
-                                <td> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</td>
-                                <td><input type="checkbox" name="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? </td>
+                                <th>Queue</th>
+                                <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host? <i class="bi bi-info-circle help-icon" data-title="HOST can Checkin, Transfer, Cancel -- Cannot Start/End service."></i></th>
+                                <th><input type="checkbox" id="provider-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? <i class="bi bi-info-circle help-icon" data-title="PROVIDER can Checkin, Transfer, Cancel, Start, End service."></i></th>
+                                <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</th>
+                                <th><input type="checkbox" id="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? <i class="bi bi-info-circle help-icon" data-title="Configure + Provider"></i></th>
                             </tr>
                         </thead>
                         <tbody>

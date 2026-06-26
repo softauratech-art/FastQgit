@@ -256,16 +256,16 @@
     @Html.AntiForgeryToken();
 <div class="card">
     @Html.HiddenFor(model => model.Id)
-
+    <div class="alert alert-info">Note: QueueAdmin access will also include Provider-access to the selected queue(s).</div>
     <div class="table-card">
         <table class="table " id="QAccessdata">
             <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
                 <tr>
                     <th>User</th>
-                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host?</th>
-                    <th><input type="checkbox" name="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? </th>
+                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host? <i class="bi bi-info-circle help-icon" data-title="HOST can Checkin, Transfer, Cancel -- Cannot Start/End service."></i></th>
+                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? <i class="bi bi-info-circle help-icon" data-title="PROVIDER can Checkin, Transfer, Cancel, Start, End service."></i></th>
                     <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</th>
-                    <th><input type="checkbox" name="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? </th>
+                    <th><input type="checkbox" id="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? <i class="bi bi-info-circle help-icon" data-title="Configure + Provider"></i></th>
                 </tr>
             </thead>
             <tbody>
@@ -459,7 +459,7 @@
                 return false;
             }
 
-            isSchDataValid = (form) => {                
+            isSchDataValid = (form) => {
                 var frmerrors = "";
 
                 // 1. Get the values from the inputs
@@ -483,12 +483,12 @@
 
                 // Create a Date object at Jan 1st, 2026, at your specific time
                 date1 = new Date("2026-01-01 " + val1);
-                date2 = new Date("2026-01-01 " + val2);                                
+                date2 = new Date("2026-01-01 " + val2);
                 if (date1 > date2) {
                     frmerrors += "<br/>Opens-At can not be greater than Closes-At";
                 }
 
-                const duration = convertToMinutes(document.getElementById('Duration').value);  
+                const duration = convertToMinutes(document.getElementById('Duration').value);
                 const timediff = (date2 - date1) / (1000 * 60 );
                 if (duration > timediff)
                     frmerrors += "<br/>Open/Close times are not valid for selected duration.";

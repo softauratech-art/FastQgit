@@ -11,22 +11,11 @@
     </div>
 }
 <div class="card grid-3">
-    @*<div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Customer Journey</h3>
-                <span class="pill">Live booking</span>
-            </div>
-            <p class="muted">Submit a new appointment and immediately receive a live status screen with queue position and updates.</p>
-            <a class="btn secondary" href="/Customer/Book">New Appointment</a>
-            <a class="btn secondary" href="/Customer/Walkin">New Walkin</a>
-        </div>*@
-
-
-    @{ if ( _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host) 
+    @{ if ( _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host)
                 || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider) 
                 || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin) 
                 || _auth.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.QueueAdmin) )
-        {
+            {
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Provider Console</h3>
