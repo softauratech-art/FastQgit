@@ -51,7 +51,8 @@ namespace FastQ.Web.Services
                 Title = userentity.Title,
                 OtherLanguage = userentity.Language,
                 IsActive = userentity.ActiveFlag,
-                Email = userentity.Email
+                Email = userentity.Email,
+                Phone = userentity.Phone
             };
 
             if (userentity.BusinessEntities != null)

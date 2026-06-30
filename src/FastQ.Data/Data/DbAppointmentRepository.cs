@@ -238,14 +238,14 @@ namespace FastQ.Data.Db
 
         public IList<ProviderAppointmentData> ListForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd)
         {
-            //return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
-            return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.PRTMP_GET_MYAPPOINTMENTS");
+            return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYAPPOINTMENTS");
+            //return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.PRTMP_GET_MYAPPOINTMENTS");
         }
 
         public IList<ProviderAppointmentData> ListWalkinsForUser(long entityId, string userId, DateTime rangeStart, DateTime rangeEnd)
         {
-            //return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
-            return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.PRTMP_GET_MYWALKINS");
+            return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.FQ_PROCS_GET.GET_MYWALKINS");
+            //return ListForUserProc(entityId, userId, rangeStart, rangeEnd, "fqowner.PRTMP_GET_MYWALKINS");
         }
 
         public bool ValidatePermitNumber(long queueId, string permitNumber, out string message)
