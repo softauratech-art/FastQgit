@@ -36,9 +36,16 @@ namespace FastQ.Web.Services
             // Providers are not always joined to groups; broadcast status as well.
             Hub.Clients.All.appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
 
-            var message = BuildNotificationMessage(appointment);
+            var message = IsScheduledForToday(appointment)
+                ? BuildNotificationMessage(appointment)
+                : null;
             if (!string.IsNullOrWhiteSpace(message))
                 Hub.Clients.All.notify(message);
+        }
+
+        private static bool IsScheduledForToday(Appointment appointment)
+        {
+            return appointment.ScheduledFor.Date == DateTime.Today;
         }
 
         private static string BuildNotificationMessage(Appointment appointment)
