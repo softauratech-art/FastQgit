@@ -160,6 +160,7 @@ namespace FastQ.Web.Services
             {
                 insertedAppt.CustomerPhone = appt.CustomerPhone;
             }
+            insertedAppt.ScheduledFor = scheduledFor;
             var emailWarning = SendAppointmentConfirmation(insertedAppt, queue, customerName, parsedServiceId);
             _rt.AppointmentChanged(insertedAppt);
             _rt.QueueChanged(insertedAppt.EntityId, insertedAppt.QueueId);

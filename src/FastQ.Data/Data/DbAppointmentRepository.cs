@@ -489,7 +489,7 @@ namespace FastQ.Data.Db
             var customerId = Convert.ToInt64(record["CUSTOMER_ID"]);
             var queueId = Convert.ToInt64(record["QUEUE_ID"]);
             var entityId = Convert.ToInt64(record["ENTITY_ID"]);
-            var apptDate = record["APPT_DATE"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(record["APPT_DATE"]);
+            var apptDate = record["APPT_DATE"] == DBNull.Value ? default : Convert.ToDateTime(record["APPT_DATE"]);
             var startTime = ReadInterval(record, "START_TIME");
             var endTime = ReadInterval(record, "END_TIME");
             var createdOn = record["CREATEDON"] == DBNull.Value ? apptDate : Convert.ToDateTime(record["CREATEDON"]);

@@ -2203,7 +2203,8 @@
         snapshot[key] = {
           srcType: row.getAttribute("data-src-type") || "",
           customer: getProviderRowLabel(row),
-          status: row.getAttribute("data-status") || ""
+          status: row.getAttribute("data-status") || "",
+          date: row.getAttribute("data-date") || ""
         };
       });
       return snapshot;
@@ -2218,7 +2219,8 @@
           changes.push({
             type: "added",
             srcType: next.srcType,
-            customer: next.customer
+            customer: next.customer,
+            date: next.date
           });
           return;
         }
@@ -2227,7 +2229,8 @@
             type: "updated",
             srcType: next.srcType,
             customer: next.customer,
-            status: next.status
+            status: next.status,
+            date: next.date
           });
         }
       });
@@ -2239,7 +2242,14 @@
         return;
       }
 
-      changes.slice(0, 5).forEach(function (change) {
+      var todayChanges = changes.filter(function (change) {
+        return (change.date || "") === toIsoDate(new Date());
+      });
+      if (!todayChanges.length) {
+        return;
+      }
+
+      todayChanges.slice(0, 5).forEach(function (change) {
         var kind = getProviderRowKindLabel(change.srcType);
         if (change.type === "added") {
           addNotification(kind + " added: " + change.customer);
@@ -2248,8 +2258,8 @@
         addNotification(kind + " updated: " + change.customer + " (" + change.status + ")");
       });
 
-      if (changes.length > 5) {
-        addNotification((changes.length - 5) + " more schedule updates received.");
+      if (todayChanges.length > 5) {
+        addNotification((todayChanges.length - 5) + " more schedule updates received.");
       }
     }
 
@@ -2502,6 +2512,15 @@
       renderNotifications();
     }
 
+    function isAppointmentRowScheduledToday(appointmentId) {
+      var row = document.querySelector('.accordion-toggle[data-appointment-id="' + appointmentId + '"]');
+      if (!row) {
+        return false;
+      }
+
+      return (row.getAttribute("data-date") || "") === toIsoDate(new Date());
+    }
+
     function getLiveStatusNotificationMessage(appointmentId, status, isSelf) {
       var normalized = normalizeStatus(status);
       var statusText = getStatusTextForDisplay(normalized);
@@ -2533,6 +2552,9 @@
 
     function queueAppointmentUpdateFallbackNotification(appointmentId, status, isSelf) {
       var notifyMarker = lastFastQNotifyAt;
+      if (!isAppointmentRowScheduledToday(appointmentId)) {
+        return;
+      }
       var message = getLiveStatusNotificationMessage(appointmentId, status, isSelf);
       if (!message) {
         return;
