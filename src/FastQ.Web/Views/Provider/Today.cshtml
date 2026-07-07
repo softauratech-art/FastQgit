@@ -316,6 +316,7 @@
 
 	var selectedCalendarDate = new Date();
 	var currentProviderId = "@(ViewBag.ProviderId as string ?? string.Empty)";
+    var visibleRangeEndDate = "@endDateValue.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)";
     var todayNotifications = [];
     var todayNotificationUnreadCount = 0;
     var maxNotificationItems = 25;
@@ -3334,7 +3335,19 @@
       queueLiveSync(true);
     }
 
-    setInterval(refreshExternalProviderRows, 60 * 1000);
+    function isVisibleRangePastOnly() {
+      var todayIso = toIsoDate(new Date());
+      return !!visibleRangeEndDate && visibleRangeEndDate < todayIso;
+    }
+
+    if (!isVisibleRangePastOnly()) {
+      setInterval(refreshExternalProviderRows, 60 * 1000);
+    } else {
+      todayDebugLog("auto refresh disabled; selected date range is fully in the past", {
+        visibleRangeEndDate: visibleRangeEndDate,
+        today: toIsoDate(new Date())
+      });
+    }
 
   })();
     </script>
