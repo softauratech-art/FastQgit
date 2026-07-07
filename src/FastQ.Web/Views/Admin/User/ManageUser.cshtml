@@ -54,7 +54,7 @@
                         <div class="grid-2">
                             <div class="form-group mt-2">
                                 @Html.LabelFor(model => model.UserId)
-                                @Html.TextBoxFor(m => m.UserId, new { @required = "true" })
+                                @Html.TextBoxFor(m => m.UserId, ViewContext.RouteData.Values["action"].ToString().ToLower().Equals("edit") ? (object) new { @required = "true", @readonly = "readonly"} : (object) new { @required = "true"})
                             </div>
                             <div class="form-group mt-2">
                                 <label for="Title">Title</label>
@@ -74,7 +74,7 @@
                         <div class="grid-2 mt-2">
                             <div class="form-group">
                                 <label for="Email">Email</label>
-                                @Html.TextBoxFor(m => m.Email, new { @required = "true" })
+                                @Html.TextBoxFor(m => m.Email, new { @required = "true", @type="email" })
                             </div>
                             <div class="form-group">
                                 <label for="Phone">Phone</label>

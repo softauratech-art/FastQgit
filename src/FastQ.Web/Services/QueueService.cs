@@ -29,7 +29,7 @@ namespace FastQ.Web.Services
         public IList<QueueVM> ListQueues()
         {
             _stampuserentity = new AuthService().GetSessionEntityId();
-            var rows = _queues.ListByEntity(_stampuserentity, new AuthService().GetLoggedInWindowsUser());
+            var rows = _queues.ListByEntity(_stampuserentity, _stampuser);
             return BuildQueueRows(rows);
         }
 

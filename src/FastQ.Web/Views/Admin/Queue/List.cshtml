@@ -158,9 +158,10 @@
                     },
                     initComplete: function () {
                         // Use initComplete to insert the actual hyperlink after the table is initialized
-                        $('.action-btn-div').wrapInner('@Html.ActionLink("Create New", "Edit", 0, new { @class = "btn-add" })');
+                        $('.action-btn-div').wrapInner('@Html.ActionLink("Create New", "Edit", 0, (authService.IsInRole(Utilities.FQRole.SuperAdmin) ? (object) new { @class = "btn-add"} : new {@style="display:none"}))');
                     }
                 });
-        });
+            });
+
         </script>
     }

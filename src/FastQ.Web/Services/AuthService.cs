@@ -27,21 +27,28 @@ namespace FastQ.Web.Services
         {
             string debugkey = ConfigurationManager.AppSettings["debugkey"]?.ToString();
 
-            HttpContext httpContext = HttpContext.Current;            
+            HttpContext httpContext = HttpContext.Current;
             if (httpContext.Request["debug"] != null && httpContext.Request["debug"].ToString() == debugkey)
-                 httpContext.Session["debug"] = httpContext.Request["debug"];
+                httpContext.Session["debug"] = httpContext.Request["debug"];
 
             bool isDebug = (httpContext.Session["debug"] != null && httpContext.Session["debug"].ToString() == debugkey);
-            
-            if (isDebug)
-            {                
-                //check if impersonation userid is in Session
-                var impersonatedUserId = httpContext.Session?["debug_impersonateuserid"]?.ToString();
-                if (impersonatedUserId != null) { return impersonatedUserId; }
-                //otherwise read from querystring
-                impersonatedUserId = httpContext.Request["debuguserid"]?.ToString();
-                HttpContext.Current.Session["debug_impersonateuserid"] = impersonatedUserId;  
-                return impersonatedUserId;
+
+            try
+            {
+                if (isDebug && httpContext.User.IsInRole("ISS LDMS Team"))
+                {
+                    //check if impersonation userid is in Session
+                    var impersonatedUserId = httpContext.Session?["debug_impersonateuserid"]?.ToString();
+                    if (impersonatedUserId != null) { return impersonatedUserId; }
+                    //otherwise read from querystring
+                    impersonatedUserId = httpContext.Request["debuguserid"]?.ToString();
+                    HttpContext.Current.Session["debug_impersonateuserid"] = impersonatedUserId;
+                    return impersonatedUserId;
+                }
+            }
+            catch (Exception ex)
+            {
+                httpContext.Response.Write("Impersonation failed. " + ex.Message);
             }
 
             var httpIdentityName = HttpContext.Current?.User?.Identity?.Name ?? string.Empty;

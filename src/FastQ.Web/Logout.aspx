@@ -1,4 +1,4 @@
-﻿
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
-    <link rel="stylesheet" href="Content/site.css">    
+    <link rel="stylesheet" href="Content/site.css">
     <style>
         .logout-page {
             min-height: calc(100vh - 104px);
@@ -19,18 +19,6 @@
             padding: 48px 20px;
             position: relative;
             overflow: hidden;
-        }
-
-        .logout-page::before {
-            content: "";
-            position: absolute;
-            inset: 10% auto auto 50%;
-            width: min(560px, 80vw);
-            height: min(560px, 80vw);
-            border-radius: 999px;
-            background: radial-gradient(circle, rgba(31, 122, 140, 0.16), rgba(31, 122, 140, 0));
-            transform: translateX(-50%);
-            pointer-events: none;
         }
 
         .logout-card {
@@ -110,17 +98,9 @@
         <aside class="drawer">
             <div class="brand">
                 <div class="brand-top">
-                   
-
                     <a href="<%=HttpContext.Current.Request.ApplicationPath%>" class="logo-container">
                         <img src="<%=HttpContext.Current.Request.ApplicationPath%>/Content/Horzontal_HighRes.jpg" alt="Logo" class="logo">
                     </a>
-                   
-<%--                    <button class="nav-toggle" type="button" aria-label="Collapse navigation" aria-expanded="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M15 6l-6 6 6 6"></path>
-                        </svg>
-                    </button>--%>
                 </div>
                  <div class="brand-title">FastQ Manager</div>
             </div>
@@ -131,20 +111,14 @@
                         <i class="bi bi-house"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
+                </div>
             </nav>
             <div class="drawer-footer">
-                <div class="status-card">
-                    <div class="status-title">System Health</div>
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span class="pill">Online</span>
-                        <span class="muted"></span>
-                    </div>
-                </div>
             </div>
         </aside>
 
         <div class="main-area">
-            <header class="topbar">                
+            <header class="topbar">
             <div>
                 <div class="topbar-title">FastQ Manager</div>
                 <div class="topbar-sub">

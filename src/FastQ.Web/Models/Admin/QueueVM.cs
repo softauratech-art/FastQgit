@@ -10,9 +10,8 @@ namespace FastQ.Web.Models.Admin
 {
     public class QueueVM
     {
-        private QueueService _service = new();
         public long Id { get; set; }
-        
+
         [DisplayName("Entity")]
         public long EntityId { get; set; }
 
@@ -20,11 +19,11 @@ namespace FastQ.Web.Models.Admin
 
         public string Name { get; set; }
         [Required(ErrorMessage = "Spanish Translation required")]
-        [DisplayName("Spanish")] 
+        [DisplayName("Spanish")]
         public string NameES { get; set; }
 
         [Required(ErrorMessage = "Creole Translation is required")]
-        [DisplayName("Creole")] 
+        [DisplayName("Creole")]
         public string NameCP { get; set; }
 
         [Required(ErrorMessage = "Address is required")]
@@ -40,7 +39,7 @@ namespace FastQ.Web.Models.Admin
         [DisplayName("Emp Only?")]
         public bool EmpOnly { get; set; }
 
-        [DisplayName("Hide in kiosk?")] 
+        [DisplayName("Hide in kiosk?")]
         public bool HideInKiosk { get; set; }
 
         [DisplayName("Hide in monitor?")]
@@ -51,13 +50,13 @@ namespace FastQ.Web.Models.Admin
 
         [DisplayName("Requires Uploads?")]
         public bool HasUploads { get; set; }
-        
+
         [Required(ErrorMessage = "Min. Lead Time is required")]
-        [DisplayName("Min. Lead Time")] 
+        [DisplayName("Min. Lead Time")]
         public string LeadTimeMin { get; set; }
 
         [Required(ErrorMessage = "Max. Lead Time is required")]
-        [DisplayName("Max. Lead Time")]        
+        [DisplayName("Max. Lead Time")]
         public string LeadTimeMax { get; set; }
 
         public List<SelectListItem> GetLeadTimes(string fld)
@@ -94,6 +93,7 @@ namespace FastQ.Web.Models.Admin
         {
             get
             {
+                QueueService _service = new();
                 List<RefCriteriaItem> list = new List<RefCriteriaItem>();
                 IList<(string, string)> items = _service.GetValidRefCriterias();
                 foreach ((string, string) item in items)
@@ -118,6 +118,7 @@ namespace FastQ.Web.Models.Admin
         {
             get
             {
+                QueueService _service = new();
                 List<ContactMethodItem> list = new List<ContactMethodItem>();
                 IList<(string, string)> items = _service.GetValidContactTypes();
                 foreach ((string, string) item in items)

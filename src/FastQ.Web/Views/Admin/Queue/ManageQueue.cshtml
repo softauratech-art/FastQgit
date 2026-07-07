@@ -158,21 +158,6 @@
                         @Html.DropDownListFor(model => model.LeadTimeMax, Model.GetLeadTimes("LeadTimeMax"), "- Select-", new { @style = "font-size:0.9em" })
                         @Html.ValidationMessageFor(model => model.LeadTimeMax, "", new { @class = "text-danger" })
                     </div>
-                    <div class="form-group mt-3">
-                        @Html.Label("SelectedRefCiriterias", "Reference Data", htmlAttributes: new { @class = "control-label" })
-                        <div class="tag-group">
-                            @foreach (var item in Model.AvailableRefCriterias)
-                            {
-                                <label class="pill-tag @(item.IsChecked ? "active" : "")">
-                                    <input type="checkbox"
-                                           name="SelectedRefCriterias"
-                                           value="@item.Value"
-                                           @(item.IsChecked ? "checked" : "") />
-                                    @item.Name
-                                </label>
-                            }
-                        </div>
-                    </div>
 
                     <div class="form-group mt-3">
                         @Html.Label("SelectedContactMethods", "Appointment Types", htmlAttributes: new { @class = "control-label" })
@@ -182,6 +167,23 @@
                                 <label class="pill-tag @(item.IsChecked ? "active" : "")">
                                     <input type="checkbox"
                                            name="SelectedContactMethods"
+                                           value="@item.Value"
+                                           @(item.IsChecked ? "checked" : "") />
+                                    @item.Name
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        @Html.Label("SelectedRefCriterias", "Reference Data", htmlAttributes: new { @class = "control-label" })
+                        <span style="display:block;"><small>(applies to Appointments and Walkins)</small></span>
+                        <div class="tag-group">
+                            @foreach (var item in Model.AvailableRefCriterias)
+                            {
+                                <label class="pill-tag @(item.IsChecked ? "active" : "")">
+                                    <input type="checkbox"
+                                           name="SelectedRefCriterias"
                                            value="@item.Value"
                                            @(item.IsChecked ? "checked" : "") />
                                     @item.Name

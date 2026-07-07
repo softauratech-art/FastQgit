@@ -9,12 +9,12 @@ using System.Linq;
 using System.Text;
 using System.Web.Mvc;
 
-
 namespace FastQ.Web.Controllers.Admin
 {
     [FQAuthorizeUser(AllowRole = $"{nameof(Utilities.FQRole.QueueAdmin)},{nameof(Utilities.FQRole.SuperAdmin)}")]
     public class QueueController : Controller
     {
+        private readonly AuthService _authService = new AuthService();
         private readonly QueueService _service;
         private readonly string controllerpath = "../Admin/Queue/";
         public QueueController()
@@ -23,7 +23,7 @@ namespace FastQ.Web.Controllers.Admin
         }
 
         #region Queue-Base-Record
-        // GET: Queue/10001     
+        // GET: Queue/10001
         public ActionResult Index()
         {
             IList<QueueVM> lQueues;
@@ -38,15 +38,23 @@ namespace FastQ.Web.Controllers.Admin
             }
 
             return View(controllerpath + "List", lQueues);
-        }             
+        }
 
         // GET: Queue/Edit(Insert)
         // GET: Queue/Edit/5(Update)
         public ActionResult Edit(long id = 0)
         {
-            //If id=0 For-Insert
-            if (id == 0)
-                return View(controllerpath + "ManageQueue", new QueueVM { Id = 0, EntityId = 1 });
+            // If id=0 For-Insert
+            // 7.2.2026: As per ADuhigg only SuperAdmin will create new Queues
+            if (id == 0) {
+                if (_authService.IsInRole(Utilities.FQRole.SuperAdmin))
+                    return View(controllerpath + "ManageQueue", new QueueVM { Id = 0, EntityId = 1 });
+                else
+                {
+                    TempData["ErrorMessage"] = "You are not authorized to create new Queues.";
+                    return RedirectToAction("Index");
+                }
+            }
 
             //else For-Update
             var oQueue = _service.GetQueue(id);
@@ -61,6 +69,12 @@ namespace FastQ.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public ActionResult Edit(QueueVM ovm)
         {
+            // 7.2.2026: As per ADuhigg only SuperAdmin will create new Queues
+            if (ovm.Id == 0 && !_authService.IsInRole(Utilities.FQRole.SuperAdmin)) {
+                TempData["ErrorMessage"] = "You are not authorized to create new Queues.";
+                return RedirectToAction("Index");
+            }
+
             try
             {
                 //set these from Form[] since we're using custom-checkbox in View-cshtml
@@ -85,11 +99,11 @@ namespace FastQ.Web.Controllers.Admin
                     // if no errors then send to Details-view
                     var oQueue = _service.GetQueue(id);
                     if (oQueue == null) return HttpNotFound();
-                    
+
                     if (ovm.Id == 0)
                         return RedirectToAction("Edit", "Queue", new { id = oQueue.Id });
                     else
-                        return View(controllerpath + "ManageQueue", oQueue);                    
+                        return View(controllerpath + "ManageQueue", oQueue);
                 }
 
                 string allErrors = string.Join(" | ", ModelState.Values
@@ -101,7 +115,7 @@ namespace FastQ.Web.Controllers.Admin
 
                 return View(controllerpath + "ManageQueue", ovm);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 ViewBag.ErrorMessage = "An error occurred while processing your request. " + ex.Message;
                 return View(controllerpath + "ManageQueue", ovm);
@@ -113,7 +127,7 @@ namespace FastQ.Web.Controllers.Admin
             if (ovm == null || ovm.Id == 0) return;
             var oqueue = _service.GetQueue(ovm.Id);
             if (oqueue == null) return;
-            
+
             ovm.Schedules = oqueue.Schedules;
             ovm.Services = oqueue.Services;
             ovm.UserAccessList = oqueue.UserAccessList;
@@ -210,10 +224,10 @@ namespace FastQ.Web.Controllers.Admin
 
         [HttpGet]
         public ActionResult EditService(long id = 0)
-        {            
+        {
             if (id == 0)
             {
-                var queueid = Convert.ToInt64(Request.QueryString["queueid"].ToString()); 
+                var queueid = Convert.ToInt64(Request.QueryString["queueid"].ToString());
                 return PartialView(controllerpath + "_ServiceEditor", new QueueServiceVM() { Id = 0, QueueId = queueid });
             }
             QueueServiceVM ovm = _service.GetQueueService(id);
@@ -240,7 +254,7 @@ namespace FastQ.Web.Controllers.Admin
                 catch (Exception ex)
                 {
                     Response.StatusCode = 500;
-                    return Json(new { success = false, message = "Update Failed", errors = ex.Message }); 
+                    return Json(new { success = false, message = "Update Failed", errors = ex.Message });
                     //throw new Exception(ex.Message);
                 }
             }
@@ -273,7 +287,7 @@ namespace FastQ.Web.Controllers.Admin
             long qid = Convert.ToInt64(collection["Id"].ToString());
             bool iserror = false;
             try
-            {        
+            {
                 string hostusers = collection["host"]?.ToString();
                 string providerusers = collection["provider"]?.ToString();
                 string reporterusers = collection["reporter"]?.ToString();
@@ -289,7 +303,7 @@ namespace FastQ.Web.Controllers.Admin
             {
                 ViewBag.ErrorMessage = "An error occurred while processing your request. " + ex.Message;
                 iserror = true;
-           
+
             }
             var oQueue = _service.GetQueue(qid);
             oQueue.LeadTimeMin = Helpers.Utilities.ParseDurationFromISO(oQueue.LeadTimeMin);
@@ -303,7 +317,7 @@ namespace FastQ.Web.Controllers.Admin
         {
             string[] useraccessfld = ["host", "provider", "reporter", "queueadmin"];
             foreach (string key in useraccessfld)
-            {                
+            {
                 string[] ids = fc[key] == null ? [] : fc[key]?.Split(',');
                 foreach (var usr in perms)
                 {
@@ -312,7 +326,7 @@ namespace FastQ.Web.Controllers.Admin
                     if (key.Equals("reporter")) usr.ReporterFlag = ids.Contains(usr.UserId);
                     if (key.Equals("queueadmin")) usr.QueueAdminFlag = ids.Contains(usr.UserId);
                 }
-            }           
+            }
         }
         #endregion
     }
