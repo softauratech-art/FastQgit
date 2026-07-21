@@ -1103,6 +1103,7 @@ namespace FastQ.Web.Services
             if (!string.IsNullOrWhiteSpace(languagePreference))
                 html.AppendLine($"            <p><strong>Language Preference:</strong> {languagePreference}</p>");
             html.AppendLine($"            <p><strong>SMS Opt-in:</strong> {smsOptInText}</p>");
+            AppendSmsOptBackInInstruction(html, "            ");
             html.AppendLine("        </div>");
             if (contactType == "OM")
             {
@@ -1172,6 +1173,7 @@ namespace FastQ.Web.Services
             html.AppendLine($"            <p><strong>Reason for Cancellation:</strong> {safeCancellationReason}</p>");
             html.AppendLine("        </div>");
             html.AppendLine("        <p>Your appointment has been cancelled per your request.</p>");
+            AppendSmsOptBackInInstruction(html, "        ");
             html.AppendLine($"        <p>Please visit our <a href=\"{safePortalUrl}\">portal</a> if you would like to schedule another appointment.</p>");
             html.AppendLine("        <p>Sincerely,</p>");
             html.AppendLine("        <p>Orange County Government, FL</p>");
@@ -1182,6 +1184,11 @@ namespace FastQ.Web.Services
             html.AppendLine("</body>");
             html.AppendLine("</html>");
             return html.ToString();
+        }
+
+        private static void AppendSmsOptBackInInstruction(StringBuilder html, string indent)
+        {
+            html.AppendLine($"{indent}<p><strong>SMS Notifications:</strong> If you have opted out of SMS notifications, please text &quot;UNSTOP&quot; or &quot;START&quot; to +1 (833) 877-4009 to receive messages again.</p>");
         }
 
         private static string BuildMeetingLinkHtml(string confCode)
