@@ -202,6 +202,7 @@ namespace FastQ.Web.Services
                     LanguagePreference = GetLanguagePreferenceText(a.LanguagePreference),
                     MeetingUrl = a.MeetingUrl,          //NormalizeMeetingUrl(a.MeetingUrl),
                     MeetingUrlHost = a.MeetingUrlHost,  // NormalizeMeetingUrl(a.MeetingUrlHost),
+                    SmsOptIn = a.CustomerSmsOptIn,
                     StampUser = a.StampUser
                 };
             }).OrderBy(r => r.ScheduledFor).ToList();
@@ -266,6 +267,10 @@ namespace FastQ.Web.Services
                     MeetingUrl = r.MeetingUrl,          //NormalizeMeetingUrl(r.MeetingUrl),
                     MeetingUrlHost = r.MeetingUrlHost,  // NormalizeMeetingUrl(r.MeetingUrlHost),
                     Notes = string.IsNullOrWhiteSpace(r.Notes) ? string.Empty : r.Notes.Trim(),
+                    ServiceNotes = string.IsNullOrWhiteSpace(r.ServiceNotes) ? string.Empty : r.ServiceNotes.Trim(),
+                    ServiceStartTimeText = FormatTransactionTime(r.ServiceStartTime),
+                    ServiceEndTimeText = FormatTransactionTime(r.ServiceEndTime),
+                    SmsOptIn = r.SmsOptIn,
                     StampUser = r.StampUser,
                     StampUserName = r.StampUserName
                 };  
@@ -279,6 +284,11 @@ namespace FastQ.Web.Services
             if (code == "ES") return "Spanish";
             if (code == "CP") return "Creole";
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string FormatTransactionTime(DateTime? value)
+        {
+            return value.HasValue ? value.Value.ToString("MMM dd, yyyy h:mm tt") : string.Empty;
         }
 
         private static string NormalizeMeetingUrl(string value)

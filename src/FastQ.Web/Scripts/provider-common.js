@@ -579,6 +579,28 @@
 
     meetingClickBound = true;
     document.addEventListener("click", function (event) {
+      var transactionButton = closest(event.target, ".transaction-details-link");
+      if (transactionButton) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        var transactionFieldMap = {
+          transactionServiceStartTime: "service-start-time",
+          transactionServiceEndTime: "service-end-time",
+          transactionCustomerNotes: "notes",
+          transactionServiceNotes: "service-notes"
+        };
+        Object.keys(transactionFieldMap).forEach(function (id) {
+          var field = document.getElementById(id);
+          if (field) {
+            field.textContent = transactionButton.getAttribute("data-" + transactionFieldMap[id]) || "-";
+          }
+        });
+
+        (meetingOptions.openModal || noop)("transactionDetailsModal");
+        return;
+      }
+
       var link = closest(event.target, ".meeting-link");
       if (!link) {
         return;
@@ -597,6 +619,7 @@
         meetingCustomer: "customer",
         meetingEmail: "email",
         meetingPhone: "phone",
+        meetingSmsOptIn: "sms-opt-in",
         meetingQueue: "queue-name",
         meetingService: "service-name",
         meetingRefValue: "ref-value",
@@ -623,10 +646,12 @@
       var guestUrlInput = document.getElementById("mGuestURL");
       var urlInput = document.getElementById("mURL");
       var previousNotes = document.getElementById("mPreviousNotes");
+      var serviceNotes = document.getElementById("mServiceNotes");
       var notesInput = document.getElementById("mNotes");
       if (guestUrlInput) guestUrlInput.value = link.getAttribute("data-meeting-url") || "";
       if (urlInput) urlInput.value = link.getAttribute("data-meeting-url-host") || "";
       if (previousNotes) previousNotes.textContent = link.getAttribute("data-notes") || "-";
+      if (serviceNotes) serviceNotes.textContent = link.getAttribute("data-service-notes") || "-";
       if (notesInput) notesInput.value = "";
 
       document.querySelectorAll(".online-meeting-data-row").forEach(function (element) {

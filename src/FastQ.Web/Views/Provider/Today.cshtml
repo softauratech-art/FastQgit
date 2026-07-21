@@ -118,7 +118,7 @@
                 <option value="all">All</option>
                 @foreach (var status in statusOptions)
                 {
-                    <option value="@status">@status</option>
+                    <option value="@status" @(status == "ACTIVE" ? "selected" : null)>@status</option>
                 }
             </select>
         </div>
@@ -236,6 +236,7 @@
                                 data-service-id="@row.ServiceId"
                                 data-ref-value="@row.RefValue"
                                 data-notes="@row.Notes"
+                                data-service-notes="@row.ServiceNotes"
                                 data-email="@row.CustomerEmail"
                                 data-phone="@rowPhoneDisplay"
                                 data-date="@rowDate"
@@ -256,6 +257,7 @@
                                                     data-customer="@row.CustomerName"
                                                     data-email="@row.CustomerEmail"
                                                     data-phone="@rowPhoneDisplay"
+                                                    data-sms-opt-in="@(row.SmsOptIn ? "Yes" : "No")"
                                                     data-queue-name="@row.QueueName"
                                                     data-service-name="@row.ServiceType"
                                                     data-ref-value="@row.RefValue"
@@ -265,8 +267,19 @@
                                                     data-stamp-user="@rowStampUser"
                                                     data-meeting-url="@row.MeetingUrl"
                                                     data-meeting-url-host="@row.MeetingUrlHost"
-                                                    data-notes="@row.Notes">
+                                                    data-notes="@row.Notes"
+                                                    data-service-notes="@row.ServiceNotes">
                                                 Info
+                                            </button>
+                                            <button class="btn small ghost transaction-details-link" type="button"
+                                                    title="Transaction Details"
+                                                    data-appointment-id="@row.AppointmentId"
+                                                    data-src-type="A"
+                                                    data-notes="@row.Notes"
+                                                    data-service-notes="@row.ServiceNotes"
+                                                    data-service-start-time="@row.ServiceStartTimeText"
+                                                    data-service-end-time="@row.ServiceEndTimeText">
+                                                TD
                                             </button>
                                             <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
                                         </div>
@@ -400,6 +413,10 @@
       document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
         link.setAttribute("data-meeting-url", rawGuestUrl || "");
         link.setAttribute("data-meeting-url-host", rawHostUrl || "");
+        link.setAttribute("data-notes", notes || "");
+      });
+
+      document.querySelectorAll('.transaction-details-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
         link.setAttribute("data-notes", notes || "");
       });
 
@@ -1903,7 +1920,7 @@
       }
 
       if (statusValue === "active") {
-        return rowStatus === "scheduled" || rowStatus === "arrived" || rowStatus === "inservice";
+        return rowStatus !== "completed";
       }
 
       return rowStatus === statusValue;
@@ -1976,7 +1993,7 @@
             customerInput.value = "";
           }
           if (statusInput) {
-            statusInput.value = "all";
+            statusInput.value = "active";
           }
           if (queueInput) {
             queueInput.value = "all";
@@ -2768,7 +2785,6 @@
           srcType: srcType,
           guestUrl: guestUrlInput ? guestUrlInput.value : "",
           hostUrl: urlInput ? urlInput.value : "",
-            //notes: appendNotes(originalNotes, notesInput ? notesInput.value : "")
           notes: notesInput ? notesInput.value : ""
         };
 
@@ -2778,7 +2794,8 @@
               showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
               return;
             }
-            updateMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", payload.notes || "");
+            var updatedNotes = appendNotes(originalNotes, payload.notes);
+            updateMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", updatedNotes);
             closeModal("meetingModal");
           })
          .catch(function () {

@@ -19,6 +19,7 @@
                     <div class="info-kv"><span>Name</span><strong id="meetingCustomer"></strong></div>
                     <div class="info-kv"><span>Phone</span><strong id="meetingPhone"></strong></div>
                     <div class="info-kv"><span>Email</span><strong id="meetingEmail"></strong></div>
+                    <div class="info-kv"><span>SMS Opt-In</span><strong id="meetingSmsOptIn"></strong></div>
                 </div>
             </div>
             <div class="info-section">
@@ -44,18 +45,52 @@
                 <input id="mURL" type="text" value="" />
             </div>
             <div class="field-row">
-                <div>Previous Notes:</div>
+                <div>Customer Notes:</div>
                 <div id="mPreviousNotes" class="route-input info-readonly">-</div>
             </div>
             <div class="field-row">
-                <div>Add Notes:</div>
+                <div>Add Customer Notes:</div>
                 <textarea id="mNotes" rows="3"></textarea>
             </div>
-            <div class="helper-text">Guest URL, host URL, and notes are saved. Text entered in Add Notes is appended to Previous Notes.</div>
+            <div class="field-row">
+                <div>Service Note:</div>
+                <div id="mServiceNotes" class="route-input info-readonly">-</div>
+            </div>
+            <div class="helper-text">Guest URL, host URL, and customer notes are saved. Text entered in Add Customer Notes is appended to Customer Notes.</div>
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
             <button class="btn primary" type="button" id="saveMeeting">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="transactionDetailsModal" class="modal-backdrop info-modal" role="dialog" aria-modal="true" aria-labelledby="transactionDetailsModalTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h5 class="modal-title" id="transactionDetailsModalTitle">Transaction Details</h5>
+            <button class="btn small ghost" type="button" data-modal-close="transactionDetailsModal">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="field-row">
+                <div>Service Start Time:</div>
+                <div id="transactionServiceStartTime" class="route-input info-readonly">-</div>
+            </div>
+            <div class="field-row">
+                <div>Service End Time:</div>
+                <div id="transactionServiceEndTime" class="route-input info-readonly">-</div>
+            </div>
+            <div class="field-row">
+                <div>Customer Notes:</div>
+                <div id="transactionCustomerNotes" class="route-input info-readonly">-</div>
+            </div>
+            <div class="field-row">
+                <div>Service Note:</div>
+                <div id="transactionServiceNotes" class="route-input info-readonly">-</div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn ghost" type="button" data-modal-close="transactionDetailsModal">Close</button>
         </div>
     </div>
 </div>
@@ -191,4 +226,3 @@
         </div>
     </div>
 </div>
-

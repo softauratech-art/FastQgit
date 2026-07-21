@@ -8,6 +8,7 @@
     ViewBag.Title = "Calendar";
     var requestedEntry = ((Request["entry"] as string) ?? "both").Trim().ToLowerInvariant();
     var requestedQueue = ((Request["queue"] as string) ?? "all").Trim().ToLowerInvariant();
+    var requestedStatus = ((Request["status"] as string) ?? "active").Trim().ToLowerInvariant();
     var requestedScope = ((Request["scope"] as string) ?? "monthly").Trim().ToLowerInvariant();
     var currentScope = requestedScope == "weekly" || requestedScope == "daily" ? requestedScope : "monthly";
     var previousMonth = Model.DisplayMonth.AddMonths(-1);
@@ -88,6 +89,17 @@
                         <option value="@queueName.Value" @(requestedQueue.Equals(queueName.Value) ? "selected" : null)>@queueName.Text</option>
                     }
                 </select>
+                <select id="agendaStatusFilter" aria-label="Filter month agenda by status" onchange="reloadByStatusFilter(this.value);">
+                    <option value="active" @(requestedStatus == "active" ? "selected" : null)>Active</option>
+                    <option value="all" @(requestedStatus == "all" ? "selected" : null)>All Statuses</option>
+                    <option value="Scheduled" @(requestedStatus == "scheduled" ? "selected" : null)>Scheduled</option>
+                    <option value="Arrived" @(requestedStatus == "arrived" ? "selected" : null)>Arrived</option>
+                    <option value="InService" @(requestedStatus == "inservice" ? "selected" : null)>In Service</option>
+                    <option value="Completed" @(requestedStatus == "completed" ? "selected" : null)>Done</option>
+                    <option value="Cancelled" @(requestedStatus == "cancelled" ? "selected" : null)>Cancelled</option>
+                    <option value="ClosedBySystem" @(requestedStatus == "closedbysystem" ? "selected" : null)>Closed by System</option>
+                    <option value="TransferredOut" @(requestedStatus == "transferredout" ? "selected" : null)>Transferred Out</option>
+                </select>
             </div>
         </div>
     </div>
@@ -125,7 +137,7 @@
                 <div class="@dayClass" data-calendar-date="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" data-weekday-index="@((int)day.Date.DayOfWeek)">
                     @if (day.IsCurrentMonth)
                     {
-                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope, queue = requestedQueue, entry = requestedEntry })">
+                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope, queue = requestedQueue, entry = requestedEntry, status = requestedStatus })">
                             <div class="day-number">@day.Date.Day</div>
                             <div class="day-meta">
                                 <span>@(day.AppointmentCount == 1 ? "1 item" : day.AppointmentCount + " items")</span>
@@ -170,6 +182,7 @@
                                  data-queue="@item.QueueName"
                                  data-ref-value="@item.RefValue"
                                  data-notes="@item.Notes"
+                                 data-service-notes="@item.ServiceNotes"
                                  data-email="@item.CustomerEmail"
                                  data-phone="@itemPhoneDisplay"
                                  data-date="@item.ScheduledFor.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
@@ -201,6 +214,7 @@
                                                 data-customer="@item.CustomerName"
                                                 data-email="@item.CustomerEmail"
                                                 data-phone="@itemPhoneDisplay"
+                                                data-sms-opt-in="@(item.SmsOptIn ? "Yes" : "No")"
                                                 data-queue-name="@item.QueueName"
                                                 data-service-name="@item.ServiceType"
                                                 data-ref-value="@item.RefValue"
@@ -210,8 +224,19 @@
                                                 data-stamp-user="@item.StampUser"
                                                 data-meeting-url="@item.MeetingUrl"
                                                 data-meeting-url-host="@item.MeetingUrlHost"
-                                                data-notes="@item.Notes">
+                                                data-notes="@item.Notes"
+                                                data-service-notes="@item.ServiceNotes">
                                             Info
+                                        </button>
+                                        <button class="btn small ghost transaction-details-link" type="button"
+                                                title="Transaction Details"
+                                                data-appointment-id="@item.AppointmentId"
+                                                data-src-type="@item.SrcType"
+                                                data-notes="@item.Notes"
+                                                data-service-notes="@item.ServiceNotes"
+                                                data-service-start-time="@item.ServiceStartTimeText"
+                                                data-service-end-time="@item.ServiceEndTimeText">
+                                            TD
                                         </button>
                                         <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
                                     </div>
@@ -246,6 +271,7 @@
             url += "&scope=@currentScope";
             url += "&entry=@requestedEntry";
             url += "&queue=" + qid;
+            url += "&status=@requestedStatus";
             window.location.href = url;
         }
 
@@ -256,6 +282,18 @@
             url += "&scope=@currentScope";
             url += "&entry=" + entry;
             url += "&queue=@requestedQueue";
+            url += "&status=@requestedStatus";
+            window.location.href = url;
+        }
+
+        function reloadByStatusFilter(status) {
+            var url = "@Url.Action("Index", "Calendar")?";
+            url += "&month=@Model.DisplayMonth.ToString("yyyy-MM-01")";
+            url += "&selectedDate=@modalDate.Date.ToString("yyyy-MM-dd")";
+            url += "&scope=@currentScope";
+            url += "&entry=@requestedEntry";
+            url += "&queue=@requestedQueue";
+            url += "&status=" + status;
             window.location.href = url;
         }
 
@@ -353,6 +391,10 @@
                 document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
                     link.setAttribute("data-meeting-url", rawGuestUrl || "");
                     link.setAttribute("data-meeting-url-host", rawHostUrl || "");
+                    link.setAttribute("data-notes", notes || "");
+                });
+
+                document.querySelectorAll('.transaction-details-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
                     link.setAttribute("data-notes", notes || "");
                 });
 
@@ -2064,7 +2106,6 @@
                         srcType: srcType,
                         guestUrl: guestUrlInput ? guestUrlInput.value : "",
                         hostUrl: urlInput ? urlInput.value : "",
-                        //notes: appendNotes(originalNotes, notesInput ? notesInput.value : "")
                         notes: notesInput ? notesInput.value : ""
                     };
 
@@ -2074,7 +2115,8 @@
                                 showModalFeedback("meetingModal", res && res.error ? res.error : "Save failed.", true);
                                 return;
                             }
-                            updateMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", payload.notes || "");
+                            var updatedNotes = appendNotes(originalNotes, payload.notes);
+                            updateMeetingLinkUi(appointmentId, srcType, payload.guestUrl || "", payload.hostUrl || "", updatedNotes);
                             closeModal("meetingModal");
                         })
                         .catch(function () {

@@ -98,6 +98,7 @@
                         data-service-id="@row.ServiceId"
                         data-ref-value="@row.RefValue"
                         data-notes="@row.Notes"
+                        data-service-notes="@row.ServiceNotes"
                         data-email="@row.CustomerEmail"
                         data-phone="@rowPhoneDisplay"
                         data-date="@rowDate"
@@ -118,6 +119,7 @@
                                             data-customer="@row.CustomerName"
                                             data-email="@row.CustomerEmail"
                                             data-phone="@rowPhoneDisplay"
+                                            data-sms-opt-in="@(row.SmsOptIn ? "Yes" : "No")"
                                             data-queue-name="@row.QueueName"
                                             data-service-name="@row.ServiceType"
                                             data-ref-value="@row.RefValue"
@@ -127,8 +129,19 @@
                                             data-stamp-user="@rowStampUser"
                                             data-meeting-url="@row.MeetingUrl"
                                             data-meeting-url-host="@row.MeetingUrlHost"
-                                            data-notes="@row.Notes">
+                                            data-notes="@row.Notes"
+                                            data-service-notes="@row.ServiceNotes">
                                         Info
+                                    </button>
+                                    <button class="btn small ghost transaction-details-link" type="button"
+                                            title="Transaction Details"
+                                            data-appointment-id="@row.AppointmentId"
+                                            data-src-type="W"
+                                            data-notes="@row.Notes"
+                                            data-service-notes="@row.ServiceNotes"
+                                            data-service-start-time="@row.ServiceStartTimeText"
+                                            data-service-end-time="@row.ServiceEndTimeText">
+                                        TD
                                     </button>
                                     <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
                                 </div>

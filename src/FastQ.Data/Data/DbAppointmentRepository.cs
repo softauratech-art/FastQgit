@@ -388,9 +388,61 @@ namespace FastQ.Data.Db
                         });
                     }
                 }
+
+                var srcType = procName.EndsWith("GET_MYWALKINS", StringComparison.OrdinalIgnoreCase) ? 'W' : 'A';
+                LoadLatestServiceNotes(conn, list, srcType);
             }
 
             return list;
+        }
+
+        private static void LoadLatestServiceNotes(DbConnection conn, IList<ProviderAppointmentData> rows, char srcType)
+        {
+            const int batchSize = 500;
+            for (var offset = 0; offset < rows.Count; offset += batchSize)
+            {
+                var batch = rows.Skip(offset).Take(batchSize).ToList();
+                var parameterNames = batch.Select((row, index) => ":p_src_id_" + index).ToArray();
+                var sql = @"
+                    SELECT src_id,
+                           MAX(service_notes) KEEP (
+                               DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id
+                           ) AS service_notes,
+                           MAX(service_start_time) KEEP (
+                               DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id
+                           ) AS service_start_time,
+                           MAX(service_end_time) KEEP (
+                               DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id
+                           ) AS service_end_time
+                      FROM servicetransactions
+                     WHERE src_type = :p_src_type
+                       AND src_id IN (" + string.Join(", ", parameterNames) + @")
+                     GROUP BY src_id";
+
+                using (var cmd = DataAccess.CreateCommand(conn, sql))
+                {
+                    DataAccess.AddParam(cmd, "p_src_type", srcType.ToString(), DbType.String);
+                    for (var index = 0; index < batch.Count; index++)
+                    {
+                        DataAccess.AddParam(cmd, "p_src_id_" + index, batch[index].AppointmentId, DbType.Int64);
+                    }
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var srcId = Convert.ToInt64(reader["SRC_ID"], CultureInfo.InvariantCulture);
+                            var row = batch.FirstOrDefault(item => item.AppointmentId == srcId);
+                            if (row != null)
+                            {
+                                row.ServiceNotes = ReadField(reader, "SERVICE_NOTES");
+                                row.ServiceStartTime = ReadDateTime(reader, "SERVICE_START_TIME");
+                                row.ServiceEndTime = ReadDateTime(reader, "SERVICE_END_TIME");
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public long? GetQueueIdForSource(char srcType, long sourceId)

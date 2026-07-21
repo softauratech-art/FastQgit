@@ -20,6 +20,9 @@ namespace FastQ.Data.Entities
         public string MeetingUrl { get; set; }
         public string MeetingUrlHost { get; set; }
         public string Notes { get; set; }
+        public string ServiceNotes { get; set; }
+        public DateTime? ServiceStartTime { get; set; }
+        public DateTime? ServiceEndTime { get; set; }
         public string StampUser { get; set; }
         public string StampUserName { get; set; }
         public bool SmsOptIn { get; set; }

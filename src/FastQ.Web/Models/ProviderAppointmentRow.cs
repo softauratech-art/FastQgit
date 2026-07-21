@@ -24,6 +24,10 @@ namespace FastQ.Web.Models
         public string MeetingUrl { get; set; }
         public string MeetingUrlHost { get; set; }
         public string Notes { get; set; }
+        public string ServiceNotes { get; set; }
+        public string ServiceStartTimeText { get; set; }
+        public string ServiceEndTimeText { get; set; }
+        public bool SmsOptIn { get; set; }
         public string StampUser { get; set; }
         public DateTime ScheduledFor { get; set; }
         public string StampUserName { get; set; }
