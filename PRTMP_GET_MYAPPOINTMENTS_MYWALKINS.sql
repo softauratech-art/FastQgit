@@ -67,7 +67,8 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
         queueadmin_Flag, reporter_Flag,
         u.fname, u.lname,
         FQ_PROCS_GET.GET_USERNAME(a.stampuser) stampusername,
-        a.*, c.sms_optin
+        a.*, c.sms_optin,
+        st.service_notes, st.service_start_time, st.service_end_time
         , fq_crypto_pkg.decrypt(c.fname) cust_fname, fq_crypto_pkg.decrypt(c.lname) cust_lname
         , fq_crypto_pkg.decrypt(c.email) cust_email, fq_crypto_pkg.decrypt(c.phone) cust_phone
     FROM
@@ -77,7 +78,16 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
         INNER JOIN P
                ON P.queue_id = a.Queue_id                      
         INNER JOIN fq_users u ON u.user_id = p.user_id
-        INNER JOIN customers c on c.customer_id = a.customer_id        
+        INNER JOIN customers c on c.customer_id = a.customer_id
+        LEFT JOIN (
+            SELECT src_id,
+                   MAX(service_notes) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_notes,
+                   MAX(service_start_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_start_time,
+                   MAX(service_end_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_end_time
+              FROM servicetransactions
+             WHERE src_type = 'A'
+             GROUP BY src_id
+        ) st ON st.src_id = a.appointment_id
     WHERE
                 lower(u.user_id) = lower(p_userid)
         AND NVL(u.activeflag,'N') = 'Y'
@@ -153,7 +163,8 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
         queueadmin_Flag, reporter_Flag,
         u.fname, u.lname,
         FQ_PROCS_GET.GET_USERNAME(a.stampuser) stampusername,
-        a.*, c.sms_optin
+        a.*, c.sms_optin,
+        st.service_notes, st.service_start_time, st.service_end_time
         , fq_crypto_pkg.decrypt(c.fname) cust_fname, fq_crypto_pkg.decrypt(c.lname) cust_lname
         , fq_crypto_pkg.decrypt(c.email) cust_email, fq_crypto_pkg.decrypt(c.phone) cust_phone
     FROM
@@ -163,7 +174,16 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
         INNER JOIN P
                ON P.queue_id = a.Queue_id                      
         INNER JOIN fq_users u ON u.user_id = p.user_id
-        INNER JOIN customers c on c.customer_id = a.customer_id        
+        INNER JOIN customers c on c.customer_id = a.customer_id
+        LEFT JOIN (
+            SELECT src_id,
+                   MAX(service_notes) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_notes,
+                   MAX(service_start_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_start_time,
+                   MAX(service_end_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_end_time
+              FROM servicetransactions
+             WHERE src_type = 'W'
+             GROUP BY src_id
+        ) st ON st.src_id = a.walkin_id
     WHERE
                 lower(u.user_id) = lower(p_userid)
         AND NVL(u.activeflag,'N') = 'Y'
