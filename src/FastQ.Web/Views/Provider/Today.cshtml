@@ -1926,14 +1926,53 @@
       return rowStatus === statusValue;
     }
 
+    var todayFilterStorageKey = "fastq.provider.today.filters";
+
+    function saveTodayFilterState(container) {
+      if (!container || !window.sessionStorage) return;
+      var globalSearch = document.getElementById("todayGlobalSearch");
+      sessionStorage.setItem(todayFilterStorageKey, JSON.stringify({
+        customer: (container.querySelector('[data-filter="customer"]') || {}).value || "",
+        status: (container.querySelector('[data-filter="status"]') || {}).value || "active",
+        queue: (container.querySelector('[data-filter="queue"]') || {}).value || "all",
+        search: globalSearch ? globalSearch.value : ""
+      }));
+    }
+
+    function restoreTodayFilterState(container) {
+      if (!container || !window.sessionStorage) return;
+      var rawState = sessionStorage.getItem(todayFilterStorageKey);
+      if (!rawState) return;
+      try {
+        var state = JSON.parse(rawState);
+        var customerInput = container.querySelector('[data-filter="customer"]');
+        var statusInput = container.querySelector('[data-filter="status"]');
+        var queueInput = container.querySelector('[data-filter="queue"]');
+        var globalSearch = document.getElementById("todayGlobalSearch");
+        if (customerInput) customerInput.value = state.customer || "";
+        if (statusInput) statusInput.value = state.status || "active";
+        if (queueInput) queueInput.value = state.queue || "all";
+        if (globalSearch) globalSearch.value = state.search || "";
+      } catch (error) {
+        sessionStorage.removeItem(todayFilterStorageKey);
+      }
+    }
+
     function bindAccordionRows() {
       providerCommon.bindAccordionRows();
     }
 
     document.querySelectorAll(".table-filters").forEach(function (container) {
+      restoreTodayFilterState(container);
       container.querySelectorAll(".filter-input").forEach(function (input) {
-        input.addEventListener("change", function () { applyTableFilters(container); });
-        input.addEventListener("input", function () { applyTableFilters(container); });
+        input.addEventListener("change", function () {
+          saveTodayFilterState(container);
+          applyTableFilters(container);
+        });
+        input.addEventListener("input", function () {
+          saveTodayFilterState(container);
+          applyTableFilters(container);
+        });
         if (input.getAttribute("data-filter") === "start" || input.getAttribute("data-filter") === "end") {
           input.addEventListener("change", function () {
             var startInput = container.querySelector('[data-filter="start"]');
@@ -2004,6 +2043,7 @@
           if (endInput) {
             endInput.value = todayValue;
           }
+          saveTodayFilterState(container);
           applyTableFilters(container);
           updateRangeAndReload(todayValue, todayValue);
         });
@@ -3335,17 +3375,23 @@
     var todayGlobalSearch = document.getElementById("todayGlobalSearch");
     if (todayGlobalSearch) {
       todayGlobalSearch.addEventListener("input", function () {
+        var filterContainer = document.querySelector(".table-filters");
+        saveTodayFilterState(filterContainer);
+        applyTableFilters(filterContainer);
         var query = (todayGlobalSearch.value || "").trim().toLowerCase();
         document.querySelectorAll(".table-card table tbody tr.accordion-toggle").forEach(function (row) {
           var detail = findDetailRowByTarget(row.parentNode, row.getAttribute("data-target") || "");
           var haystack = (row.textContent || "").toLowerCase();
           var match = !query || haystack.indexOf(query) >= 0;
-          row.classList.toggle("is-hidden", !match);
-          if (detail) {
-            detail.classList.toggle("is-hidden", !match);
+          if (!match) {
+            row.classList.add("is-hidden");
+            if (detail) detail.classList.add("is-hidden");
           }
         });
       });
+      if (todayGlobalSearch.value) {
+        todayGlobalSearch.dispatchEvent(new Event("input"));
+      }
     }
 
     function refreshExternalProviderRows() {
