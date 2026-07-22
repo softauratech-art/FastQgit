@@ -157,6 +157,7 @@ namespace FastQ.Web.Services
                 ServiceNotes = row.ServiceNotes,
                 ServiceStartTimeText = row.ServiceStartTimeText,
                 ServiceEndTimeText = row.ServiceEndTimeText,
+                ServiceStampUser = row.ServiceStampUser,
                 SmsOptIn = row.SmsOptIn,
                 MeetingUrl = row.MeetingUrl,
                 MeetingUrlHost = row.MeetingUrlHost,

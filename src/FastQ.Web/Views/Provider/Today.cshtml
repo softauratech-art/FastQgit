@@ -275,11 +275,11 @@
                                                     title="Transaction Details"
                                                     data-appointment-id="@row.AppointmentId"
                                                     data-src-type="A"
-                                                    data-notes="@row.Notes"
                                                     data-service-notes="@row.ServiceNotes"
                                                     data-service-start-time="@row.ServiceStartTimeText"
-                                                    data-service-end-time="@row.ServiceEndTimeText">
-                                                TD
+                                                    data-service-end-time="@row.ServiceEndTimeText"
+                                                    data-service-stamp-user="@row.ServiceStampUser">
+                                                Transaction Details
                                             </button>
                                             <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
                                         </div>
@@ -413,10 +413,6 @@
       document.querySelectorAll('.meeting-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
         link.setAttribute("data-meeting-url", rawGuestUrl || "");
         link.setAttribute("data-meeting-url-host", rawHostUrl || "");
-        link.setAttribute("data-notes", notes || "");
-      });
-
-      document.querySelectorAll('.transaction-details-link[data-appointment-id="' + appointmentId + '"][data-src-type="' + normalizedSrcType + '"]').forEach(function (link) {
         link.setAttribute("data-notes", notes || "");
       });
 

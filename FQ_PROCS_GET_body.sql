@@ -126,13 +126,15 @@ BEGIN
         SELECT src_id,
                service_notes,
                service_start_time,
-               service_end_time
+               service_end_time,
+               stampuser
         FROM
         (
             SELECT src_id,
                    service_notes,
                    service_start_time,
                    service_end_time,
+                   stampuser,
                    ROW_NUMBER() OVER
                    (
                        PARTITION BY src_id
@@ -153,7 +155,8 @@ BEGIN
             a.*, c.sms_optin,
             st.service_notes,
             st.service_start_time,
-            st.service_end_time
+            st.service_end_time,
+            st.stampuser service_stampuser
             , FQ_CRYPTO_PKG.DECRYPT(c.fname) cust_fname
             , FQ_CRYPTO_PKG.DECRYPT(c.lname) cust_lname
             , FQ_CRYPTO_PKG.DECRYPT(c.email) cust_email
@@ -222,13 +225,15 @@ BEGIN
         SELECT src_id,
                service_notes,
                service_start_time,
-               service_end_time
+               service_end_time,
+               stampuser
         FROM
         (
             SELECT src_id,
                    service_notes,
                    service_start_time,
                    service_end_time,
+                   stampuser,
                    ROW_NUMBER() OVER
                    (
                        PARTITION BY src_id
@@ -249,7 +254,8 @@ BEGIN
             a.*, c.sms_optin,
             st.service_notes,
             st.service_start_time,
-            st.service_end_time
+            st.service_end_time,
+            st.stampuser service_stampuser
             , FQ_CRYPTO_PKG.DECRYPT(c.fname) cust_fname
             , FQ_CRYPTO_PKG.DECRYPT(c.lname) cust_lname
             , FQ_CRYPTO_PKG.DECRYPT(c.email) cust_email

@@ -137,11 +137,11 @@
                                             title="Transaction Details"
                                             data-appointment-id="@row.AppointmentId"
                                             data-src-type="W"
-                                            data-notes="@row.Notes"
                                             data-service-notes="@row.ServiceNotes"
                                             data-service-start-time="@row.ServiceStartTimeText"
-                                            data-service-end-time="@row.ServiceEndTimeText">
-                                        TD
+                                            data-service-end-time="@row.ServiceEndTimeText"
+                                            data-service-stamp-user="@row.ServiceStampUser">
+                                        Transaction Details
                                     </button>
                                     <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
                                 </div>

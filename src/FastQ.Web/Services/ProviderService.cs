@@ -270,6 +270,7 @@ namespace FastQ.Web.Services
                     ServiceNotes = string.IsNullOrWhiteSpace(r.ServiceNotes) ? string.Empty : r.ServiceNotes.Trim(),
                     ServiceStartTimeText = FormatTransactionTime(r.ServiceStartTime),
                     ServiceEndTimeText = FormatTransactionTime(r.ServiceEndTime),
+                    ServiceStampUser = string.IsNullOrWhiteSpace(r.ServiceStampUser) ? string.Empty : r.ServiceStampUser.Trim(),
                     SmsOptIn = r.SmsOptIn,
                     StampUser = r.StampUser,
                     StampUserName = r.StampUserName

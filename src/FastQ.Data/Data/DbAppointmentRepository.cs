@@ -385,6 +385,7 @@ namespace FastQ.Data.Db
                             ServiceNotes = ReadField(reader, "SERVICE_NOTES"),
                             ServiceStartTime = ReadDateTime(reader, "SERVICE_START_TIME"),
                             ServiceEndTime = ReadDateTime(reader, "SERVICE_END_TIME"),
+                            ServiceStampUser = ReadField(reader, "SERVICE_STAMPUSER"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             StampUserName = ReadField(reader, "STAMPUSERNAME"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)

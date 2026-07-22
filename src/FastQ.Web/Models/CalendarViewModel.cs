@@ -45,6 +45,7 @@ namespace FastQ.Web.Models
         public string ServiceNotes { get; set; }
         public string ServiceStartTimeText { get; set; }
         public string ServiceEndTimeText { get; set; }
+        public string ServiceStampUser { get; set; }
         public bool SmsOptIn { get; set; }
         public string MeetingUrl { get; set; }
         public string MeetingUrlHost { get; set; }

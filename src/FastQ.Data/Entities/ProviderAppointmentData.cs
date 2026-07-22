@@ -23,6 +23,7 @@ namespace FastQ.Data.Entities
         public string ServiceNotes { get; set; }
         public DateTime? ServiceStartTime { get; set; }
         public DateTime? ServiceEndTime { get; set; }
+        public string ServiceStampUser { get; set; }
         public string StampUser { get; set; }
         public string StampUserName { get; set; }
         public bool SmsOptIn { get; set; }

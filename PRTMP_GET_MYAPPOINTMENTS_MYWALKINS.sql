@@ -68,7 +68,8 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
         u.fname, u.lname,
         FQ_PROCS_GET.GET_USERNAME(a.stampuser) stampusername,
         a.*, c.sms_optin,
-        st.service_notes, st.service_start_time, st.service_end_time
+        st.service_notes, st.service_start_time, st.service_end_time,
+        st.service_stampuser
         , fq_crypto_pkg.decrypt(c.fname) cust_fname, fq_crypto_pkg.decrypt(c.lname) cust_lname
         , fq_crypto_pkg.decrypt(c.email) cust_email, fq_crypto_pkg.decrypt(c.phone) cust_phone
     FROM
@@ -83,7 +84,8 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
             SELECT src_id,
                    MAX(service_notes) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_notes,
                    MAX(service_start_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_start_time,
-                   MAX(service_end_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_end_time
+                   MAX(service_end_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_end_time,
+                   MAX(stampuser) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_stampuser
               FROM servicetransactions
              WHERE src_type = 'A'
              GROUP BY src_id
@@ -164,7 +166,8 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
         u.fname, u.lname,
         FQ_PROCS_GET.GET_USERNAME(a.stampuser) stampusername,
         a.*, c.sms_optin,
-        st.service_notes, st.service_start_time, st.service_end_time
+        st.service_notes, st.service_start_time, st.service_end_time,
+        st.service_stampuser
         , fq_crypto_pkg.decrypt(c.fname) cust_fname, fq_crypto_pkg.decrypt(c.lname) cust_lname
         , fq_crypto_pkg.decrypt(c.email) cust_email, fq_crypto_pkg.decrypt(c.phone) cust_phone
     FROM
@@ -179,7 +182,8 @@ SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
             SELECT src_id,
                    MAX(service_notes) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_notes,
                    MAX(service_start_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_start_time,
-                   MAX(service_end_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_end_time
+                   MAX(service_end_time) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_end_time,
+                   MAX(stampuser) KEEP (DENSE_RANK LAST ORDER BY stampdate NULLS FIRST, transaction_id) service_stampuser
               FROM servicetransactions
              WHERE src_type = 'W'
              GROUP BY src_id
