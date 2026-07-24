@@ -2988,6 +2988,11 @@
           showModalFeedback("serviceRouteModal", "Source and target queue are required.", true);
           return;
         }
+        if (!targetServiceId) {
+          showModalFeedback("serviceRouteModal", "Target service is required.", true);
+          if (targetServiceIdInput) targetServiceIdInput.focus();
+          return;
+        }
           if (mode === "end-add" && (!completionNotes || !completionNotes.trim())) {
           showModalFeedback("serviceRouteModal", "Service Notes are required.", true);
           return;

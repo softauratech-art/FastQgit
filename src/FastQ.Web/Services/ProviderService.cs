@@ -518,6 +518,8 @@ namespace FastQ.Web.Services
             if (request == null) return Result<long>.Fail("Transfer request is required.");
             if (request.SrcId <= 0) return Result<long>.Fail("Source id is required.");
             if (request.TargetQueueId <= 0) return Result<long>.Fail("Target queue is required.");
+            if (!request.TargetServiceId.HasValue || request.TargetServiceId.Value <= 0)
+                return Result<long>.Fail("Target service is required.");
 
             var srcType = char.ToUpperInvariant(request.SrcType);
             if (srcType != 'A' && srcType != 'W') return Result<long>.Fail("Source type must be A or W.");
@@ -532,6 +534,9 @@ namespace FastQ.Web.Services
 
             var targetQueue = _queues.Get(request.TargetQueueId);
             if (targetQueue == null) return Result<long>.Fail("Target queue not found.");
+            if (!_queues.ListServicesByQueue(request.TargetQueueId)
+                    .Any(service => service.Item1 == request.TargetServiceId.Value))
+                return Result<long>.Fail("The selected service does not belong to the target queue.");
 
             Appointment sourceAppt = null;
             if (srcType == 'A')
