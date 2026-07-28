@@ -8,7 +8,6 @@
     ViewBag.Title = "Calendar";
     var requestedEntry = ((Request["entry"] as string) ?? "both").Trim().ToLowerInvariant();
     var requestedQueue = ((Request["queue"] as string) ?? "all").Trim().ToLowerInvariant();
-    var requestedStatus = ((Request["status"] as string) ?? "active").Trim().ToLowerInvariant();
     var requestedScope = ((Request["scope"] as string) ?? "monthly").Trim().ToLowerInvariant();
     var currentScope = requestedScope == "weekly" || requestedScope == "daily" ? requestedScope : "monthly";
     var previousMonth = Model.DisplayMonth.AddMonths(-1);
@@ -89,17 +88,6 @@
                         <option value="@queueName.Value" @(requestedQueue.Equals(queueName.Value) ? "selected" : null)>@queueName.Text</option>
                     }
                 </select>
-                <select id="agendaStatusFilter" aria-label="Filter month agenda by status" onchange="reloadByStatusFilter(this.value);">
-                    <option value="active" @(requestedStatus == "active" ? "selected" : null)>Active</option>
-                    <option value="all" @(requestedStatus == "all" ? "selected" : null)>All Statuses</option>
-                    <option value="Scheduled" @(requestedStatus == "scheduled" ? "selected" : null)>Scheduled</option>
-                    <option value="Arrived" @(requestedStatus == "arrived" ? "selected" : null)>Arrived</option>
-                    <option value="InService" @(requestedStatus == "inservice" ? "selected" : null)>In Service</option>
-                    <option value="Completed" @(requestedStatus == "completed" ? "selected" : null)>Done</option>
-                    <option value="Cancelled" @(requestedStatus == "cancelled" ? "selected" : null)>Cancelled</option>
-                    <option value="ClosedBySystem" @(requestedStatus == "closedbysystem" ? "selected" : null)>Closed by System</option>
-                    <option value="TransferredOut" @(requestedStatus == "transferredout" ? "selected" : null)>Transferred Out</option>
-                </select>
             </div>
         </div>
     </div>
@@ -137,7 +125,7 @@
                 <div class="@dayClass" data-calendar-date="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" data-weekday-index="@((int)day.Date.DayOfWeek)">
                     @if (day.IsCurrentMonth)
                     {
-                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope, queue = requestedQueue, entry = requestedEntry, status = requestedStatus })">
+                        <a class="calendar-day-link" href="@Url.Action("Index", "Calendar", new { month = Model.DisplayMonth.ToString("yyyy-MM-01"), selectedDate = day.Date.ToString("yyyy-MM-dd"), scope = currentScope, queue = requestedQueue, entry = requestedEntry })">
                             <div class="day-number">@day.Date.Day</div>
                             <div class="day-meta">
                                 <span>@(day.AppointmentCount == 1 ? "1 item" : day.AppointmentCount + " items")</span>
@@ -271,7 +259,6 @@
             url += "&scope=@currentScope";
             url += "&entry=@requestedEntry";
             url += "&queue=" + qid;
-            url += "&status=@requestedStatus";
             window.location.href = url;
         }
 
@@ -282,18 +269,6 @@
             url += "&scope=@currentScope";
             url += "&entry=" + entry;
             url += "&queue=@requestedQueue";
-            url += "&status=@requestedStatus";
-            window.location.href = url;
-        }
-
-        function reloadByStatusFilter(status) {
-            var url = "@Url.Action("Index", "Calendar")?";
-            url += "&month=@Model.DisplayMonth.ToString("yyyy-MM-01")";
-            url += "&selectedDate=@modalDate.Date.ToString("yyyy-MM-dd")";
-            url += "&scope=@currentScope";
-            url += "&entry=@requestedEntry";
-            url += "&queue=@requestedQueue";
-            url += "&status=" + status;
             window.location.href = url;
         }
 

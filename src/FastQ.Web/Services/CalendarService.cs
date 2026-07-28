@@ -34,11 +34,10 @@ namespace FastQ.Web.Services
             _queues = queues;
         }
 
-        public CalendarViewModel BuildCalendarModel(long entityId, string userId, DateTime displayMonth, DateTime selectedDate, string selectedEntry, string selectedQueue, string selectedStatus)
+        public CalendarViewModel BuildCalendarModel(long entityId, string userId, DateTime displayMonth, DateTime selectedDate, string selectedEntry, string selectedQueue)
         {
             selectedEntry = selectedEntry ?? "both";
             selectedQueue = selectedQueue ?? "all";
-            selectedStatus = string.IsNullOrWhiteSpace(selectedStatus) ? "active" : selectedStatus.Trim();
             
             var monthStart = new DateTime(displayMonth.Year, displayMonth.Month, 1);
             var monthEnd = monthStart.AddMonths(1).AddDays(-1);
@@ -53,11 +52,7 @@ namespace FastQ.Web.Services
                     rows.AddRange(_providerService.BuildWalkinsForUser(entityId,userId, monthStart, monthEnd).Select(r => MapRow(r, "W", "Walk-In")));
             }
 
-            var filteredRows = rows
-                    .Where(r => MatchesStatusFilter(r.Status, selectedStatus))
-                    .ToList();
-
-            var oMonthAppointments = filteredRows
+            var oMonthAppointments = rows
                     .Where(r => selectedQueue.Equals("all") || r.QueueId == Convert.ToInt64(selectedQueue))
                     .OrderBy(r => r.ScheduledFor)
                     .ToList();
@@ -80,33 +75,17 @@ namespace FastQ.Web.Services
                     })
                     .ToList(),
                 CalendarDays = BuildCalendarDays(monthStart, selected, counts),
-                MonthAppointments = filteredRows
+                MonthAppointments = rows
                     .Where(r => selectedQueue.Equals("all") || r.QueueId == Convert.ToInt64(selectedQueue) )
                     .OrderBy(r => r.ScheduledFor)
                     .ToList(),
-                SelectedDayAppointments = filteredRows
+                SelectedDayAppointments = rows
                     .Where(r => r.ScheduledFor.Date == selected && (selectedQueue.Equals("all") || r.QueueId == Convert.ToInt64(selectedQueue)))
                     .OrderBy(r => r.ScheduledFor)
                     .ToList()
             };
 
             return model;
-        }
-
-        private static bool MatchesStatusFilter(AppointmentStatus status, string selectedStatus)
-        {
-            if (string.Equals(selectedStatus, "all", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            if (string.Equals(selectedStatus, "active", StringComparison.OrdinalIgnoreCase))
-            {
-                return status != AppointmentStatus.Completed;
-            }
-
-            return Enum.TryParse(selectedStatus, true, out AppointmentStatus parsedStatus)
-                && status == parsedStatus;
         }
 
         private static IList<CalendarDay> BuildCalendarDays(DateTime monthStart, DateTime selectedDate, IDictionary<DateTime, int> counts)

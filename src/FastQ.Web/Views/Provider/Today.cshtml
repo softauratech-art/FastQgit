@@ -30,10 +30,21 @@
         endDateValue = startDateValue;
     }
     var rangeDays = Math.Max(1, (endDateValue - startDateValue).Days + 1);
-    var prevStart = startDateValue.AddDays(-rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-    var prevEnd = endDateValue.AddDays(-rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-    var nextStart = startDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-    var nextEnd = endDateValue.AddDays(rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    Func<DateTime, int, DateTime> shiftDate = (value, days) =>
+    {
+        try
+        {
+            return value.AddDays(days);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return days < 0 ? DateTime.MinValue : DateTime.MaxValue.Date;
+        }
+    };
+    var prevStart = shiftDate(startDateValue, -rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var prevEnd = shiftDate(endDateValue, -rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var nextStart = shiftDate(startDateValue, rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    var nextEnd = shiftDate(endDateValue, rangeDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
     var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
@@ -1916,7 +1927,7 @@
       }
 
       if (statusValue === "active") {
-        return rowStatus !== "completed";
+        return rowStatus === "scheduled" || rowStatus === "arrived" || rowStatus === "inservice";
       }
 
       return rowStatus === statusValue;
