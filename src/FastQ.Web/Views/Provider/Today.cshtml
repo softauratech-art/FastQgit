@@ -2537,6 +2537,14 @@
       renderNotifications();
     }
 
+    function shouldShowDesktopNotification(message) {
+      var normalizedMessage = (message || "").toString().trim().toLowerCase();
+      return normalizedMessage.indexOf(" added:") >= 0
+        || normalizedMessage.indexOf("new booking created") === 0
+        || normalizedMessage.indexOf("appointment scheduled:") === 0
+        || normalizedMessage.indexOf("transferred") >= 0;
+    }
+
     function toggleNotifications(forceOpen) {
       var panel = document.getElementById("todayNotificationsPanel");
       var button = document.getElementById("todayNotificationsButton");
@@ -2576,7 +2584,9 @@
       }
       renderNotifications();
 
-      showDesktopNotification(message);
+      if (shouldShowDesktopNotification(message)) {
+        showDesktopNotification(message);
+      }
     }
 
     function isAppointmentRowScheduledToday(appointmentId) {
