@@ -3432,7 +3432,7 @@
 
     <script>
     function canUseDesktopNotifications() {
-      return "Notification" in window && window.isSecureContext !== false;
+      return "Notification" in window;
     }
 
     function requestDesktopNotificationPermission() {
@@ -3451,23 +3451,41 @@
     }
 
     function showDesktopNotification(message) {
-      if (!message
-          || !canUseDesktopNotifications()
-          || Notification.permission !== "granted"
-          || !document.hidden) {
+      if (!message || !canUseDesktopNotifications()) {
         return;
       }
 
-      try {
-        var notification = new Notification("FastQ Message", {
-          body: message
-        });
-        notification.onclick = function () {
-          window.focus();
-          notification.close();
-        };
-      } catch (error) {
-        console.warn("Desktop notification could not be shown.", error);
+      function displayNotification() {
+        try {
+          var notification = new Notification("FastQ Message", {
+            body: message
+          });
+          notification.onclick = function () {
+            window.focus();
+            notification.close();
+          };
+        } catch (error) {
+          console.warn("Desktop notification could not be shown.", error);
+        }
+      }
+
+      if (Notification.permission === "granted") {
+        displayNotification();
+        return;
+      }
+
+      if (Notification.permission === "default"
+          && typeof Notification.requestPermission === "function") {
+        var permissionRequest = Notification.requestPermission();
+        if (permissionRequest && typeof permissionRequest.then === "function") {
+          permissionRequest.then(function (permission) {
+            if (permission === "granted") {
+              displayNotification();
+            }
+          }).catch(function (error) {
+            console.warn("Desktop notification permission request failed.", error);
+          });
+        }
       }
     }
     </script>
