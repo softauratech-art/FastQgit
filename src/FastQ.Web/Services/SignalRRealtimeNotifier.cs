@@ -58,7 +58,9 @@ namespace FastQ.Web.Services
                 case AppointmentStatus.Scheduled:
                     return $"New Booking Created ({shortId}{customerContext}).";
                 case AppointmentStatus.Arrived:
-                    return $"Customer Arrived ({shortId}{customerContext}).";
+                    return appointment.IsNewWalkin
+                        ? $"New Walk-In Created ({shortId}{customerContext})."
+                        : $"Customer Arrived ({shortId}{customerContext}).";
                 case AppointmentStatus.InService:
                     return $"Service Started ({shortId}{customerContext}).";
                 case AppointmentStatus.Completed:

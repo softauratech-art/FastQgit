@@ -233,6 +233,7 @@ namespace FastQ.Web.Services
                 CreatedBy = user,
                 StampUser = user,
                 CreatedOn = now,
+                IsNewWalkin = true,
                 StampDate = now,
                 //CreatedOn = now,
                 UpdatedOn = now,

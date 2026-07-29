@@ -2541,6 +2541,7 @@
       var normalizedMessage = (message || "").toString().trim().toLowerCase();
       return normalizedMessage.indexOf(" added:") >= 0
         || normalizedMessage.indexOf("new booking created") === 0
+        || normalizedMessage.indexOf("new walk-in created") === 0
         || normalizedMessage.indexOf("appointment scheduled:") === 0
         || normalizedMessage.indexOf("transferred") >= 0;
     }

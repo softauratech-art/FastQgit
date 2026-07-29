@@ -30,6 +30,7 @@ namespace FastQ.Data.Entities
         public string LanguagePreference { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
+        public bool IsNewWalkin { get; set; }
         public string StampUser { get; set; }
         public DateTime StampDate { get; set; }
 
