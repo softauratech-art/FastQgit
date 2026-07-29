@@ -2575,6 +2575,8 @@
         todayNotificationUnreadCount += 1;
       }
       renderNotifications();
+
+      showDesktopNotification(message);
     }
 
     function isAppointmentRowScheduledToday(appointmentId) {
@@ -2604,7 +2606,7 @@
         return "Appointment cancelled for " + subject + ".";
       }
       if (normalized === "transferredout") {
-        return "Appointment transferred for " + subject + ".";
+        return "Service transferred for " + subject + ".";
       }
       if (normalized === "arrived") {
         return "Customer arrived: " + subject + ".";
@@ -2680,6 +2682,7 @@
     if (todayNotificationsButton) {
       todayNotificationsButton.addEventListener("click", function (event) {
         event.stopPropagation();
+        requestDesktopNotificationPermission();
         toggleNotifications();
       });
     }
@@ -3425,5 +3428,47 @@
     }
 
   })();
+    </script>
+
+    <script>
+    function canUseDesktopNotifications() {
+      return "Notification" in window && window.isSecureContext !== false;
+    }
+
+    function requestDesktopNotificationPermission() {
+      if (!canUseDesktopNotifications()
+          || Notification.permission !== "default"
+          || typeof Notification.requestPermission !== "function") {
+        return;
+      }
+
+      var permissionRequest = Notification.requestPermission();
+      if (permissionRequest && typeof permissionRequest.catch === "function") {
+        permissionRequest.catch(function (error) {
+          console.warn("Desktop notification permission request failed.", error);
+        });
+      }
+    }
+
+    function showDesktopNotification(message) {
+      if (!message
+          || !canUseDesktopNotifications()
+          || Notification.permission !== "granted"
+          || !document.hidden) {
+        return;
+      }
+
+      try {
+        var notification = new Notification("FastQ Message", {
+          body: message
+        });
+        notification.onclick = function () {
+          window.focus();
+          notification.close();
+        };
+      } catch (error) {
+        console.warn("Desktop notification could not be shown.", error);
+      }
+    }
     </script>
 }
