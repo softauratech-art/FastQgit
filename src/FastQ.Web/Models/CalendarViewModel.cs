@@ -43,6 +43,7 @@ namespace FastQ.Web.Models
         public string EntryKind { get; set; }
         public string Notes { get; set; }
         public string ServiceNotes { get; set; }
+        public string ServiceCheckinTimeText { get; set; }
         public string ServiceStartTimeText { get; set; }
         public string ServiceEndTimeText { get; set; }
         public string ServiceStampUser { get; set; }

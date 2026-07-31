@@ -49,6 +49,10 @@ namespace FastQ.Data.Db
         {
             return new DbWebexRepository();
         }
+        public static IReportingRepository CreateReportingRepository()
+        {
+            return new DbReportingRepository();
+        }
 
 
         //private static string GetConnectionString()

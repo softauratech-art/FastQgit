@@ -36,7 +36,7 @@ namespace FastQ.Web.Services
             // Providers are not always joined to groups; broadcast status as well.
             Hub.Clients.All.appointmentUpdated(apptId, appointment.Status.ToString(), providerId);
 
-            var message = IsScheduledForToday(appointment)
+            var message = !appointment.SuppressNotification && IsScheduledForToday(appointment)
                 ? BuildNotificationMessage(appointment)
                 : null;
             if (!string.IsNullOrWhiteSpace(message))
@@ -56,8 +56,12 @@ namespace FastQ.Web.Services
             switch (appointment.Status)
             {
                 case AppointmentStatus.Scheduled:
-                    return $"New Booking Created ({shortId}{customerContext}).";
+                    return appointment.IsTransferTarget
+                        ? $"Appointment Scheduled ({shortId}{customerContext})."
+                        : $"New Booking Created ({shortId}{customerContext}).";
                 case AppointmentStatus.Arrived:
+                    if (appointment.IsTransferTarget)
+                        return $"Customer Arrived ({shortId}{customerContext}).";
                     return appointment.IsNewWalkin
                         ? $"New Walk-In Created ({shortId}{customerContext})."
                         : $"Customer Arrived ({shortId}{customerContext}).";

@@ -52,7 +52,7 @@
                 <div>Add Customer Notes:</div>
                 <textarea id="mNotes" rows="3"></textarea>
             </div>
-            <div class="helper-text">Guest URL, host URL, and customer notes are saved. Text entered in Add Customer Notes is appended to Customer Notes.</div>
+            <div class="helper-text">Guest URL, host URL, and customer notes are saved. New notes are appended to Customer Notes and visible to customer.</div>
         </div>
         <div class="modal-footer">
             <button class="btn ghost" type="button" data-modal-close="meetingModal">Close</button>
@@ -68,6 +68,10 @@
             <button class="btn small ghost" type="button" data-modal-close="transactionDetailsModal">Close</button>
         </div>
         <div class="modal-body">
+            <div class="field-row">
+                <div>Checkin Time:</div>
+                <div id="transactionServiceCheckinTime" class="route-input info-readonly">-</div>
+            </div>
             <div class="field-row">
                 <div>Service Start Time:</div>
                 <div id="transactionServiceStartTime" class="route-input info-readonly">-</div>
@@ -183,9 +187,9 @@
         </div>
         <div class="modal-body">
             <div class="modal-feedback" data-modal-feedback="endServiceModal"></div>
-            <p>Does the customer need any additional service today?</p>
+            <p>If customer needs additional service, use <b>End+New</b>, otherwise click on <b>End Only</b> to complete.</p>
             <div class="route-form-row">
-                <label for="endServiceCompletionNotes">Completion Notes</label>
+                <label for="endServiceCompletionNotes">Completion Notes *</label>
                 <textarea id="endServiceCompletionNotes" rows="3"></textarea>
             </div>
             <input id="endServiceSrcId" type="hidden" value="" />

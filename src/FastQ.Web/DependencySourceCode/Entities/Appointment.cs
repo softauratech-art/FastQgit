@@ -30,6 +30,11 @@ namespace FastQ.Data.Entities
         public string LanguagePreference { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
+        public bool IsNewWalkin { get; set; }
+        // Runtime-only hint used to distinguish transfer-target notifications
+        // from notifications for newly created bookings and walk-ins.
+        public bool IsTransferTarget { get; set; }
+        public bool SuppressNotification { get; set; }
         public string StampUser { get; set; }
         public DateTime StampDate { get; set; }
 

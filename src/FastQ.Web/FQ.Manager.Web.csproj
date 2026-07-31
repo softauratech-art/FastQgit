@@ -247,6 +247,8 @@
     <Content Include="Views\Provider\Calendar.cshtml" />
     <Content Include="Views\Provider\Today.cshtml" />
     <Content Include="Views\Reporting\Overview.cshtml" />
+    <Content Include="Views\Reporting\Dashboard.cshtml" />
+    <Content Include="Views\Reporting\Metrics.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Shared\_ListProviderWalkins.cshtml" />

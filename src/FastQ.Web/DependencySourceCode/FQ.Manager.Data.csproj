@@ -126,6 +126,7 @@
     <Compile Include="Common\Result.cs" />
     <Compile Include="Data\DataAccess.cs" />
     <Compile Include="Data\DbAppointmentRepository.cs" />
+    <Compile Include="Data\DbReportingRepository.cs" />
     <Compile Include="Data\DbCustomerRepository.cs" />
     <Compile Include="Data\DbEntityRepository.cs" />
     <Compile Include="Data\DbProviderRepository.cs" />
@@ -145,6 +146,7 @@
     <Compile Include="Entities\Entity.cs" />
     <Compile Include="Entities\Provider.cs" />
     <Compile Include="Entities\ProviderAppointmentData.cs" />
+    <Compile Include="Entities\Reporting.cs" />
     <Compile Include="Entities\QueueOpenSlot.cs" />
     <Compile Include="Entities\Queue.cs" />
     <Compile Include="Entities\User.cs" />
@@ -153,6 +155,7 @@
     <Compile Include="Repositories\ICustomerRepository.cs" />
     <Compile Include="Repositories\IEntityRepository.cs" />
     <Compile Include="Repositories\IProviderRepository.cs" />
+    <Compile Include="Repositories\IReportingRepository.cs" />
     <Compile Include="Repositories\IQueueRepository.cs" />
     <Compile Include="Repositories\IServiceTransactionRepository.cs" />
     <Compile Include="Repositories\IUserRepository.cs" />

@@ -383,12 +383,16 @@ namespace FastQ.Data.Db
                             MeetingUrlHost = ReadMeetingUrlHost(reader),
                             Notes = ReadField(reader, "MOREINFO"),
                             ServiceNotes = ReadField(reader, "SERVICE_NOTES"),
+                            ServiceCheckinTime = ReadDateTime(reader, "CHECKIN_TIME"),
                             ServiceStartTime = ReadDateTime(reader, "SERVICE_START_TIME"),
                             ServiceEndTime = ReadDateTime(reader, "SERVICE_END_TIME"),
                             ServiceStampUser = ReadField(reader, "SERVICE_STAMPUSER"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             StampUserName = ReadField(reader, "STAMPUSERNAME"),
-                            SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase)
+                            SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase),
+                            UpdatedOn = ReadDateTime(reader, "STAMPDATE"),
+                            CreatedOn = ReadDateTime(reader, "CREATEDON"),
+                            CreatedBy = ReadField(reader, "CREATEDBY")
                         });
                     }
                 }

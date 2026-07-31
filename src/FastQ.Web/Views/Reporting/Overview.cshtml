@@ -10,6 +10,7 @@
         <div class="topbar-sub">Reporting is loaded from the database and refreshed on demand.</div>
     </div>
     <div class="top-actions">
+        <a href="@Url.Action("Metrics", "Reporting")" class="btn">Go To Metrics</a>
     </div>
 }
 
@@ -77,11 +78,11 @@
         <div class="stat-value" id="reportCustomers">0</div>
     </div>*@
     <div class="stat">
-        <div class="stat-label" id="bookedLabel">Booked (Daily)</div>
+        <div class="stat-label" id="bookedLabel">Appointments Booked (Daily)</div>
         <div class="stat-value" id="reportBooked">0</div>
     </div>
     <div class="stat">
-        <div class="stat-label" id="scheduledLabel">Scheduled (Daily)</div>
+        <div class="stat-label" id="scheduledLabel">Total Entries (Daily)</div>
         <div class="stat-value" id="reportScheduled">0</div>
     </div>
     <div class="stat">
@@ -172,7 +173,7 @@
                     return;
                 }
                 var html = "<table class='table'><thead><tr>" +
-                    "<th>Queue</th><th>Waiting</th><th>In Service</th><th>Completed</th><th>Cancelled</th><th>SysClosed</th>" +
+                    "<th>Queue</th><th>Waiting</th><th>In Service</th><th>Completed</th><th>Cancelled</th><th>SysClosed</th><th>Other</th>" +
                     "</tr></thead><tbody>";
                 rows.forEach(function (r) {
                     html += "<tr>" +
@@ -182,6 +183,7 @@
                         "<td>" + r.Completed + "</td>" +
                         "<td>" + r.Cancelled + "</td>" +
                         "<td>" + r.ClosedBySystem + "</td>" +
+                        "<td>" + r.Other + "</td>" +
                         "</tr>";
                 });
                 html += "</tbody></table>";
@@ -252,8 +254,8 @@
                 if (period === "range") label = (start && end) ? (start + " to " + end) : "Date Range";
                 $("#providerPeriodPill").text(label);
                 $("#queuePeriodPill").text(label);
-                $("#bookedLabel").text("Booked (" + label + ")");
-                $("#scheduledLabel").text("Scheduled (" + label + ")");
+                $("#bookedLabel").text("Appointments Booked (" + label + ")");
+                $("#scheduledLabel").text("Total Entries (" + label + ")");
                 $("#completedLabel").text("Completed (" + label + ")");
                 $("#cancelledLabel").text("Cancellations (" + label + ")");
             },

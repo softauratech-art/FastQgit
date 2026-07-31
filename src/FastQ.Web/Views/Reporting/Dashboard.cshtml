@@ -1,0 +1,36 @@
+@{
+    ViewBag.Title = "Reporting Dashboard";
+}
+
+
+@section PageHeader {
+    <div>
+        @*<div class="eyebrow">Reporting</div>*@
+        <div class="topbar-title">Reporting Dashboard</div>
+        <div class="topbar-sub">Reporting is loaded from the database and refreshed on demand.</div>
+    </div>
+    <div class="top-actions">
+    </div>
+}
+
+<div class="card grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Daily summary and provider activity</h3>            
+        </div>
+        <p class="muted">View snapshot of daily, weekly, monthly activity</p>
+        <a class="btn secondary" href="@Url.Action("Overview", "Reporting")">Go to Overview</a>
+    </div>
+
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Granular Queue Metrics</h3>
+        </div>
+        <p class="muted">View queue lengths and service duration based on granularity</p>
+        <a class="btn secondary" href="@Url.Action("Metrics", "Reporting")">Go to Metrics</a>
+    </div>
+
+
+
+</div>

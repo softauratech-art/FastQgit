@@ -134,6 +134,7 @@ namespace FastQ.Web.Services
                 ScheduledFor = row.ScheduledFor,
                 Notes = row.Notes,
                 ServiceNotes = row.ServiceNotes,
+                ServiceCheckinTimeText = row.ServiceCheckinTimeText,
                 ServiceStartTimeText = row.ServiceStartTimeText,
                 ServiceEndTimeText = row.ServiceEndTimeText,
                 ServiceStampUser = row.ServiceStampUser,

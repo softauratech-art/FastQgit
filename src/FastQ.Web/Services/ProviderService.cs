@@ -268,6 +268,7 @@ namespace FastQ.Web.Services
                     MeetingUrlHost = r.MeetingUrlHost,  // NormalizeMeetingUrl(r.MeetingUrlHost),
                     Notes = string.IsNullOrWhiteSpace(r.Notes) ? string.Empty : r.Notes.Trim(),
                     ServiceNotes = string.IsNullOrWhiteSpace(r.ServiceNotes) ? string.Empty : r.ServiceNotes.Trim(),
+                    ServiceCheckinTimeText = FormatTransactionTime(r.ServiceCheckinTime),
                     ServiceStartTimeText = FormatTransactionTime(r.ServiceStartTime),
                     ServiceEndTimeText = FormatTransactionTime(r.ServiceEndTime),
                     ServiceStampUser = string.IsNullOrWhiteSpace(r.ServiceStampUser) ? string.Empty : r.ServiceStampUser.Trim(),
@@ -562,6 +563,14 @@ namespace FastQ.Web.Services
                 stampUser,
                 sourceAction);
 
+            var sourceDate = srcType == 'A' && sourceAppt != null
+                ? sourceAppt.ScheduledFor.Date
+                : DateTime.Today;
+            var targetTransferDate = targetKind == 'A' && request.TargetDate.HasValue
+                ? request.TargetDate.Value.Date
+                : DateTime.Today;
+            var isSameDayTransfer = sourceAction == "TRANSFER" && sourceDate == targetTransferDate;
+
             if (sourceAppt != null)
             {
                 sourceAppt.Status = sourceAction == "REMOVE"
@@ -569,6 +578,7 @@ namespace FastQ.Web.Services
                     : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
                 sourceAppt.UpdatedOn = DateTime.Now;
                 sourceAppt.StampDate = DateTime.Now;
+                sourceAppt.SuppressNotification = isSameDayTransfer;
                 PopulateCustomerNotificationFields(sourceAppt);
                 _rt.AppointmentChanged(sourceAppt);
                 _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
@@ -578,7 +588,35 @@ namespace FastQ.Web.Services
                 var sourceStatus = sourceAction == "REMOVE"
                     ? AppointmentStatus.Cancelled
                     : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
-                NotifySourceChanged(srcType, request.SrcId, sourceStatus, stampUser);
+                NotifySourceChanged(srcType, request.SrcId, sourceStatus, stampUser, isSameDayTransfer);
+            }
+
+            // Broadcast the newly created transfer target with wording that reflects
+            // how it appears in today's queue: walk-ins are Arrived; appointments are Scheduled.
+            if (isSameDayTransfer)
+            {
+                var target = targetKind == 'A' ? _appts.Get(newSrcId) : null;
+                if (target == null)
+                {
+                    target = new Appointment
+                    {
+                        Id = newSrcId,
+                        EntityId = targetQueue.EntityId,
+                        QueueId = targetQueue.Id,
+                        ServiceId = request.TargetServiceId,
+                        ScheduledFor = request.TargetDate ?? DateTime.Today,
+                        CustomerEmail = sourceAppt?.CustomerEmail,
+                        CustomerFirstName = sourceAppt?.CustomerFirstName,
+                        CustomerLastName = sourceAppt?.CustomerLastName,
+                        CustomerPhone = sourceAppt?.CustomerPhone
+                    };
+                }
+
+                target.Status = targetKind == 'W' ? AppointmentStatus.Arrived : AppointmentStatus.Scheduled;
+                target.IsNewWalkin = targetKind == 'W';
+                target.IsTransferTarget = true;
+                target.ProviderId = stampUser;
+                _rt.AppointmentChanged(target);
             }
 
             _rt.QueueChanged(targetQueue.EntityId, targetQueue.Id);
@@ -797,7 +835,7 @@ namespace FastQ.Web.Services
             return Result.Success();
         }
 
-        private void NotifySourceChanged(char srcType, long sourceId, AppointmentStatus status, string providerId)
+        private void NotifySourceChanged(char srcType, long sourceId, AppointmentStatus status, string providerId, bool suppressNotification = false)
         {
             var queueId = _appts.GetQueueIdForSource(srcType, sourceId);
             if (!queueId.HasValue || queueId.Value <= 0)
@@ -822,6 +860,7 @@ namespace FastQ.Web.Services
                 Status = status,
                 ProviderId = stampUser,
                 StampUser = stampUser,
+                SuppressNotification = suppressNotification,
                 UpdatedOn = DateTime.Now,
                 StampDate = DateTime.Now
             };

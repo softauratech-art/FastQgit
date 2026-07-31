@@ -5,7 +5,7 @@
 
     var providerTodayUrl = Url.Action("Today", "Provider");
     var env = FastQ.Web.Helpers.Utilities.GetServerEnvironment();
-    env = env.StartsWith("PRD") ? "" : env ;
+    env = env.StartsWith("PRD") ? "<!-- " + env + "-->" : env;
     var authsvc = new FastQ.Web.Services.AuthService();
     var isHost = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Host);
     var isProvider = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Provider);
@@ -99,7 +99,7 @@
                 </div>
                 <div class="brand-title">FastQ Manager</div>
                 @*<div class="brand-sub">Queue orchestration</div>*@
-            <div class="brand-env">@env</div>
+            <div class="brand-env">@Html.Raw(env)</div>
             </div>
             <nav class="drawer-nav">
                 @if (isHost || isProvider || isSuperAdmin || isQueueAdmin)
@@ -154,7 +154,7 @@
                     @if (isReporter || isSuperAdmin || isQueueAdmin)
                     {
                         <div class="nav-title">Reports</div>
-                        <a class="nav-link" href="@Url.Action("Overview", "Reporting")" title="Reports" aria-label="Reports">
+                        <a class="nav-link" href="@Url.Action("Dashboard", "Reporting")" title="Reports" aria-label="Reports">
                             <!--/Reporting/Overview-->
                             <i class="bi bi-bar-chart-line"></i>
                             <span class="nav-text">Reports</span>

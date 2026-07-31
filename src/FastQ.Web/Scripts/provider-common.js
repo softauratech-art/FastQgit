@@ -585,6 +585,7 @@
         event.stopPropagation();
 
         var transactionFieldMap = {
+          transactionServiceCheckinTime: "service-checkin-time",
           transactionServiceStartTime: "service-start-time",
           transactionServiceEndTime: "service-end-time",
           transactionServiceNotes: "service-notes",

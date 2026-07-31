@@ -1,0 +1,257 @@
+@{
+    ViewBag.Title = "Reporting Metrics";
+}
+
+
+@section PageHeader {
+    <div>
+        <div class="topbar-title">Metrics By Granularity</div>
+        <div class="topbar-sub">Reporting is loaded from the database and refreshed on demand.</div>
+    </div>
+    <div class="top-actions">
+        <a href="@Url.Action("Overview", "Reporting")" class="btn">Go To Overview</a>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Filters</h3>
+        <span class="badge accent">DB</span>
+    </div>
+    <div class="row">
+            <div class="report-date-field">
+                <label for="reportStartDate">Start date</label>
+                <input type="date" id="reportStartDate" />
+            </div>
+
+            <div class="report-date-field">
+                <label for="reportEndDate">End date</label>
+                <input type="date" id="reportEndDate" />
+            </div>
+       
+        <div class="col">
+            <label for="reportQueue">Queue</label>
+            <select id="reportQueue"></select>
+        </div>
+        <div class="col">
+            <label for="reportGranularity">Granularity</label>
+            <select id="reportGranularity">
+                <option value="D">Daily</option>
+                <option value="W">Weekly</option>
+                <option value="M">Monthly</option>
+                <option value="Y">Yearly</option>
+            </select>
+        </div>
+        @*<div class="col range-only report-range-col">
+            <label>Date range</label>
+            <div class="report-date-range">
+                <div class="report-date-field">
+                    <label for="reportStartDate">Start date</label>
+                    <input type="date" id="reportStartDate" />
+                </div>
+                <span class="report-date-sep">to</span>
+                <div class="report-date-field">
+                    <label for="reportEndDate">End date</label>
+                    <input type="date" id="reportEndDate" />
+                </div>
+            </div>
+        </div>*@
+        <div class="col" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            <button type="button" class="btn primary" onclick="FastQReport.refresh()">Refresh</button>
+            @*<button type="button" class="btn secondary" onclick="FastQReport.exportData('csv')">Export CSV</button>
+            <button type="button" class="btn secondary" onclick="FastQReport.exportData('excel')">Export Excel</button>*@
+            <span id="reportMsg" class="muted"></span>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Queue Lengths</h3>
+            <span class="pill" id="queuePeriodPill">Daily</span>
+        </div>
+        <div id="queuelengthTable"></div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Average Duration</h3>
+            <span class="pill" id="durationPeriodPill">Daily</span>
+        </div>
+        <div id="durationTable"></div>
+        <div class="mt-3 helper-text" >** Average Duration calculated for DONE status only. <br />&nbsp;&nbsp;&nbsp;&nbsp;Excludes: CLOSEDBYSYSTEM, TRANSFERED and INCOMPLETE statuses.</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.FASTQ_CONTEXT = {
+            entityId: @(new FastQ.Web.Services.AuthService().GetSessionEntityId())
+        };
+
+        function renderGranularityCol (granularity, dateInput) {
+            const dateObj = new Date(dateInput);
+            if (granularity === "D")
+                return new Intl.DateTimeFormat('en-US', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }).format(dateObj);
+
+            if (granularity === "W")
+                return 'Week of ' + new Intl.DateTimeFormat('en-US', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }).format(dateObj);
+
+            if (granularity === "M")
+                return new Intl.DateTimeFormat('en-US', {
+                    month: '2-digit',
+                    year: 'numeric'
+                }).format(dateObj);
+
+            if (granularity === "Y")
+                return new Intl.DateTimeFormat('en-US', {
+                    year: 'numeric'
+                }).format(dateObj);
+
+            return dateInput;
+        }
+
+        var FastQReport = {
+            refresh: function () {
+                var queueId = document.getElementById("reportQueue").value;
+                var granularity = document.getElementById("reportGranularity").value;
+                var startDate = document.getElementById("reportStartDate").value;
+                var endDate = document.getElementById("reportEndDate").value;
+                var srcType = null; // document.getElementById("reportEndDate").value;
+
+                $("#reportMsg").removeClass("error ok").text("Loading...");
+                $.getJSON("@Url.Action("MetricsSnapshot", "Reporting")", {
+                    queueId: queueId,
+                    granularity: granularity,
+                    startDate: startDate,
+                    endDate: endDate,
+                    srcType: srcType
+                })
+                    .done(function (res) {
+                        if (!res || !res.ok) {
+                            $("#reportMsg").addClass("error").text(res && res.error ? res.error : "Load failed");
+                            return;
+                        }
+                        $("#reportMsg").addClass("ok").text("Up to date.");
+                        FastQReport.render(res.data);
+                    })
+                    .fail(function () {
+                        $("#reportMsg").addClass("error").text("Load failed.");
+                    });
+            },
+
+            render: function (d) {
+                var granularity = document.getElementById("reportGranularity").value;
+                FastQReport.updatePeriodPills(granularity);
+                FastQReport.renderQueueLengths(d.QueueLengths || []);
+                FastQReport.renderQueueDurations(d.ServiceDurations || []);
+
+                var queueSelect = document.getElementById("reportQueue");
+                if (queueSelect && queueSelect.options.length === 0) {
+                    queueSelect.appendChild(new Option("All queues", ""));
+                    (d.QueueLengths || []).forEach(function (q) {
+                        queueSelect.appendChild(new Option(q.Queue_Name, q.Queue_Id));
+                    });
+                }
+            },
+
+            renderQueueLengths: function (rows) {
+                if (!rows || rows.length === 0) {
+                    $("#queuelengthTable").html("<div class='muted'>No queue data yet.</div>");
+                    return;
+                }
+                var granularity = document.getElementById("reportGranularity").value;
+                var html = "<table class='table'><thead><tr>" +
+                    "<th>Period</th><th>Queue</th><th>Appointments</th><th>Walkins</th><th>Total</th>" +
+                    "</tr></thead><tbody>";
+                rows.forEach(function (r) {
+                    var granularityLabel = '';
+                    html += "<tr>" +
+                        "<td>" + renderGranularityCol(granularity, r.Granularity) + "</td>" +
+                        "<td>" + r.Queue_Name + "</td>" +
+                        "<td>" + r.Appointment_Count + "</td>" +
+                        "<td>" + r.Walkin_Count + "</td>" +
+                        "<td>" + r.Total_Visits + "</td>" +
+                        "</tr>";
+                });
+                html += "</tbody></table>";
+                $("#queuelengthTable").html(html);
+            },
+
+            renderQueueDurations: function (rows) {
+                if (!rows || rows.length === 0) {
+                    $("#durationTable").html("<div class='muted'>No queue data yet.</div>");
+                    return;
+                }
+                var html = "<table class='table'><thead><tr>" +
+                    "<th>Queue</th><th>Avg. Duration (minutes)</th><th>Item Count</th>" +
+                    "</tr></thead><tbody>";
+                rows.forEach(function (r) {
+                    html += "<tr>" +
+                        "<td>" + r.Queue_Name + "</td>" +
+                        "<td>" + r.Avg_Duration_Minutes + "</td>" +
+                        "<td>" + r.Item_Count + "</td>"
+                        "</tr>";
+                });
+                html += "</tbody></table>";
+                $("#durationTable").html(html);
+
+
+            },
+
+            updatePeriodPills: function (granularity) {
+                var label = "Daily";
+                if (granularity === "D") label = "Daily";
+                if (granularity === "W") label = "Weekly";
+                if (granularity === "M") label = "Monthly";
+                if (granularity === "Y") label = "Yearly";
+                $("#queuePeriodPill").text(label);
+
+                var startDate = document.getElementById("reportStartDate").value;
+                var endDate = document.getElementById("reportEndDate").value;
+                $("#durationPeriodPill").text(startDate + ' To ' + endDate);
+            },
+
+
+            @*,
+            exportData: function (format) {
+                var action = format === "excel" ? "@Url.Action("ExportExcel", "Reporting")" : "@Url.Action("ExportCsv", "Reporting")";
+                var query = $.param({
+                    entityId: window.FASTQ_CONTEXT.entityId,
+                    queueId: document.getElementById("reportQueue").value,
+                    granularity: document.getElementById("reportGranularity").value,
+                    startDate: document.getElementById("reportStartDate").value,
+                    endDate: document.getElementById("reportEndDate").value
+                });
+                window.location.href = action + "?" + query;
+            }*@
+        };
+
+        $(function () {
+            var now = new Date();
+            var local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            var today = local.toISOString().slice(0, 10);
+            $("#reportStartDate").val(today);
+            $("#reportEndDate").val(today);
+            $("#reportGranularity").on("change", function () {
+                FastQReport.refresh();
+            });
+            $("#reportQueue").on("change", function () {
+                FastQReport.refresh();
+            });
+            FastQReport.refresh();
+        });
+
+        //window.onFastQQueueUpdated = function () { FastQReport.refresh(); };
+        //window.onFastQAppointmentUpdated = function () { FastQReport.refresh(); };
+    </script>
+}
+

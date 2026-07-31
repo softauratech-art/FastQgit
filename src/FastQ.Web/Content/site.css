@@ -18,6 +18,12 @@
     
 }
 
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
 * {
     box-sizing: border-box;
 }
@@ -293,6 +299,31 @@ form {
     gap: 20px;
     display: flex;
     flex-direction: column;
+}
+
+.is-scheduled {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+}
+
+.is-in-progress {
+    background-color: #fff8e1;
+    color: #ff6f00;
+}
+
+.is-completed {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+}
+
+.is-canceled {
+    background-color: #ffebee;
+    color: #c62828;
+    opacity: 0.7;
+}
+
+.no-bg {
+    background-color: transparent;
 }
 
 .main-area {

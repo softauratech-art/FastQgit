@@ -209,8 +209,9 @@
                             var rowId = "appt-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
-                            var statusClass = row.Status == AppointmentStatus.Cancelled ? "error" : string.Empty;
                             var rowStampUser = getStampUser(row);
+                            var statusClass = row.Status == AppointmentStatus.Cancelled ? "is-canceled" :
+                                row.Status == AppointmentStatus.InService && string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase) ? "is-in-progress" : string.Empty;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
                             <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
@@ -230,7 +231,7 @@
                                 <td nowrap>@rowPhoneDisplay</td>
                                 <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
                                 <td>@row.LanguagePreference</td>
-                                <td class="@statusClass" data-provider-status-cell="true">@row.StatusText</td>
+                                <td class="@statusClass no-bg" data-provider-status-cell="true">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
                                 <td class="text-center">
                                     @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
@@ -287,6 +288,7 @@
                                                     data-appointment-id="@row.AppointmentId"
                                                     data-src-type="A"
                                                     data-service-notes="@row.ServiceNotes"
+                                                    data-service-checkin-time="@row.ServiceCheckinTimeText"
                                                     data-service-start-time="@row.ServiceStartTimeText"
                                                     data-service-end-time="@row.ServiceEndTimeText"
                                                     data-service-stamp-user="@row.ServiceStampUser">
@@ -3442,13 +3444,23 @@
     </script>
 
     <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      requestDesktopNotificationPermission();
+    });
+
     function canUseDesktopNotifications() {
       return "Notification" in window;
     }
 
     function requestDesktopNotificationPermission() {
-      if (!canUseDesktopNotifications()
-          || Notification.permission !== "default"
+      if (!canUseDesktopNotifications()) {
+        return;
+      }
+      if (Notification.permission === "denied") {
+        window.alert("Notifications are disabled. Please enable them in your browser settings.");
+        return;
+      }
+      if (Notification.permission !== "default"
           || typeof Notification.requestPermission !== "function") {
         return;
       }

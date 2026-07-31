@@ -35,6 +35,7 @@ namespace FastQ.Web.Controllers
             public int Completed { get; set; }
             public int Cancelled { get; set; }
             public int ClosedBySystem { get; set; }
+            public int Other { get; set; }
         }
 
         private class TrendReportRow
@@ -58,9 +59,53 @@ namespace FastQ.Web.Controllers
             public string FilterEnd { get; set; }
         }
 
+        private class MetricsSnapshotData
+        {
+            public string Granularity { get; set; }
+            public string StartDate { get; set; }
+            public string EndDate { get; set; }
+            public long QueueId { get; set; }
+            public List<QueueLengthsReport> QueueLengths { get; set; }
+            public List<AverageServiceDurationReport> ServiceDurations { get; set; }
+        }
+
         public ReportingController()
         {
             _service = new ReportingService();
+        }
+
+        [HttpGet]
+        public ActionResult Dashboard()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public ActionResult Metrics()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public JsonResult MetricsSnapshot(string queueId, string granularity, string startDate, string endDate, string srcType)
+        {
+            DateTime parsedStart;
+            DateTime parsedEnd;
+            if (!DateTime.TryParse(startDate, out parsedStart) || !DateTime.TryParse(endDate, out parsedEnd))
+                return Json(new { ok = false, error = "A valid start and end date are required." }, JsonRequestBehavior.AllowGet);
+
+            long parsedQueueId;
+            long? qId = long.TryParse(queueId, out parsedQueueId) && parsedQueueId > 0 ? (long?)parsedQueueId : null;
+            var data = new MetricsSnapshotData
+            {
+                QueueLengths = _service.ListQueueLengths(parsedStart, parsedEnd, granularity, qId, srcType).ToList(),
+                ServiceDurations = _service.ListServiceDurations(parsedStart, parsedEnd, granularity, qId).ToList(),
+                Granularity = granularity,
+                StartDate = startDate,
+                EndDate = endDate,
+                QueueId = qId ?? 0
+            };
+            return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -107,16 +152,20 @@ namespace FastQ.Web.Controllers
             long qId;
             var hasEntity = long.TryParse(entityId, out parsedEntityId);
             var hasQueue = long.TryParse(queueId, out qId);
-
-            var appointments = _service.ListAppointments(hasEntity ? (long?)parsedEntityId : null).ToList();
-
-            if (hasQueue)
-                appointments = appointments.Where(a => a.QueueId == qId).ToList();
-
             var now = DateTime.Now;
             var dayStart = now.Date;
             var range = ResolvePeriodRange(period, startDate, endDate, now);
-            var filtered = appointments.Where(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive).ToList();
+            var appointments = _service.ListAppointments(hasEntity ? (long?)parsedEntityId : null).ToList();
+            var userId = new AuthService().GetLoggedInWindowsUser();
+            var allEntries = _service.ListAppointmentsWalkins(hasEntity ? (long?)parsedEntityId : null, userId, range.Start, range.EndExclusive).ToList();
+
+            if (hasQueue)
+            {
+                appointments = appointments.Where(a => a.QueueId == qId).ToList();
+                allEntries = allEntries.Where(a => a.QueueId == qId).ToList();
+            }
+
+            var filtered = allEntries.Where(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive).ToList();
 
             var providers = _service.ListProviders(hasEntity ? (long?)parsedEntityId : null);
             var queues = _service.ListQueues(hasEntity ? (long?)parsedEntityId : null);
@@ -124,9 +173,9 @@ namespace FastQ.Web.Controllers
             return new ReportSnapshotData
             {
                 BookedToday = appointments.Count(a => a.CreatedOn >= range.Start && a.CreatedOn < range.EndExclusive),
-                ScheduledToday = appointments.Count(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive),
-                CompletedToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Completed),
-                CancelledToday = appointments.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Cancelled),
+                ScheduledToday = allEntries.Count(a => a.ScheduledFor >= range.Start && a.ScheduledFor < range.EndExclusive),
+                CompletedToday = allEntries.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Completed),
+                CancelledToday = allEntries.Count(a => a.UpdatedOn >= range.Start && a.UpdatedOn < range.EndExclusive && a.Status == AppointmentStatus.Cancelled),
                 Providers = (providers.Select(p => new ProviderReportRow
                 {
                     ProviderId = p.Id,
@@ -145,7 +194,11 @@ namespace FastQ.Web.Controllers
                     InService = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.InService),
                     Completed = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.Completed),
                     Cancelled = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.Cancelled),
-                    ClosedBySystem = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.ClosedBySystem)
+                    ClosedBySystem = filtered.Count(a => a.QueueId == q.Id && a.Status == AppointmentStatus.ClosedBySystem),
+                    Other = filtered.Count(a => a.QueueId == q.Id &&
+                        a.Status != AppointmentStatus.Scheduled && a.Status != AppointmentStatus.Arrived &&
+                        a.Status != AppointmentStatus.InService && a.Status != AppointmentStatus.Completed &&
+                        a.Status != AppointmentStatus.Cancelled && a.Status != AppointmentStatus.ClosedBySystem)
                 })).Where(fq => fq.Waiting > 0 || fq.InService > 0 || fq.Completed > 0 || fq.Cancelled > 0 || fq.ClosedBySystem > 0).ToList(),
                 DailyTrend = Enumerable.Range(0, 7)
                     .Select(i => dayStart.AddDays(i - 6))

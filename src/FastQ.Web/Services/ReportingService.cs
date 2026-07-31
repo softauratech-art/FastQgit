@@ -12,25 +12,38 @@ namespace FastQ.Web.Services
         private readonly IAppointmentRepository _appts;
         private readonly IProviderRepository _providers;
         private readonly IQueueRepository _queues;
+        private readonly IReportingRepository _reports;
 
         public ReportingService()
             : this(
                 DbRepositoryFactory.CreateAppointmentRepository(),
                 DbRepositoryFactory.CreateProviderRepository(),
-                DbRepositoryFactory.CreateQueueRepository())
+                DbRepositoryFactory.CreateQueueRepository(),
+                DbRepositoryFactory.CreateReportingRepository())
         {
         }
 
-        public ReportingService(IAppointmentRepository appts, IProviderRepository providers, IQueueRepository queues)
+        public ReportingService(IAppointmentRepository appts, IProviderRepository providers, IQueueRepository queues, IReportingRepository reports)
         {
             _appts = appts;
             _providers = providers;
             _queues = queues;
+            _reports = reports;
         }
 
         public IList<Appointment> ListAppointments(long? entityId)
         {
             return entityId.HasValue ? _appts.ListByEntity(entityId.Value) : null;
+        }
+
+        public IList<ProviderAppointmentData> ListAppointmentsWalkins(long? entityId, string userId, DateTime startDate, DateTime endDate)
+        {
+            if (!entityId.HasValue)
+                return new List<ProviderAppointmentData>();
+
+            var walkins = _appts.ListWalkinsForUser(entityId.Value, userId, startDate, endDate);
+            var appointments = _appts.ListForUser(entityId.Value, userId, startDate, endDate);
+            return walkins.Concat(appointments).ToList();
         }
 
         public IList<Provider> ListProviders(long? entityId)
@@ -56,6 +69,22 @@ namespace FastQ.Web.Services
                 .OrderBy(q => q.Name)
                 .ToList();
 
+        }
+
+        public IList<QueueLengthsReport> ListQueueLengths(DateTime startDate, DateTime endDate, string granularity, long? queueId, string srcType)
+        {
+            var auth = new AuthService();
+            return _reports.GetQueueLengths(auth.GetSessionEntityId(), startDate, endDate, granularity, queueId, srcType, auth.GetLoggedInWindowsUser())
+                .OrderBy(q => q.Queue_Name)
+                .ToList();
+        }
+
+        public IList<AverageServiceDurationReport> ListServiceDurations(DateTime startDate, DateTime endDate, string granularity, long? queueId)
+        {
+            var auth = new AuthService();
+            return _reports.GetServiceDurations(auth.GetSessionEntityId(), startDate, endDate, granularity, queueId, auth.GetLoggedInWindowsUser())
+                .OrderBy(q => q.Queue_Name)
+                .ToList();
         }
     }
 }

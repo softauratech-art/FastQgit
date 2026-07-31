@@ -163,6 +163,9 @@
                             var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
                             var entryKindClass = string.Equals(item.SrcType, "W", StringComparison.OrdinalIgnoreCase) ? "is-walkin" : "is-appointment";
                             var itemPhoneDisplay = Utilities.FormatPhoneForDisplay(item.Phone);
+                            var statusClass = item.Status == AppointmentStatus.Cancelled ? "is-canceled" :
+                                item.Status == AppointmentStatus.InService ? "is-in-progress" :
+                                item.Status == AppointmentStatus.Scheduled || item.Status == AppointmentStatus.Arrived ? "is-scheduled" : string.Empty;
                             <div class="agenda-item @(isLocked ? "locked" : null)"
                                  data-appointment-id="@item.AppointmentId"
                                  data-queue-id="@item.QueueId"
@@ -180,7 +183,7 @@
                                 <div class="agenda-time">@item.StartTimeText</div>
                                 <div class="agenda-title">@item.CustomerName</div>
                                 <div class="agenda-entry-label @entryKindClass">@item.EntryKind</div>
-                                <div class="agenda-detail">@item.ContactMethod | @item.StatusText | @itemPhoneDisplay</div>
+                                <div class="agenda-detail"><span class="@statusClass">@item.StatusText</span> | @item.ContactMethod | @itemPhoneDisplay</div>
                                 <div class="agenda-detail" aria-expanded="false" title="@item.QueueName">@item.QueueName</div>
                                 @if (string.Equals((item.ContactMethod ?? string.Empty).Trim(), "Online Meeting", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(item.MeetingUrl))
                                 {
@@ -221,6 +224,7 @@
                                                 data-appointment-id="@item.AppointmentId"
                                                 data-src-type="@item.SrcType"
                                                 data-service-notes="@item.ServiceNotes"
+                                                data-service-checkin-time="@item.ServiceCheckinTimeText"
                                                 data-service-start-time="@item.ServiceStartTimeText"
                                                 data-service-end-time="@item.ServiceEndTimeText"
                                                 data-service-stamp-user="@item.ServiceStampUser">
