@@ -1,14 +1,8 @@
 using FastQ.Data.Entities;
 using FastQ.Data.Repositories;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
-using System.Globalization;
-using System.Linq;
-using System.Web.Helpers;
-using System.Web.WebPages;
 
 namespace FastQ.Data.Db
 {
@@ -30,7 +24,7 @@ namespace FastQ.Data.Db
                     DataAccess.AddParam(cmd, "p_enddate", endDate.Date, DbType.DateTime);
                     DataAccess.AddParam(cmd, "p_granularity", granularity, DbType.String);
                     DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
-                    DataAccess.AddParam(cmd, "p_userid", userId.Trim().ToLower(), DbType.String);
+                    DataAccess.AddParam(cmd, "p_userid", (userId ?? string.Empty).Trim().ToLowerInvariant(), DbType.String);
                     DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -68,7 +62,7 @@ namespace FastQ.Data.Db
                     DataAccess.AddParam(cmd, "p_granularity", granularity, DbType.String);
                     DataAccess.AddParam(cmd, "p_queueid", queueId, DbType.Int64);
                     DataAccess.AddParam(cmd, "p_srctype", srcType, DbType.String);
-                    DataAccess.AddParam(cmd, "p_userid", userId.Trim().ToLower(), DbType.String);
+                    DataAccess.AddParam(cmd, "p_userid", (userId ?? string.Empty).Trim().ToLowerInvariant(), DbType.String);
                     DataAccess.AddOutRefCursor(cmd, "p_ref_cursor");
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -94,4 +88,3 @@ namespace FastQ.Data.Db
         
     }
 }
-

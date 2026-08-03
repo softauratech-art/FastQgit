@@ -91,6 +91,7 @@
 
         function renderGranularityCol (granularity, dateInput) {
             const dateObj = new Date(dateInput);
+            if (isNaN(dateObj.getTime())) return dateInput || "";
             if (granularity === "D")
                 return new Intl.DateTimeFormat('en-US', {
                     day: '2-digit',
@@ -119,6 +120,10 @@
             return dateInput;
         }
 
+        function escapeReportHtml(value) {
+            return $("<div>").text(value == null ? "" : String(value)).html();
+        }
+
         var FastQReport = {
             refresh: function () {
                 var queueId = document.getElementById("reportQueue").value;
@@ -126,6 +131,15 @@
                 var startDate = document.getElementById("reportStartDate").value;
                 var endDate = document.getElementById("reportEndDate").value;
                 var srcType = null; // document.getElementById("reportEndDate").value;
+
+                if (!startDate || !endDate) {
+                    $("#reportMsg").removeClass("ok").addClass("error").text("Start date and end date are required.");
+                    return;
+                }
+                if (endDate < startDate) {
+                    $("#reportMsg").removeClass("ok").addClass("error").text("End date cannot be earlier than start date.");
+                    return;
+                }
 
                 $("#reportMsg").removeClass("error ok").text("Loading...");
                 $.getJSON("@Url.Action("MetricsSnapshot", "Reporting")", {
@@ -157,8 +171,13 @@
                 var queueSelect = document.getElementById("reportQueue");
                 if (queueSelect && queueSelect.options.length === 0) {
                     queueSelect.appendChild(new Option("All queues", ""));
+                    var addedQueueIds = {};
                     (d.QueueLengths || []).forEach(function (q) {
-                        queueSelect.appendChild(new Option(q.Queue_Name, q.Queue_Id));
+                        var queueKey = String(q.Queue_Id);
+                        if (!addedQueueIds[queueKey]) {
+                            addedQueueIds[queueKey] = true;
+                            queueSelect.appendChild(new Option(q.Queue_Name, q.Queue_Id));
+                        }
                     });
                 }
             },
@@ -175,11 +194,11 @@
                 rows.forEach(function (r) {
                     var granularityLabel = '';
                     html += "<tr>" +
-                        "<td>" + renderGranularityCol(granularity, r.Granularity) + "</td>" +
-                        "<td>" + r.Queue_Name + "</td>" +
-                        "<td>" + r.Appointment_Count + "</td>" +
-                        "<td>" + r.Walkin_Count + "</td>" +
-                        "<td>" + r.Total_Visits + "</td>" +
+                        "<td>" + escapeReportHtml(renderGranularityCol(granularity, r.Granularity)) + "</td>" +
+                        "<td>" + escapeReportHtml(r.Queue_Name) + "</td>" +
+                        "<td>" + escapeReportHtml(r.Appointment_Count) + "</td>" +
+                        "<td>" + escapeReportHtml(r.Walkin_Count) + "</td>" +
+                        "<td>" + escapeReportHtml(r.Total_Visits) + "</td>" +
                         "</tr>";
                 });
                 html += "</tbody></table>";
@@ -196,9 +215,9 @@
                     "</tr></thead><tbody>";
                 rows.forEach(function (r) {
                     html += "<tr>" +
-                        "<td>" + r.Queue_Name + "</td>" +
-                        "<td>" + r.Avg_Duration_Minutes + "</td>" +
-                        "<td>" + r.Item_Count + "</td>"
+                        "<td>" + escapeReportHtml(r.Queue_Name) + "</td>" +
+                        "<td>" + escapeReportHtml(r.Avg_Duration_Minutes) + "</td>" +
+                        "<td>" + escapeReportHtml(r.Item_Count) + "</td>" +
                         "</tr>";
                 });
                 html += "</tbody></table>";
@@ -254,4 +273,3 @@
         //window.onFastQAppointmentUpdated = function () { FastQReport.refresh(); };
     </script>
 }
-

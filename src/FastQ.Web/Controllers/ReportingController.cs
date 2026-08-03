@@ -93,14 +93,20 @@ namespace FastQ.Web.Controllers
             DateTime parsedEnd;
             if (!DateTime.TryParse(startDate, out parsedStart) || !DateTime.TryParse(endDate, out parsedEnd))
                 return Json(new { ok = false, error = "A valid start and end date are required." }, JsonRequestBehavior.AllowGet);
+            if (parsedEnd.Date < parsedStart.Date)
+                return Json(new { ok = false, error = "End date cannot be earlier than start date." }, JsonRequestBehavior.AllowGet);
+
+            var normalizedGranularity = (granularity ?? string.Empty).Trim().ToUpperInvariant();
+            if (normalizedGranularity != "D" && normalizedGranularity != "W" && normalizedGranularity != "M" && normalizedGranularity != "Y")
+                return Json(new { ok = false, error = "Granularity must be daily, weekly, monthly, or yearly." }, JsonRequestBehavior.AllowGet);
 
             long parsedQueueId;
             long? qId = long.TryParse(queueId, out parsedQueueId) && parsedQueueId > 0 ? (long?)parsedQueueId : null;
             var data = new MetricsSnapshotData
             {
-                QueueLengths = _service.ListQueueLengths(parsedStart, parsedEnd, granularity, qId, srcType).ToList(),
-                ServiceDurations = _service.ListServiceDurations(parsedStart, parsedEnd, granularity, qId).ToList(),
-                Granularity = granularity,
+                QueueLengths = _service.ListQueueLengths(parsedStart.Date, parsedEnd.Date, normalizedGranularity, qId, srcType).ToList(),
+                ServiceDurations = _service.ListServiceDurations(parsedStart.Date, parsedEnd.Date, normalizedGranularity, qId).ToList(),
+                Granularity = normalizedGranularity,
                 StartDate = startDate,
                 EndDate = endDate,
                 QueueId = qId ?? 0
