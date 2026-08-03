@@ -2544,8 +2544,8 @@
       return normalizedMessage.indexOf(" added:") >= 0
         || normalizedMessage.indexOf("new booking created") === 0
         || normalizedMessage.indexOf("new walk-in created") === 0
-        || normalizedMessage.indexOf("appointment scheduled:") === 0
-        || normalizedMessage.indexOf("transferred") >= 0;
+        || normalizedMessage.indexOf("appointment scheduled") === 0
+        || normalizedMessage.indexOf("customer arrived") === 0;
     }
 
     function toggleNotifications(forceOpen) {
@@ -2619,7 +2619,8 @@
         return "Appointment cancelled for " + subject + ".";
       }
       if (normalized === "transferredout") {
-        return "Service transferred for " + subject + ".";
+        // Transfer notifications are emitted for the target only when it is today.
+        return "";
       }
       if (normalized === "arrived") {
         return "Customer arrived: " + subject + ".";

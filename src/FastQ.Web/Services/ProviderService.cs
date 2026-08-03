@@ -563,13 +563,10 @@ namespace FastQ.Web.Services
                 stampUser,
                 sourceAction);
 
-            var sourceDate = srcType == 'A' && sourceAppt != null
-                ? sourceAppt.ScheduledFor.Date
-                : DateTime.Today;
             var targetTransferDate = targetKind == 'A' && request.TargetDate.HasValue
                 ? request.TargetDate.Value.Date
                 : DateTime.Today;
-            var isSameDayTransfer = sourceAction == "TRANSFER" && sourceDate == targetTransferDate;
+            var isTodayTransfer = sourceAction == "TRANSFER" && targetTransferDate == DateTime.Today;
 
             if (sourceAppt != null)
             {
@@ -578,7 +575,7 @@ namespace FastQ.Web.Services
                     : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
                 sourceAppt.UpdatedOn = DateTime.Now;
                 sourceAppt.StampDate = DateTime.Now;
-                sourceAppt.SuppressNotification = isSameDayTransfer;
+                sourceAppt.SuppressNotification = sourceAction == "TRANSFER";
                 PopulateCustomerNotificationFields(sourceAppt);
                 _rt.AppointmentChanged(sourceAppt);
                 _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
@@ -588,12 +585,12 @@ namespace FastQ.Web.Services
                 var sourceStatus = sourceAction == "REMOVE"
                     ? AppointmentStatus.Cancelled
                     : (sourceAction == "END" ? AppointmentStatus.Completed : AppointmentStatus.TransferredOut);
-                NotifySourceChanged(srcType, request.SrcId, sourceStatus, stampUser, isSameDayTransfer);
+                NotifySourceChanged(srcType, request.SrcId, sourceStatus, stampUser, sourceAction == "TRANSFER");
             }
 
             // Broadcast the newly created transfer target with wording that reflects
             // how it appears in today's queue: walk-ins are Arrived; appointments are Scheduled.
-            if (isSameDayTransfer)
+            if (isTodayTransfer)
             {
                 var target = targetKind == 'A' ? _appts.Get(newSrcId) : null;
                 if (target == null)
