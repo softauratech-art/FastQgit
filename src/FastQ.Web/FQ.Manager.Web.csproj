@@ -263,6 +263,7 @@
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Admin\Queue\List.cshtml" />
     <Content Include="Views\Admin\Queue\ManageQueue.cshtml" />
+    <Content Include="Views\Admin\Queue\_QueueAccesQuickView.cshtml" />
     <Content Include="Views\Admin\Queue\_QueueSchedules.cshtml" />
     <Content Include="Views\Admin\Queue\_QueueServices.cshtml" />
     <Content Include="Views\Admin\Queue\_ScheduleEditor.cshtml" />

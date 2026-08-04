@@ -1,0 +1,31 @@
+@model FastQ.Web.Models.Admin.QueueVM
+
+<table class="table table-striped" id="PermissionsSection" style="font-size: 0.9em;">
+    <tbody>
+        @if (Model.UserAccessList != null)
+        {
+            foreach (var acl in Model.UserAccessList)
+            {
+                var isQueueUser = acl.HostFlag
+                    || acl.ProviderFlag
+                    || acl.ReporterFlag
+                    || acl.QueueAdminFlag
+                    || acl.ConfigAdminFlag;
+
+                if (isQueueUser)
+                {
+                    var userAccess = acl.HostFlag ? "Host " : "";
+                    userAccess = acl.ProviderFlag ? userAccess + "Provider " : userAccess;
+                    userAccess = acl.QueueAdminFlag ? userAccess + "QueueAdmin " : userAccess;
+                    userAccess = acl.ReporterFlag ? userAccess + "Reporter " : userAccess;
+                    userAccess = acl.ConfigAdminFlag ? userAccess + "SuperAdmin " : userAccess;
+
+                    <tr>
+                        <td>@acl.UserName (@acl.UserId)</td>
+                        <td>@userAccess.Trim().Replace(" ", " + ")</td>
+                    </tr>
+                }
+            }
+        }
+    </tbody>
+</table>
