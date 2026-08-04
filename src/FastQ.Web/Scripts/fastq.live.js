@@ -20,7 +20,7 @@
   window.FastQLive = {
     hub: null,
     started: false,
-    joined: { loc: null, queue: null, appt: null },
+    joined: { loc: null, queue: null, appt: null, notifications: false },
 
     start: function () {
       log("start requested", {
@@ -114,6 +114,18 @@
 
       var self = this;
       log("tryJoinGroups", { context: ctx, joined: this.joined });
+
+      var notificationQueueIds = Array.isArray(window.FASTQ_NOTIFICATION_QUEUE_IDS)
+        ? window.FASTQ_NOTIFICATION_QUEUE_IDS
+        : [];
+      if (!this.joined.notifications && notificationQueueIds.length) {
+        this.hub.server.joinNotificationQueues(notificationQueueIds).done(function () {
+          self.joined.notifications = true;
+          log("joined authorized notification groups", { queueIds: notificationQueueIds });
+        }).fail(function (err) {
+          warn("join notification groups failed", { error: err });
+        });
+      }
 
       if (loc && this.joined.loc !== loc) {
         this.hub.server.joinLocation(loc).done(function () {

@@ -17,10 +17,12 @@ namespace FastQ.Web.Services
     public class AuthService
     {
         private readonly IUserRepository _users;
+        private readonly IQueueRepository _queues;
 
         public AuthService()
         {
             _users = DbRepositoryFactory.CreateUserRepository();
+            _queues = DbRepositoryFactory.CreateQueueRepository();
         }
 
         public string GetLoggedInWindowsUser()
@@ -180,6 +182,11 @@ namespace FastQ.Web.Services
             access.QueueAdminQueueIds = actionQueuePermissions
                 .Where(q => q.QueueAdminFlag)
                 .Select(q => q.QueueId)
+                .Distinct()
+                .ToList();
+            access.NotificationQueueIds = (access.IsAdmin
+                    ? (_queues.ListByEntity(currentEntityId) ?? new List<Queue>()).Select(q => q.Id)
+                    : access.ProviderQueueIds.Concat(access.QueueAdminQueueIds))
                 .Distinct()
                 .ToList();
             access.CanAddEntries = access.IsAdmin

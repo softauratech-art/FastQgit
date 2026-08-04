@@ -1,4 +1,10 @@
+using FastQ.Data.Db;
+using FastQ.Data.Entities;
 using Microsoft.AspNet.SignalR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
 using System.Threading.Tasks;
 
 namespace FastQ.Web.Hubs
@@ -13,6 +19,60 @@ namespace FastQ.Web.Hubs
 
         public Task JoinAppointment(string appointmentId)
             => Groups.Add(Context.ConnectionId, $"appt:{appointmentId}");
+
+        public Task JoinNotificationQueues(long[] queueIds)
+        {
+            var requestedQueueIds = (queueIds ?? new long[0])
+                .Where(id => id > 0)
+                .Distinct()
+                .Take(500)
+                .ToList();
+            if (requestedQueueIds.Count == 0)
+                return Task.FromResult(0);
+
+            var userId = ResolveUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new HubException("A logged-in FastQ user is required for notifications.");
+
+            var users = DbRepositoryFactory.CreateUserRepository();
+            var user = users.Get(userId, "SIGNALR");
+            if (user == null || !user.ActiveFlag)
+                throw new HubException("The FastQ user is not active.");
+
+            var permissions = users.GetActionQueuePermissions(userId) ?? new List<UserQueuePermission>();
+            var allowedQueueIds = new HashSet<long>(permissions
+                .Where(p => p.QueueActiveFlag && (p.ProviderFlag || p.QueueAdminFlag))
+                .Select(p => p.QueueId));
+
+            var adminEntityIds = new HashSet<long>((user.BusinessEntities ?? new List<UserEntity>())
+                .Where(e => e.ActiveFlag && e.ConfigAdminFlag)
+                .Select(e => e.EntityId));
+            if (adminEntityIds.Count > 0)
+            {
+                var queues = DbRepositoryFactory.CreateQueueRepository();
+                foreach (var queueId in requestedQueueIds.Where(id => !allowedQueueIds.Contains(id)))
+                {
+                    var queue = queues.Get(queueId);
+                    if (queue != null && queue.ActiveFlag && adminEntityIds.Contains(queue.EntityId))
+                        allowedQueueIds.Add(queueId);
+                }
+            }
+
+            var joins = requestedQueueIds
+                .Where(allowedQueueIds.Contains)
+                .Select(queueId => Groups.Add(Context.ConnectionId, $"notify:queue:{queueId}"));
+            return Task.WhenAll(joins);
+        }
+
+        private string ResolveUserId()
+        {
+            if (HttpContext.Current?.Session?["fq_user"] is User sessionUser
+                && !string.IsNullOrWhiteSpace(sessionUser.UserId))
+                return sessionUser.UserId.Trim();
+
+            var identityName = Context.User?.Identity?.Name ?? string.Empty;
+            var slashIndex = identityName.IndexOf("\\", StringComparison.Ordinal);
+            return (slashIndex >= 0 ? identityName.Substring(slashIndex + 1) : identityName).Trim();
+        }
     }
 }
-

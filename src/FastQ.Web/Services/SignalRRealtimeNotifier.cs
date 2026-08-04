@@ -40,7 +40,7 @@ namespace FastQ.Web.Services
                 ? BuildNotificationMessage(appointment)
                 : null;
             if (!string.IsNullOrWhiteSpace(message))
-                Hub.Clients.All.notify(message);
+                Hub.Clients.Group($"notify:queue:{queueKey}").notify(message);
         }
 
         private static bool IsScheduledForToday(Appointment appointment)
