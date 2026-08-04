@@ -15,10 +15,7 @@
     var entities = Request.Cookies["fq_user_entities"] == null ? "" : Request.Cookies["fq_user_entities"].Value;
     var isSessionTimeout = (Session["fq_current_entity"] == null || Session["fq_current_entity"].ToString() == "0");
     var returnURL = Request["path"] == null ? @Url.Action("Index", "Home") : Request["path"];
-    var sessionUser = Session["fq_user"] as FastQ.Data.Entities.User;
-    var notificationQueueIds = sessionUser != null
-        ? authsvc.GetServicePageAccess().NotificationQueueIds
-        : new System.Collections.Generic.List<long>();
+    var notificationQueueIds = authsvc.GetServicePageAccess().NotificationQueueIds;
 }
 <!DOCTYPE html>
 <html>
