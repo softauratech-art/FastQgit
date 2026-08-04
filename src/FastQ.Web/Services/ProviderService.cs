@@ -540,12 +540,22 @@ namespace FastQ.Web.Services
                 return Result<long>.Fail("The selected service does not belong to the target queue.");
 
             Appointment sourceAppt = null;
+            Customer sourceCustomer = null;
             if (srcType == 'A')
             {
                 sourceAppt = _appts.Get(request.SrcId);
                 if (sourceAppt == null) return Result<long>.Fail("Appointment not found.");
                 if (sourceAppt.Status == AppointmentStatus.Completed || sourceAppt.Status == AppointmentStatus.Cancelled || sourceAppt.Status == AppointmentStatus.ClosedBySystem)
                     return Result<long>.Fail("Cannot transfer a finished appointment.");
+                PopulateCustomerNotificationFields(sourceAppt);
+            }
+            else if (sourceAction == "TRANSFER")
+            {
+                var sourceCustomerId = _appts.GetCustomerIdForSource(srcType, request.SrcId);
+                if (sourceCustomerId.HasValue && sourceCustomerId.Value > 0)
+                {
+                    sourceCustomer = _customers.Get(sourceCustomerId.Value);
+                }
             }
 
             var stampUser = string.IsNullOrWhiteSpace(request.StampUser) ? "web" : request.StampUser.Trim();
@@ -576,7 +586,6 @@ namespace FastQ.Web.Services
                 sourceAppt.UpdatedOn = DateTime.Now;
                 sourceAppt.StampDate = DateTime.Now;
                 sourceAppt.SuppressNotification = sourceAction == "TRANSFER";
-                PopulateCustomerNotificationFields(sourceAppt);
                 _rt.AppointmentChanged(sourceAppt);
                 _rt.QueueChanged(sourceAppt.EntityId, sourceAppt.QueueId);
             }
@@ -602,10 +611,10 @@ namespace FastQ.Web.Services
                         QueueId = targetQueue.Id,
                         ServiceId = request.TargetServiceId,
                         ScheduledFor = request.TargetDate ?? DateTime.Today,
-                        CustomerEmail = sourceAppt?.CustomerEmail,
-                        CustomerFirstName = sourceAppt?.CustomerFirstName,
-                        CustomerLastName = sourceAppt?.CustomerLastName,
-                        CustomerPhone = sourceAppt?.CustomerPhone
+                        CustomerEmail = sourceAppt?.CustomerEmail ?? sourceCustomer?.Email,
+                        CustomerFirstName = sourceAppt?.CustomerFirstName ?? sourceCustomer?.FirstName,
+                        CustomerLastName = sourceAppt?.CustomerLastName ?? sourceCustomer?.LastName,
+                        CustomerPhone = sourceAppt?.CustomerPhone ?? sourceCustomer?.Phone
                     };
                 }
 

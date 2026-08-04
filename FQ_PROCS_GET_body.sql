@@ -577,6 +577,36 @@ EXCEPTION
     p_queue_id := NULL;
 END GET_QUEUE_ID_FOR_SOURCE;
 
+PROCEDURE GET_CUSTOMER_ID_FOR_SOURCE (
+  p_src_type IN VARCHAR2,
+  p_src_id IN NUMBER,
+  p_customer_id OUT NUMBER
+)
+AS
+  v_src_type VARCHAR2(1);
+BEGIN
+  p_customer_id := NULL;
+  v_src_type := UPPER(TRIM(p_src_type));
+
+  IF v_src_type = 'A' THEN
+    SELECT CUSTOMER_ID
+      INTO p_customer_id
+      FROM APPOINTMENTS
+     WHERE APPOINTMENT_ID = p_src_id;
+  ELSIF v_src_type = 'W' THEN
+    SELECT CUSTOMER_ID
+      INTO p_customer_id
+      FROM WALKINS
+     WHERE WALKIN_ID = p_src_id;
+  ELSE
+    RAISE_APPLICATION_ERROR(-20002, 'Invalid source type');
+  END IF;
+
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    p_customer_id := NULL;
+END GET_CUSTOMER_ID_FOR_SOURCE;
+
 PROCEDURE GET_APPTS_BY_QUEUE (
   p_queueid IN NUMBER,
   p_cur OUT Ref_Cursor_Types.ref_cursor

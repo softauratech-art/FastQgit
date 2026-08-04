@@ -100,6 +100,12 @@ CREATE OR REPLACE PACKAGE FQ_PROCS_GET AS
     p_apptid OUT NUMBER
   );
 
+  PROCEDURE GET_CUSTOMER_ID_FOR_SOURCE (
+    p_src_type IN VARCHAR2,
+    p_src_id IN NUMBER,
+    p_customer_id OUT NUMBER
+  );
+
   PROCEDURE GET_QUEUE_ID_FOR_SOURCE (
     p_src_type IN VARCHAR2,
     p_src_id IN NUMBER,

@@ -89,25 +89,12 @@ namespace FastQ.Web.Services
             }).Trim();
             var compactName = new string(fullName.Where(char.IsLetterOrDigit).ToArray());
 
-            var digits = new string((appointment.CustomerPhone ?? string.Empty).Where(char.IsDigit).ToArray());
-            var phoneLast4 = digits.Length >= 4 ? digits.Substring(digits.Length - 4) : string.Empty;
-
-            if (string.IsNullOrWhiteSpace(compactName) && string.IsNullOrWhiteSpace(phoneLast4))
+            if (string.IsNullOrWhiteSpace(compactName))
             {
                 return string.Empty;
             }
 
-            if (string.IsNullOrWhiteSpace(compactName))
-            {
-                return "-" + phoneLast4;
-            }
-
-            if (string.IsNullOrWhiteSpace(phoneLast4))
-            {
-                return "-" + compactName;
-            }
-
-            return "-" + compactName + "/" + phoneLast4;
+            return "-" + compactName;
         }
     }
 }
