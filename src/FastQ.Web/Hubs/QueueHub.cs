@@ -3,6 +3,7 @@ using FastQ.Data.Entities;
 using Microsoft.AspNet.SignalR;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Web;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace FastQ.Web.Hubs
                 throw new HubException("A logged-in FastQ user is required for notifications.");
 
             var users = DbRepositoryFactory.CreateUserRepository();
-            var user = users.Get(userId, "SIGNALR");
+            var user = users.Get(userId, "AUTHSERVICE");
             if (user == null || !user.ActiveFlag)
                 throw new HubException("The FastQ user is not active.");
 
@@ -69,6 +70,16 @@ namespace FastQ.Web.Hubs
             if (HttpContext.Current?.Session?["fq_user"] is User sessionUser
                 && !string.IsNullOrWhiteSpace(sessionUser.UserId))
                 return sessionUser.UserId.Trim();
+
+            var configuredDebugKey = ConfigurationManager.AppSettings["debugkey"] ?? string.Empty;
+            var requestedDebugKey = Context.QueryString["debug"] ?? string.Empty;
+            var requestedDebugUserId = Context.QueryString["debuguserid"] ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(configuredDebugKey)
+                && string.Equals(requestedDebugKey, configuredDebugKey, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(requestedDebugUserId)
+                && Context.User != null
+                && Context.User.IsInRole("ISS LDMS Team"))
+                return requestedDebugUserId.Trim();
 
             var identityName = Context.User?.Identity?.Name ?? string.Empty;
             var slashIndex = identityName.IndexOf("\\", StringComparison.Ordinal);

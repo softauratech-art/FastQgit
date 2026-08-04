@@ -16,6 +16,9 @@
     var isSessionTimeout = (Session["fq_current_entity"] == null || Session["fq_current_entity"].ToString() == "0");
     var returnURL = Request["path"] == null ? @Url.Action("Index", "Home") : Request["path"];
     var notificationQueueIds = authsvc.GetServicePageAccess().NotificationQueueIds;
+    var signalRUser = authsvc.GetCurrentUser();
+    var signalRDebugUserId = signalRUser == null ? "" : signalRUser.UserId;
+    var signalRDebugKey = Session["debug"] == null ? "" : Session["debug"].ToString();
 }
 <!DOCTYPE html>
 <html>
@@ -248,6 +251,10 @@
     <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
     <script>
         window.FASTQ_NOTIFICATION_QUEUE_IDS = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(notificationQueueIds));
+        window.FASTQ_SIGNALR_DEBUG = {
+            key: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(signalRDebugKey)),
+            userId: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(signalRDebugUserId))
+        };
     </script>
     <script src="~/signalr/hubs"></script>
     <script src="@Url.Content("~/Scripts/fastq.live.js")"></script>

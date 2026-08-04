@@ -85,6 +85,14 @@
         self.tryJoinGroups();
       });
 
+      var debugContext = window.FASTQ_SIGNALR_DEBUG || {};
+      if (debugContext.key && debugContext.userId) {
+        $.connection.hub.qs = {
+          debug: safe(debugContext.key),
+          debuguserid: safe(debugContext.userId)
+        };
+      }
+
       $.connection.hub.start()
         .done(function () {
           self.started = true;
