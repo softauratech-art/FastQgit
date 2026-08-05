@@ -1,6 +1,10 @@
 ﻿@model IEnumerable<FastQ.Web.Models.Admin.QueueServiceVM>
+@{
 
-<table class="table bg-transparent" id="ServiceSection" >
+    var authsvc = new FastQ.Web.Services.AuthService();
+    var isSuperAdminUser = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
+}
+<table class="table bg-transparent" id="ServiceSection">
     <thead>
         <tr>
             <th>Id</th>
@@ -21,19 +25,22 @@
                     <td>@Html.DisplayFor(model => item.Name)</td>
                     <td>@Html.DisplayFor(model => item.NameES)</td>
                     <td>@Html.DisplayFor(model => item.NameCP)</td>
-                    <td nowrap class="text-center">                        
-                        <span class="@(item.ActiveFlag ? "status-dot" : "inactive-dot")" ></span>                        
+                    <td nowrap class="text-center">
+                        <span class="@(item.ActiveFlag ? "status-dot" : "inactive-dot")"></span>
                     </td>
                     <td nowrap style="text-align:right;">
-                        <button onclick="showInPopup('@Url.Action("EditService", "Queue",new {id=item.Id})','Update Service')" class="btn small ghost btn-action-edit">
-                            <i class="bi bi-pencil"></i> Edit
-                        </button>
-                        <button class="btnDeleteSvc btn small ghost btn-action-delete"
-                                data-secname="ServiceSection"
-                                data-id="@item.Id"
-                                data-action='@Url.Action("DeleteService", "Queue",new {id=item.Id})'>
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
+                        @if (isSuperAdminUser)
+                        {
+                            <button onclick="showInPopup('@Url.Action("EditService", "Queue",new {id=item.Id})','Update Service')" class="btn small ghost btn-action-edit">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            <button class="btnDeleteSvc btn small ghost btn-action-delete"
+                                    data-secname="ServiceSection"
+                                    data-id="@item.Id"
+                                    data-action='@Url.Action("DeleteService", "Queue",new {id=item.Id})'>
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        }
                     </td>
                 </tr>
             }

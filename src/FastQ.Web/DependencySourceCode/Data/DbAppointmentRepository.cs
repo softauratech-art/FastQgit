@@ -429,6 +429,33 @@ namespace FastQ.Data.Db
             }
         }
 
+        public long? GetCustomerIdForSource(char srcType, long sourceId)
+        {
+            if (sourceId <= 0)
+            {
+                return null;
+            }
+
+            var normalizedSrcType = char.ToUpperInvariant(srcType);
+
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_PROCS_GET.GET_CUSTOMER_ID_FOR_SOURCE"))
+            {
+                DataAccess.AddParam(cmd, "p_src_type", normalizedSrcType.ToString(), DbType.String);
+                DataAccess.AddParam(cmd, "p_src_id", sourceId, DbType.Int64);
+                var outParam = DataAccess.AddParam(cmd, "p_customer_id", null, DbType.Int64);
+                outParam.Direction = ParameterDirection.Output;
+                cmd.ExecuteNonQuery();
+                var value = outParam.Value;
+                if (value == null || value == DBNull.Value)
+                {
+                    return null;
+                }
+
+                return Convert.ToInt64(value);
+            }
+        }
+
         private IList<Appointment> ListByFilter(string whereClause, Action<DbCommand> addParams)
         {
             var list = new List<Appointment>();

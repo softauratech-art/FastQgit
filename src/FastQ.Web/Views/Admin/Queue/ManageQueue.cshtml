@@ -4,6 +4,9 @@
 @{
     ViewBag.Title = "ManageQueue";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var authsvc = new FastQ.Web.Services.AuthService();    
+    var isSuperAdminUser = authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.SuperAdmin);
 }
 
 @section Head
@@ -218,7 +221,7 @@
     <div class="card-title" style="display:block;">
         Services
         <button onclick="showInPopup('@Url.Action("EditService","Queue", 0)','New Service')"
-                class="btn small primary" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>
+                class="btn small primary" style="float:right" role="button" @(Model.Id == 0 || !isSuperAdminUser ? "disabled" : "")>
             Add Service
         </button>
     </div>
@@ -271,7 +274,7 @@
                 <div id="QAccessQuickView">
                     @if (Model.UserAccessList != null)
                     {
-                        Html.RenderPartial("_QueueAccesQuickView", Model);
+                        Html.RenderPartial("../Admin/Queue/_QueueAccesQuickView", Model);
                     }
                 </div>
             </div>
@@ -284,10 +287,10 @@
             <thead style="font-weight:bold; border-bottom: solid 1px #ccc">
                 <tr>
                     <th>User</th>
-                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host? <i class="bi bi-info-circle help-icon" data-title="HOST can Checkin, Transfer, Cancel -- Cannot Start/End service."></i></th>
-                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? <i class="bi bi-info-circle help-icon" data-title="PROVIDER can Checkin, Transfer, Cancel, Start, End service."></i></th>
-                    <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</th>
-                    <th><input type="checkbox" id="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? <i class="bi bi-info-circle help-icon" data-title="Configure + Provider"></i></th>
+                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" @(!isSuperAdminUser ? "disabled" : "")/>&nbsp;Host? <i class="bi bi-info-circle help-icon" data-title="HOST can Checkin, Transfer, Cancel -- Cannot Start/End service."></i></th>
+                    <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" @(!isSuperAdminUser ? "disabled" : "")/>&nbsp;Provider? <i class="bi bi-info-circle help-icon" data-title="PROVIDER can Checkin, Transfer, Cancel, Start, End service."></i></th>
+                    <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" @(!isSuperAdminUser ? "disabled" : "")/>&nbsp;Reporter?</th>
+                    <th><input type="checkbox" id="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" @(!isSuperAdminUser ? "disabled" : "")/>&nbsp;Queue Admin? <i class="bi bi-info-circle help-icon" data-title="Configure + Provider"></i></th>
                 </tr>
             </thead>
             <tbody>
@@ -304,11 +307,11 @@
                             var isQueueAdmin = acl.QueueAdminFlag;
                             var isConfigAdmin = acl.ConfigAdminFlag;
                             <tr>
-                                <td>@acl.UserName (@acl.UserId) <sup>@(acl.ConfigAdminFlag ? "SuperAdmin" : "")</sup> <span class="text-danger">@(acl.UserActiveFlag == false ? "Inactive" : "")</span></td>
-                                <td><input type="checkbox" name="host" value="@acl.UserId" class="host-role" @(isHost ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
-                                <td><input type="checkbox" name="provider" value="@acl.UserId" class="provider-role" @(isProvider ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
-                                <td><input type="checkbox" name="reporter" value="@acl.UserId" class="reporter-role" @(isReporter ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
-                                <td><input type="checkbox" name="queueadmin" value="@acl.UserId" class="queueadmin-role" @(isQueueAdmin ? "checked" : "") @(acl.UserActiveFlag == false ? "disabled" : "") /></td>
+                                <td>@acl.UserName (@acl.UserId) <sup>@(acl.ConfigAdminFlag ? "SuperAdmin" : "")</sup> <span class="text-danger">@(!acl.UserActiveFlag ? "Inactive" : "")</span></td>
+                                <td><input type="checkbox" name="host" value="@acl.UserId" class="host-role" @(isHost ? "checked" : "") @(!acl.UserActiveFlag || !isSuperAdminUser ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="provider" value="@acl.UserId" class="provider-role" @(isProvider ? "checked" : "") @(!acl.UserActiveFlag || !isSuperAdminUser ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="reporter" value="@acl.UserId" class="reporter-role" @(isReporter ? "checked" : "") @(!acl.UserActiveFlag || !isSuperAdminUser  ? "disabled" : "") /></td>
+                                <td><input type="checkbox" name="queueadmin" value="@acl.UserId" class="queueadmin-role" @(isQueueAdmin ? "checked" : "") @(!acl.UserActiveFlag || !isSuperAdminUser ? "disabled" : "") /></td>
                             </tr>
                         }
                     }
@@ -557,7 +560,7 @@
                 },
                 initComplete: function () {
                     // Use initComplete to insert the actual hyperlink after the table is initialized
-                    $('.action-btn-div').wrapInner('<button type="submit" class="btn small btn-save" id="btnSaveAccess" style="float:right" role="button" @(Model.Id == 0 ? "disabled" : "")>Save Changes</button>');
+                    $('.action-btn-div').wrapInner('<button type="submit" class="btn small btn-save" id="btnSaveAccess" style="float:right" role="button" @(Model.Id == 0 || !isSuperAdminUser ? "disabled" : "")>Save Changes</button>');
                     $('.dt-search').prepend('<span class="card-title" style="display:inline;margin-right: 20px;">Security</span>');
                     $('.dt-search').append('<button id="toggleQuickView" type="button" class="btn ghost small" onclick="openQuickView();">Quick View</button>');
                 }
