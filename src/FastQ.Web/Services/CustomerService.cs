@@ -354,12 +354,9 @@ namespace FastQ.Web.Services
         public Result ValidateCustomerTimeSelection(string email, string phone, DateTime scheduledFor, long? excludedAppointmentId = null, bool requireExistingCustomer = false)
         {
             var normalizedEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
-            var normalizedPhone = NormalizePhone(phone);
             Customer customer = null;
             if (!string.IsNullOrWhiteSpace(normalizedEmail))
                 customer = _customers.GetByEmail(normalizedEmail);
-            if (customer == null && !string.IsNullOrWhiteSpace(normalizedPhone))
-                customer = _customers.GetByPhone(normalizedPhone);
             if (customer == null)
                 return requireExistingCustomer
                     ? Result.Fail("Could not identify the source customer for schedule validation.")
@@ -379,10 +376,6 @@ namespace FastQ.Web.Services
             var customer = !string.IsNullOrWhiteSpace(normalizedEmail)
                 ? _customers.GetByEmail(normalizedEmail)
                 : null;
-            if (customer == null)
-            {
-                customer = _customers.GetByPhone(normalizedPhone);
-            }
 
             if (customer == null)
             {
