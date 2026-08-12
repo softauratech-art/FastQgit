@@ -79,6 +79,15 @@
     color: #5b5b5b;
 }
 
+.email-na-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.2;
+    color: #64748b;
+}
+
 .modal-feedback {
     display: none;
     margin-top: 12px;
