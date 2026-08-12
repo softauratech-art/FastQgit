@@ -79,10 +79,8 @@
     color: #5b5b5b;
 }
 
-.email-na-hint {
-    display: block;
-    margin-top: 2px;
-    font-size: 10px;
+.route-form-row label .email-na-hint {
+    font-size: 10px !important;
     font-weight: 400;
     line-height: 1.2;
     color: #64748b;
