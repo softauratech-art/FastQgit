@@ -3449,6 +3449,32 @@
       requestDesktopNotificationPermission();
     });
 
+    var fastQAttentionTimer = null;
+    var fastQOriginalTitle = document.title;
+
+    function startFastQAttention() {
+      if (document.hasFocus() || fastQAttentionTimer) {
+        return;
+      }
+
+      var showAlertTitle = true;
+      document.title = "(!) New FastQ message";
+      fastQAttentionTimer = window.setInterval(function () {
+        document.title = showAlertTitle ? fastQOriginalTitle : "(!) New FastQ message";
+        showAlertTitle = !showAlertTitle;
+      }, 1000);
+    }
+
+    function stopFastQAttention() {
+      if (fastQAttentionTimer) {
+        window.clearInterval(fastQAttentionTimer);
+        fastQAttentionTimer = null;
+      }
+      document.title = fastQOriginalTitle;
+    }
+
+    window.addEventListener("focus", stopFastQAttention);
+
     function canUseDesktopNotifications() {
       return "Notification" in window;
     }
@@ -3482,10 +3508,17 @@
       function displayNotification() {
         try {
           var notification = new Notification("FastQ Message", {
-            body: message
+            body: message,
+            requireInteraction: true
           });
+          var notificationCloseTimer = window.setTimeout(function () {
+            notification.close();
+          }, 60 * 1000);
+          startFastQAttention();
           notification.onclick = function () {
+            window.clearTimeout(notificationCloseTimer);
             window.focus();
+            stopFastQAttention();
             notification.close();
           };
         } catch (error) {
