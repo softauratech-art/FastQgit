@@ -3474,6 +3474,13 @@
     }
 
     window.addEventListener("focus", stopFastQAttention);
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", function (event) {
+        if (event.data && event.data.type === "fastq-notification-done") {
+          stopFastQAttention();
+        }
+      });
+    }
 
     function canUseDesktopNotifications() {
       return "Notification" in window;
@@ -3505,18 +3512,14 @@
         return;
       }
 
-      function displayNotification() {
+      function displayFallbackNotification() {
         try {
           var notification = new Notification("FastQ Message", {
             body: message,
             requireInteraction: true
           });
-          var notificationCloseTimer = window.setTimeout(function () {
-            notification.close();
-          }, 60 * 1000);
           startFastQAttention();
           notification.onclick = function () {
-            window.clearTimeout(notificationCloseTimer);
             window.focus();
             stopFastQAttention();
             notification.close();
@@ -3524,6 +3527,31 @@
         } catch (error) {
           console.warn("Desktop notification could not be shown.", error);
         }
+      }
+
+      function displayNotification() {
+        if (!("serviceWorker" in navigator)) {
+          displayFallbackNotification();
+          return;
+        }
+
+        navigator.serviceWorker.register('@Url.Content("~/Scripts/fastq-notifications-sw.js")')
+          .then(function (registration) {
+            return registration.showNotification("FastQ Message", {
+              body: message,
+              requireInteraction: true,
+              actions: [
+                { action: "done", title: "Done" }
+              ]
+            });
+          })
+          .then(function () {
+            startFastQAttention();
+          })
+          .catch(function (error) {
+            console.warn("Action notification could not be shown; using fallback.", error);
+            displayFallbackNotification();
+          });
       }
 
       if (Notification.permission === "granted") {
