@@ -216,6 +216,7 @@
     <Content Include="Content\modal.css" />
     <Content Include="Content\siteadmin.css" />
     <Content Include="Content\today.css" />
+    <Content Include="favicon-alert.ico" />
     <Content Include="favicon.ico" />
     <Content Include="Content\OC_Logo.png" />
     <Content Include="Content\site.css" />

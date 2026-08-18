@@ -210,11 +210,11 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var rowStampUser = getStampUser(row);
-                            var statusClass = row.Status == AppointmentStatus.Cancelled ? "is-canceled" :
-                                row.Status == AppointmentStatus.InService && string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase) ? "is-in-progress" : string.Empty;
+                            var statusClass = (row.Status == AppointmentStatus.Scheduled && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-10))
+                                           || (row.Status == AppointmentStatus.Arrived && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-5) ) ? "is-waiting-overtime" : row.Status == AppointmentStatus.Cancelled ? "is-canceled" : row.Status == AppointmentStatus.InService && string.Equals(row.StampUser, currentProviderId, StringComparison.OrdinalIgnoreCase) ? "is-in-progress" : string.Empty; ;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
-                            <tr class="accordion-toggle @(isLocked ? "locked" : null)" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
+                            <tr class="accordion-toggle @(isLocked ? "locked" : null) @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td nowrap>
                                     @if (endDateValue.Equals(startDateValue))
                                     {
@@ -3445,6 +3445,7 @@
     </script>
 
     <script>
+
     document.addEventListener("DOMContentLoaded", function () {
       requestDesktopNotificationPermission();
     });
@@ -3452,15 +3453,26 @@
     var fastQAttentionTimer = null;
     var fastQOriginalTitle = document.title;
 
+    function changeFavicon(iconUrl) {
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+        }
+        link.href = iconUrl;
+    }
+
     function startFastQAttention() {
       if (document.hasFocus() || fastQAttentionTimer) {
         return;
       }
 
       var showAlertTitle = true;
-      document.title = "(!) New FastQ message";
+      //  document.title = "(ATTENTION) New FastQ message";
       fastQAttentionTimer = window.setInterval(function () {
-        document.title = showAlertTitle ? fastQOriginalTitle : "(!) New FastQ message";
+          document.title = showAlertTitle ? fastQOriginalTitle : "\u26a0 New FastQ message \u26a0 ";
+          changeFavicon('/fastq/favicon-alert.ico');
         showAlertTitle = !showAlertTitle;
       }, 1000);
     }
@@ -3470,23 +3482,20 @@
         window.clearInterval(fastQAttentionTimer);
         fastQAttentionTimer = null;
       }
-      document.title = fastQOriginalTitle;
+        document.title = fastQOriginalTitle;
+        changeFavicon('/fastq/favicon.ico');
     }
 
     window.addEventListener("focus", stopFastQAttention);
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.addEventListener("message", function (event) {
-        if (event.data && event.data.type === "fastq-notification-done") {
-          stopFastQAttention();
-        }
-      });
-    }
 
     function canUseDesktopNotifications() {
       return "Notification" in window;
     }
 
     function requestDesktopNotificationPermission() {
+      return;
+
+      // PR: Comment out the above line when ready to Enable desktop-notifications
       if (!canUseDesktopNotifications()) {
         return;
       }
@@ -3512,14 +3521,22 @@
         return;
       }
 
-      function displayFallbackNotification() {
+      function displayNotification() {
         try {
           var notification = new Notification("FastQ Message", {
-            body: message,
-            requireInteraction: true
+                body: message,
+                requireInteraction: true,
+                navigate: "/fastQ/Provider/Today"
           });
-          startFastQAttention();
+
+          // PR: Uncomment the below section when ready to Enable desktop-notifications
+          //var notificationCloseTimer = window.setTimeout(function () {
+          //  notification.close();
+          //}, 60 * 1000);
+
+          //startFastQAttention(); // PR: moved this outside of displayNotification() Notifications-API:see below
           notification.onclick = function () {
+            window.clearTimeout(notificationCloseTimer);
             window.focus();
             stopFastQAttention();
             notification.close();
@@ -3528,50 +3545,27 @@
           console.warn("Desktop notification could not be shown.", error);
         }
       }
+        startFastQAttention();
 
-      function displayNotification() {
-        if (!("serviceWorker" in navigator)) {
-          displayFallbackNotification();
-          return;
-        }
+      // PR: Uncomment the below section when ready to Enable desktop-notifications
+      //if (Notification.permission === "granted") {
+      //  displayNotification();
+      //  return;
+      //}
 
-        navigator.serviceWorker.register('@Url.Content("~/Scripts/fastq-notifications-sw.js")')
-          .then(function (registration) {
-            return registration.showNotification("FastQ Message", {
-              body: message,
-              requireInteraction: true,
-              actions: [
-                { action: "done", title: "Done" }
-              ]
-            });
-          })
-          .then(function () {
-            startFastQAttention();
-          })
-          .catch(function (error) {
-            console.warn("Action notification could not be shown; using fallback.", error);
-            displayFallbackNotification();
-          });
-      }
-
-      if (Notification.permission === "granted") {
-        displayNotification();
-        return;
-      }
-
-      if (Notification.permission === "default"
-          && typeof Notification.requestPermission === "function") {
-        var permissionRequest = Notification.requestPermission();
-        if (permissionRequest && typeof permissionRequest.then === "function") {
-          permissionRequest.then(function (permission) {
-            if (permission === "granted") {
-              displayNotification();
-            }
-          }).catch(function (error) {
-            console.warn("Desktop notification permission request failed.", error);
-          });
-        }
-      }
+      //if (Notification.permission === "default"
+      //    && typeof Notification.requestPermission === "function") {
+      //  var permissionRequest = Notification.requestPermission();
+      //  if (permissionRequest && typeof permissionRequest.then === "function") {
+      //    permissionRequest.then(function (permission) {
+      //      if (permission === "granted") {
+      //        displayNotification();
+      //      }
+      //    }).catch(function (error) {
+      //      console.warn("Desktop notification permission request failed.", error);
+      //    });
+      //  }
+      //}
     }
     </script>
 }

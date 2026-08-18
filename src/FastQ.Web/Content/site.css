@@ -301,14 +301,23 @@ form {
     flex-direction: column;
 }
 
-.is-scheduled {
-    background-color: #e3f2fd;
-    color: #0d47a1;
+.is-waiting-overtime:not(tr)::after {
+    content: "\f293"; /* Unicode for the Bootstrap clock icon */
+    font-family: "bootstrap-icons";
+    color: red;
+    margin-left: 8px;
 }
+.is-waiting-overtime:not(tr) { color:red;}
 
 .is-in-progress {
     background-color: #fff8e1;
     color: #ff6f00;
+    font-style: italic;
+}
+
+.is-scheduled {
+    background-color: #e3f2fd;
+    color: #0d47a1;
 }
 
 .is-completed {
@@ -316,9 +325,12 @@ form {
     color: #1b5e20;
 }
 
-.is-canceled {
-    background-color: #ffebee;
+.is-canceled:not(tr) {
     color: #c62828;
+}
+
+span.is-canceled {
+    background-color: #ffebee;
     opacity: 0.7;
 }
 
