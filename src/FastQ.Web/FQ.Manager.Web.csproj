@@ -218,7 +218,12 @@
     <Content Include="Content\today.css" />
     <Content Include="favicon-alert.ico" />
     <Content Include="favicon.ico" />
+    <Content Include="manifest.webmanifest" />
+    <Content Include="service-worker.js" />
     <Content Include="Content\OC_Logo.png" />
+    <Content Include="Content\icons\fastq-192.png" />
+    <Content Include="Content\icons\fastq-512.png" />
+    <Content Include="Content\icons\fastq-maskable-512.png" />
     <Content Include="Content\site.css" />
     <Content Include="nlog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
