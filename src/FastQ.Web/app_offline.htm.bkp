@@ -290,8 +290,8 @@ code {
             <main class="page">
 				<div class="card">
 					<h1>System Offline</h1>
-					<p>The system is currently offline in preparation for our upcoming official launch on Monday, July 20th at 10:00 AM.</p>
-					<p class="highlight">Please check back later.</p>
+					<p>The system is briefly offline for scheduled updates and will return to normal operation shortly.</p>
+                    <p class="highlight">Please check back later.</p>
 				</div>
             </main>
         </div>
