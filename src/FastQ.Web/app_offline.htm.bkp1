@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FastQ Manager</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <!--link rel="stylesheet" href="Content/site.css"-->
+	<style>
+        h1 {
+            font-size: 28px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #495057;
+            margin-bottom: 20px;
+        }
+        .highlight {
+            font-weight: 600;
+            color: #0056b3;
+            margin-top: 30px;
+        }
+:root {
+    --bg: #f6efe6;
+    --bg-accent: #fdebd3;
+    --ink: #121212;
+    --muted: #5c6168;
+    --accent: #ff6b35;
+    --accent-2: #1f7a6c;
+    --accent-3: #f2b705;
+    --card: rgba(255, 255, 255, 0.86);
+    --border: rgba(18, 18, 18, 0.08);
+    --shadow: 0 18px 45px rgba(19, 26, 38, 0.16);
+    --radius: 18px;
+    --radius-sm: 12px;
+    --drawer-width: 200px;
+    --drawer-collapsed-width: 95px;
+    --font-heading: "Space Grotesk", "Trebuchet MS", sans-serif;
+    --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+    
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    min-height: 100vh;
+    background: linear-gradient(to top, #7F7FD5, #91EAE4, #86A8E7); /*W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+}
+
+    body::before,
+    body::after {
+        content: "";
+        position: fixed;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        filter: blur(0);
+        opacity: 0.45;
+        z-index: -1;
+    }
+
+    body::before {
+        background: radial-gradient(circle, rgba(255, 107, 53, 0.35), transparent 70%);
+        top: -80px;
+        right: -120px;
+    }
+
+    body::after {
+        background: radial-gradient(circle, rgba(31, 122, 108, 0.35), transparent 70%);
+        bottom: -120px;
+        left: -80px;
+    }
+
+button:disabled {cursor: not-allowed; opacity:0.7;}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+code {
+    background: rgba(18, 18, 18, 0.06);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: var(--drawer-width) 1fr;
+    min-height: 100vh;
+}
+
+.drawer {
+    background: rgba(255, 255, 255, 0.9);
+    border-right: 1px solid var(--border);
+    padding: 22px 16px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 20px;
+    box-shadow: inset -1px 0 0 rgba(0,0,0,0.04);
+    backdrop-filter: blur(12px);
+}
+
+.drawer .brand {
+    display: grid;
+    justify-items: center;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.brand-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.brand-title {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 700;
+    color: #00629D;
+}
+
+.brand-sub {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.brand-env:not(:empty)  {
+    font-size: 14px;
+	font-weight: bold;
+    color: var(--accent);
+	border: solid 1px var(--accent);
+	padding: 5px;
+}
+
+.logo {
+    height: 35px; /* Adjust the logo size as needed */
+    width: auto;
+    /* Optional: ensure the image doesn't exceed the container height */
+    max-height: 100%;
+}
+
+.logo-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #fff;
+    /*background: linear-gradient(135deg, var(--accent), var(--accent-2));*/
+    background-image: url("/Content/oc_logo.png");
+    background-repeat: no-repeat; 
+    background-position: center; 
+    background-size: contain; 
+    background-color: #ffffff;
+    box-shadow: 0 12px 24px rgba(31, 122, 108, 0.3);
+}
+
+.drawer-nav {
+    display: grid;
+    gap: 16px;
+    overflow-y: auto;
+    min-height: 0;
+    /*padding-right: 6px;*/    
+    align-content: start;
+}
+
+.drawer-nav .nav-section {
+    display: grid;
+    gap: 6px;
+}
+
+.main-area {
+    padding: 20px 20px 60px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    backdrop-filter: blur(14px);
+}
+
+.topbar-title {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-size: 24px;
+    margin: 0;
+}
+
+.topbar-sub {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.page {
+    display: grid;
+    gap: 20px;
+}
+
+.page-title {
+    font-family: var(--font-heading);
+    font-size: 32px;
+    margin: 0 0 8px;
+}
+
+.card {
+    background: var(--card) !important;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    /*animation: fadeUp 0.5s ease both;*/
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.card-title {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    margin: 0;
+}
+    </style>
+</head>
+<body>
+    <div class="layout">
+                <aside class="drawer">
+            <div class="brand">
+                <div class="brand-top">
+                    <a href="/FastQ" class="logo-container">
+                        <img src="https://orangenet.ocfl.net/portals/23/Images/branding/logo_variation_horizontal_small639045190326775680.jpg" alt="Logo" class="logo">
+                    </a>
+                </div>
+                 <div class="brand-title">FastQ Manager</div>
+            </div>
+            <nav class="drawer-nav">
+                <div class="nav-section">                    
+                </div>
+            </nav>
+            <div class="drawer-footer">
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="topbar">
+				<div>
+					<div class="topbar-title">FastQ Manager</div>
+					<div class="topbar-sub">
+						FastQ keeps every queue in sync, in real time.
+						Book an appointment, watch it instantly appear for the provider, and follow every state change live.
+					</div>
+				</div>
+                <div class="user-chip">
+                    
+                </div>
+            </header>
+            <main class="page">
+				<div class="card">
+					<h1>System Offline</h1>
+					<p>The system is currently offline in preparation for our upcoming official launch on Monday, July 20th at 10:00 AM.</p>
+					<p class="highlight">Please check back later.</p>
+				</div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

@@ -65,6 +65,14 @@
 }
 @section Head {
     <link rel="stylesheet" href="~/Content/today.css" />
+    <style>
+        #enable.disabled {
+            pointer-events: none;
+            cursor: not-allowed;
+            opacity: 0.6;
+            user-select: none; 
+        }
+    </style>
 }
 
 @section PageHeader {
@@ -73,6 +81,9 @@
     <div class="topbar-sub">Appointments and walk-in customers</div>
 </div>
 <div class="top-actions">
+    <button id="enable" class="btn small secondary">
+        Enable notifications
+    </button>
     <div class="notif-wrap">
         <button class="icon-btn" id="todayNotificationsButton" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="todayNotificationsPanel">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -91,7 +102,6 @@
             </div>
         </div>
     </div>
-    @* Manual browser-notification guide button is currently disabled.
     <a class="icon-btn" type="button" aria-label="Support" href="/FastQ/Browser_Notifications_Guide.pdf" target=”_blank”>
         <svg xmlns="http://w3.org" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
@@ -99,7 +109,6 @@
             <line x1="12" y1="17.5" x2="12" y2="17.5" />
         </svg>
     </a>
-    *@
     <button class="icon-btn" type="button" aria-label="User menu" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="8" r="3.5"></circle>
@@ -192,6 +201,7 @@
                         <th data-sort-key="text">Lang Pref</th>
                         <th data-sort-key="text">Status</th>
                         <th data-sort-key="text">Contact</th>
+                        <th data-sort-key="text">Stampuser</th>
                         <th class="text-center">Join Meeting</th>
                         <th class="text-center">Expand</th>
                     </tr>
@@ -212,7 +222,7 @@
                             var rowStatus = row.Status.ToString();
                             var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var rowStampUser = getStampUser(row);
-                            var statusClass = (row.Status == AppointmentStatus.Scheduled && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-10))
+                            var statusClass = (row.Status == AppointmentStatus.Scheduled && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-10)) 
                                            || (row.Status == AppointmentStatus.Arrived && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-5) ) ? "is-waiting-overtime" : row.Status == AppointmentStatus.Cancelled ? "is-canceled" : row.Status == AppointmentStatus.InService && string.Equals(row.StampUser, currentProviderId, StringComparison.OrdinalIgnoreCase) ? "is-in-progress" : string.Empty; ;
                             var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                             var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
@@ -235,6 +245,7 @@
                                 <td>@row.LanguagePreference</td>
                                 <td class="@statusClass no-bg" data-provider-status-cell="true">@row.StatusText</td>
                                 <td>@row.ContactMethod</td>
+                                <td>@row.StampUserName</td>
                                 <td class="text-center">
                                     @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
                                     {
@@ -2698,7 +2709,7 @@
     if (todayNotificationsButton) {
       todayNotificationsButton.addEventListener("click", function (event) {
         event.stopPropagation();
-        requestDesktopNotificationPermission();
+        //requestDesktopNotificationPermission();
         toggleNotifications();
       });
     }
@@ -3448,12 +3459,19 @@
 
     <script>
 
-    document.addEventListener("DOMContentLoaded", function () {
-      requestDesktopNotificationPermission();
-    });
-
     var fastQAttentionTimer = null;
     var fastQOriginalTitle = document.title;
+    const notificationBtn = document.getElementById("enable");
+
+    function toggleNotificationBtnDisplay() {
+        if (Notification.permission === "granted") {
+            notificationBtn.classList.add("disabled");
+            notificationBtn.textContent = "Notifications Allowed";
+        }
+        else {
+            notificationBtn.classList.remove("disabled");
+        }
+    }
 
     function changeFavicon(iconUrl) {
         let link = document.querySelector("link[rel~='icon']");
@@ -3471,7 +3489,6 @@
       }
 
       var showAlertTitle = true;
-      //  document.title = "(ATTENTION) New FastQ message";
       fastQAttentionTimer = window.setInterval(function () {
           document.title = showAlertTitle ? fastQOriginalTitle : "\u26a0 New FastQ message \u26a0 ";
           changeFavicon('/fastq/favicon-alert.ico');
@@ -3490,39 +3507,34 @@
 
     window.addEventListener("focus", stopFastQAttention);
 
-    function canUseDesktopNotifications() {
+    function canSupportDesktopNotifications() {
       return "Notification" in window;
     }
 
+    toggleNotificationBtnDisplay();
+       
+    // Ask for permission when the 'Enable notifications' button is clicked
     function requestDesktopNotificationPermission() {
-      return;
-
-      // PR: Comment out the above line when ready to Enable desktop-notifications
-      if (!canUseDesktopNotifications()) {
-        return;
-      }
-      if (Notification.permission === "denied") {
-        window.alert("Notifications are disabled. Please enable them in your browser settings.");
-        return;
-      }
-      if (Notification.permission !== "default"
-          || typeof Notification.requestPermission !== "function") {
-        return;
-      }
-
-      var permissionRequest = Notification.requestPermission();
-      if (permissionRequest && typeof permissionRequest.catch === "function") {
-        permissionRequest.catch(function (error) {
-          console.warn("Desktop notification permission request failed.", error);
-        });
-      }
+        if (!canSupportDesktopNotifications) {
+            return;
+        }
+        Notification.requestPermission()
+            .then(function () {
+                toggleNotificationBtnDisplay();
+            })
+            .catch(function (error) {
+                console.error("Desktop notification permission request failed.", error);
+            });
     }
 
+    // Wire up notification permission functionality to 'Enable notifications' button
+    notificationBtn.addEventListener("click", requestDesktopNotificationPermission);
+
     function showDesktopNotification(message) {
-      if (!message || !canUseDesktopNotifications()) {
+        if (!message || !canSupportDesktopNotifications()) {
         return;
       }
-
+        
       function displayNotification() {
         try {
           var notification = new Notification("FastQ Message", {
@@ -3531,43 +3543,22 @@
                 navigate: "/fastQ/Provider/Today"
           });
 
-          // PR: Uncomment the below section when ready to Enable desktop-notifications
-          //var notificationCloseTimer = window.setTimeout(function () {
-          //  notification.close();
-          //}, 60 * 1000);
-
-          //startFastQAttention(); // PR: moved this outside of displayNotification() Notifications-API:see below
           notification.onclick = function () {
-            window.clearTimeout(notificationCloseTimer);
-            window.focus();
-            stopFastQAttention();
-            notification.close();
+                window.focus();
+                stopFastQAttention();
+                notification.close();
           };
         } catch (error) {
           console.warn("Desktop notification could not be shown.", error);
         }
       }
-        startFastQAttention();
 
-      // PR: Uncomment the below section when ready to Enable desktop-notifications
-      //if (Notification.permission === "granted") {
-      //  displayNotification();
-      //  return;
-      //}
+      startFastQAttention();
 
-      //if (Notification.permission === "default"
-      //    && typeof Notification.requestPermission === "function") {
-      //  var permissionRequest = Notification.requestPermission();
-      //  if (permissionRequest && typeof permissionRequest.then === "function") {
-      //    permissionRequest.then(function (permission) {
-      //      if (permission === "granted") {
-      //        displayNotification();
-      //      }
-      //    }).catch(function (error) {
-      //      console.warn("Desktop notification permission request failed.", error);
-      //    });
-      //  }
-      //}
+      if (Notification.permission === "granted") {
+        displayNotification();
+        return;
+      }
     }
     </script>
 }

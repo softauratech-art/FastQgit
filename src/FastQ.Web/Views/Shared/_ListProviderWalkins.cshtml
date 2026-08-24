@@ -41,6 +41,7 @@
                 <th data-sort-key="text">Lang Pref</th>
                 <th data-sort-key="text">Status</th>
                 <th data-sort-key="text">Contact</th>
+                <th data-sort-key="text">Stampuser</th>
                 <th class="text-center">Join Meeting</th>
                 <th class="text-center">Expand</th>
             </tr>
@@ -64,33 +65,34 @@
                     var rowStampUser = row.StampUser;
                     var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                     var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
-                    <tr class="accordion-toggle @(isLocked ? "locked" : null) @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
-                        <td nowrap>
-                            @if (endDateValue.Equals(startDateValue))
-                            {
-                                @row.StartTimeText
-                            }
-                            else
-                            {
-                                @row.StartDateText<br />@row.StartTimeText
-                            }
-                        </td>
-                        <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
-                        <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
-                        <td>@row.CustomerName</td>
-                        <td nowrap>@rowPhoneDisplay</td>
-                        <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
-                        <td>@row.LanguagePreference</td>
-                        <td class="@statusClass no-bg" data-provider-status-cell="true">@row.StatusText</td>
-                        <td>@row.ContactMethod</td>
-                        <td class="text-center">
-                            @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
-                            {
-                                <a class="btn small ghost" href="@Url.Action("JoinMeeting", "Provider", new {srctype='W', srcid = row.AppointmentId })" target="_blank" rel="noopener">Join Meeting</a>
-                            }
-                        </td>
-                        <td class="text-center">&darr;</td>
-                    </tr>
+			        <tr class="accordion-toggle @(isLocked ? "locked" : null) @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
+			            <td nowrap>
+			                @if (endDateValue.Equals(startDateValue))
+			                {
+			                    @row.StartTimeText
+			                }
+			                else
+			                {
+			                    @row.StartDateText<br />@row.StartTimeText
+			                }
+			            </td>
+			            <td><button type="button" class="expandable-text" title="@row.QueueName" aria-expanded="false">@row.QueueName</button></td>
+			            <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
+			            <td>@row.CustomerName</td>
+			            <td nowrap>@rowPhoneDisplay</td>
+			            <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
+			            <td>@row.LanguagePreference</td>
+			            <td class="@statusClass no-bg" data-provider-status-cell="true">@row.StatusText</td>
+			            <td>@row.ContactMethod</td>
+                        <td>@row.StampUserName</td>
+			            <td class="text-center">
+			                @if (string.Equals((row.ContactTypeCode ?? string.Empty).Trim(), "OM", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.MeetingUrl))
+			                {
+			                    <a class="btn small ghost" href="@Url.Action("JoinMeeting", "Provider", new {srctype='W', srcid = row.AppointmentId })" target="_blank" rel="noopener">Join Meeting</a>
+			                }
+			            </td>            
+			            <td class="text-center">&darr;</td>            
+			        </tr>
                     <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId"
                         data-appointment-id="@row.AppointmentId"
                         data-src-type="W"
