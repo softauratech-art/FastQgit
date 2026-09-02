@@ -125,8 +125,6 @@
 </div>
 }
 
-<div id="fastQNotificationStack" class="fastq-notification-stack" aria-live="polite" aria-label="FastQ alerts"></div>
-
 <div class="card note">
     <div class="date-nav"></div>
 
@@ -212,7 +210,7 @@
                     @if (appointmentRows.Count == 0)
                     {
                         <tr class="table-empty">
-                            <td colspan="11" class="text-center">No appointments for selected dates.</td>
+                            <td colspan="12" class="text-center">No appointments for selected dates.</td>
                         </tr>
                     }
                     else
@@ -268,7 +266,7 @@
                                 data-phone="@rowPhoneDisplay"
                                 data-date="@rowDate"
                                 data-time="@row.StartTimeText">
-                                <td colspan="11">
+                                <td colspan="12">
                                     <div class="action-bar">
                                         <div class="action-bar-main">
                                             <button class="btn small primary" type="button" data-provider-action="true" data-action="arrive" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Check-In</button>
@@ -318,7 +316,7 @@
                         }
                     }
                     <tr class="table-empty is-hidden">
-                        <td colspan="11" class="text-center">No results match the selected filters.</td>
+                        <td colspan="12" class="text-center">No results match the selected filters.</td>
                     </tr>
                 </tbody>
             </table>
@@ -336,7 +334,7 @@
 @Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 @section Scripts {
-    <script src="@Url.Content("~/Scripts/provider-common.js?v=20260607-1")"></script>
+    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.1.20260818")"></script>
     <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
@@ -1664,7 +1662,7 @@
       var refValue = document.getElementById("routeRefValue");
       var notes = document.getElementById("routeNotes");
       var sourceContext = getRouteSourcePrefill(appointmentId, srcType);
-      var sourcePrefill = mode === "cancel-transfer" ? sourceContext : null;
+      var sourcePrefill = mode === "cancel-transfer" || mode === "end-add" || mode === "transfer" ? sourceContext : null;
       var lockReference = mode === "end-add";
       var hideTransferRefAndNotes = mode === "transfer" || mode === "cancel-transfer";
 
@@ -3465,87 +3463,8 @@
     var fastQOriginalTitle = document.title;
     const notificationBtn = document.getElementById("enable");
 
-    function updateNotificationStackControls() {
-      var stack = document.getElementById("fastQNotificationStack");
-      if (!stack) {
-        return;
-      }
-
-      var dismissAll = stack.querySelector(".fastq-stack-dismiss-all");
-      var notificationCount = stack.querySelectorAll(".fastq-stack-item").length;
-      if (dismissAll) {
-        dismissAll.hidden = notificationCount < 2;
-      }
-    }
-
-    function showStackedNotification(message) {
-      var stack = document.getElementById("fastQNotificationStack");
-      if (!stack || !message) {
-        return;
-      }
-
-      var dismissAll = stack.querySelector(".fastq-stack-dismiss-all");
-      if (!dismissAll) {
-        dismissAll = document.createElement("button");
-        dismissAll.type = "button";
-        dismissAll.className = "fastq-stack-dismiss-all";
-        dismissAll.textContent = "Dismiss all";
-        dismissAll.addEventListener("click", function () {
-          stack.querySelectorAll(".fastq-stack-item").forEach(function (item) {
-            item.remove();
-          });
-          updateNotificationStackControls();
-        });
-        stack.appendChild(dismissAll);
-      }
-
-      var item = document.createElement("div");
-      item.className = "fastq-stack-item";
-      item.setAttribute("role", "status");
-
-      var content = document.createElement("div");
-      content.className = "fastq-stack-content";
-
-      var title = document.createElement("div");
-      title.className = "fastq-stack-title";
-      title.textContent = "FastQ Message";
-
-      var body = document.createElement("div");
-      body.className = "fastq-stack-message";
-      body.textContent = message;
-
-      var dismiss = document.createElement("button");
-      dismiss.type = "button";
-      dismiss.className = "fastq-stack-dismiss";
-      dismiss.setAttribute("aria-label", "Dismiss notification");
-      dismiss.textContent = "Dismiss";
-      dismiss.addEventListener("click", function () {
-        item.remove();
-        updateNotificationStackControls();
-      });
-
-      content.appendChild(title);
-      content.appendChild(body);
-      item.appendChild(content);
-      item.appendChild(dismiss);
-      stack.insertBefore(item, dismissAll.nextSibling);
-
-      var visibleItems = stack.querySelectorAll(".fastq-stack-item");
-      if (visibleItems.length > 5) {
-        visibleItems[visibleItems.length - 1].remove();
-      }
-      updateNotificationStackControls();
-    }
-
     function toggleNotificationBtnDisplay() {
-        if (!notificationBtn) {
-            return;
-        }
-        if (!canSupportDesktopNotifications()) {
-            notificationBtn.classList.add("disabled");
-            notificationBtn.textContent = "Notifications unavailable";
-        }
-        else if (Notification.permission === "granted") {
+        if (Notification.permission === "granted") {
             notificationBtn.classList.add("disabled");
             notificationBtn.textContent = "Notifications Allowed";
         }
@@ -3596,7 +3515,7 @@
        
     // Ask for permission when the 'Enable notifications' button is clicked
     function requestDesktopNotificationPermission() {
-        if (!canSupportDesktopNotifications()) {
+        if (!canSupportDesktopNotifications) {
             return;
         }
         Notification.requestPermission()
@@ -3609,19 +3528,10 @@
     }
 
     // Wire up notification permission functionality to 'Enable notifications' button
-    if (notificationBtn) {
-        notificationBtn.addEventListener("click", requestDesktopNotificationPermission);
-    }
+    notificationBtn.addEventListener("click", requestDesktopNotificationPermission);
 
     function showDesktopNotification(message) {
-        if (!message) {
-        return;
-      }
-
-      showStackedNotification(message);
-      startFastQAttention();
-
-      if (!canSupportDesktopNotifications()) {
+        if (!message || !canSupportDesktopNotifications()) {
         return;
       }
         
@@ -3630,7 +3540,6 @@
           var notification = new Notification("FastQ Message", {
                 body: message,
                 requireInteraction: true,
-                tag: "fastq-latest-alert",
                 navigate: "/fastQ/Provider/Today"
           });
 
@@ -3643,6 +3552,8 @@
           console.warn("Desktop notification could not be shown.", error);
         }
       }
+
+      startFastQAttention();
 
       if (Notification.permission === "granted") {
         displayNotification();
