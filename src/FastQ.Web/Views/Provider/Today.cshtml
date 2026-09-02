@@ -3043,7 +3043,8 @@
           return;
         }
         if (targetKind === "A" && !targetTime) {
-          showModalFeedback("serviceRouteModal", "Target time is required for appointment transfer.", true);
+          showModalFeedback("serviceRouteModal", "Please select a target time before transferring the appointment.", true);
+          if (targetTimeInput) targetTimeInput.focus();
           return;
         }
 

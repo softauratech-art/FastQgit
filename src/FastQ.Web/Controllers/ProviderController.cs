@@ -490,6 +490,10 @@ namespace FastQ.Web.Controllers
             if (normalizedTarget != "A" && normalizedTarget != "W")
                 return Json(new { ok = false, error = "targetKind must be A or W" });
 
+            if (normalizedTarget == "A" && !string.IsNullOrWhiteSpace(targetDate)
+                && targetDate.Trim().IndexOf(' ') < 0)
+                return Json(new { ok = false, error = "Please select a target time before transferring the appointment." });
+
             long parsedTargetServiceId;
             long? targetService = long.TryParse(targetServiceId, out parsedTargetServiceId) ? parsedTargetServiceId : (long?)null;
 
