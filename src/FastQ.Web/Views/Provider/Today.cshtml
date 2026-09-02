@@ -3017,7 +3017,10 @@
           }
         }
         var targetTime = targetTimeInput ? targetTimeInput.value : "";
-        var targetSlotEndTime = targetDateInput ? targetTimeInput.options[targetTimeInput.selectedIndex].dataset.slotend : "";
+        var selectedTargetTimeOption = targetTimeInput && targetTimeInput.selectedIndex >= 0
+          ? targetTimeInput.options[targetTimeInput.selectedIndex]
+          : null;
+        var targetSlotEndTime = selectedTargetTimeOption ? (selectedTargetTimeOption.dataset.slotend || "") : "";
         var refValue = refValueInput ? refValueInput.value : "";
           //var notes = appendNotes(originalNotes, notesInput ? notesInput.value : "");
         var notes = notesInput ? notesInput.value : "";
