@@ -467,47 +467,36 @@ namespace FastQ.Web.Services
                 {
                     httpClient.Timeout = TimeSpan.FromSeconds(30);
                     httpClient.DefaultRequestHeaders.Add("FTApiKeyPolymorphic", apiKey);
-                    var requestUrl = apiBaseUrl.TrimEnd('/') + "/" + Uri.EscapeDataString(normalizedPermit);
+                    var requestUrl = apiBaseUrl.TrimEnd('/') + "/" + Uri.EscapeDataString(normalizedPermit) + "/info";
                     var response = httpClient.GetAsync(requestUrl).GetAwaiter().GetResult();
                     if (!response.IsSuccessStatusCode)
-                        return Result<long>.Fail("Permit number is invalid.");
+                        return Result<long>.Fail("Permit number was not found.");
 
                     var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                    if (string.IsNullOrWhiteSpace(body))
-                        return Result<long>.Fail("The permit record did not include a FolderRSN.");
+                    var rows = JArray.Parse(body);
+                    var folderRsns = rows
+                        .OfType<JObject>()
+                        .Select(row => row.GetValue("Folderrsn", StringComparison.OrdinalIgnoreCase))
+                        .Where(value => value != null)
+                        .Select(value =>
+                        {
+                            long parsed;
+                            return long.TryParse(value.ToString(), out parsed) ? parsed : 0;
+                        })
+                        .Where(value => value > 0)
+                        .Distinct()
+                        .ToList();
 
-                    var token = JToken.Parse(body);
-                    var folderToken = FindJsonPropertyValue(token, "FolderRSN");
-                    long folderRsn;
-                    if (folderToken == null || !long.TryParse(folderToken.ToString(), out folderRsn) || folderRsn <= 0)
+                    if (folderRsns.Count == 0)
                         return Result<long>.Fail("The permit record did not include a valid FolderRSN.");
 
-                    return Result<long>.Success(folderRsn);
+                    return Result<long>.Success(folderRsns[0]);
                 }
             }
             catch (Exception)
             {
                 return Result<long>.Fail("Unable to open the permit record.");
             }
-        }
-
-        private static JToken FindJsonPropertyValue(JToken token, string propertyName)
-        {
-            if (token == null)
-                return null;
-
-            var property = token as JProperty;
-            if (property != null && string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
-                return property.Value;
-
-            foreach (var child in token.Children())
-            {
-                var value = FindJsonPropertyValue(child, propertyName);
-                if (value != null)
-                    return value;
-            }
-
-            return null;
         }
 
         public Result ValidateReference(string referenceType, string enterValue, string streetNumber, string streetName, string streetType)

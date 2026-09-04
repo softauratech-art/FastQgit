@@ -246,7 +246,7 @@
                                     @if (string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase) && row.FolderRsn.HasValue && !string.IsNullOrWhiteSpace(amandaPermitProxyUrl))
                                     {
                                         var permitLink = "javascript:GoToAmanda(" + row.FolderRsn.Value.ToString(CultureInfo.InvariantCulture) + "," + JsonConvert.SerializeObject(amandaPermitProxyUrl) + ",\"DispPerm\");";
-                                        <a class="expandable-text" title="@row.RefValue" href="@permitLink">@row.RefValue</a>
+                                        <a class="expandable-text permit-reference-link" title="@row.RefValue" href="@permitLink">@row.RefValue</a>
                                     }
                                     else
                                     {

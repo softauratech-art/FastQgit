@@ -65,6 +65,11 @@
     cursor: pointer;
 }
 
+.permit-reference-link {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
     .expandable-text:hover,
     .expandable-text:focus-visible {
         text-decoration: underline;
