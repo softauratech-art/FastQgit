@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Configuration;
 using System.Web.Mvc;
 using System.Threading.Tasks;
 
@@ -445,6 +446,21 @@ namespace FastQ.Web.Controllers
                     error = res.Ok ? null : res.Error
                 },
                 JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public ActionResult OpenPermit(string permitNumber)
+        {
+            var permit = _customerService.ResolvePermitFolderRsn(permitNumber);
+            if (!permit.Ok)
+                return new HttpStatusCodeResult(404, permit.Error);
+
+            var proxyUrl = ConfigurationManager.AppSettings["AmandaPermitProxyUrl"];
+            if (string.IsNullOrWhiteSpace(proxyUrl))
+                return new HttpStatusCodeResult(500, "Amanda permit link is not configured.");
+
+            var separator = proxyUrl.Contains("?") ? "&" : "?";
+            return Redirect(proxyUrl + separator + "RSN=" + permit.Value.ToString(CultureInfo.InvariantCulture) + "&Func=DispPerm");
         }
 
         [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]

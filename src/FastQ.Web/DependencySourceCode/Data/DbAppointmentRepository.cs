@@ -377,6 +377,7 @@ namespace FastQ.Data.Db
                             CustomerEmail = ReadField(reader, "CUST_EMAIL"),
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
                             ContactType = ReadField(reader, "CONTACTTYPE"),
+                            RefCriteria = ReadField(reader, "REF_CRITERIA"),
                             RefValue = ReadField(reader, "REF_VALUE"),
                             LanguagePreference = ReadField(reader, "LANGUAGE_PREF"),
                             MeetingUrl = ReadMeetingUrl(reader),

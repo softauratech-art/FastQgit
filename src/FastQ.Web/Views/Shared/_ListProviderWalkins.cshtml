@@ -80,7 +80,16 @@
 			            <td><button type="button" class="expandable-text" title="@row.ServiceType" aria-expanded="false">@row.ServiceType</button></td>
 			            <td>@row.CustomerName</td>
 			            <td nowrap>@rowPhoneDisplay</td>
-			            <td><button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button></td>
+			            <td>
+                            @if (string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.RefValue))
+                            {
+                                <a class="expandable-text" title="@row.RefValue" href="@Url.Action("OpenPermit", "Provider", new { permitNumber = row.RefValue })" target="wLDMSExtraElementIntegration" rel="noreferrer noopener">@row.RefValue</a>
+                            }
+                            else
+                            {
+                                <button type="button" class="expandable-text" title="@row.RefValue" aria-expanded="false">@row.RefValue</button>
+                            }
+                        </td>
 			            <td>@row.LanguagePreference</td>
 			            <td class="@statusClass no-bg" data-provider-status-cell="true">@row.StatusText</td>
 			            <td>@row.ContactMethod</td>
