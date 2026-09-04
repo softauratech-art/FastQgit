@@ -80,13 +80,39 @@ namespace FastQ.Web.Controllers
                 Appointments = appointments.ToList()
             };
 
+            PopulatePermitFolderRsns(model.Walkins.Concat(model.Appointments));
+
             ViewBag.ProviderId = userId ?? string.Empty;
             ViewBag.StartDate = rangeStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             ViewBag.EndDate = rangeEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             ViewBag.ShowWalkins = showWalkins;
             ViewBag.ShowAppointments = showAppointments;
             ViewBag.ServiceAccess = _auth.GetServicePageAccess();
+            ViewBag.AmandaPermitProxyUrl = ConfigurationManager.AppSettings["AmandaPermitProxyUrl"] ?? string.Empty;
             return View("Today", model);
+        }
+
+        private void PopulatePermitFolderRsns(IEnumerable<ProviderAppointmentRow> rows)
+        {
+            var permitRows = rows
+                .Where(row => string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase)
+                    && !string.IsNullOrWhiteSpace(row.RefValue))
+                .ToList();
+            var resolved = new Dictionary<string, long?>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in permitRows)
+            {
+                var permitNumber = row.RefValue.Trim();
+                long? folderRsn;
+                if (!resolved.TryGetValue(permitNumber, out folderRsn))
+                {
+                    var result = _customerService.ResolvePermitFolderRsn(permitNumber);
+                    folderRsn = result.Ok ? (long?)result.Value : null;
+                    resolved[permitNumber] = folderRsn;
+                }
+
+                row.FolderRsn = folderRsn;
+            }
         }
 
         private static DateTime ParseDateOrDefault(string input, DateTime fallback)
@@ -446,21 +472,6 @@ namespace FastQ.Web.Controllers
                     error = res.Ok ? null : res.Error
                 },
                 JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        public ActionResult OpenPermit(string permitNumber)
-        {
-            var permit = _customerService.ResolvePermitFolderRsn(permitNumber);
-            if (!permit.Ok)
-                return new HttpStatusCodeResult(404, permit.Error);
-
-            var proxyUrl = ConfigurationManager.AppSettings["AmandaPermitProxyUrl"];
-            if (string.IsNullOrWhiteSpace(proxyUrl))
-                return new HttpStatusCodeResult(500, "Amanda permit link is not configured.");
-
-            var separator = proxyUrl.Contains("?") ? "&" : "?";
-            return Redirect(proxyUrl + separator + "RSN=" + permit.Value.ToString(CultureInfo.InvariantCulture) + "&Func=DispPerm");
         }
 
         [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]

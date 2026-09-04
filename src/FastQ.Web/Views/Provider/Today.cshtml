@@ -49,6 +49,7 @@
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
     var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+    var amandaPermitProxyUrl = ((ViewBag.AmandaPermitProxyUrl as string) ?? string.Empty).Trim();
     Func<object, string> getStampUser = item =>
     {
         if (item == null) return string.Empty;
@@ -242,9 +243,10 @@
                                 <td>@row.CustomerName</td>
                                 <td nowrap>@rowPhoneDisplay</td>
                                 <td>
-                                    @if (string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.RefValue))
+                                    @if (string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase) && row.FolderRsn.HasValue && !string.IsNullOrWhiteSpace(amandaPermitProxyUrl))
                                     {
-                                        <a class="expandable-text" title="@row.RefValue" href="@Url.Action("OpenPermit", "Provider", new { permitNumber = row.RefValue })" target="wLDMSExtraElementIntegration" rel="noreferrer noopener">@row.RefValue</a>
+                                        var permitLink = "javascript:GoToAmanda(" + row.FolderRsn.Value.ToString(CultureInfo.InvariantCulture) + "," + JsonConvert.SerializeObject(amandaPermitProxyUrl) + ",\"DispPerm\");";
+                                        <a class="expandable-text" title="@row.RefValue" href="@permitLink">@row.RefValue</a>
                                     }
                                     else
                                     {
@@ -345,6 +347,14 @@
 @section Scripts {
     <script src="@Url.Content("~/Scripts/provider-common.js?v=1.1.20260818")"></script>
     <script>
+  function GoToAmanda(iRSN, sURL, vFunc) {
+    var openAmandaHome = window.open('', 'wLDMSExtraElementIntegration');
+    var openProxyPage = window.open(sURL + "?RSN=" + iRSN + "&Func=" + vFunc, "wLDMSExtraElementIntegration", "noreferrer,noopener");
+    if (openProxyPage) {
+      openProxyPage.focus();
+    }
+  }
+
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
     var addAppointmentUrl = "@Url.Action("AddAppointment", "Provider")";

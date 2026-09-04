@@ -10,6 +10,7 @@
 
     var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
     var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
+    var amandaPermitProxyUrl = ((ViewBag.AmandaPermitProxyUrl as string) ?? string.Empty).Trim();
     var defaultDate = (ViewBag.StartDate as string) ?? DateTime.Now.ToString("yyyy-MM-dd");
     var endDate = (ViewBag.EndDate as string) ?? defaultDate;
     DateTime parsedStart;
@@ -81,9 +82,10 @@
 			            <td>@row.CustomerName</td>
 			            <td nowrap>@rowPhoneDisplay</td>
 			            <td>
-                            @if (string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(row.RefValue))
+                            @if (string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase) && row.FolderRsn.HasValue && !string.IsNullOrWhiteSpace(amandaPermitProxyUrl))
                             {
-                                <a class="expandable-text" title="@row.RefValue" href="@Url.Action("OpenPermit", "Provider", new { permitNumber = row.RefValue })" target="wLDMSExtraElementIntegration" rel="noreferrer noopener">@row.RefValue</a>
+                                var permitLink = "javascript:GoToAmanda(" + row.FolderRsn.Value.ToString(CultureInfo.InvariantCulture) + "," + JsonConvert.SerializeObject(amandaPermitProxyUrl) + ",\"DispPerm\");";
+                                <a class="expandable-text" title="@row.RefValue" href="@permitLink">@row.RefValue</a>
                             }
                             else
                             {
