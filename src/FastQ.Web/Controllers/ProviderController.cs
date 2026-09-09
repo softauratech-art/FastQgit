@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Configuration;
 using System.Web.Mvc;
 using System.Threading.Tasks;
 
@@ -80,39 +79,13 @@ namespace FastQ.Web.Controllers
                 Appointments = appointments.ToList()
             };
 
-            PopulatePermitFolderRsns(model.Walkins.Concat(model.Appointments));
-
             ViewBag.ProviderId = userId ?? string.Empty;
             ViewBag.StartDate = rangeStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             ViewBag.EndDate = rangeEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             ViewBag.ShowWalkins = showWalkins;
             ViewBag.ShowAppointments = showAppointments;
             ViewBag.ServiceAccess = _auth.GetServicePageAccess();
-            ViewBag.AmandaPermitProxyUrl = ConfigurationManager.AppSettings["AmandaPermitProxyUrl"] ?? string.Empty;
             return View("Today", model);
-        }
-
-        private void PopulatePermitFolderRsns(IEnumerable<ProviderAppointmentRow> rows)
-        {
-            var permitRows = rows
-                .Where(row => string.Equals(row.RefCriteria, "P", StringComparison.OrdinalIgnoreCase)
-                    && !string.IsNullOrWhiteSpace(row.RefValue))
-                .ToList();
-            var resolved = new Dictionary<string, long?>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var row in permitRows)
-            {
-                var permitNumber = row.RefValue.Trim();
-                long? folderRsn;
-                if (!resolved.TryGetValue(permitNumber, out folderRsn))
-                {
-                    var result = _customerService.ResolvePermitFolderRsn(permitNumber);
-                    folderRsn = result.Ok ? (long?)result.Value : null;
-                    resolved[permitNumber] = folderRsn;
-                }
-
-                row.FolderRsn = folderRsn;
-            }
         }
 
         private static DateTime ParseDateOrDefault(string input, DateTime fallback)

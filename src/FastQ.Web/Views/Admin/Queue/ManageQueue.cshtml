@@ -525,7 +525,7 @@
                 }
 
                 const duration = convertToMinutes(document.getElementById('Duration').value);
-                const timediff = (date2 - date1) / (1000 * 60 );
+                const timediff = (date2 - date1) / (1000 * 60);
                 if (duration > timediff)
                     frmerrors += "<br/>Open/Close times are not valid for selected duration.";
 
@@ -570,20 +570,27 @@
                 var form = this;
                 var table = $('#QAccessdata').DataTable();
 
-                // Get data from all pages as an array
-                var params = table.$('input').serializeArray();
+                // Clear any previously appended dynamic hidden inputs from a past submit attempt
+                $(form).find('.dt-hidden-input').remove();
 
-                // Iterate through the serialized data
-                $.each(params, function () {
-                    // If the specific input is NOT currently in the DOM (hidden by pagination/filter)
-                    if (!$.contains(document, form[this.name])) {
-                        // Append it as a hidden field so the browser "sees" it during submit
-                        $(form).append(
-                            $('<input>')
-                                .attr('type', 'hidden')
-                                .attr('name', this.name)
-                                .val(this.value)
-                        );
+                // Query ALL checkboxes across all pages and filter states
+                table.$('input[type="checkbox"]').each(function () {
+                    // Skip the "Select All" header checkboxes if they happen to match
+                    if (this.id.includes('checkall')) return;
+
+                    // Check if the current checkbox element is physically missing from the visible DOM
+                    if (!$.contains(document, this)) {
+                        //Submit only CHECKED values (Standard HTML behavior)
+                        if (this.checked) {
+                            // Append it as a hidden field so the browser "sees" it during submit
+                            $(form).append(
+                                $('<input>')
+                                    .attr('type', 'hidden')
+                                    .attr('class', 'dt-hidden-input')
+                                    .attr('name', this.name)
+                                    .val(this.value)
+                            );
+                        }
                     }
                 });
             });

@@ -674,10 +674,6 @@
         return;
       }
 
-      if (toggle.tagName && toggle.tagName.toLowerCase() === "a" && toggle.getAttribute("href")) {
-        return;
-      }
-
       event.preventDefault();
       event.stopPropagation();
 

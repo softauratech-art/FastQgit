@@ -19,9 +19,7 @@ namespace FastQ.Web.Models
         public AppointmentStatus Status { get; set; }
         public string ContactMethod { get; set; }
         public string ContactTypeCode { get; set; }
-        public string RefCriteria { get; set; }
         public string RefValue { get; set; }
-        public long? FolderRsn { get; set; }
         public string LanguagePreference { get; set; }
         public string MeetingUrl { get; set; }
         public string MeetingUrlHost { get; set; }

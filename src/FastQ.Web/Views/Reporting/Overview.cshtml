@@ -158,8 +158,10 @@
                 FastQReport.renderBookedTrend(d.DailyTrend || []);
                 FastQReport.renderScheduledTrend(d.DailyTrend || []);
 
+                //Reset Queue-filter-dropdown to list from the current dataset
                 var queueSelect = document.getElementById("reportQueue");
-                if (queueSelect && queueSelect.options.length === 0) {
+                if (queueSelect) {
+                    queueSelect.replaceChildren(); 
                     queueSelect.appendChild(new Option("All queues", ""));
                     (d.Queues || []).forEach(function (q) {
                         queueSelect.appendChild(new Option(q.QueueName, q.QueueId));
