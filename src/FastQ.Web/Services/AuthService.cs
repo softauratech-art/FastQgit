@@ -215,7 +215,7 @@ namespace FastQ.Web.Services
         public bool CanAddEntries(long queueId)
         {
             var access = GetServicePageAccess();
-            return HasQueueActionAccess(access, queueId);
+            return access.CanAddEntries;
         }
 
         public User GetCurrentUser()
