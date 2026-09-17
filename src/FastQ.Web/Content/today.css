@@ -6,10 +6,6 @@
     cursor: pointer;
 }
 
-    .accordion-toggle.locked {
-        opacity: 0.45;
-    }
-
 .row-actions {
     display: none;
 }
@@ -17,14 +13,6 @@
     .row-actions.is-open {
         display: table-row;
     }
-
-    .row-actions.locked {
-        opacity: 0.45;
-    }
-
-        .row-actions.locked .action-bar {
-            pointer-events: none;
-        }
 
     .row-actions td {
         padding: 0 8px 12px;

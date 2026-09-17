@@ -48,7 +48,6 @@
     var showWalkins = (ViewBag.ShowWalkins as bool?) ?? true;
     var showAppointments = (ViewBag.ShowAppointments as bool?) ?? true;
     var serviceAccess = ViewBag.ServiceAccess as ServicePageAccess ?? new ServicePageAccess();
-    var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
     Func<object, string> getStampUser = item =>
     {
         if (item == null) return string.Empty;
@@ -223,10 +222,9 @@
                             var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
                             var rowStampUser = getStampUser(row);
                             var statusClass = (row.Status == AppointmentStatus.Scheduled && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-10)) 
-                                           || (row.Status == AppointmentStatus.Arrived && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-5) ) ? "is-waiting-overtime" : row.Status == AppointmentStatus.Cancelled ? "is-canceled" : row.Status == AppointmentStatus.InService && string.Equals(row.StampUser, currentProviderId, StringComparison.OrdinalIgnoreCase) ? "is-in-progress" : string.Empty; ;
-                            var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
+                                           || (row.Status == AppointmentStatus.Arrived && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-5) ) ? "is-waiting-overtime" : row.Status == AppointmentStatus.Cancelled ? "is-canceled" : row.Status == AppointmentStatus.InService ? "is-in-progress" : string.Empty; ;
                             var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
-                            <tr class="accordion-toggle @(isLocked ? "locked" : null) @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
+                            <tr class="accordion-toggle @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="A" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
                                 <td nowrap>
                                     @if (endDateValue.Equals(startDateValue))
                                     {
@@ -254,7 +252,7 @@
                                 </td>
                                 <td class="text-center">&darr;</td>
                             </tr>
-                            <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId"
+                            <tr class="row-actions" id="@rowId"
                                 data-appointment-id="@row.AppointmentId"
                                 data-src-type="A"
                                 data-queue-id="@row.QueueId"
@@ -2157,28 +2155,6 @@
       });
     }
 
-    function setAppointmentLocked(appointmentId, locked) {
-      var affectedRows = 0;
-      document.querySelectorAll(
-        'tr.accordion-toggle[data-appointment-id="' + appointmentId + '"],'
-        + 'tr.row-actions[data-appointment-id="' + appointmentId + '"]'
-      ).forEach(function (el) {
-        affectedRows += 1;
-        el.classList.toggle("locked", !!locked);
-      });
-
-      providerCommon.refreshProviderActionButtonStates();
-      todayDebugLog("setAppointmentLocked", {
-        appointmentId: appointmentId,
-        locked: !!locked,
-        affectedRows: affectedRows
-      });
-    }
-
-    function lockAppointment(appointmentId) {
-      setAppointmentLocked(appointmentId, true);
-    }
-
     function getStatusTextForDisplay(normalizedStatus) {
       if (normalizedStatus === "arrived") return "ARRIVED";
       if (normalizedStatus === "inservice") return "IN PROGRESS";
@@ -2202,6 +2178,7 @@
       var normalized = normalizeStatus(status);
       var previousStatus = row.getAttribute("data-status") || "";
       row.setAttribute("data-status", status || "");
+      row.classList.toggle("is-in-progress", normalized === "inservice");
       var statusCell = row.querySelector('[data-provider-status-cell="true"]') || (row.children.length > 7 ? row.children[7] : null);
       if (statusCell) {
         statusCell.textContent = getStatusTextForDisplay(normalized);
@@ -2432,10 +2409,6 @@
         document.querySelectorAll(".row-actions.is-open"),
         function (el) { return el.id; }
       );
-      var lockedIds = Array.prototype.map.call(
-        document.querySelectorAll(".accordion-toggle.locked"),
-        function (el) { return el.getAttribute("data-appointment-id") || ""; }
-      ).filter(function (id) { return !!id; });
 
       fetch(window.location.pathname + window.location.search, {
         method: "GET",
@@ -2472,9 +2445,6 @@
             if (detail) {
               detail.classList.add("is-open");
             }
-          });
-          lockedIds.forEach(function (id) {
-            lockAppointment(id);
           });
 
           document.querySelectorAll(".table-filters").forEach(function (container) {
@@ -2680,11 +2650,6 @@
         hasRow: hasRow
       });
       applyLiveStatus(appointmentId, status);
-      if (normalized === "inservice") {
-        setAppointmentLocked(appointmentId, !isSelf);
-      } else if (normalized === "completed" || normalized === "cancelled" || normalized === "transferredout" || normalized === "scheduled" || normalized === "arrived") {
-        setAppointmentLocked(appointmentId, false);
-      }
       document.querySelectorAll(".table-filters").forEach(function (container) {
         applyTableFilters(container);
       });

@@ -335,14 +335,6 @@
     background: #f8fafc;
 }
 
-    .agenda-item.locked {
-        opacity: 0.45;
-    }
-
-        .agenda-item.locked .agenda-actions {
-            pointer-events: none;
-        }
-
 .agenda-time {
     font-size: 12px;
     font-weight: 700;

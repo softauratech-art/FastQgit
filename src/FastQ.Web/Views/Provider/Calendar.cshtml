@@ -18,7 +18,6 @@
     var currentYear = Model.DisplayMonth.Year;
     var yearOptions = Enumerable.Range(currentYear - 2, 6).ToList();
     var serviceAccess = ViewBag.ServiceAccess as FastQ.Web.Models.ServicePageAccess ?? new FastQ.Web.Models.ServicePageAccess();
-    var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
     //var agendaQueueOptions = Model.MonthAppointments
     //    .Select(a => a.QueueName)
     //    .Where(q => !string.IsNullOrWhiteSpace(q))
@@ -161,13 +160,12 @@
                     <div class="agenda-day-group @(groupIsSelected ? "is-selected" : "is-dimmed")" data-agenda-day="@group.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">
                         @foreach (var item in group)
                         {
-                            var isLocked = item.Status == FastQ.Data.Entities.AppointmentStatus.InService && !string.Equals(item.StampUser ?? string.Empty, currentProviderId, System.StringComparison.OrdinalIgnoreCase);
                             var entryKindClass = string.Equals(item.SrcType, "W", StringComparison.OrdinalIgnoreCase) ? "is-walkin" : "is-appointment";
                             var itemPhoneDisplay = Utilities.FormatPhoneForDisplay(item.Phone);
                             var statusClass = item.Status == AppointmentStatus.Cancelled ? "is-canceled" :
                                 item.Status == AppointmentStatus.InService ? "is-in-progress" :
                                 item.Status == AppointmentStatus.Scheduled || item.Status == AppointmentStatus.Arrived ? "is-scheduled" : string.Empty;
-                            <div class="agenda-item @(isLocked ? "locked" : null)"
+                            <div class="agenda-item"
                                  data-appointment-id="@item.AppointmentId"
                                  data-queue-id="@item.QueueId"
                                  data-service-id="@item.ServiceId"

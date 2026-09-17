@@ -9,7 +9,6 @@
 @{
 
     var walkinRows = Model.Walkins ?? new List<ProviderAppointmentRow>();
-    var currentProviderId = ((ViewBag.ProviderId as string) ?? string.Empty).Trim();
     var defaultDate = (ViewBag.StartDate as string) ?? DateTime.Now.ToString("yyyy-MM-dd");
     var endDate = (ViewBag.EndDate as string) ?? defaultDate;
     DateTime parsedStart;
@@ -61,11 +60,10 @@
                     var rowId = "walkin-" + row.AppointmentId.ToString(CultureInfo.InvariantCulture);
                     var rowStatus = row.Status.ToString();
                     var rowDate = row.ScheduledFor.ToString("yyyy-MM-dd");
-                    var statusClass = row.Status == AppointmentStatus.Arrived && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-5) ? "is-waiting-overtime" : row.Status == AppointmentStatus.Cancelled ? "is-canceled" : row.Status == AppointmentStatus.InService && string.Equals(row.StampUser, currentProviderId, StringComparison.OrdinalIgnoreCase) ? "is-in-progress" : string.Empty; ;
+                    var statusClass = row.Status == AppointmentStatus.Arrived && Convert.ToDateTime(@row.StartDateText + " " + row.StartTimeText) < DateTime.Now.AddMinutes(-5) ? "is-waiting-overtime" : row.Status == AppointmentStatus.Cancelled ? "is-canceled" : row.Status == AppointmentStatus.InService ? "is-in-progress" : string.Empty; ;
                     var rowStampUser = row.StampUser;
-                    var isLocked = row.Status == AppointmentStatus.InService && !string.Equals(rowStampUser, currentProviderId, StringComparison.OrdinalIgnoreCase);
                     var rowPhoneDisplay = Utilities.FormatPhoneForDisplay(row.Phone);
-			        <tr class="accordion-toggle @(isLocked ? "locked" : null) @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
+			        <tr class="accordion-toggle @statusClass" data-target="@rowId" data-appointment-id="@row.AppointmentId" data-src-type="W" data-status="@rowStatus" data-date="@rowDate" data-customer="@row.CustomerName" data-queue="@row.QueueName">
 			            <td nowrap>
 			                @if (endDateValue.Equals(startDateValue))
 			                {
@@ -93,7 +91,7 @@
 			            </td>            
 			            <td class="text-center">&darr;</td>            
 			        </tr>
-                    <tr class="row-actions @(isLocked ? "locked" : null)" id="@rowId"
+                    <tr class="row-actions" id="@rowId"
                         data-appointment-id="@row.AppointmentId"
                         data-src-type="W"
                         data-queue-id="@row.QueueId"

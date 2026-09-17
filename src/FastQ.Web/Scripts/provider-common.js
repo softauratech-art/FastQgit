@@ -20,10 +20,6 @@
     return dateHost ? (dateHost.getAttribute("data-date") || "") : "";
   }
 
-  function isInsideLockedActionRow(button) {
-    return !!closest(button, ".row-actions.locked");
-  }
-
   function log() {
     if (!window.console || !console.log) return;
     var args = Array.prototype.slice.call(arguments);
@@ -478,7 +474,7 @@
       var appointmentId = button.getAttribute("data-appointment-id") || "";
       var queueId = button.getAttribute("data-queue-id") || "";
       var status = appointmentId ? getStatus(appointmentId) : "";
-      button.disabled = isInsideLockedActionRow(button) || !canAction(status, action, queueId, getRowDate(button));
+      button.disabled = !canAction(status, action, queueId, getRowDate(button));
     });
   };
 
@@ -509,8 +505,7 @@
         appointmentId: appointmentId,
         action: action,
         srcType: srcType,
-        queueId: queueId,
-        locked: isInsideLockedActionRow(button)
+        queueId: queueId
       });
 
       if (!appointmentId || !action) {
@@ -521,14 +516,13 @@
       var getStatus = options.getStatusForAppointment || function () { return ""; };
       var canAction = options.canAction || function () { return true; };
       var status = getStatus(appointmentId);
-      if (isInsideLockedActionRow(button) || !canAction(status, action, queueId, getRowDate(button))) {
+      if (!canAction(status, action, queueId, getRowDate(button))) {
         log("provider action blocked", {
           appointmentId: appointmentId,
           action: action,
           status: status,
           queueId: queueId,
-          rowDate: getRowDate(button),
-          locked: isInsideLockedActionRow(button)
+          rowDate: getRowDate(button)
         });
         window.alert("Action not allowed for the current status.");
         return;
