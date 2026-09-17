@@ -212,7 +212,7 @@ namespace FastQ.Web.Services
                        || access.ProviderQueueIds.Contains(queueId));
         }
 
-        public bool CanAddEntries(long queueId)
+        public bool CanAddEntries()
         {
             var access = GetServicePageAccess();
             return access.CanAddEntries;

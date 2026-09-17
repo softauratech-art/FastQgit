@@ -318,7 +318,7 @@ namespace FastQ.Web.Controllers
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
-            if (!_auth.CanAddEntries(qId))
+            if (!_auth.CanAddEntries())
                 return Json(new { ok = false, error = "You do not have permission to add appointments." });
 
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
@@ -369,7 +369,7 @@ namespace FastQ.Web.Controllers
         {
             if (!long.TryParse(queueId, out var qId))
                 return Json(new { ok = false, error = "Queue is required." });
-            if (!_auth.CanAddEntries(qId))
+            if (!_auth.CanAddEntries())
                 return Json(new { ok = false, error = "You do not have permission to add walk-ins." });
 
             var resolvedCustomerName = string.IsNullOrWhiteSpace(customerName)
