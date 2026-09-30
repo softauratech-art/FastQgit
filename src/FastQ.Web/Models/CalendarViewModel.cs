@@ -40,6 +40,7 @@ namespace FastQ.Web.Models
         public string RefValue { get; set; }
         public string StampUser { get; set; }
         public string StampUserName { get; set; }
+        public string AssignedUser { get; set; }
         public string EntryKind { get; set; }
         public string Notes { get; set; }
         public string ServiceNotes { get; set; }

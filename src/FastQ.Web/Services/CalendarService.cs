@@ -141,7 +141,8 @@ namespace FastQ.Web.Services
                 SmsOptIn = row.SmsOptIn,
                 MeetingUrl = row.MeetingUrl,
                 MeetingUrlHost = row.MeetingUrlHost,
-                StampUserName = row.StampUserName
+                StampUserName = row.StampUserName,
+                AssignedUser = row.AssignedUser
                 
             };
         }

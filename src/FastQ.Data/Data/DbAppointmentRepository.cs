@@ -390,6 +390,7 @@ namespace FastQ.Data.Db
                             ServiceStampUser = ReadField(reader, "SERVICE_STAMPUSER"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             StampUserName = ReadField(reader, "STAMPUSERNAME"),
+                            AssignedUser = ReadField(reader, "ASSIGNEDUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase),
                             UpdatedOn = ReadDateTime(reader, "STAMPDATE"),
                             CreatedOn = ReadDateTime(reader, "CREATEDON"),

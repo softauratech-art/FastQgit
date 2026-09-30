@@ -211,7 +211,8 @@
                                                 data-language="@item.LanguagePreference"
                                                 data-status-text="@item.StatusText"
                                                 data-contact="@item.ContactMethod"
-                                                data-stamp-user="@item.StampUser"
+                                                data-assigned-user="@item.AssignedUser"
+                                            data-stamp-user="@item.StampUser"
                                                 data-meeting-url="@item.MeetingUrl"
                                                 data-meeting-url-host="@item.MeetingUrlHost"
                                                 data-notes="@item.Notes"
@@ -226,12 +227,13 @@
                                                 data-service-checkin-time="@item.ServiceCheckinTimeText"
                                                 data-service-start-time="@item.ServiceStartTimeText"
                                                 data-service-end-time="@item.ServiceEndTimeText"
-                                                data-service-stamp-user="@item.ServiceStampUser">
+                                                data-assigned-user="@item.AssignedUser"
+                                            data-service-stamp-user="@item.ServiceStampUser">
                                             Transaction Details
                                         </button>
                                         <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@item.AppointmentId" data-src-type="@item.SrcType" data-queue-id="@item.QueueId">Cancel</button>
                                     </div>
-                                    <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUserName) ? "-" : item.StampUserName)</div>
+                                    <div class="agenda-actions-meta">Stamp User: @(string.IsNullOrWhiteSpace(item.StampUserName) ? "-" : item.StampUserName) | Assigned User: @(string.IsNullOrWhiteSpace(item.AssignedUser) ? "-" : item.AssignedUser)</div>
                                 </div>
                             </div>
                         }
@@ -252,7 +254,7 @@
 @Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 @section Scripts {
-    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.1.20260818")"></script>
+    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.2.20260930")"></script>
     <script>
 
         function reloadByQueueFilter(qid) {

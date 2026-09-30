@@ -583,7 +583,8 @@
           transactionServiceStartTime: "service-start-time",
           transactionServiceEndTime: "service-end-time",
           transactionServiceNotes: "service-notes",
-          transactionStampUser: "service-stamp-user"
+          transactionStampUser: "service-stamp-user",
+          transactionAssignedUser: "assigned-user"
         };
         Object.keys(transactionFieldMap).forEach(function (id) {
           var field = document.getElementById(id);
@@ -621,7 +622,8 @@
         meetingContact: "contact",
         meetingLanguage: "language",
         meetingStatus: "status-text",
-        meetingStampUser: "stamp-user"
+        meetingStampUser: "stamp-user",
+        meetingAssignedUser: "assigned-user"
       };
 
       if (mid) {

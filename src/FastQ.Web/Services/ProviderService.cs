@@ -274,7 +274,8 @@ namespace FastQ.Web.Services
                     ServiceStampUser = string.IsNullOrWhiteSpace(r.ServiceStampUser) ? string.Empty : r.ServiceStampUser.Trim(),
                     SmsOptIn = r.SmsOptIn,
                     StampUser = r.StampUser,
-                    StampUserName = r.StampUserName
+                    StampUserName = r.StampUserName,
+                    AssignedUser = r.AssignedUser
                 };  
             }).OrderBy(r => r.ScheduledFor).ToList();
         }

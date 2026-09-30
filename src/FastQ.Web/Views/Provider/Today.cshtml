@@ -287,7 +287,8 @@
                                                     data-language="@row.LanguagePreference"
                                                     data-status-text="@row.StatusText"
                                                     data-contact="@row.ContactMethod"
-                                                    data-stamp-user="@rowStampUser"
+                                                    data-assigned-user="@row.AssignedUser"
+                                            data-stamp-user="@rowStampUser"
                                                     data-meeting-url="@row.MeetingUrl"
                                                     data-meeting-url-host="@row.MeetingUrlHost"
                                                     data-notes="@row.Notes"
@@ -302,12 +303,13 @@
                                                     data-service-checkin-time="@row.ServiceCheckinTimeText"
                                                     data-service-start-time="@row.ServiceStartTimeText"
                                                     data-service-end-time="@row.ServiceEndTimeText"
-                                                    data-service-stamp-user="@row.ServiceStampUser">
+                                                    data-assigned-user="@row.AssignedUser"
+                                            data-service-stamp-user="@row.ServiceStampUser">
                                                 Transaction Details
                                             </button>
                                             <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="A" data-queue-id="@row.QueueId">Cancel</button>
                                         </div>
-                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUserName) ? "-" : row.StampUserName)</div>
+                                        <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUserName) ? "-" : row.StampUserName) | Assigned User: @(string.IsNullOrWhiteSpace(row.AssignedUser) ? "-" : row.AssignedUser)</div>
                                     </div>
                                 </td>
                             </tr>
@@ -332,7 +334,7 @@
 @Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 @section Scripts {
-    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.1.20260818")"></script>
+    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.2.20260930")"></script>
     <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";

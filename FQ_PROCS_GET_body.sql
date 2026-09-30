@@ -145,6 +145,96 @@ BEGIN
             WHERE src_type = 'W'
         )
         WHERE rn = 1
+    ),
+    -- All 20 QueueProcessMap rows from FastQ.xlsx, first tab.
+    -- NONE disables lookup; ANY accepts all folder types.
+    -- Group descriptions are retained, but need LDMS type codes to resolve
+    -- multiple folders. Missing process codes cannot resolve multiple processes.
+    QUEUE_PROCESS_MAP (queue_id, permit_type, folder_match_kind, foldertypes, processcode) AS
+    (
+        SELECT 10321, 'any', 'ANY', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10283, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10420, 'none', 'NONE', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10333, 'RES Permit', 'TYPES', 'RES', NULL FROM dual
+        UNION ALL
+        SELECT 10001, 'COM Permit', 'TYPES', 'COM', 50099 FROM dual
+        UNION ALL
+        SELECT 10003, 'RES Permit', 'TYPES', 'RES', 50101 FROM dual
+        UNION ALL
+        SELECT 10005, 'ROOF, ELEC, PLUM, GAS, SUN, MECH', 'TYPES', 'ROOF,ELEC,PLUM,GAS,SUN,MECH', NULL FROM dual
+        UNION ALL
+        SELECT 10007, 'CL folder type', 'TYPES', 'CL', NULL FROM dual
+        UNION ALL
+        SELECT 10009, 'COM Permit', 'TYPES', 'COM', NULL FROM dual
+        UNION ALL
+        SELECT 10013, 'CEL, CIL, DEMI, CVRC, PCA, PSA, SCA, TCA, ARIF, IFC, NPG, SCRC, TCRC', 'TYPES', 'CEL,CIL,DEMI,CVRC,PCA,PSA,SCA,TCA,ARIF,IFC,NPG,SCRC,TCRC', NULL FROM dual
+        UNION ALL
+        SELECT 10015, 'any', 'ANY', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10403, 'COM Permit', 'TYPES', 'COM', 50170 FROM dual
+        UNION ALL
+        SELECT 10361, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10405, 'SE, VA, ZM', 'TYPES', 'SE,VA,ZM', NULL FROM dual
+        UNION ALL
+        SELECT 10407, 'COM Permit', 'TYPES', 'COM', 50100 FROM dual
+        UNION ALL
+        SELECT 10409, 'ZP Addressing', 'TYPES', 'ZP', NULL FROM dual
+        UNION ALL
+        SELECT 10411, 'multiple cases under DRC group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10413, 'RES Permit', 'TYPES', 'RES', 50100 FROM dual
+        UNION ALL
+        SELECT 10415, 'BTR, USE', 'TYPES', 'BTR,USE', NULL FROM dual
+        UNION ALL
+        SELECT 10417, 'LS, ABA', 'TYPES', 'LS,ABA', NULL FROM dual
+    ),
+    FOLDER_CANDIDATES AS
+    (
+        SELECT f.folderrsn, f.foldertype,
+               TRIM(UPPER(f.referencefile)) permit_reference,
+               COUNT(*) OVER (
+                   PARTITION BY TRIM(UPPER(f.referencefile))
+               ) folder_count
+        FROM folder@LDMSDEV_LINK f
+        WHERE TRIM(f.referencefile) IS NOT NULL
+    ),
+    PROCESS_CANDIDATES AS
+    (
+        SELECT fp.folderrsn, fp.processcode, fp.assigneduser,
+               COUNT(*) OVER (PARTITION BY fp.folderrsn) process_count
+        FROM folderprocess@LDMSDEV_LINK fp
+    ),
+    REVIEW_USERS AS
+    (
+        SELECT queue_id, permit_reference,
+               LISTAGG(assigneduser, ', ') WITHIN GROUP (ORDER BY assigneduser) assigneduser
+        FROM
+        (
+            SELECT DISTINCT m.queue_id,
+                            f.permit_reference,
+                            TRIM(fp.assigneduser) assigneduser
+            FROM FOLDER_CANDIDATES f
+            INNER JOIN QUEUE_PROCESS_MAP m
+                -- Permit type disambiguates multiple folders for one permit.
+                ON m.folder_match_kind <> 'NONE'
+               AND (
+                    f.folder_count = 1
+                    OR m.folder_match_kind = 'ANY'
+                    OR (m.folder_match_kind = 'TYPES'
+                        AND INSTR(',' || m.foldertypes || ',',
+                                  ',' || TRIM(UPPER(f.foldertype)) || ',') > 0)
+               )
+            INNER JOIN PROCESS_CANDIDATES fp
+                ON fp.folderrsn = f.folderrsn
+                -- Process code disambiguates multiple processes in the folder.
+               AND (fp.process_count = 1 OR m.processcode = fp.processcode)
+            WHERE TRIM(fp.assigneduser) IS NOT NULL
+        )
+        GROUP BY queue_id, permit_reference
     )
     SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
             provider_flag,
@@ -152,6 +242,7 @@ BEGIN
             queueadmin_Flag, reporter_Flag,
             u.fname, u.lname,
             FQ_PROCS_GET.GET_USERNAME(a.stampuser) stampusername,
+            ru.assigneduser,
             a.*, c.sms_optin,
             st.service_notes,
             st.service_start_time,
@@ -170,6 +261,9 @@ BEGIN
             INNER JOIN FQ_USERS u ON u.user_id = p.user_id
             INNER JOIN CUSTOMERS c on c.customer_id = a.customer_id
             LEFT JOIN ST st ON st.src_id = a.walkin_id
+            LEFT JOIN REVIEW_USERS ru
+                ON ru.queue_id = a.queue_id
+               AND ru.permit_reference = TRIM(UPPER(a.ref_value))
         WHERE
                     LOWER(u.user_id) = Lower(p_userid)
             AND NVL(u.activeflag,'N') = 'Y'
@@ -244,6 +338,96 @@ BEGIN
             WHERE src_type = 'A'
         )
         WHERE rn = 1
+    ),
+    -- All 20 QueueProcessMap rows from FastQ.xlsx, first tab.
+    -- NONE disables lookup; ANY accepts all folder types.
+    -- Group descriptions are retained, but need LDMS type codes to resolve
+    -- multiple folders. Missing process codes cannot resolve multiple processes.
+    QUEUE_PROCESS_MAP (queue_id, permit_type, folder_match_kind, foldertypes, processcode) AS
+    (
+        SELECT 10321, 'any', 'ANY', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10283, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10420, 'none', 'NONE', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10333, 'RES Permit', 'TYPES', 'RES', NULL FROM dual
+        UNION ALL
+        SELECT 10001, 'COM Permit', 'TYPES', 'COM', 50099 FROM dual
+        UNION ALL
+        SELECT 10003, 'RES Permit', 'TYPES', 'RES', 50101 FROM dual
+        UNION ALL
+        SELECT 10005, 'ROOF, ELEC, PLUM, GAS, SUN, MECH', 'TYPES', 'ROOF,ELEC,PLUM,GAS,SUN,MECH', NULL FROM dual
+        UNION ALL
+        SELECT 10007, 'CL folder type', 'TYPES', 'CL', NULL FROM dual
+        UNION ALL
+        SELECT 10009, 'COM Permit', 'TYPES', 'COM', NULL FROM dual
+        UNION ALL
+        SELECT 10013, 'CEL, CIL, DEMI, CVRC, PCA, PSA, SCA, TCA, ARIF, IFC, NPG, SCRC, TCRC', 'TYPES', 'CEL,CIL,DEMI,CVRC,PCA,PSA,SCA,TCA,ARIF,IFC,NPG,SCRC,TCRC', NULL FROM dual
+        UNION ALL
+        SELECT 10015, 'any', 'ANY', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10403, 'COM Permit', 'TYPES', 'COM', 50170 FROM dual
+        UNION ALL
+        SELECT 10361, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10405, 'SE, VA, ZM', 'TYPES', 'SE,VA,ZM', NULL FROM dual
+        UNION ALL
+        SELECT 10407, 'COM Permit', 'TYPES', 'COM', 50100 FROM dual
+        UNION ALL
+        SELECT 10409, 'ZP Addressing', 'TYPES', 'ZP', NULL FROM dual
+        UNION ALL
+        SELECT 10411, 'multiple cases under DRC group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        UNION ALL
+        SELECT 10413, 'RES Permit', 'TYPES', 'RES', 50100 FROM dual
+        UNION ALL
+        SELECT 10415, 'BTR, USE', 'TYPES', 'BTR,USE', NULL FROM dual
+        UNION ALL
+        SELECT 10417, 'LS, ABA', 'TYPES', 'LS,ABA', NULL FROM dual
+    ),
+    FOLDER_CANDIDATES AS
+    (
+        SELECT f.folderrsn, f.foldertype,
+               TRIM(UPPER(f.referencefile)) permit_reference,
+               COUNT(*) OVER (
+                   PARTITION BY TRIM(UPPER(f.referencefile))
+               ) folder_count
+        FROM folder@LDMSDEV_LINK f
+        WHERE TRIM(f.referencefile) IS NOT NULL
+    ),
+    PROCESS_CANDIDATES AS
+    (
+        SELECT fp.folderrsn, fp.processcode, fp.assigneduser,
+               COUNT(*) OVER (PARTITION BY fp.folderrsn) process_count
+        FROM folderprocess@LDMSDEV_LINK fp
+    ),
+    REVIEW_USERS AS
+    (
+        SELECT queue_id, permit_reference,
+               LISTAGG(assigneduser, ', ') WITHIN GROUP (ORDER BY assigneduser) assigneduser
+        FROM
+        (
+            SELECT DISTINCT m.queue_id,
+                            f.permit_reference,
+                            TRIM(fp.assigneduser) assigneduser
+            FROM FOLDER_CANDIDATES f
+            INNER JOIN QUEUE_PROCESS_MAP m
+                -- Permit type disambiguates multiple folders for one permit.
+                ON m.folder_match_kind <> 'NONE'
+               AND (
+                    f.folder_count = 1
+                    OR m.folder_match_kind = 'ANY'
+                    OR (m.folder_match_kind = 'TYPES'
+                        AND INSTR(',' || m.foldertypes || ',',
+                                  ',' || TRIM(UPPER(f.foldertype)) || ',') > 0)
+               )
+            INNER JOIN PROCESS_CANDIDATES fp
+                ON fp.folderrsn = f.folderrsn
+                -- Process code disambiguates multiple processes in the folder.
+               AND (fp.process_count = 1 OR m.processcode = fp.processcode)
+            WHERE TRIM(fp.assigneduser) IS NOT NULL
+        )
+        GROUP BY queue_id, permit_reference
     )
     SELECT  p.queue_id, p.name, vs.service_id, vs.service_name,
             provider_flag,
@@ -251,6 +435,7 @@ BEGIN
             queueadmin_Flag, reporter_Flag,
             u.fname, u.lname,
             FQ_PROCS_GET.GET_USERNAME(a.stampuser) stampusername,
+            ru.assigneduser,
             a.*, c.sms_optin,
             st.service_notes,
             st.service_start_time,
@@ -269,6 +454,9 @@ BEGIN
             INNER JOIN FQ_USERS u ON u.user_id = p.user_id
             INNER JOIN Customers c on c.customer_id = a.customer_id
             LEFT JOIN ST st ON st.src_id = a.appointment_id
+            LEFT JOIN REVIEW_USERS ru
+                ON ru.queue_id = a.queue_id
+               AND ru.permit_reference = TRIM(UPPER(a.ref_value))
         WHERE
                     LOWER(u.user_id) = LOWER(p_userid)
             AND NVL(u.activeflag,'N') = 'Y'
