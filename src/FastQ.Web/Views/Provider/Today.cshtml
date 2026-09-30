@@ -334,7 +334,7 @@
 @Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 @section Scripts {
-    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.2.20260930")"></script>
+    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.3.20261001")"></script>
     <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
@@ -3318,6 +3318,10 @@
               return;
             }
             closeModal("addAppointmentModal");
+            if (res.canSendQueueEmail) {
+                FastQProviderCommon.showQueueAppointmentEmail(res.id);
+                openModal("queueAppointmentEmailModal");
+            }
             queueLiveSync();
             showGuiWarning(res && res.warning ? res.warning : "");
           });

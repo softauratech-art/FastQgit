@@ -836,6 +836,70 @@ namespace FastQ.Web.Services
             return string.IsNullOrWhiteSpace(enteredValue) ? null : enteredValue.Trim();
         }
 
+        public Result SendQueue10420Email(long appointmentId, long entityId)
+        {
+            try
+            {
+                var appointment = _appts.Get(appointmentId);
+                if (appointment == null || appointment.QueueId != 10420)
+                    return Result.Fail("Notification is available only for appointments in queue 10420.");
+                var queue = _queues.Get(appointment.QueueId);
+                if (queue == null || queue.EntityId != entityId)
+                    return Result.Fail("Appointment is not available in this entity.");
+                if (appointment.Status != AppointmentStatus.Scheduled)
+                    return Result.Fail("Only scheduled appointments can be sent.");
+
+                var recipient = ConfigurationManager.AppSettings["Queue10420NotificationEmail"];
+                var host = ConfigurationManager.AppSettings["AppointmentMailHost"];
+                var from = ConfigurationManager.AppSettings["AppointmentMailFrom"];
+                if (string.IsNullOrWhiteSpace(recipient))
+                    return Result.Fail("The notification recipient for queue 10420 has not been configured.");
+                if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
+                    return Result.Fail("Appointment email settings have not been configured.");
+
+                var customer = string.Join(" ", new[] { appointment.CustomerFirstName, appointment.CustomerLastName }
+                    .Where(v => !string.IsNullOrWhiteSpace(v)));
+                var location = ResolveInPersonLocation(appointment, queue);
+                var description = "Customer: " + customer + "\nReference: " + appointment.RefValue
+                    + "\nMeeting: " + appointment.MeetingUrl;
+                var calendar = AppointmentCalendar.Build(appointment.Id, appointment.ScheduledFor,
+                    appointment.EndTime, queue.Name + " appointment", description,
+                    string.IsNullOrWhiteSpace(appointment.MeetingUrl) ? location : appointment.MeetingUrl);
+
+                int port;
+                if (!int.TryParse(ConfigurationManager.AppSettings["AppointmentMailPort"], out port) || port <= 0)
+                    port = 25;
+                using (var message = new MailMessage())
+                {
+                    message.From = new MailAddress(from);
+                    message.To.Add(new MailAddress(recipient.Trim()));
+                    message.Subject = "New appointment - " + queue.Name;
+                    message.Body = "A new appointment has been created.\n\n" + description
+                        + "\nDate/time (Eastern): " + appointment.ScheduledFor.ToString("MMM dd, yyyy h:mm tt", CultureInfo.InvariantCulture)
+                        + "\n\nOpen the attached calendar file to add it to Outlook.";
+                    message.Attachments.Add(Attachment.CreateAttachmentFromString(calendar, "appointment.ics",
+                        Encoding.UTF8, "text/calendar"));
+                    using (var client = new SmtpClient(host, port))
+                    {
+                        bool ssl;
+                        if (bool.TryParse(ConfigurationManager.AppSettings["AppointmentMailEnableSsl"], out ssl))
+                            client.EnableSsl = ssl;
+                        var username = ConfigurationManager.AppSettings["AppointmentMailUsername"];
+                        if (!string.IsNullOrWhiteSpace(username))
+                            client.Credentials = new System.Net.NetworkCredential(username,
+                                ConfigurationManager.AppSettings["AppointmentMailPassword"] ?? string.Empty);
+                        client.Send(message);
+                    }
+                }
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                LogNotificationError("queue10420-email", appointmentId, ex.ToString());
+                return Result.Fail("The appointment was saved, but the notification could not be sent. Please try again.");
+            }
+        }
+
         private string SendAppointmentConfirmation(Appointment appointment, Queue queue, string customerName, long serviceId)
         {
             if (appointment == null)

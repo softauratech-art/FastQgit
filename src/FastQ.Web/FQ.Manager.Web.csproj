@@ -185,6 +185,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\Utilities.cs" />
+    <Compile Include="Helpers\AppointmentCalendar.cs" />
     <Compile Include="Hubs\QueueHub.cs" />
     <Compile Include="Models\CalendarViewModel.cs" />
     <Compile Include="Models\Admin\QueueVM.cs" />

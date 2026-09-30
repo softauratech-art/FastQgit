@@ -2,6 +2,38 @@
   "use strict";
 
   var common = window.FastQProviderCommon = window.FastQProviderCommon || {};
+  common.showQueueAppointmentEmail = function (appointmentId) {
+    var modal = document.getElementById("queueAppointmentEmailModal");
+    var button = document.getElementById("sendQueueAppointmentEmail");
+    var status = document.getElementById("queueAppointmentEmailStatus");
+    if (!modal || !button || !status) return;
+    button.disabled = false;
+    button.textContent = "Send Email";
+    status.textContent = "Appointment #" + appointmentId + " saved.";
+    button.onclick = function () {
+      if (button.disabled) return;
+      button.disabled = true;
+      status.textContent = "Sending email…";
+      var token = modal.querySelector('input[name="__RequestVerificationToken"]');
+      var body = "appointmentId=" + encodeURIComponent(appointmentId)
+        + "&__RequestVerificationToken=" + encodeURIComponent(token ? token.value : "");
+      fetch(button.getAttribute("data-url"), {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: body
+      }).then(function (response) {
+        if (!response.ok) throw new Error("Email request failed.");
+        return response.json();
+      }).then(function (result) {
+        if (!result.ok) throw new Error(result.error || "Could not send email.");
+        status.textContent = "Email sent with the Outlook calendar attachment.";
+        button.textContent = "Email Sent";
+      }).catch(function (error) {
+        status.textContent = error.message || "Could not send email. Please try again.";
+        button.disabled = false;
+      });
+    };
+  };
   var providerActionOptions = null;
   var providerActionClickBound = false;
   var meetingOptions = null;

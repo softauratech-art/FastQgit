@@ -361,7 +361,34 @@ namespace FastQ.Web.Controllers
             if (!res.Ok)
                 return Json(new { ok = false, error = res.Error });
 
-            return Json(new { ok = true, id = res.Value.Id, warning = res.Warning });
+            if (qId == 10420)
+                Session["Queue10420Email:" + res.Value.Id] = "pending";
+
+            return Json(new { ok = true, id = res.Value.Id, warning = res.Warning,
+                canSendQueueEmail = qId == 10420 });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult SendQueueAppointmentEmail(long appointmentId)
+        {
+            if (!_auth.CanAddEntries())
+                return Json(new { ok = false, error = "You do not have permission to send this notification." });
+
+            // Only a successful creation in this staff session grants this action.
+            var key = "Queue10420Email:" + appointmentId;
+            var state = Session[key] as string;
+            if (state == "sent")
+                return Json(new { ok = true });
+            if (state != "pending")
+                return Json(new { ok = false, error = "This appointment is not available for notification in this session." });
+
+            var result = _customerService.SendQueue10420Email(appointmentId, _auth.GetSessionEntityId());
+            if (!result.Ok)
+                return Json(new { ok = false, error = result.Error });
+
+            Session[key] = "sent";
+            return Json(new { ok = true });
         }
 
         [HttpPost]

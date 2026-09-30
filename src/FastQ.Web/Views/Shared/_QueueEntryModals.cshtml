@@ -226,3 +226,21 @@
         </div>
     </div>
 </div>
+
+<div id="queueAppointmentEmailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="queueAppointmentEmailTitle">
+    <div class="modal route-modal">
+        <div class="modal-header">
+            <h5 id="queueAppointmentEmailTitle">Appointment created</h5>
+            <button type="button" class="btn ghost" data-modal-close="queueAppointmentEmailModal">Close</button>
+        </div>
+        <div class="modal-body">
+            @Html.AntiForgeryToken()
+            <p>Send the appointment to the configured Business Resource Office recipient, with an Outlook calendar attachment.</p>
+            <p id="queueAppointmentEmailStatus" role="status" aria-live="polite"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn ghost" data-modal-close="queueAppointmentEmailModal">Done</button>
+            <button type="button" class="btn primary" id="sendQueueAppointmentEmail" data-url="@Url.Action("SendQueueAppointmentEmail", "Provider")">Send Email</button>
+        </div>
+    </div>
+</div>
