@@ -148,13 +148,13 @@ BEGIN
     ),
     -- All 20 QueueProcessMap rows from FastQ.xlsx, first tab.
     -- NONE disables lookup; ANY accepts all folder types.
-    -- Group descriptions are retained, but need LDMS type codes to resolve
-    -- multiple folders. Missing process codes cannot resolve multiple processes.
+    -- Structure Permitting (group 700) uses the supplied 19 folder types.
+    -- DRC still needs type codes. Missing process codes cannot resolve multiple processes.
     QUEUE_PROCESS_MAP (queue_id, permit_type, folder_match_kind, foldertypes, processcode) AS
     (
         SELECT 10321, 'any', 'ANY', NULL, NULL FROM dual
         UNION ALL
-        SELECT 10283, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        SELECT 10283, 'any permits under structure permitting group in LDMS', 'TYPES', 'COM,CS,CT,DEMO,ELEC,FENC,FIR,GAS,LV,MECH,PLUM,RES,ROOF,SIGN,SUN,SWD,SWP,TENT,USE', NULL FROM dual
         UNION ALL
         SELECT 10420, 'none', 'NONE', NULL, NULL FROM dual
         UNION ALL
@@ -176,7 +176,7 @@ BEGIN
         UNION ALL
         SELECT 10403, 'COM Permit', 'TYPES', 'COM', 50170 FROM dual
         UNION ALL
-        SELECT 10361, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        SELECT 10361, 'any permits under structure permitting group in LDMS', 'TYPES', 'COM,CS,CT,DEMO,ELEC,FENC,FIR,GAS,LV,MECH,PLUM,RES,ROOF,SIGN,SUN,SWD,SWP,TENT,USE', NULL FROM dual
         UNION ALL
         SELECT 10405, 'SE, VA, ZM', 'TYPES', 'SE,VA,ZM', NULL FROM dual
         UNION ALL
@@ -184,7 +184,7 @@ BEGIN
         UNION ALL
         SELECT 10409, 'ZP Addressing', 'TYPES', 'ZP', NULL FROM dual
         UNION ALL
-        SELECT 10411, 'multiple cases under DRC group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        SELECT 10411, 'multiple cases under DRC group in LDMS', 'TYPES', 'APF,CDR,DISC,DO,DP,DRCA,DVR,EXT,HHA,LUP,LUPA,PRI,PSP', NULL FROM dual
         UNION ALL
         SELECT 10413, 'RES Permit', 'TYPES', 'RES', 50100 FROM dual
         UNION ALL
@@ -341,13 +341,13 @@ BEGIN
     ),
     -- All 20 QueueProcessMap rows from FastQ.xlsx, first tab.
     -- NONE disables lookup; ANY accepts all folder types.
-    -- Group descriptions are retained, but need LDMS type codes to resolve
-    -- multiple folders. Missing process codes cannot resolve multiple processes.
+    -- Structure Permitting (group 700) uses the supplied 19 folder types.
+    -- DRC still needs type codes. Missing process codes cannot resolve multiple processes.
     QUEUE_PROCESS_MAP (queue_id, permit_type, folder_match_kind, foldertypes, processcode) AS
     (
         SELECT 10321, 'any', 'ANY', NULL, NULL FROM dual
         UNION ALL
-        SELECT 10283, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        SELECT 10283, 'any permits under structure permitting group in LDMS', 'TYPES', 'COM,CS,CT,DEMO,ELEC,FENC,FIR,GAS,LV,MECH,PLUM,RES,ROOF,SIGN,SUN,SWD,SWP,TENT,USE', NULL FROM dual
         UNION ALL
         SELECT 10420, 'none', 'NONE', NULL, NULL FROM dual
         UNION ALL
@@ -369,7 +369,7 @@ BEGIN
         UNION ALL
         SELECT 10403, 'COM Permit', 'TYPES', 'COM', 50170 FROM dual
         UNION ALL
-        SELECT 10361, 'any permits under structure permitting group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        SELECT 10361, 'any permits under structure permitting group in LDMS', 'TYPES', 'COM,CS,CT,DEMO,ELEC,FENC,FIR,GAS,LV,MECH,PLUM,RES,ROOF,SIGN,SUN,SWD,SWP,TENT,USE', NULL FROM dual
         UNION ALL
         SELECT 10405, 'SE, VA, ZM', 'TYPES', 'SE,VA,ZM', NULL FROM dual
         UNION ALL
@@ -377,7 +377,7 @@ BEGIN
         UNION ALL
         SELECT 10409, 'ZP Addressing', 'TYPES', 'ZP', NULL FROM dual
         UNION ALL
-        SELECT 10411, 'multiple cases under DRC group in LDMS', 'UNRESOLVED_GROUP', NULL, NULL FROM dual
+        SELECT 10411, 'multiple cases under DRC group in LDMS', 'TYPES', 'APF,CDR,DISC,DO,DP,DRCA,DVR,EXT,HHA,LUP,LUPA,PRI,PSP', NULL FROM dual
         UNION ALL
         SELECT 10413, 'RES Permit', 'TYPES', 'RES', 50100 FROM dual
         UNION ALL
