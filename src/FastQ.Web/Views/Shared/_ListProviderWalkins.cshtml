@@ -148,7 +148,7 @@
                                     </button>
                                     <button class="btn small ghost" type="button" data-provider-action="true" data-action="remove" data-appointment-id="@row.AppointmentId" data-src-type="W" data-queue-id="@row.QueueId">Cancel</button>
                                 </div>
-                                <div class="action-bar-meta">Stampuser: @(string.IsNullOrWhiteSpace(row.StampUserName) ? "-" : row.StampUserName)</div>
+                                <div class="action-bar-meta">Stamp User: @(string.IsNullOrWhiteSpace(row.StampUserName) ? "-" : row.StampUserName) | Reviewer: @(string.IsNullOrWhiteSpace(row.AssignedUser) ? "-" : row.AssignedUser)</div>
                             </div>
                         </td>
                     </tr>

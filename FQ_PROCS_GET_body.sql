@@ -1,8 +1,10 @@
 create or replace PACKAGE BODY FQ_PROCS_GET as
---*******************************************************
+--******************************************************************************
 -- 2025.12.31   PREDDY      Created package
---
---*******************************************************
+-- 2026.07.dd   ASARDAR     Added ServiceTransactions left join to:
+--                          GET_MYWALKINS and GET_MYAPPOINTMENTS
+-- 2026.07.03   PREDDY      GET_APPT_DETAILS - Updated to include Customer Info
+--******************************************************************************
 PROCEDURE GET_ENTITY (
     p_entityid         IN   NUMBER,
     p_cur              OUT  Ref_Cursor_Types.ref_cursor
@@ -10,7 +12,7 @@ PROCEDURE GET_ENTITY (
 AS
 BEGIN
  OPEN p_cur FOR
-    SELECT * FROM VALIDENTITIES        
+    SELECT * FROM VALIDENTITIES
     WHERE entity_id = p_entityid;
 END;
 
@@ -42,25 +44,25 @@ BEGIN
     FROM FQ_USERS
     WHERE lower(user_id) = lower(p_userid) AND
         NVL(ACTIVEFLAG,'N') = 'Y' and NVL(ADMINFLAG,'N') = 'Y';
-*/        
+*/
     SELECT count(user_id) INTO v_isadmin
     FROM USER_ENTITIES
     WHERE lower(user_id) = lower(p_userid) AND
         ENTITY_ID = NVL(p_entityid, ENTITY_ID) AND
-        NVL(ACTIVEFLAG,'N') = 'Y' and NVL(ADMINFLAG,'N') = 'Y';  
+        NVL(ACTIVEFLAG,'N') = 'Y' and NVL(ADMINFLAG,'N') = 'Y';
 
     IF v_isadmin = 0 THEN --NOT admin or IsInactive
-        OPEN p_cur FOR  
+        OPEN p_cur FOR
             SELECT * FROM VALIDQUEUES q
                 INNER JOIN USER_PERMISSIONS p ON p.queue_id = q.queue_id
-            WHERE  
+            WHERE
                 -- NVL(QUEUEADMIN_FLAG,'N') = 'Y' AND
                 -- NVL(ACTIVEFLAG, 'N') = 'Y' AND
                  lower(p.user_id) = lower(p_userid)
                 AND ENTITY_ID = NVL(p_entityid, ENTITY_ID)
             ORDER BY NAME;
     ELSE
-        OPEN p_cur FOR  
+        OPEN p_cur FOR
             SELECT * FROM VALIDQUEUES q
             WHERE --p.user_id = p_userid
                 --AND NVL(ACTIVEFLAG, 'N') = 'Y' AND
@@ -79,14 +81,14 @@ BEGIN
         SELECT Q_SERVICES, Q_SCHEDULES, Q_DETAILS, QUEUE_ID
         FROM VW_QUEUE_DETAILS_JSON
             WHERE queue_id = p_queueid;
-END;  
+END;
 
 PROCEDURE GET_MYWALKINS (
 -- For Internal Use ONLY - Get logged-in Staff's Queued Walkins
     p_entityid IN NUMBER,
     p_userid IN  VARCHAR2,
     p_range_startdate   IN  DATE,
-    p_range_enddate     IN  DATE,  
+    p_range_enddate     IN  DATE,
     p_cur  OUT Ref_Cursor_Types.ref_cursor
 )
 AS
@@ -114,7 +116,7 @@ BEGIN
                         ON p1.user_id = lower(p_userid)
                             AND q1.queue_id = p1.queue_id
                 WHERE   entity_id = p_entityid
-                    AND (    
+                    AND (
                            DECODE(v_isSuperAdmin, 1, 'Y', HOST_FLAG)  ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', PROVIDER_FLAG) ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', REPORTER_FLAG) = 'Y'
@@ -125,6 +127,7 @@ BEGIN
     (
         SELECT src_id,
                service_notes,
+               checkin_time,
                service_start_time,
                service_end_time,
                stampuser
@@ -132,6 +135,7 @@ BEGIN
         (
             SELECT src_id,
                    service_notes,
+                   checkin_time,
                    service_start_time,
                    service_end_time,
                    stampuser,
@@ -149,7 +153,8 @@ BEGIN
     -- All 20 QueueProcessMap rows from FastQ.xlsx, first tab.
     -- NONE disables lookup; ANY accepts all folder types.
     -- Structure Permitting (group 700) uses the supplied 19 folder types.
-    -- DRC still needs type codes. Missing process codes cannot resolve multiple processes.
+    -- DRC uses the folder types supplied in the workspace mapping.
+    -- Missing process codes cannot resolve multiple processes.
     QUEUE_PROCESS_MAP (queue_id, permit_type, folder_match_kind, foldertypes, processcode) AS
     (
         SELECT 10321, 'any', 'ANY', NULL, NULL FROM dual
@@ -192,6 +197,18 @@ BEGIN
         UNION ALL
         SELECT 10417, 'LS, ABA', 'TYPES', 'LS,ABA', NULL FROM dual
     ),
+    -- Limit remote lookups to permits relevant to this page request.
+    REQUESTED_PERMITS AS
+    (
+        SELECT DISTINCT a.queue_id, TRIM(UPPER(a.ref_value)) permit_reference
+        FROM WALKINS a
+        INNER JOIN P ON p.queue_id = a.queue_id
+        INNER JOIN QUEUE_PROCESS_MAP m ON m.queue_id = a.queue_id
+        WHERE a.createdon >= TRUNC(p_range_startdate)
+          AND a.createdon < TRUNC(p_range_enddate) + 1
+          AND m.folder_match_kind <> 'NONE'
+          AND TRIM(a.ref_value) IS NOT NULL
+    ),
     FOLDER_CANDIDATES AS
     (
         SELECT f.folderrsn, f.foldertype,
@@ -200,13 +217,20 @@ BEGIN
                    PARTITION BY TRIM(UPPER(f.referencefile))
                ) folder_count
         FROM folder@LDMSDEV_LINK f
-        WHERE TRIM(f.referencefile) IS NOT NULL
+        WHERE EXISTS (
+            SELECT 1 FROM REQUESTED_PERMITS r
+            WHERE r.permit_reference = TRIM(UPPER(f.referencefile))
+        )
     ),
     PROCESS_CANDIDATES AS
     (
         SELECT fp.folderrsn, fp.processcode, fp.assigneduser,
                COUNT(*) OVER (PARTITION BY fp.folderrsn) process_count
         FROM folderprocess@LDMSDEV_LINK fp
+        WHERE EXISTS (
+            SELECT 1 FROM FOLDER_CANDIDATES f
+            WHERE f.folderrsn = fp.folderrsn
+        )
     ),
     REVIEW_USERS AS
     (
@@ -218,9 +242,11 @@ BEGIN
                             f.permit_reference,
                             TRIM(fp.assigneduser) assigneduser
             FROM FOLDER_CANDIDATES f
+            INNER JOIN REQUESTED_PERMITS r ON r.permit_reference = f.permit_reference
             INNER JOIN QUEUE_PROCESS_MAP m
                 -- Permit type disambiguates multiple folders for one permit.
-                ON m.folder_match_kind <> 'NONE'
+                ON m.queue_id = r.queue_id
+               AND m.folder_match_kind <> 'NONE'
                AND (
                     f.folder_count = 1
                     OR m.folder_match_kind = 'ANY'
@@ -245,9 +271,10 @@ BEGIN
             ru.assigneduser,
             a.*, c.sms_optin,
             st.service_notes,
+            st.checkin_time,
             st.service_start_time,
             st.service_end_time,
-            st.stampuser service_stampuser
+            FQ_PROCS_GET.GET_USERNAME(st.stampuser) service_stampuser
             , FQ_CRYPTO_PKG.DECRYPT(c.fname) cust_fname
             , FQ_CRYPTO_PKG.DECRYPT(c.lname) cust_lname
             , FQ_CRYPTO_PKG.DECRYPT(c.email) cust_email
@@ -255,9 +282,9 @@ BEGIN
         FROM
             WALKINS a
             INNER join VALIDQUEUE_SERVICES vs ON
-                vs.queue_id = a.queue_id and vs.service_id = a.service_id  
+                vs.queue_id = a.queue_id and vs.service_id = a.service_id
             INNER JOIN P
-                   ON P.queue_id = a.Queue_id                      
+                   ON P.queue_id = a.Queue_id
             INNER JOIN FQ_USERS u ON u.user_id = p.user_id
             INNER JOIN CUSTOMERS c on c.customer_id = a.customer_id
             LEFT JOIN ST st ON st.src_id = a.walkin_id
@@ -268,9 +295,9 @@ BEGIN
                     LOWER(u.user_id) = Lower(p_userid)
             AND NVL(u.activeflag,'N') = 'Y'
             AND p.entity_id = p_entityid
-            AND TRUNC(createdon)
-                    BETWEEN TRUNC(p_range_startdate) AND TRUNC(p_range_enddate)
-            ;        
+            AND a.createdon >= TRUNC(p_range_startdate)
+            AND a.createdon < TRUNC(p_range_enddate) + 1
+            ;
 END;
 
 PROCEDURE GET_MYAPPOINTMENTS (
@@ -278,7 +305,7 @@ PROCEDURE GET_MYAPPOINTMENTS (
     p_entityid IN NUMBER,
     p_userid IN  VARCHAR2,
     p_range_startdate   IN  DATE,
-    p_range_enddate     IN  DATE,  
+    p_range_enddate     IN  DATE,
     p_cur  OUT Ref_Cursor_Types.ref_cursor
 )
 AS
@@ -307,7 +334,7 @@ BEGIN
                         ON p1.user_id = lower(p_userid)
                             AND q1.queue_id = p1.queue_id
                 where   entity_id = p_entityid
-                    AND (    
+                    AND (
                            DECODE(v_isSuperAdmin, 1, 'Y', HOST_FLAG)  ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', PROVIDER_FLAG) ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', REPORTER_FLAG) = 'Y'
@@ -318,6 +345,7 @@ BEGIN
     (
         SELECT src_id,
                service_notes,
+               checkin_time,
                service_start_time,
                service_end_time,
                stampuser
@@ -325,6 +353,7 @@ BEGIN
         (
             SELECT src_id,
                    service_notes,
+                   checkin_time,
                    service_start_time,
                    service_end_time,
                    stampuser,
@@ -342,7 +371,8 @@ BEGIN
     -- All 20 QueueProcessMap rows from FastQ.xlsx, first tab.
     -- NONE disables lookup; ANY accepts all folder types.
     -- Structure Permitting (group 700) uses the supplied 19 folder types.
-    -- DRC still needs type codes. Missing process codes cannot resolve multiple processes.
+    -- DRC uses the folder types supplied in the workspace mapping.
+    -- Missing process codes cannot resolve multiple processes.
     QUEUE_PROCESS_MAP (queue_id, permit_type, folder_match_kind, foldertypes, processcode) AS
     (
         SELECT 10321, 'any', 'ANY', NULL, NULL FROM dual
@@ -385,6 +415,18 @@ BEGIN
         UNION ALL
         SELECT 10417, 'LS, ABA', 'TYPES', 'LS,ABA', NULL FROM dual
     ),
+    -- Limit remote lookups to permits relevant to this page request.
+    REQUESTED_PERMITS AS
+    (
+        SELECT DISTINCT a.queue_id, TRIM(UPPER(a.ref_value)) permit_reference
+        FROM APPOINTMENTS a
+        INNER JOIN P ON p.queue_id = a.queue_id
+        INNER JOIN QUEUE_PROCESS_MAP m ON m.queue_id = a.queue_id
+        WHERE a.appt_date >= TRUNC(p_range_startdate)
+          AND a.appt_date < TRUNC(p_range_enddate) + 1
+          AND m.folder_match_kind <> 'NONE'
+          AND TRIM(a.ref_value) IS NOT NULL
+    ),
     FOLDER_CANDIDATES AS
     (
         SELECT f.folderrsn, f.foldertype,
@@ -393,13 +435,20 @@ BEGIN
                    PARTITION BY TRIM(UPPER(f.referencefile))
                ) folder_count
         FROM folder@LDMSDEV_LINK f
-        WHERE TRIM(f.referencefile) IS NOT NULL
+        WHERE EXISTS (
+            SELECT 1 FROM REQUESTED_PERMITS r
+            WHERE r.permit_reference = TRIM(UPPER(f.referencefile))
+        )
     ),
     PROCESS_CANDIDATES AS
     (
         SELECT fp.folderrsn, fp.processcode, fp.assigneduser,
                COUNT(*) OVER (PARTITION BY fp.folderrsn) process_count
         FROM folderprocess@LDMSDEV_LINK fp
+        WHERE EXISTS (
+            SELECT 1 FROM FOLDER_CANDIDATES f
+            WHERE f.folderrsn = fp.folderrsn
+        )
     ),
     REVIEW_USERS AS
     (
@@ -411,9 +460,11 @@ BEGIN
                             f.permit_reference,
                             TRIM(fp.assigneduser) assigneduser
             FROM FOLDER_CANDIDATES f
+            INNER JOIN REQUESTED_PERMITS r ON r.permit_reference = f.permit_reference
             INNER JOIN QUEUE_PROCESS_MAP m
                 -- Permit type disambiguates multiple folders for one permit.
-                ON m.folder_match_kind <> 'NONE'
+                ON m.queue_id = r.queue_id
+               AND m.folder_match_kind <> 'NONE'
                AND (
                     f.folder_count = 1
                     OR m.folder_match_kind = 'ANY'
@@ -438,9 +489,10 @@ BEGIN
             ru.assigneduser,
             a.*, c.sms_optin,
             st.service_notes,
+            st.checkin_time,
             st.service_start_time,
             st.service_end_time,
-            st.stampuser service_stampuser
+            FQ_PROCS_GET.GET_USERNAME(st.stampuser) service_stampuser
             , FQ_CRYPTO_PKG.DECRYPT(c.fname) cust_fname
             , FQ_CRYPTO_PKG.DECRYPT(c.lname) cust_lname
             , FQ_CRYPTO_PKG.DECRYPT(c.email) cust_email
@@ -448,9 +500,9 @@ BEGIN
         FROM
             APPOINTMENTS a
             INNER join VALIDQUEUE_SERVICES vs ON
-                vs.queue_id = a.queue_id and vs.service_id = a.service_id  
+                vs.queue_id = a.queue_id and vs.service_id = a.service_id
             INNER JOIN P
-                   ON P.queue_id = a.Queue_id                      
+                   ON P.queue_id = a.Queue_id
             INNER JOIN FQ_USERS u ON u.user_id = p.user_id
             INNER JOIN Customers c on c.customer_id = a.customer_id
             LEFT JOIN ST st ON st.src_id = a.appointment_id
@@ -461,8 +513,8 @@ BEGIN
                     LOWER(u.user_id) = LOWER(p_userid)
             AND NVL(u.activeflag,'N') = 'Y'
             AND p.entity_id = p_entityid
-            AND TRUNC(appt_date)
-                    BETWEEN TRUNC(p_range_startdate) AND TRUNC(p_range_enddate)
+            AND a.appt_date >= TRUNC(p_range_startdate)
+            AND a.appt_date < TRUNC(p_range_enddate) + 1
             ;
 END;
 
@@ -476,10 +528,14 @@ BEGIN
     SELECT --FQ_CRYPTO_PKG.ENCRYPT(A.Appointment_Id),
         A.*, q.entity_id,
         q.Address QUEUE_ADDRESS, q.Phone QUEUE_PHONE
+        , FQ_CRYPTO_PKG.DECRYPT(c.fname) fname
+        , FQ_CRYPTO_PKG.DECRYPT(c.lname) lname
+        , FQ_CRYPTO_PKG.DECRYPT(c.email) email
+        , FQ_CRYPTO_PKG.DECRYPT(c.phone) phone
     FROM APPOINTMENTS A
         INNER JOIN VALIDQUEUES Q ON a.queue_id = q.queue_id
+        INNER JOIN CUSTOMERS c on c.customer_id = a.customer_id
     WHERE appointment_id = p_apptid;
-    --TODO: Add additional conditions and Join-Tables
 END;
 
 PROCEDURE GET_MYPROFILE (p_userid IN VARCHAR2, p_cur OUT Ref_Cursor_Types.ref_cursor)
@@ -488,7 +544,7 @@ BEGIN
     OPEN p_cur FOR
      SELECT * FROM FQ_USERS
       WHERE lower(user_id) = lower(p_userid)
-        AND NVL(activeflag, 'N') = 'Y';    
+        AND NVL(activeflag, 'N') = 'Y';
 END;
 
 FUNCTION GET_USERNAME (p_userid IN VARCHAR2)
@@ -498,7 +554,7 @@ p_ret VARCHAR2(200);
 BEGIN
     SELECT FNAME || ' ' || LNAME INTO p_ret
     FROM fq_users
-        WHERE lower(user_id) = lower(p_userid);  
+        WHERE lower(user_id) = lower(p_userid);
 
     RETURN p_ret;
 EXCEPTION
@@ -511,7 +567,7 @@ PROCEDURE GET_USERS (p_entityid IN NUMBER, p_stampuser IN VARCHAR2, p_message OU
 AS
 --isAdmin CHAR(1);
 isAdmin NUMBER(3) := 1;
-BEGIN    
+BEGIN
 --    SELECT NVL(adminflag,'N') INTO isAdmin
 --    FROM FQ_USERS WHERE LOWER(user_id) = LOWER(p_stampuser);
 
@@ -541,8 +597,8 @@ PROCEDURE GET_USER_QUEUES_ROLES (
 AS
 --isAdmin CHAR(1) := 'Y';
 iCount NUMBER(9) := 1;
-BEGIN    
-    -- Check if stampuser has access to requested User-Profile  
+BEGIN
+    -- Check if stampuser has access to requested User-Profile
     IF p_stampuser = 'AUTHSERVICE' OR lower(p_stampuser) = lower(p_userid) THEN
         iCount := 1;
     ELSE
@@ -556,7 +612,7 @@ BEGIN
     END IF;
 
     IF --UPPER(isAdmin) = 'Y' AND
-        iCount > 0 THEN    
+        iCount > 0 THEN
          -- Get user-queues-permissions
          OPEN p_cur FOR
              SELECT p.USER_ID, q.QUEUE_ID, q.NAME, q.ENTITY_ID, q.ACTIVEFLAG,
@@ -569,13 +625,13 @@ BEGIN
                                 p.user_id = e.user_id
                             and e.entity_id = q.entity_id
                 WHERE lower(p.user_id) = lower(p_userid)
-                ORDER BY q.NAME;        
+                ORDER BY q.NAME;
     ELSE
         p_message := 'You do not have access to this user account';
-    END IF;      
+    END IF;
 END;
 
-PROCEDURE GET_USER (    
+PROCEDURE GET_USER (
     p_userid IN VARCHAR2,
     p_stampuser IN VARCHAR2,
     p_message OUT VARCHAR2,
@@ -596,7 +652,7 @@ BEGIN
     WHERE lower(user_id) = lower(p_userid)
         AND entity_id IN (SELECT entity_id FROM user_entities WHERE lower(user_id) = lower(p_stampuser));
 
-    IF UPPER(isAdmin) = 'Y' AND iCount > 0 THEN    
+    IF UPPER(isAdmin) = 'Y' AND iCount > 0 THEN
          OPEN p_cur FOR
              SELECT u.*,
              'N' ADMINFLAG -- AdminFlag is set in UserEntities
@@ -651,7 +707,6 @@ PROCEDURE GET_QSERVICE_DETAILS(
  p_cur  OUT  Ref_Cursor_Types.ref_cursor)
 AS
   BEGIN
-    --TODO: Check if user has permissions to the Queue for this serviceID
   OPEN p_cur FOR
     SELECT --JSON_OBJECT(
        service_id, queue_id, activeflag,
@@ -666,7 +721,6 @@ PROCEDURE GET_QSCHEDULE_DETAILS(
  p_cur  OUT  Ref_Cursor_Types.ref_cursor)
 AS
   BEGIN
-    --TODO: Check if user has permissions to the Queue for this serviceID
   OPEN p_cur FOR
     SELECT --JSON_OBJECT(
        SCHEDULE_ID, QUEUE_ID, DATE_BEGIN, DATE_END, OPEN_TIME, CLOSE_TIME,
@@ -715,7 +769,7 @@ BEGIN
       JOIN fqowner.VALIDQUEUES q ON q.QUEUE_ID = p.QUEUE_ID
       JOIN USER_ENTITIES ue on ue.user_id = u.user_id and ue.entity_id = q.entity_id
       WHERE q.ENTITY_ID = p_entityid;
-END;    
+END;
 
 PROCEDURE GET_APPT_ID_BY_CONF (
   p_confcode IN VARCHAR2,
@@ -765,36 +819,6 @@ EXCEPTION
     p_queue_id := NULL;
 END GET_QUEUE_ID_FOR_SOURCE;
 
-PROCEDURE GET_CUSTOMER_ID_FOR_SOURCE (
-  p_src_type IN VARCHAR2,
-  p_src_id IN NUMBER,
-  p_customer_id OUT NUMBER
-)
-AS
-  v_src_type VARCHAR2(1);
-BEGIN
-  p_customer_id := NULL;
-  v_src_type := UPPER(TRIM(p_src_type));
-
-  IF v_src_type = 'A' THEN
-    SELECT CUSTOMER_ID
-      INTO p_customer_id
-      FROM APPOINTMENTS
-     WHERE APPOINTMENT_ID = p_src_id;
-  ELSIF v_src_type = 'W' THEN
-    SELECT CUSTOMER_ID
-      INTO p_customer_id
-      FROM WALKINS
-     WHERE WALKIN_ID = p_src_id;
-  ELSE
-    RAISE_APPLICATION_ERROR(-20002, 'Invalid source type');
-  END IF;
-
-EXCEPTION
-  WHEN NO_DATA_FOUND THEN
-    p_customer_id := NULL;
-END GET_CUSTOMER_ID_FOR_SOURCE;
-
 PROCEDURE GET_APPTS_BY_QUEUE (
   p_queueid IN NUMBER,
   p_cur OUT Ref_Cursor_Types.ref_cursor
@@ -817,7 +841,7 @@ BEGIN
   OPEN p_cur FOR
     SELECT A.*, q.entity_id
     FROM APPOINTMENTS A
-        INNER JOIN VALIDQUEUES Q ON a.queue_id = q.queue_id    
+        INNER JOIN VALIDQUEUES Q ON a.queue_id = q.queue_id
     WHERE CUSTOMER_ID = p_customerid
     ORDER BY APPT_DATE, START_TIME, APPOINTMENT_ID;
 END GET_APPTS_BY_CUSTOMER;
@@ -845,7 +869,7 @@ BEGIN
   OPEN p_cur FOR
     SELECT A.*, q.entity_id
     FROM APPOINTMENTS A
-        INNER JOIN VALIDQUEUES Q ON a.queue_id = q.queue_id    
+        INNER JOIN VALIDQUEUES Q ON a.queue_id = q.queue_id
     ORDER BY APPT_DATE, START_TIME, APPOINTMENT_ID;
 END GET_ALL_APPTS;
 
@@ -871,7 +895,7 @@ BEGIN
     WHERE NVL(q.activeflag,'N') = 'Y'
         AND lower(u.user_id) = lower(p_userid)
         AND NVL(u.activeflag,'N') = 'Y'
-        AND (p.provider_flag = 'Y' OR p.host_flag = 'Y' OR p.queueadmin_flag = 'Y' OR p.reporter_flag = 'Y');      
+        AND (p.provider_flag = 'Y' OR p.host_flag = 'Y' OR p.queueadmin_flag = 'Y' OR p.reporter_flag = 'Y');
 END;
 
 PROCEDURE GET_QUEUE_ACCESS (
@@ -895,7 +919,7 @@ BEGIN
     ORDER BY u.lname, u.fname;
 END;
 
-PROCEDURE GET_USER_ENTITIES (    
+PROCEDURE GET_USER_ENTITIES (
     p_userid IN VARCHAR2,
     p_stampuser IN VARCHAR2,
     p_message OUT VARCHAR2,
@@ -907,7 +931,7 @@ BEGIN
      OPEN p_cur FOR
         SELECT e.entity_id as EntityId, e.entity_name EntityName,
                 ue.ACTIVEFLAG, ue.ADMINFLAG
-        FROM validentities e                  
+        FROM validentities e
             INNER JOIN user_entities ue on e.entity_id = ue.entity_id
         WHERE NVL(e.ACTIVEFLAG, 'N') = 'Y'
             AND lower(ue.user_id) = lower(p_userid);
@@ -940,7 +964,7 @@ AS
 BEGIN
  OPEN p_cur FOR
     SELECT HOLIDAYDATE, HOLIDAYDESC,ACTIVEFLAG, STAMPDATE, STAMPUSER
-      FROM VALIDHOLIDAYS        
+      FROM VALIDHOLIDAYS
         WHERE TRUNC(HOLIDAYDATE) = TO_DATE(p_holiday, 'MM/DD/YYYY');
 END;
 
@@ -951,6 +975,36 @@ BEGIN
     SELECT HOLIDAYDATE, HOLIDAYDESC,ACTIVEFLAG, STAMPDATE, STAMPUSER
         FROM VALIDHOLIDAYS;
 END;
+
+PROCEDURE GET_CUSTOMER_ID_FOR_SOURCE (
+  p_src_type IN VARCHAR2,
+  p_src_id IN NUMBER,
+  p_customer_id OUT NUMBER
+)
+AS
+  v_src_type VARCHAR2(1);
+BEGIN
+  p_customer_id := NULL;
+  v_src_type := UPPER(TRIM(p_src_type));
+
+  IF v_src_type = 'A' THEN
+    SELECT CUSTOMER_ID
+      INTO p_customer_id
+      FROM APPOINTMENTS
+     WHERE APPOINTMENT_ID = p_src_id;
+  ELSIF v_src_type = 'W' THEN
+    SELECT CUSTOMER_ID
+      INTO p_customer_id
+      FROM WALKINS
+     WHERE WALKIN_ID = p_src_id;
+  ELSE
+    RAISE_APPLICATION_ERROR(-20002, 'Invalid source type');
+  END IF;
+
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    p_customer_id := NULL;
+END GET_CUSTOMER_ID_FOR_SOURCE;
 
 
 END FQ_PROCS_GET;
