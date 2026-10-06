@@ -836,24 +836,26 @@ namespace FastQ.Web.Services
             return string.IsNullOrWhiteSpace(enteredValue) ? null : enteredValue.Trim();
         }
 
-        public Result SendQueue10420Email(long appointmentId, long entityId)
+        public Result SendQueueEmail(long appointmentId, long entityId, string sourceType = "A")
         {
             try
             {
-                var appointment = _appts.Get(appointmentId);
-                if (appointment == null || appointment.QueueId != 10420)
-                    return Result.Fail("Notification is available only for appointments in queue 10420.");
+                var appointment = sourceType == "W"
+                    ? new FastQ.Data.Db.DbAppointmentRepository().GetWalkinNotification(appointmentId)
+                    : _appts.Get(appointmentId);
+                if (appointment == null)
+                    return Result.Fail("Appointment not found.");
                 var queue = _queues.Get(appointment.QueueId);
                 if (queue == null || queue.EntityId != entityId)
                     return Result.Fail("Appointment is not available in this entity.");
-                if (appointment.Status != AppointmentStatus.Scheduled)
+                if (sourceType == "A" && appointment.Status != AppointmentStatus.Scheduled)
                     return Result.Fail("Only scheduled appointments can be sent.");
 
-                var recipient = ConfigurationManager.AppSettings["Queue10420NotificationEmail"];
+                var recipients = new FastQ.Data.Db.DbQueueRepository().GetNotificationEmails(appointment.QueueId);
                 var host = ConfigurationManager.AppSettings["AppointmentMailHost"];
                 var from = ConfigurationManager.AppSettings["AppointmentMailFrom"];
-                if (string.IsNullOrWhiteSpace(recipient))
-                    return Result.Fail("The notification recipient for queue 10420 has not been configured.");
+                if (recipients.Count == 0)
+                    return Result.Fail("No notification recipients are configured for this queue.");
                 if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
                     return Result.Fail("Appointment email settings have not been configured.");
 
@@ -863,8 +865,8 @@ namespace FastQ.Web.Services
                 var description = "Customer: " + customer + "\nReference: " + appointment.RefValue
                     + "\nMeeting: " + appointment.MeetingUrl;
                 var calendar = AppointmentCalendar.Build(appointment.Id, appointment.ScheduledFor,
-                    appointment.EndTime, queue.Name + " appointment", description,
-                    string.IsNullOrWhiteSpace(appointment.MeetingUrl) ? location : appointment.MeetingUrl);
+                    sourceType == "W" ? (TimeSpan?)null : appointment.EndTime, queue.Name + (sourceType == "W" ? " walk-in" : " appointment"), description,
+                    string.IsNullOrWhiteSpace(appointment.MeetingUrl) ? location : appointment.MeetingUrl, sourceType);
 
                 int port;
                 if (!int.TryParse(ConfigurationManager.AppSettings["AppointmentMailPort"], out port) || port <= 0)
@@ -872,9 +874,9 @@ namespace FastQ.Web.Services
                 using (var message = new MailMessage())
                 {
                     message.From = new MailAddress(from);
-                    message.To.Add(new MailAddress(recipient.Trim()));
-                    message.Subject = "New appointment - " + queue.Name;
-                    message.Body = "A new appointment has been created.\n\n" + description
+                    foreach (var recipient in recipients) message.To.Add(new MailAddress(recipient));
+                    message.Subject = "New " + (sourceType == "W" ? "walk-in" : "appointment") + " - " + queue.Name;
+                    message.Body = "A new entry has been created.\n\n" + description
                         + "\nDate/time (Eastern): " + appointment.ScheduledFor.ToString("MMM dd, yyyy h:mm tt", CultureInfo.InvariantCulture)
                         + "\n\nOpen the attached calendar file to add it to Outlook.";
                     message.Attachments.Add(Attachment.CreateAttachmentFromString(calendar, "appointment.ics",
@@ -895,7 +897,7 @@ namespace FastQ.Web.Services
             }
             catch (Exception ex)
             {
-                LogNotificationError("queue10420-email", appointmentId, ex.ToString());
+                LogNotificationError("queue-email", appointmentId, ex.ToString());
                 return Result.Fail("The appointment was saved, but the notification could not be sent. Please try again.");
             }
         }

@@ -2,20 +2,22 @@
   "use strict";
 
   var common = window.FastQProviderCommon = window.FastQProviderCommon || {};
-  common.showQueueAppointmentEmail = function (appointmentId) {
+  common.showQueueAppointmentEmail = function (appointmentId, sourceType) {
+    sourceType = sourceType || "A";
     var modal = document.getElementById("queueAppointmentEmailModal");
     var button = document.getElementById("sendQueueAppointmentEmail");
     var status = document.getElementById("queueAppointmentEmailStatus");
     if (!modal || !button || !status) return;
     button.disabled = false;
     button.textContent = "Send Email";
-    status.textContent = "Appointment #" + appointmentId + " saved.";
+    status.textContent = (sourceType === "W" ? "Walk-in #" : "Appointment #") + appointmentId + " saved.";
     button.onclick = function () {
       if (button.disabled) return;
       button.disabled = true;
       status.textContent = "Sending email…";
       var token = modal.querySelector('input[name="__RequestVerificationToken"]');
       var body = "appointmentId=" + encodeURIComponent(appointmentId)
+        + "&sourceType=" + encodeURIComponent(sourceType)
         + "&__RequestVerificationToken=" + encodeURIComponent(token ? token.value : "");
       fetch(button.getAttribute("data-url"), {
         method: "POST", credentials: "same-origin",
@@ -28,6 +30,8 @@
         if (!result.ok) throw new Error(result.error || "Could not send email.");
         status.textContent = "Email sent with the Outlook calendar attachment.";
         button.textContent = "Email Sent";
+        var done = modal.querySelector('[data-modal-close]');
+        if (done) done.click();
       }).catch(function (error) {
         status.textContent = error.message || "Could not send email. Please try again.";
         button.disabled = false;

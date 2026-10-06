@@ -22,6 +22,46 @@ namespace FastQ.Web.Controllers.Admin
             _service = new QueueService();
         }
 
+        private bool CanConfigureEmail(long id)
+        {
+            var queue = new FastQ.Data.Db.DbQueueRepository().Get(id);
+            return queue != null && queue.EntityId == _authService.GetSessionEntityId()
+                && (_authService.IsInRole(Utilities.FQRole.SuperAdmin) || _authService.IsAdminForQueue(id));
+        }
+
+        [HttpGet]
+        public ActionResult EmailNotifications(long id)
+        {
+            if (!CanConfigureEmail(id)) return new HttpStatusCodeResult(403);
+            ViewBag.QueueId = id;
+            return View(controllerpath + "EmailNotifications",
+                (object)string.Join("\n", new FastQ.Data.Db.DbQueueRepository().GetNotificationEmails(id)));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public ActionResult EmailNotifications(long id, string emails)
+        {
+            if (!CanConfigureEmail(id)) return new HttpStatusCodeResult(403);
+            ViewBag.QueueId = id;
+            var recipients = (emails ?? "").Split(new[] { '\r', '\n', ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            try
+            {
+                if (recipients.Count > 50) throw new FormatException("Use at most 50 recipients.");
+                foreach (var email in recipients)
+                    if (email.Length > 320 || new System.Net.Mail.MailAddress(email).Address != email)
+                        throw new FormatException("Enter email addresses without display names.");
+            }
+            catch (FormatException)
+            {
+                ModelState.AddModelError("", "Enter valid email addresses, one per line (maximum 50).");
+                return View(controllerpath + "EmailNotifications", (object)(emails ?? ""));
+            }
+            new FastQ.Data.Db.DbQueueRepository().SaveNotificationEmails(id, recipients);
+            TempData["EmailSaved"] = "Email recipients saved.";
+            return RedirectToAction("EmailNotifications", new { id });
+        }
+
         #region Queue-Base-Record
         // GET: Queue/10001
         public ActionResult Index()

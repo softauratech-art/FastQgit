@@ -16,6 +16,49 @@ namespace FastQ.Data.Db
         {
         }
 
+        public IList<string> GetNotificationEmails(long queueId)
+        {
+            var result = new List<string>();
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn, "SELECT email FROM fqowner.FQ_QUEUE_EMAIL WHERE queue_id=:qid ORDER BY email"))
+            {
+                DataAccess.AddParam(cmd, "qid", queueId, DbType.Int64);
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read()) result.Add(reader.GetString(0));
+            }
+            return result;
+        }
+
+        public void SaveNotificationEmails(long queueId, IEnumerable<string> emails)
+        {
+            using (var conn = DataAccess.Open())
+            using (var tx = conn.BeginTransaction())
+            {
+                // Serialize concurrent edits for the same queue.
+                using (var cmd = DataAccess.CreateCommand(conn, "SELECT queue_id FROM fqowner.VALIDQUEUES WHERE queue_id=:qid FOR UPDATE"))
+                {
+                    cmd.Transaction = tx;
+                    DataAccess.AddParam(cmd, "qid", queueId, DbType.Int64);
+                    if (cmd.ExecuteScalar() == null) throw new InvalidOperationException("Queue not found.");
+                }
+                using (var cmd = DataAccess.CreateCommand(conn, "DELETE FROM fqowner.FQ_QUEUE_EMAIL WHERE queue_id=:qid"))
+                {
+                    cmd.Transaction = tx;
+                    DataAccess.AddParam(cmd, "qid", queueId, DbType.Int64);
+                    cmd.ExecuteNonQuery();
+                }
+                foreach (var email in emails)
+                using (var cmd = DataAccess.CreateCommand(conn, "INSERT INTO fqowner.FQ_QUEUE_EMAIL(queue_id,email) VALUES(:qid,:email)"))
+                {
+                    cmd.Transaction = tx;
+                    DataAccess.AddParam(cmd, "qid", queueId, DbType.Int64);
+                    DataAccess.AddParam(cmd, "email", email, DbType.String);
+                    cmd.ExecuteNonQuery();
+                }
+                tx.Commit();
+            }
+        }
+
         #region Queue Base-record
         public Entities.Queue Get(long id)
         {

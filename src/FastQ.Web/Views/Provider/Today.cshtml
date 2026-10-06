@@ -3376,6 +3376,10 @@
               return;
             }
             closeModal("addWalkinModal");
+            if (res.canSendQueueEmail) {
+                FastQProviderCommon.showQueueAppointmentEmail(res.id, "W");
+                openModal("queueAppointmentEmailModal");
+            }
             queueLiveSync();
           });
         });

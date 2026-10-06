@@ -230,12 +230,12 @@
 <div id="queueAppointmentEmailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="queueAppointmentEmailTitle">
     <div class="modal route-modal">
         <div class="modal-header">
-            <h5 id="queueAppointmentEmailTitle">Appointment created</h5>
+            <h5 id="queueAppointmentEmailTitle">Entry created</h5>
             <button type="button" class="btn ghost" data-modal-close="queueAppointmentEmailModal">Close</button>
         </div>
         <div class="modal-body">
             @Html.AntiForgeryToken()
-            <p>Send the appointment to the configured Business Resource Office recipient, with an Outlook calendar attachment.</p>
+            <p>Send this entry to the configured queue recipients, with an Outlook calendar attachment. Walk-ins use their arrival time.</p>
             <p id="queueAppointmentEmailStatus" role="status" aria-live="polite"></p>
         </div>
         <div class="modal-footer">

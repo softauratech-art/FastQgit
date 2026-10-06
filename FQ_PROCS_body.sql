@@ -72,6 +72,7 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
       RETURN;
     END IF;
 
+    SAVEPOINT create_walkin;
     p_walkin_id := WALKINSEQ.NEXTVAL;
 
     INSERT INTO WALKINS
@@ -95,8 +96,12 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
        SYSDATE,
        NVL(p_stampuser, 'fastq'),
        SYSDATE);
+    IF UPPER(TRIM(p_ref_criteria)) IN ('P','PERMIT') THEN
+      FQ_STORE_AMANDA_INFO('W',p_walkin_id,p_queue_id,p_ref_criteria,p_ref_value);
+    END IF;
   EXCEPTION
     WHEN OTHERS THEN
+      ROLLBACK TO create_walkin;
       p_walkin_id := NULL;
       p_outmsg := SQLERRM;
   END INSERT_WALKIN;
@@ -457,6 +462,11 @@ CREATE OR REPLACE PACKAGE BODY FQ_PROCS AS
         v_src_type,
         p_src_id
       );
+    END IF;
+
+    IF UPPER(TRIM(v_ref_criteria)) IN ('P','PERMIT') THEN
+      FQ_STORE_AMANDA_INFO(v_target_kind,p_new_src_id,p_target_queue_id,
+                          v_ref_criteria,NVL(p_ref_value,v_ref_value));
     END IF;
 
     IF p_outmsg IS NOT NULL THEN

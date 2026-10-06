@@ -7,7 +7,7 @@ namespace FastQ.Web.Helpers
     internal static class AppointmentCalendar
     {
         public static string Build(long id, DateTime start, TimeSpan? endTime,
-            string summary, string description, string location)
+            string summary, string description, string location, string sourceType = "A")
         {
             // FastQ appointments use Orange County wall-clock time, independent
             // of the web server's local time zone. UTC makes Outlook imports portable.
@@ -24,7 +24,7 @@ namespace FastQ.Web.Helpers
             Add(text, "CALSCALE:GREGORIAN");
             Add(text, "METHOD:PUBLISH");
             Add(text, "BEGIN:VEVENT");
-            Add(text, "UID:fastq-appointment-" + id.ToString(CultureInfo.InvariantCulture) + "@ocfl.net");
+            Add(text, "UID:fastq-" + (sourceType == "W" ? "walkin" : "appointment") + "-" + id.ToString(CultureInfo.InvariantCulture) + "@ocfl.net");
             Add(text, "DTSTAMP:" + DateTime.UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture));
             Add(text, "DTSTART:" + TimeZoneInfo.ConvertTimeToUtc(start, eastern).ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture));
             if (end > start)

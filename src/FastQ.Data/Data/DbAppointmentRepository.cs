@@ -69,6 +69,21 @@ namespace FastQ.Data.Db
             }
         }
 
+        public Appointment GetWalkinNotification(long id)
+        {
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateCommand(conn, @"SELECT w.*,
+                w.WALKIN_ID AS APPOINTMENT_ID, q.ENTITY_ID, TRUNC(w.CREATEDON) AS APPT_DATE,
+                NUMTODSINTERVAL((w.CREATEDON-TRUNC(w.CREATEDON))*86400,'SECOND') AS START_TIME,
+                FQ_CRYPTO_PKG.DECRYPT(c.FNAME) FNAME, FQ_CRYPTO_PKG.DECRYPT(c.LNAME) LNAME
+                FROM WALKINS w JOIN VALIDQUEUES q ON q.QUEUE_ID=w.QUEUE_ID
+                JOIN CUSTOMERS c ON c.CUSTOMER_ID=w.CUSTOMER_ID WHERE w.WALKIN_ID=:id"))
+            {
+                DataAccess.AddParam(cmd, "id", id, DbType.Int64);
+                using (var reader = cmd.ExecuteReader()) return reader.Read() ? MapAppointment(reader) : null;
+            }
+        }
+
         public long AddWalkin(Appointment appointment)
         {
             using (var conn = DataAccess.Open())

@@ -24,6 +24,10 @@
     </style>
 }
 
+@if (Model.Id > 0) {
+ <p><a href="@Url.Action("EmailNotifications", "Queue", new { id = Model.Id })">Email Notifications</a></p>
+}
+
 @section PageHeader {
     <div>
         <div class="topbar-title">Manage Queue</div>
