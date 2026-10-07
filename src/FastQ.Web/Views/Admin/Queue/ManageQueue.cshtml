@@ -21,23 +21,30 @@
         }
         table#QAccessdata td {padding:8px;}
         #toggleQuickView { margin-left: 20px; }
+        .queue-email-settings.card { padding: 12px 16px; margin-bottom: 16px; }
+        .queue-email-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .queue-email-row label { margin: 0; font-weight: 600; }
+        #queueEmailRecipients { flex: 1 1 240px; width: auto; min-width: 0; max-width: 520px; margin: 0; }
+        .queue-email-help { display: block; margin-top: 5px; font-size: 12px; color: #526570; }
+        #queueEmailFeedback { margin: 5px 0 0; font-size: 13px; }
+        #queueEmailFeedback:empty { display: none; }
     </style>
 }
 
 @if (Model.Id > 0 && Model.EntityId == authsvc.GetSessionEntityId()
     && (isSuperAdminUser || authsvc.IsAdminForQueue(Model.Id))) {
-    <section class="card" style="padding:24px; margin-bottom:24px;">
-        <h2>Email Notifications</h2>
-        <p>Send appointment and walk-in notifications to these recipients for queue @Model.Id.</p>
+    <section class="card queue-email-settings" aria-label="Queue email notifications">
         <form id="queueEmailSettings" action="@Url.Action("EmailNotifications", "Queue", new { id = Model.Id })" method="post">
             @Html.AntiForgeryToken()
-            <label for="queueEmailRecipients" class="form-label">Recipient email addresses</label>
-            <textarea id="queueEmailRecipients" name="emails" class="form-control" rows="4"
-                      style="width:100%; max-width:700px; display:block; margin:8px 0;"
-                      placeholder="person@example.org" aria-describedby="queueEmailHelp" disabled></textarea>
-            <p id="queueEmailHelp">Enter one email address per line. Leave empty to disable the Send Email prompt.</p>
-            <button id="saveQueueEmails" type="submit" class="btn-save" disabled>Save Email Recipients</button>
-            <button id="retryQueueEmails" type="button" class="btn-cancel" hidden>Retry Loading</button>
+            <div class="queue-email-row">
+                <label for="queueEmailRecipients">Notification emails</label>
+                <input id="queueEmailRecipients" name="emails" type="text" class="form-control"
+                       placeholder="person@example.org; team@example.org" aria-describedby="queueEmailHelp"
+                       autocomplete="off" spellcheck="false" disabled />
+                <button id="saveQueueEmails" type="submit" class="btn-save" disabled>Save Emails</button>
+                <button id="retryQueueEmails" type="button" class="btn-cancel" hidden>Retry</button>
+            </div>
+            <small id="queueEmailHelp" class="queue-email-help">Separate addresses with semicolons. Leave blank to disable.</small>
             <p id="queueEmailFeedback" role="status" aria-live="polite">Loading saved recipients…</p>
         </form>
     </section>
@@ -57,7 +64,7 @@
                 feedback.textContent = "Loading saved recipients…";
                 fetch(form.action, { credentials: "same-origin", cache: "no-store" })
                     .then(readResponse).then(function (result) {
-                        input.value = result.emails || "";
+                        input.value = (result.emails || "").split(/\r?\n/).filter(Boolean).join("; ");
                         input.disabled = false;
                         save.disabled = false;
                         feedback.textContent = "";

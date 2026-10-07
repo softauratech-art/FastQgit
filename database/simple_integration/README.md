@@ -7,7 +7,7 @@ No triggers, scheduler, mapping table or tracking rows. One AMANDA table holds m
 These scripts are not executed against the database by this change.
 
 1. Create the two tables with 01_tables.sql (first installation only).
-2. Compile 02_get_permit_info.sql as FQOWNER. LDMSDEV_LINK must allow reads of AMANDA FOLDER and FOLDERPROCESS.
+2. Compile 03_queue_email_procedures.sql for loading/saving queue recipients. If the app connects under another schema, grant it EXECUTE on FQOWNER.FQ_GET_QUEUE_EMAILS and FQOWNER.FQ_SAVE_QUEUE_EMAILS. The app no longer queries the email table directly. Then compile 02_get_permit_info.sql as FQOWNER. LDMSDEV_LINK must allow reads of AMANDA FOLDER and FOLDERPROCESS.
 3. Merge the FQ_STORE_AMANDA_INFO calls from FQ_PROCS_body.sql into the deployed INSERT_WALKIN and TRANSFER_SOURCE procedures. FQ_PROCS_body.sql now uses the supplied updated package body. Compile it against the matching deployed specification; the older repository specification has different procedure signatures and should not be redeployed blindly.
 4. Compile FQ_EXTERNAL_body.sql against its matching deployed specification. It uses the supplied current body and calls FQ_STORE_AMANDA_INFO after appointment INSERT, before SMS. Lookup failure rolls back that creation to its savepoint and returns the error. External walk-ins delegate to FQ_PROCS.INSERT_WALKIN, so they need no second lookup.
 5. Deploy FQ_PROCS_GET_body.sql. Both provider lists now read FQ_AMANDA_INFO locally and return ASSIGNEDUSER. The existing GUI shows Reviewer beside Stamp User.
