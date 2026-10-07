@@ -373,11 +373,23 @@ namespace FastQ.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public JsonResult SendQueueAppointmentEmail(long appointmentId, string sourceType = "A")
+        public JsonResult SendQueueAppointmentEmail(long appointmentId, string sourceType = null)
         {
             if (!_auth.CanAddEntries())
                 return Json(new { ok = false, error = "You do not have permission to send this notification." });
 
+            // Older cached scripts omit sourceType. Infer only from an unambiguous
+            // creation grant in this session; never authorize an arbitrary entry.
+            if (string.IsNullOrWhiteSpace(sourceType))
+            {
+                var appointmentState = Session["QueueEmail:A:" + appointmentId] as string;
+                var walkinState = Session["QueueEmail:W:" + appointmentId] as string;
+                var hasAppointment = appointmentState == "pending" || appointmentState == "sent";
+                var hasWalkin = walkinState == "pending" || walkinState == "sent";
+                if (hasAppointment == hasWalkin)
+                    return Json(new { ok = false, error = "Cannot identify this entry for email. Refresh the page; the entry is already saved." });
+                sourceType = hasWalkin ? "W" : "A";
+            }
             // Only a successful creation in this staff session grants this action.
             if (sourceType != "A" && sourceType != "W") return Json(new { ok = false, error = "Invalid entry type." });
             var key = "QueueEmail:" + sourceType + ":" + appointmentId;
