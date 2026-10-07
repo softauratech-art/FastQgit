@@ -368,7 +368,7 @@ namespace FastQ.Web.Controllers
                 Session["QueueEmail:A:" + res.Value.Id] = "pending";
 
             return Json(new { ok = true, id = res.Value.Id, warning = res.Warning,
-                canSendQueueEmail = canSendQueueEmail });
+                canSendQueueEmail = canSendQueueEmail, sourceType = "A" });
         }
 
         [HttpPost]
@@ -385,7 +385,7 @@ namespace FastQ.Web.Controllers
             if (state == "sent")
                 return Json(new { ok = true });
             if (state != "pending")
-                return Json(new { ok = false, error = "This appointment is not available for notification in this session." });
+                return Json(new { ok = false, error = "This entry is not available for notification in the current session. Refresh the page. The entry is already saved; do not create it again." });
 
             var result = _customerService.SendQueueEmail(appointmentId, _auth.GetSessionEntityId(), sourceType);
             if (!result.Ok)
@@ -435,7 +435,7 @@ namespace FastQ.Web.Controllers
             try { canSendQueueEmail = new FastQ.Data.Db.DbQueueRepository().GetNotificationEmails(qId).Count > 0; }
             catch { /* Keep the saved entry if configuration cannot be read. */ }
             if (canSendQueueEmail) Session["QueueEmail:W:" + res.Value] = "pending";
-            return Json(new { ok = true, id = res.Value, canSendQueueEmail });
+            return Json(new { ok = true, id = res.Value, canSendQueueEmail, sourceType = "W" });
         }
 
         [HttpGet]

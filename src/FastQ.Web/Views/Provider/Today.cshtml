@@ -334,7 +334,7 @@
 @Html.Partial("~/Views/Shared/_QueueEntryModals.cshtml")
 
 @section Scripts {
-    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.3.20261001")"></script>
+    <script src="@Url.Content("~/Scripts/provider-common.js?v=1.4.20261007")"></script>
     <script>
   (function () {
     var providerActionUrl = "@Url.Action("ProviderAction", "Provider")";
@@ -3319,7 +3319,7 @@
             }
             closeModal("addAppointmentModal");
             if (res.canSendQueueEmail) {
-                FastQProviderCommon.showQueueAppointmentEmail(res.id);
+                FastQProviderCommon.showQueueAppointmentEmail(res.id, res.sourceType || "A");
                 openModal("queueAppointmentEmailModal");
             }
             queueLiveSync();
@@ -3377,7 +3377,7 @@
             }
             closeModal("addWalkinModal");
             if (res.canSendQueueEmail) {
-                FastQProviderCommon.showQueueAppointmentEmail(res.id, "W");
+                FastQProviderCommon.showQueueAppointmentEmail(res.id, res.sourceType || "W");
                 openModal("queueAppointmentEmailModal");
             }
             queueLiveSync();
