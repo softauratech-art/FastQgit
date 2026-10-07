@@ -862,7 +862,16 @@ namespace FastQ.Web.Services
                 var customer = string.Join(" ", new[] { appointment.CustomerFirstName, appointment.CustomerLastName }
                     .Where(v => !string.IsNullOrWhiteSpace(v)));
                 var location = ResolveInPersonLocation(appointment, queue);
-                var description = "Customer: " + customer + "\nReference: " + appointment.RefValue
+                var serviceName = _queues.ListServicesByQueue(appointment.QueueId)
+                    .FirstOrDefault(s => s.Item1 == appointment.ServiceId)?.Item2 ?? "-";
+                var entryLabel = sourceType == "W" ? "Walk-in" : "Appointment";
+                var details = entryLabel + " Date: " + appointment.ScheduledFor.ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture)
+                    + "\n" + entryLabel + " Time: " + appointment.ScheduledFor.ToString("h:mm tt", CultureInfo.InvariantCulture) + " (Eastern)"
+                    + "\n" + entryLabel + " Type: " + GetContactMethodText(appointment.ContactType)
+                    + "\nQueue: " + queue.Name
+                    + "\nService: " + serviceName
+                    + "\nLanguage Preference: " + (string.IsNullOrWhiteSpace(appointment.LanguagePreference) ? "-" : appointment.LanguagePreference);
+                var description = details + "\n\nCustomer: " + customer + "\nReference: " + appointment.RefValue
                     + "\nMeeting: " + appointment.MeetingUrl;
                 var calendar = AppointmentCalendar.Build(appointment.Id, appointment.ScheduledFor,
                     sourceType == "W" ? (TimeSpan?)null : appointment.EndTime, queue.Name + (sourceType == "W" ? " walk-in" : " appointment"), description,
@@ -877,7 +886,6 @@ namespace FastQ.Web.Services
                     foreach (var recipient in recipients) message.To.Add(new MailAddress(recipient));
                     message.Subject = "New " + (sourceType == "W" ? "walk-in" : "appointment") + " - " + queue.Name;
                     message.Body = "A new entry has been created.\n\n" + description
-                        + "\nDate/time (Eastern): " + appointment.ScheduledFor.ToString("MMM dd, yyyy h:mm tt", CultureInfo.InvariantCulture)
                         + "\n\nOpen the attached calendar file to add it to Outlook.";
                     message.Attachments.Add(Attachment.CreateAttachmentFromString(calendar, "appointment.ics",
                         Encoding.UTF8, "text/calendar"));
