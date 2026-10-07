@@ -33,16 +33,14 @@ namespace FastQ.Web.Controllers.Admin
         public ActionResult EmailNotifications(long id)
         {
             if (!CanConfigureEmail(id)) return new HttpStatusCodeResult(403);
-            ViewBag.QueueId = id;
-            return View(controllerpath + "EmailNotifications",
-                (object)string.Join("\n", new FastQ.Data.Db.DbQueueRepository().GetNotificationEmails(id)));
+            var emails = string.Join("\n", new FastQ.Data.Db.DbQueueRepository().GetNotificationEmails(id));
+            return Json(new { ok = true, emails }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost, ValidateAntiForgeryToken]
         public ActionResult EmailNotifications(long id, string emails)
         {
             if (!CanConfigureEmail(id)) return new HttpStatusCodeResult(403);
-            ViewBag.QueueId = id;
             var recipients = (emails ?? "").Split(new[] { '\r', '\n', ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             try
@@ -54,12 +52,10 @@ namespace FastQ.Web.Controllers.Admin
             }
             catch (FormatException)
             {
-                ModelState.AddModelError("", "Enter valid email addresses, one per line (maximum 50).");
-                return View(controllerpath + "EmailNotifications", (object)(emails ?? ""));
+                return Json(new { ok = false, error = "Enter valid email addresses, one per line (maximum 50)." });
             }
             new FastQ.Data.Db.DbQueueRepository().SaveNotificationEmails(id, recipients);
-            TempData["EmailSaved"] = "Email recipients saved.";
-            return RedirectToAction("EmailNotifications", new { id });
+            return Json(new { ok = true });
         }
 
         #region Queue-Base-Record

@@ -24,8 +24,66 @@
     </style>
 }
 
-@if (Model.Id > 0) {
- <p><a href="@Url.Action("EmailNotifications", "Queue", new { id = Model.Id })">Email Notifications</a></p>
+@if (Model.Id > 0 && Model.EntityId == authsvc.GetSessionEntityId()
+    && (isSuperAdminUser || authsvc.IsAdminForQueue(Model.Id))) {
+    <section class="card" style="padding:24px; margin-bottom:24px;">
+        <h2>Email Notifications</h2>
+        <p>Send appointment and walk-in notifications to these recipients for queue @Model.Id.</p>
+        <form id="queueEmailSettings" action="@Url.Action("EmailNotifications", "Queue", new { id = Model.Id })" method="post">
+            @Html.AntiForgeryToken()
+            <label for="queueEmailRecipients" class="form-label">Recipient email addresses</label>
+            <textarea id="queueEmailRecipients" name="emails" class="form-control" rows="4"
+                      style="width:100%; max-width:700px; display:block; margin:8px 0;"
+                      placeholder="person@example.org" aria-describedby="queueEmailHelp" disabled></textarea>
+            <p id="queueEmailHelp">Enter one email address per line. Leave empty to disable the Send Email prompt.</p>
+            <button id="saveQueueEmails" type="submit" class="btn-save" disabled>Save Email Recipients</button>
+            <button id="retryQueueEmails" type="button" class="btn-cancel" hidden>Retry Loading</button>
+            <p id="queueEmailFeedback" role="status" aria-live="polite">Loading saved recipients…</p>
+        </form>
+    </section>
+    <script>
+        (function () {
+            var form = document.getElementById("queueEmailSettings");
+            var input = document.getElementById("queueEmailRecipients");
+            var save = document.getElementById("saveQueueEmails");
+            var retry = document.getElementById("retryQueueEmails");
+            var feedback = document.getElementById("queueEmailFeedback");
+            function readResponse(response) {
+                if (!response.ok) throw new Error("Unable to access email settings. Check your permissions and try again.");
+                return response.json();
+            }
+            function load() {
+                retry.hidden = true;
+                feedback.textContent = "Loading saved recipients…";
+                fetch(form.action, { credentials: "same-origin", cache: "no-store" })
+                    .then(readResponse).then(function (result) {
+                        input.value = result.emails || "";
+                        input.disabled = false;
+                        save.disabled = false;
+                        feedback.textContent = "";
+                    }).catch(function () {
+                        feedback.textContent = "Could not load recipients. Retry before editing.";
+                        retry.hidden = false;
+                    });
+            }
+            retry.addEventListener("click", load);
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                if (save.disabled) return;
+                var data = new FormData(form);
+                save.disabled = true;
+                input.disabled = true;
+                feedback.textContent = "Saving…";
+                fetch(form.action, { method: "POST", credentials: "same-origin", body: data })
+                    .then(readResponse).then(function (result) {
+                        feedback.textContent = result.ok ? "Email recipients saved." : result.error;
+                    }).catch(function () {
+                        feedback.textContent = "Could not confirm the save. Your entered addresses are still here; please retry.";
+                    }).then(function () { save.disabled = false; input.disabled = false; });
+            });
+            load();
+        })();
+    </script>
 }
 
 @section PageHeader {
