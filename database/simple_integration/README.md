@@ -28,3 +28,5 @@ Email settings require the selected entity's SuperAdmin or the selected queue's 
 Local mapping fixtures: python3 tests/simple_integration/test_mapping.py
 
 Oracle compilation, transactional error handling, live permissions, mail delivery and a Windows build still require environment validation. Test both creation types, same numeric IDs across types, no match, mapped processes, database-link failure, rollback, configured/empty emails, and cross-entity settings denial.
+
+Walk-in email details: run 04_walkin_email_details.sql as FQOWNER. It creates the owner-rights read procedure and grants FQUSER execute access. Deploy the rebuilt FastQ.Data.dll with this procedure.
