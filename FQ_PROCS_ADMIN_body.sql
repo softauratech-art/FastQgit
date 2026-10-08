@@ -703,12 +703,13 @@ BEGIN
             );
            
            
-    -- Finally delete any perms where all 4 flags are disabled
+    -- Finally delete any perms where all role flags are disabled
     DELETE FROM USER_PERMISSIONS
         WHERE lower(user_id) = lower(p_userid)
             and NVL(host_flag, 'N') = 'N'
             and NVL(provider_flag, 'N') = 'N'
             and NVL(reporter_flag, 'N') = 'N'
+            and NVL(lobby_flag, 'N') = 'N'
             and NVL(queueadmin_flag, 'N') = 'N'
             and queue_id
                 IN (select queue_id from validqueues
@@ -989,12 +990,13 @@ BEGIN
             );
            
    v_linemarker := 500;        
-    -- Finally delete any perms where all 4 flags are disabled
+    -- Finally delete any perms where all role flags are disabled
     DELETE FROM USER_PERMISSIONS
         WHERE
                 NVL(host_flag, 'N') = 'N'
             and NVL(provider_flag, 'N') = 'N'
             and NVL(reporter_flag, 'N') = 'N'
+            and NVL(lobby_flag, 'N') = 'N'
             and NVL(queueadmin_flag, 'N') = 'N'
             and queue_id = p_queueid;
    

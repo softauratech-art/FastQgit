@@ -406,7 +406,7 @@ BEGIN
              SELECT p.USER_ID, q.QUEUE_ID, q.NAME, q.ENTITY_ID, q.ACTIVEFLAG,
                     -- r.ROLE_ID, r.ROLE_DESC
                     e.adminflag configadmin,
-                    provider_flag, host_flag, queueadmin_Flag, reporter_Flag
+                    provider_flag, host_flag, queueadmin_Flag, reporter_Flag, lobby_flag
                 FROM validqueues q
                     INNER JOIN user_permissions p on p.queue_id = q.queue_id
                     INNER JOIN user_entities e on
@@ -676,14 +676,14 @@ BEGIN
         p.provider_flag,
         p.host_flag,
         p.queueadmin_flag,
-        p.reporter_flag
+        p.reporter_flag, p.lobby_flag
     FROM validqueues q
         INNER JOIN user_permissions p ON q.queue_id = p.queue_id
         INNER JOIN fq_users u ON u.user_id = p.user_id
     WHERE NVL(q.activeflag,'N') = 'Y'
         AND lower(u.user_id) = lower(p_userid)
         AND NVL(u.activeflag,'N') = 'Y'
-        AND (p.provider_flag = 'Y' OR p.host_flag = 'Y' OR p.queueadmin_flag = 'Y' OR p.reporter_flag = 'Y');
+        AND (p.provider_flag = 'Y' OR p.host_flag = 'Y' OR p.queueadmin_flag = 'Y' OR p.reporter_flag = 'Y' OR p.lobby_flag = 'Y');
 END;
 
 PROCEDURE GET_QUEUE_ACCESS (
@@ -697,7 +697,7 @@ BEGIN
         u.USER_ID, FNAME, LNAME, EMAIL, u.ACTIVEFLAG,
         NVL(QUEUE_ID, p_queueid) QUEUE_ID,
         HOST_FLAG, PROVIDER_FLAG,
-        REPORTER_FLAG, QUEUEADMIN_FLAG,
+        REPORTER_FLAG, QUEUEADMIN_FLAG, LOBBY_FLAG,
         e.adminflag ConfigAdminFlag, e.entity_id
     FROM fq_users U
     LEFT OUTER JOIN user_permissions P

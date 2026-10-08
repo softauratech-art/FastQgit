@@ -13,16 +13,26 @@ namespace FastQ.Web.Hubs
     public class QueueHub : Hub
     {
         public Task JoinEntity(string entityId)
-            => Groups.Add(Context.ConnectionId, $"ent:{entityId}");
+        {
+            RequireStaff();
+            return Groups.Add(Context.ConnectionId, $"ent:{entityId}");
+        }
 
         public Task JoinQueue(string queueId)
-            => Groups.Add(Context.ConnectionId, $"queue:{queueId}");
+        {
+            RequireStaff();
+            return Groups.Add(Context.ConnectionId, $"queue:{queueId}");
+        }
 
         public Task JoinAppointment(string appointmentId)
-            => Groups.Add(Context.ConnectionId, $"appt:{appointmentId}");
+        {
+            RequireStaff();
+            return Groups.Add(Context.ConnectionId, $"appt:{appointmentId}");
+        }
 
         public Task JoinNotificationQueues(long[] queueIds)
         {
+            RequireStaff();
             var requestedQueueIds = (queueIds ?? new long[0])
                 .Where(id => id > 0)
                 .Distinct()
@@ -63,6 +73,15 @@ namespace FastQ.Web.Hubs
                 .Where(allowedQueueIds.Contains)
                 .Select(queueId => Groups.Add(Context.ConnectionId, $"notify:queue:{queueId}"));
             return Task.WhenAll(joins);
+        }
+
+        private void RequireStaff()
+        {
+            var user = DbRepositoryFactory.CreateUserRepository().Get(ResolveUserId(), "AUTHSERVICE");
+            var activeEntities = (user?.BusinessEntities ?? new List<UserEntity>()).Where(e => e.ActiveFlag).ToList();
+            var queues = (user?.Queues ?? new List<UserQueuePermission>()).Where(q => q.QueueActiveFlag && activeEntities.Any(e => e.EntityId == q.EntityId));
+            if (user == null || !user.ActiveFlag || (!activeEntities.Any(e => e.ConfigAdminFlag) && !queues.Any(q => q.HostFlag || q.ProviderFlag || q.ReporterFlag || q.QueueAdminFlag)))
+                throw new HubException("Lobby accounts cannot subscribe to staff notifications.");
         }
 
         private string ResolveUserId()

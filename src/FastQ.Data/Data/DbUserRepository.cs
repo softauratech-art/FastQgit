@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Cryptography;
 
 
@@ -148,6 +149,7 @@ namespace FastQ.Data.Db
                                     QueueId = Convert.ToInt64(reader["QUEUE_ID"]?.ToString()),
                                     HostFlag = (reader["HOST_FLAG"]?.ToString() ?? "Y") == "Y",
                                     ProviderFlag = (reader["provider_flag"]?.ToString() ?? "Y") == "Y",
+                                    LobbyFlag = reader["LOBBY_FLAG"].ToString() == "Y",
                                     ReporterFlag = (reader["reporter_Flag"]?.ToString() ?? "Y") == "Y",
                                     QueueAdminFlag = (reader["queueadmin_Flag"]?.ToString() ?? "Y") == "Y",
                                     EntityId  =  ReadInt32(reader, "ENTITY_ID"),
@@ -200,9 +202,11 @@ namespace FastQ.Data.Db
         public void AddOrUpdateUser(string action, User ouser, long entityid, string hostqueues, string providerqueues, string reporterqueues, string queueadminqueues, string stampuser)
         {
             using var conn = DataAccess.Open();
+            using var tx = conn.BeginTransaction();
             string sp_name = "FQOWNER.FQ_PROCS_ADMIN.UPSERT_USER";
             using (var cmd = DataAccess.CreateStoredProc(conn, sp_name))
             {
+                cmd.Transaction = tx;
                 DataAccess.AddParam(cmd, "p_action", action, DbType.String); 
                 DataAccess.AddParam(cmd, "p_userid", ouser.UserId, DbType.String);
                 DataAccess.AddParam(cmd, "p_entityid", entityid, DbType.Int64);
@@ -224,6 +228,16 @@ namespace FastQ.Data.Db
                 cmd.ExecuteNonQuery();
                 string dberr = cmd.Parameters["p_outmsg"].Value as string;
                 if (!string.IsNullOrEmpty(dberr)) throw new InvalidOperationException("DB Error: " + dberr);
+                using (var roleCmd = DataAccess.CreateStoredProc(conn, "FQOWNER.FQ_SAVE_LOBBY_ROLES"))
+                {
+                    roleCmd.Transaction = tx;
+                    DataAccess.AddParam(roleCmd,"p_userid",ouser.UserId,DbType.String);
+                    DataAccess.AddParam(roleCmd,"p_entityid",entityid,DbType.Int64);
+                    DataAccess.AddParam(roleCmd,"p_queueids",string.Join(",", (ouser.Queues ?? new List<UserQueuePermission>()).Where(q => q.LobbyFlag).Select(q => q.QueueId)),DbType.String);
+                    DataAccess.AddParam(roleCmd,"p_stampuser",stampuser,DbType.String);
+                    roleCmd.ExecuteNonQuery();
+                }
+                tx.Commit();
             }
         }
 
@@ -269,6 +283,7 @@ namespace FastQ.Data.Db
                             EntityId = ReadInt32(reader, "ENTITY_ID"),
                             HostFlag = (reader["HOST_FLAG"]?.ToString() ?? "N") == "Y",
                             ProviderFlag = (reader["PROVIDER_FLAG"]?.ToString() ?? "N") == "Y",
+                            LobbyFlag = reader["LOBBY_FLAG"].ToString() == "Y",
                             ReporterFlag = (reader["REPORTER_FLAG"]?.ToString() ?? "N") == "Y",
                             QueueAdminFlag = (reader["QUEUEADMIN_FLAG"]?.ToString() ?? "N") == "Y",
                             QueueActiveFlag = (reader["ACTIVEFLAG"]?.ToString() ?? "Y") == "Y"

@@ -15,6 +15,7 @@ namespace FastQ.Web.Models.Admin
         public string UserId { get; set; }
 
         [Display(Name = "Is Admin?")]
+        public string LobbyQueues { get; set; }
         public bool IsAdmin { get; set; }
 
         [Display(Name ="Is Active?")]

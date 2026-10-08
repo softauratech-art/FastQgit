@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FastQ · Lobby display demo</title>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#143638;background:#edf3f1}*{box-sizing:border-box}body{margin:0}header{background:#123f40;color:white;padding:28px 4vw;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{font-size:30px;font-weight:800;letter-spacing:-1px}.brand span{color:#f4b763}.subtitle{margin-top:8px;color:#c3d8d4;font-size:17px}.time{text-align:right}.clock{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums}.date{color:#c3d8d4;margin-top:5px}.intro{padding:25px 4vw 18px;display:flex;justify-content:space-between;align-items:center;gap:16px}h1{font-size:29px;margin:0 0 8px}.intro p{margin:0;color:#53706d;font-size:18px}.badge{background:#fff0d7;color:#75501c;border:1px solid #e7c792;padding:9px 13px;border-radius:8px;font-weight:bold;white-space:nowrap}main{padding:0 4vw 26px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}.queue{background:white;border:1px solid #d9e5df;border-radius:18px;overflow:hidden;box-shadow:0 5px 18px #163e3810}.queue-head{padding:23px 24px 18px;min-height:117px}.queue-head h2{font-size:24px;line-height:1.2;margin:0 0 9px}.counter{font-size:16px;color:#5f7572}.serving{background:#e3f3eb;padding:19px 24px;border-top:1px solid #cee5d8;border-bottom:1px solid #cee5d8}.eyebrow{text-transform:uppercase;letter-spacing:1.8px;font-size:13px;font-weight:800;color:#326955}.serving-line{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}.ticket{font-size:28px;font-weight:800;line-height:1.2}.visit{display:block;font-size:15px;font-weight:400;color:#526e66;margin-top:7px}.person{min-width:0;overflow-wrap:anywhere}.row{gap:12px}.desk{background:#176a53;color:white;padding:9px 12px;border-radius:7px;font-size:17px}.waiting{padding:20px 24px 12px}.waiting-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.waiting h3{margin:0;font-size:17px}.count{background:#edf3f1;border-radius:20px;padding:5px 10px;font-size:14px;color:#4b6561}.row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf1ef;padding:16px 0;font-size:26px;font-weight:700}.row:last-child{border:0}.next{font-size:13px;color:#94611a;background:#fff1dc;padding:6px 9px;border-radius:5px}.position{font-weight:400;font-size:14px;color:#718580}.empty{font-size:22px;color:#50746c;padding:17px 0}.help{margin:0 4vw 24px;background:#dfeae5;border-radius:12px;padding:18px 24px;display:flex;justify-content:space-between;gap:20px;font-size:18px}.help strong{color:#175840}footer{padding:14px 4vw 22px;display:flex;justify-content:space-between;align-items:center;color:#5d736e;font-size:14px;gap:15px}.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}button{font:inherit;border:1px solid #b6cbc2;background:white;border-radius:7px;padding:10px 13px;color:#234e46;cursor:pointer}button:hover{background:#dcebe3}button:focus-visible{outline:3px solid #cb8b2f;outline-offset:3px}.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#278769;margin-right:7px}.changed{animation:pulse 1s ease-in-out 2}@keyframes pulse{50%{background:#f9e4b9}}@media(min-width:1700px){main{gap:30px}.ticket{font-size:36px}.row{font-size:30px;padding:23px 0}.queue-head h2{font-size:30px}}@media(max-width:1000px){main{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){main{grid-template-columns:1fr}header{padding:22px}.clock{font-size:27px}.brand{font-size:25px}.intro,.help,footer{flex-direction:column;align-items:flex-start}.badge{font-size:12px}.date{font-size:12px}}@media(prefers-reduced-motion:reduce){.changed{animation:none}}
+.slider-controls{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:0 4vw 20px}.slider-controls strong{min-width:170px;text-align:center}.slider-note{color:#53706d;font-size:14px}.slide-enter{animation:slideIn .35s ease-out}@keyframes slideIn{from{opacity:.4;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}@media(prefers-reduced-motion:reduce){.slide-enter{animation:none}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">Fast<span>Q</span> <span aria-hidden="true">/</span> Orange County</div><div class="subtitle">Customer Service · Lobby</div></div><div class="time"><div class="clock" id="clock"></div><div class="date" id="date"></div></div></header>
+<section class="intro"><div><h1>Welcome. We’ll be with you soon.</h1><p>Find your name below. When called, please go to the listed desk.</p></div><span class="badge">DEMO · FICTIONAL DATA</span></section>
+<main id="queues" aria-label="Queue status"></main>
+<nav class="slider-controls" aria-label="Queue slides">
+<button id="previous" aria-label="Previous queues">← Previous</button>
+<strong id="slideLabel"></strong>
+<button id="next" aria-label="Next queues">Next →</button>
+<button id="pause" aria-pressed="false">Pause rotation</button>
+<span class="slider-note" id="rotationNote">Next queues in 10s</span>
+</nav>
+<aside class="help"><span><strong>Have an appointment?</strong> Please check in first.</span><span>Need assistance? Visit the welcome desk.</span></aside>
+<footer><div><span class="live"></span><span id="updated">Sample display ready</span> · Sample scheduled / arrival times · Eastern Time</div><div class="controls"><span>Demo controls</span><button id="advance">Call next sample customer</button><button id="reset">Reset</button><button id="fullscreen">Fullscreen</button></div></footer>
+<script>
+'use strict';
+// Fictional names and fixed example times for the visual demo.
+const initial=[
+{name:'Business Resource Office',location:'Business assistance',desk:'Desk 1',serving:{name:'Casey Morgan',time:'10:00 AM',kind:'Appointment'},waiting:[{name:'Jordan Lee',time:'10:15 AM',kind:'Appointment'},{name:'Alex Taylor',time:'10:08 AM',kind:'Walk-in'},{name:'Sam Rivera',time:'10:30 AM',kind:'Appointment'}]},
+{name:'Building Permits',location:'Permit services',desk:'Desk 2',serving:{name:'Jamie Parker',time:'10:00 AM',kind:'Appointment'},waiting:[{name:'Robin Chen',time:'10:15 AM',kind:'Appointment'},{name:'Drew Ellis',time:'10:12 AM',kind:'Walk-in'}]},
+{name:'Zoning',location:'Planning & zoning services',desk:'Desk 3',serving:{name:'Avery Brooks',time:'10:00 AM',kind:'Appointment'},waiting:[{name:'Quinn Davis',time:'10:15 AM',kind:'Appointment'},{name:'Riley Bennett',time:'10:30 AM',kind:'Appointment'},{name:'Skyler Reed',time:'10:18 AM',kind:'Walk-in'}]},
+{name:'Electrical Permits',location:'Electrical services',desk:'Desk 4',serving:{name:'Morgan Lane',time:'10:00 AM',kind:'Appointment'},waiting:[{name:'Taylor Reed',time:'10:15 AM',kind:'Appointment'}]},
+{name:'Environmental Services',location:'Environmental assistance',desk:'Desk 5',serving:{name:'Cameron Wells',time:'10:00 AM',kind:'Appointment'},waiting:[{name:'Devon Blake',time:'10:10 AM',kind:'Walk-in'},{name:'Emery Stone',time:'10:30 AM',kind:'Appointment'}]},
+{name:'General Assistance',location:'Customer support',desk:'Desk 6',serving:null,waiting:[]}
+];
+function person(visit){return `<span class="person"><span>${visit.name}</span><span class="visit">${visit.kind==='Walk-in'?'Walk-in · Arrived':'Scheduled'} ${visit.time}</span></span>`;}
+let queues, page=0, perPage=pageSize(), remaining=10, paused=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function pageSize(){return window.innerWidth<=640?1:window.innerWidth<=1000?2:3;}
+const eastern={timeZone:'America/New_York'};
+function time(){const now=new Date();document.getElementById('clock').textContent=now.toLocaleTimeString('en-US',{...eastern,hour:'numeric',minute:'2-digit'});document.getElementById('date').textContent=now.toLocaleDateString('en-US',{...eastern,weekday:'long',month:'long',day:'numeric',year:'numeric'});}
+function render(changed){document.getElementById('queues').innerHTML=queues.slice(page*perPage,(page+1)*perPage).map((q,i)=>`<section class="queue"><div class="queue-head"><h2>${q.name}</h2><div class="counter">${q.location}</div></div><div class="serving ${changed===page*perPage+i?'changed':''}"><div class="eyebrow">Now serving</div><div class="serving-line"><span class="ticket">${q.serving?person(q.serving):'—'}</span>${q.serving?`<span class="desk">${q.desk}</span>`:'<span class="counter">Ready to help</span>'}</div></div><div class="waiting"><div class="waiting-head"><h3>Waiting</h3><span class="count">${q.waiting.length} waiting</span></div>${q.waiting.length?q.waiting.map((visit,j)=>`<div class="row">${person(visit)}${j===0?'<span class="next">Up next</span>':`<span class="position">${j+1} in line</span>`}</div>`).join(''):'<p class="empty">No one waiting</p>'}</div></section>`).join('');updateControls();document.getElementById('updated').textContent='Demo updated '+new Date().toLocaleTimeString('en-US',{...eastern,hour:'numeric',minute:'2-digit',second:'2-digit'});}
+document.getElementById('advance').onclick=()=>{const index=page*perPage;const q=queues[index];q.serving=q.waiting.shift()||null;render(index);};
+function reset(){page=0;remaining=10;queues=initial.map(q=>({...q,waiting:[...q.waiting]}));render();}document.getElementById('reset').onclick=reset;
+document.getElementById('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{document.getElementById('fullscreen').textContent='Use browser fullscreen';}};
+document.addEventListener('fullscreenchange',()=>document.getElementById('fullscreen').textContent=document.fullscreenElement?'Exit fullscreen':'Fullscreen');
+function updateControls(){
+ const pages=Math.ceil(queues.length/perPage);
+ document.getElementById('slideLabel').textContent=`Queues ${page*perPage+1}–${Math.min((page+1)*perPage,queues.length)} of ${queues.length}`;
+ document.getElementById('pause').textContent=paused?'Resume rotation':'Pause rotation';
+ document.getElementById('pause').setAttribute('aria-pressed',String(paused));
+ document.getElementById('rotationNote').textContent=paused?'Rotation paused':`Next queues in ${remaining}s`;
+ document.getElementById('previous').disabled=pages<=1;document.getElementById('next').disabled=pages<=1;
+}
+function move(direction){page=(page+direction+Math.ceil(queues.length/perPage))%Math.ceil(queues.length/perPage);remaining=10;render();const board=document.getElementById('queues');board.classList.remove('slide-enter');void board.offsetWidth;board.classList.add('slide-enter');}
+document.getElementById('previous').onclick=()=>move(-1);
+document.getElementById('next').onclick=()=>move(1);
+document.getElementById('pause').onclick=()=>{paused=!paused;remaining=10;updateControls();};
+window.addEventListener('resize',()=>{const size=pageSize();if(size!==perPage){page=Math.floor(page*perPage/size);perPage=size;remaining=10;render();}});
+reset();time();setInterval(()=>{time();if(!paused&&!document.hidden){remaining--;if(remaining<=0)move(1);else updateControls();}},1000);
+</script>
+</body></html>

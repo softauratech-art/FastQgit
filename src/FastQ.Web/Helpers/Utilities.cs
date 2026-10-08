@@ -22,7 +22,8 @@ namespace FastQ.Web.Helpers
             Provider,   // Value 1 by default
             QueueAdmin, // Value 2 by default
             Reporter,   // Value 3 by default
-            SuperAdmin  // Value 4 by default
+            SuperAdmin,  // Value 4 by default
+            Lobby
         }
 
         public static string ParseTimestampForDB(string ts)

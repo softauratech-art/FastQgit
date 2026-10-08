@@ -85,27 +85,24 @@ namespace FastQ.Web.Services
         }
         public void SetSessionEntityId()
         {
-            string param = HttpContext.Current.Request["eid"] != null ? HttpContext.Current.Request["eid"].ToString(): string.Empty;
-            if (!string.IsNullOrWhiteSpace(param) && Int32.TryParse(param, out int entityid))
-            {
-                HttpContext.Current.Session["fq_current_entity"] = entityid;
-            }
-            else
-            {
-                long? eid = GetSessionEntityId();
-                if (eid == 0)
-                {
-                    if (HttpContext.Current.Session?["fq_user"] != null && HttpContext.Current.Session?["fq_user"] is Data.Entities.User)
-                    {
-                        FastQ.Data.Entities.User ousr = (FastQ.Data.Entities.User)HttpContext.Current.Session["fq_user"];
+            var context = HttpContext.Current;
+            var user = GetCurrentUser();
+            var entities = (user?.BusinessEntities ?? new List<UserEntity>()).Where(e => e.ActiveFlag).ToList();
+            long entity = GetSessionEntityId();
+            long requested;
+            if (long.TryParse(context.Request["eid"], out requested)) entity = requested;
+            if (!entities.Any(e => e.EntityId == entity)) entity = 0;
+            if (entity == 0 && entities.Count == 1) entity = entities[0].EntityId;
+            // A display-only account needs no staff dashboard to select its first entity.
+            if (entity == 0 && Helpers.LobbyRolePolicy.IsLobbyOnly(user, 0))
+                entity = entities.First(e => (user.Queues ?? new List<UserQueuePermission>())
+                    .Any(q => q.EntityId == e.EntityId && q.QueueActiveFlag && q.LobbyFlag)).EntityId;
+            context.Session["fq_current_entity"] = entity;
+        }
 
-                        int cnt = ousr.BusinessEntities.Count(e => e.ActiveFlag == true);                        
-                        if (cnt == 1)
-                            eid = ousr.BusinessEntities?.FirstOrDefault(e => e.ActiveFlag == true).EntityId;  //auto-default
-                    }                    
-                }
-                HttpContext.Current.Session["fq_current_entity"] = eid;               
-            }
+        public bool IsLobbyOnly()
+        {
+            return Helpers.LobbyRolePolicy.IsLobbyOnly(GetCurrentUser(), GetSessionEntityId());
         }
 
         public bool IsInRole(Helpers.Utilities.FQRole role)
@@ -117,11 +114,14 @@ namespace FastQ.Web.Services
             long eid = new AuthService().GetSessionEntityId();            
 
             // Allow only if User has active access to This entity
-            if (ousr.BusinessEntities?.FirstOrDefault(e => e.EntityId == eid && e.ActiveFlag == true) == null)
+            if (ousr == null || !ousr.ActiveFlag || ousr.BusinessEntities?.FirstOrDefault(e => e.EntityId == eid && e.ActiveFlag == true) == null)
                 return false;
 
             // Process Roles for User with active access to This entity
             switch (role) {
+                case Helpers.Utilities.FQRole.Lobby:
+                    result = ousr.Queues.Any(q => q.EntityId == eid && q.QueueActiveFlag && q.LobbyFlag);
+                    break;
                 case Helpers.Utilities.FQRole.Host:
                     result = ousr.Queues.FirstOrDefault(l => l.HostFlag == true && l.EntityId == eid) != null;
                     break;

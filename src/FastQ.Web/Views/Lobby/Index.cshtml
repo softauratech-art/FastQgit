@@ -1,0 +1,16 @@
+@{ Layout = null; }
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FastQ · Lobby</title>
+    <link rel="stylesheet" href="@Url.Content("~/Content/lobby-display.css")" />
+</head>
+<body data-feed="@Url.Action("Data", "Lobby")">
+    <header><div><span class="brand">FastQ <span>LOBBY</span></span><h1>@ViewBag.EntityName</h1><p>Welcome. Please watch for your name.</p></div><div class="clock"><strong id="clock"></strong><div id="date"></div></div></header>
+    <main><div class="intro"><h2>Today’s queues</h2><span id="updated" role="status">Connecting…</span></div><div id="queues" class="queues"></div></main>
+    <footer><span>Appointment: scheduled time · Walk-in: arrival time</span><nav aria-label="Queue slideshow"><button id="previous" aria-label="Previous queues">←</button><span id="slideLabel"></span><button id="next" aria-label="Next queues">→</button><button id="pause">Pause</button><button id="fullscreen">Full screen</button></nav></footer>
+    <script src="@Url.Content("~/Scripts/lobby-display.js")"></script>
+</body>
+</html>

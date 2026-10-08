@@ -55,8 +55,8 @@ namespace FastQ.Web.Services
                 Phone = userentity.Phone
             };
 
-            if (userentity.BusinessEntities != null)
-                ouser.IsAdmin = userentity.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag;
+            var membership = userentity.BusinessEntities?.FirstOrDefault(e => e.EntityId == _sessionentity);
+            ouser.IsAdmin = membership?.ConfigAdminFlag ?? false;
             
             if (userentity.Queues != null)
                 ouser.Permissions = userentity.Queues?.Where(q => q.EntityId == _sessionentity && q.QueueActiveFlag == true).ToList();
@@ -84,7 +84,9 @@ namespace FastQ.Web.Services
                                     new Data.Entities.User {
                                         UserId = uvm.UserId, FirstName = uvm.FirstName, LastName = uvm.LastName, 
                                         Email = uvm.Email, Phone = uvm.Phone, ActiveFlag = uvm.IsActive, 
-                                        Title = uvm.Title, Language = uvm.OtherLanguage, BusinessEntities = entities
+                                        Title = uvm.Title, Language = uvm.OtherLanguage, BusinessEntities = entities,
+                                        Queues = (uvm.LobbyQueues ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                            .Select(id => new Data.Entities.UserQueuePermission { QueueId = long.Parse(id), LobbyFlag = true }).ToList()
                                     }, 
                                     _sessionentity,                        
                                     hostqueues, providerqueues, reporterqueues, queueadminqueues,

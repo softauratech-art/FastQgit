@@ -134,6 +134,7 @@
                                 <th>Queue</th>
                                 <th><input type="checkbox" id="host-checkall" onclick="selectAll(this,'host-role');" style="display:inline" />&nbsp;Host? <i class="bi bi-info-circle help-icon" data-title="HOST can Checkin, Transfer, Cancel -- Cannot Start/End service."></i></th>
                                 <th><input type="checkbox" id="provider-checkall" onclick="selectAll(this,'provider-role');" style="display: inline" />&nbsp;Provider? <i class="bi bi-info-circle help-icon" data-title="PROVIDER can Checkin, Transfer, Cancel, Start, End service."></i></th>
+                                <th><input type="checkbox" onclick="selectAll(this,'lobby-role');" /> Lobby?</th>
                                 <th> <input type="checkbox" id="reporter-checkall" onclick="selectAll(this,'reporter-role');" style="display: inline" />&nbsp;Reporter?</th>
                                 <th><input type="checkbox" id="queueadmin-checkall" onclick="selectAll(this,'queueadmin-role');" style="display: inline" />&nbsp;Queue Admin? <i class="bi bi-info-circle help-icon" data-title="Configure + Provider"></i></th>
                             </tr>
@@ -146,12 +147,14 @@
 
                                     var isHost = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).HostFlag : false;
                                     var isProvider = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).ProviderFlag : false;
+                                    var isLobby = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id && p.LobbyFlag);
                                     var isReporter = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).ReporterFlag : false;
                                     var isQueueAdmin = Model.Permissions != null && Model.Permissions.Any(p => p.QueueId == q.Id) ? Model.Permissions.FirstOrDefault(p => p.QueueId == q.Id).QueueAdminFlag : false;
                                     <tr>
                                         <td>@q.Name <span class="text-danger">@(q.ActiveFlag==false ? "Inactive": "")</span></td>
                                         <td><input type="checkbox" name="host" value="@q.Id" class="host-role" @(isHost ? "checked" : "") @(q.ActiveFlag == false ? "disabled" : "")/></td>
                                         <td><input type="checkbox" name="provider" value="@q.Id" class="provider-role" @(isProvider ? "checked" : "") @(q.ActiveFlag == false ? "disabled" : "")/></td>
+                                        <td><input type="checkbox" name="lobby" value="@q.Id" class="lobby-role" @(isLobby ? "checked" : "") @(q.ActiveFlag == false ? "disabled" : "") /></td>
                                         <td><input type="checkbox" name="reporter" value="@q.Id" class="reporter-role" @(isReporter ? "checked" : "") @(q.ActiveFlag == false ? "disabled" : "")/></td>
                                         <td><input type="checkbox" name="queueadmin" value="@q.Id" class="queueadmin-role" @(isQueueAdmin ? "checked" : "") @(q.ActiveFlag == false ? "disabled" : "")/></td>
                                     </tr>

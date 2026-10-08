@@ -106,6 +106,12 @@
             <div class="brand-env">@Html.Raw(env)</div>
             </div>
             <nav class="drawer-nav">
+                @if (isSuperAdmin || authsvc.IsInRole(FastQ.Web.Helpers.Utilities.FQRole.Lobby))
+                {
+                    <a href="@Url.Action("Index", "Lobby")" class="nav-link" title="Lobby display">
+                        <i class="bi bi-display"></i><span class="nav-text">Lobby display</span>
+                    </a>
+                }
                 @if (isHost || isProvider || isSuperAdmin || isQueueAdmin)
                 {
                     <a class="nav-link" href="@Url.Action("Index", "Home")" title="Dashboard" aria-label="Dashboard">

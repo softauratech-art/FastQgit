@@ -87,6 +87,7 @@ namespace FastQ.Web.Controllers.Admin
                 if (IsValid(action, collection))
                 {
                     string uid = ovm.UserId;
+                    ovm.LobbyQueues = collection["lobby"];
                     string hostqueues = collection["host"]?.ToString();
                     string providerqueues = collection["provider"]?.ToString();
                     string reporterqueues = collection["reporter"]?.ToString();
@@ -147,7 +148,7 @@ namespace FastQ.Web.Controllers.Admin
             //check fld-permissions too - for Create New User only
             if (action == "A")
             {
-                string[] requiredperms = ["host", "queueadmin", "provider", "reporter"];               
+                string[] requiredperms = ["host", "queueadmin", "provider", "reporter", "lobby"];
                 foreach (string flds in requiredperms)
                 {
                     if (!string.IsNullOrEmpty(fc[flds]?.Trim()))
@@ -163,7 +164,7 @@ namespace FastQ.Web.Controllers.Admin
         List<UserQueuePermission> ReloadPermissions(FormCollection fc)
         {   
             List<UserQueuePermission> perms = [];
-            string[] queuepermsfld = ["host", "provider", "reporter", "queueadmin"];
+            string[] queuepermsfld = ["host", "provider", "reporter", "queueadmin", "lobby"];
             foreach (string key in queuepermsfld)
             {
                 if (fc[key] == null) continue;
@@ -178,6 +179,7 @@ namespace FastQ.Web.Controllers.Admin
                         if (key.Equals("host")) perm.HostFlag = true;
                         if (key.Equals("provider")) perm.ProviderFlag = true;
                         if (key.Equals("reporter")) perm.ReporterFlag = true;
+                        if (key.Equals("lobby")) perm.LobbyFlag = true;
                         if (key.Equals("queueadmin")) perm.QueueAdminFlag = true;
                         perms.Add(perm);
                     }
@@ -186,6 +188,7 @@ namespace FastQ.Web.Controllers.Admin
                         if (key.Equals("host")) foundItem.HostFlag = true;
                         if (key.Equals("provider")) foundItem.ProviderFlag = true;
                         if (key.Equals("reporter")) foundItem.ReporterFlag = true;
+                        if (key.Equals("lobby")) foundItem.LobbyFlag = true;
                         if (key.Equals("queueadmin")) foundItem.QueueAdminFlag = true;
                     }
                 }

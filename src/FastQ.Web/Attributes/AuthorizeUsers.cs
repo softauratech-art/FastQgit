@@ -15,8 +15,19 @@ namespace FastQ.Web.Attributes
         public string AllowRole { get; set; }
         public bool IsAuthenticated = false;
         private AuthService authsvc = new AuthService();
+        public override void OnAuthorization(AuthorizationContext context)
+        {
+            base.OnAuthorization(context);
+            if (authsvc.IsLobbyOnly() && context.ActionDescriptor.ControllerDescriptor.ControllerName != "Lobby")
+            {
+                context.Result = context.HttpContext.Request.HttpMethod == "GET" && !context.HttpContext.Request.IsAjaxRequest()
+                    ? (ActionResult)new RedirectResult("~/Lobby") : new HttpStatusCodeResult(403);
+            }
+        }
+
         protected override bool AuthorizeCore(HttpContextBase httpContext)
         {
+            IsAuthenticated = false;
             string _stampuser = authsvc.GetLoggedInWindowsUser();
             bool result = false;
 
@@ -58,17 +69,12 @@ namespace FastQ.Web.Attributes
                 //reset flag
                 result = false;
                 string[] roles = AllowRole.Split(',');
-                Helpers.Utilities.FQRole role = new Helpers.Utilities.FQRole();
                 foreach (var r in roles)
                 {
-                    if (r.Equals("Host")) role = Helpers.Utilities.FQRole.Host;
-                    if (r.Equals("Provider")) role = Helpers.Utilities.FQRole.Provider;
-                    if (r.Equals("QueueAdmin")) role = Helpers.Utilities.FQRole.QueueAdmin;
-                    if (r.Equals("Reporter")) role = Helpers.Utilities.FQRole.Reporter;
-                    if (r.Equals("SuperAdmin")) role = Helpers.Utilities.FQRole.SuperAdmin;
-                    // If any Roles match, then return True and exit
-                    if (authsvc.IsInRole(role)) return true;
-                }                
+                    Helpers.Utilities.FQRole role;
+                    if (Enum.TryParse(r.Trim(), true, out role) && Enum.IsDefined(typeof(Helpers.Utilities.FQRole), role)
+                        && authsvc.IsInRole(role)) return true;
+                }
             }
             return result;
         }
