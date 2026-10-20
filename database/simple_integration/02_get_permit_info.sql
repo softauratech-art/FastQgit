@@ -56,10 +56,10 @@ BEGIN
     ),
  folders AS (
   SELECT f.folderrsn,f.foldertype,COUNT(*) OVER () folder_count
-  FROM folder@LDMSDEV_LINK f WHERE UPPER(TRIM(f.referencefile))=UPPER(TRIM(p_reference))
+  FROM amanda.folder@fqlink f WHERE UPPER(TRIM(f.referencefile))=UPPER(TRIM(p_reference))
  ), processes AS (
   SELECT fp.*,COUNT(*) OVER (PARTITION BY fp.folderrsn) process_count
-  FROM folderprocess@LDMSDEV_LINK fp WHERE fp.folderrsn IN (SELECT folderrsn FROM folders)
+  FROM amanda.folderprocess@fqlink fp WHERE fp.folderrsn IN (SELECT folderrsn FROM folders)
  )
  SELECT p_type,p_id,p_queue,UPPER(TRIM(p_reference)),f.folderrsn,f.foldertype,
  fp.processrsn,fp.processcode,TRIM(fp.assigneduser),fp.signoffuser,

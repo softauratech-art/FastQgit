@@ -4,7 +4,7 @@ import unittest
 
 sql = (Path(__file__).resolve().parents[2] / 'database/simple_integration/02_get_permit_info.sql').read_text()
 query = sql[sql.index(' WITH QUEUE_PROCESS_MAP'):sql.index(';\n -- Caller')]
-query = query.replace('@LDMSDEV_LINK','').replace(' FROM dual','')
+query = query.replace('amanda.folderprocess@fqlink','folderprocess').replace('amanda.folder@fqlink','folder').replace(' FROM dual','')
 for name in ['p_type','p_id','p_queue','p_reference']:
     query = query.replace(name, ':' + name)
 
