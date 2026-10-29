@@ -41,6 +41,7 @@ namespace FastQ.Data.Entities
         public string QueueName { get; set; }
         public bool HostFlag { get; set; }
         public bool ProviderFlag { get; set; }
+        public bool LobbyFlag { get; set; }
         public bool ReporterFlag { get; set; }
         public bool QueueAdminFlag { get; set; }
 

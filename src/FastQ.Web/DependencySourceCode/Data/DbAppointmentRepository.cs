@@ -69,6 +69,17 @@ namespace FastQ.Data.Db
             }
         }
 
+        public Appointment GetWalkinNotification(long id)
+        {
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_GET_WALKIN_EMAIL_DETAILS"))
+            {
+                DataAccess.AddParam(cmd, "p_walkin_id", id, DbType.Int64);
+                DataAccess.AddOutRefCursor(cmd, "p_cur");
+                using (var reader = cmd.ExecuteReader()) return reader.Read() ? MapAppointment(reader) : null;
+            }
+        }
+
         public long AddWalkin(Appointment appointment)
         {
             using (var conn = DataAccess.Open())
@@ -377,6 +388,7 @@ namespace FastQ.Data.Db
                             CustomerEmail = ReadField(reader, "CUST_EMAIL"),
                             CustomerPhone = ReadField(reader, "CUST_PHONE"),
                             ContactType = ReadField(reader, "CONTACTTYPE"),
+                            RefCriteria = ReadField(reader, "REF_CRITERIA"),
                             RefValue = ReadField(reader, "REF_VALUE"),
                             LanguagePreference = ReadField(reader, "LANGUAGE_PREF"),
                             MeetingUrl = ReadMeetingUrl(reader),
@@ -389,6 +401,7 @@ namespace FastQ.Data.Db
                             ServiceStampUser = ReadField(reader, "SERVICE_STAMPUSER"),
                             StampUser = ReadField(reader, "STAMPUSER"),
                             StampUserName = ReadField(reader, "STAMPUSERNAME"),
+                            AssignedUser = ReadField(reader, "ASSIGNEDUSER"),
                             SmsOptIn = string.Equals(ReadField(reader, "SMS_OPTIN"), "Y", StringComparison.OrdinalIgnoreCase),
                             UpdatedOn = ReadDateTime(reader, "STAMPDATE"),
                             CreatedOn = ReadDateTime(reader, "CREATEDON"),

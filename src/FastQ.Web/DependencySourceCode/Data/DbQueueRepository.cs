@@ -16,6 +16,38 @@ namespace FastQ.Data.Db
         {
         }
 
+        public IList<string> GetNotificationEmails(long queueId)
+        {
+            var result = new List<string>();
+            using (var conn = DataAccess.Open())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_GET_QUEUE_EMAILS"))
+            {
+                DataAccess.AddParam(cmd, "p_queue_id", queueId, DbType.Int64);
+                DataAccess.AddOutRefCursor(cmd, "p_cur");
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read()) result.Add(reader.GetString(0));
+            }
+            return result;
+        }
+
+        public void SaveNotificationEmails(long queueId, IEnumerable<string> emails)
+        {
+            if (emails == null) throw new ArgumentNullException(nameof(emails));
+            var payload = new JArray(emails).ToString(Newtonsoft.Json.Formatting.None);
+            using (var conn = DataAccess.Open())
+            using (var tx = conn.BeginTransaction())
+            using (var cmd = DataAccess.CreateStoredProc(conn, "fqowner.FQ_SAVE_QUEUE_EMAILS"))
+            {
+                cmd.Transaction = tx;
+                DataAccess.AddParam(cmd, "p_queue_id", queueId, DbType.Int64);
+                var json = DataAccess.AddParam(cmd, "p_emails_json", payload, DbType.String);
+                ((Oracle.ManagedDataAccess.Client.OracleParameter)json).OracleDbType =
+                    Oracle.ManagedDataAccess.Client.OracleDbType.Clob;
+                cmd.ExecuteNonQuery();
+                tx.Commit();
+            }
+        }
+
         #region Queue Base-record
         public Entities.Queue Get(long id)
         {
