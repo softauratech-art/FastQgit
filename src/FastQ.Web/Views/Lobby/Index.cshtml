@@ -4,13 +4,43 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FastQ · Lobby</title>
+    <meta name="theme-color" content="#123f40" />
+    <title>FastQ &middot; Lobby</title>
     <link rel="stylesheet" href="@Url.Content("~/Content/lobby-display.css")" />
 </head>
-<body data-feed="@Url.Action("Data", "Lobby")">
-    <header><div><span class="brand">FastQ <span>LOBBY</span></span><h1>@ViewBag.EntityName</h1><p>Welcome. Please watch for your name.</p></div><div class="clock"><strong id="clock"></strong><div id="date"></div></div></header>
-    <main><div class="intro"><h2>Today’s queues</h2><span id="updated" role="status">Connecting…</span></div><div id="queues" class="queues"></div></main>
-    <footer><span>Appointment: scheduled time · Walk-in: arrival time</span><nav aria-label="Queue slideshow"><button id="previous" aria-label="Previous queues">←</button><span id="slideLabel"></span><button id="next" aria-label="Next queues">→</button><button id="pause">Pause</button><button id="fullscreen">Full screen</button></nav></footer>
+<body data-feed="@Url.Action("Data", "Lobby")" data-state="connecting">
+    <header class="display-header">
+        <div class="identity">
+            <div class="brand">Fast<span>Q</span><span class="brand-label">LOBBY DISPLAY</span></div>
+            <h1>@ViewBag.EntityName</h1>
+            <p>Welcome. We&rsquo;ll be with you soon.</p>
+        </div>
+        <div class="clock" aria-label="Current Eastern time">
+            <strong id="clock"></strong>
+            <div id="date"></div>
+            <span class="timezone">EASTERN TIME</span>
+        </div>
+    </header>
+    <main>
+        <div class="intro">
+            <div><p class="eyebrow">CUSTOMER SERVICE</p><h2>Today&rsquo;s service queues</h2></div>
+            <div class="connection"><span class="connection-label" id="connectionLabel">Connecting</span><span id="updated" role="status" aria-live="polite">Getting the latest queue information&hellip;</span></div>
+        </div>
+        <div id="queues" class="queues" aria-label="Current service queues" aria-busy="true"></div>
+        <aside class="visitor-note">
+            <span class="note-icon" aria-hidden="true">i</span>
+            <p><strong>Please watch for your name.</strong> Make sure you have checked in. A staff member will call you when it is your turn.</p>
+        </aside>
+    </main>
+    <footer class="display-footer">
+        <div class="time-key"><span><i class="key-mark appointment" aria-hidden="true"></i>Appointment: scheduled time</span><span><i class="key-mark walkin" aria-hidden="true"></i>Walk-in: arrival time</span></div>
+        <nav aria-label="Queue slideshow">
+            <span id="rotationLabel" class="rotation-label">Rotates every 10 seconds</span>
+            <div class="page-controls"><button id="previous" class="arrow-button" type="button" aria-label="Previous queues">&larr;</button><span id="slideLabel"></span><button id="next" class="arrow-button" type="button" aria-label="Next queues">&rarr;</button></div>
+            <button id="pause" type="button" aria-pressed="false">Pause</button>
+            <button id="fullscreen" type="button" class="fullscreen-button">Full screen</button>
+        </nav>
+    </footer>
     <script src="@Url.Content("~/Scripts/lobby-display.js")"></script>
 </body>
 </html>
