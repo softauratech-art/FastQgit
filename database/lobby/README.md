@@ -20,7 +20,7 @@ If the earlier entity-level implementation was deployed, its `USER_ENTITIES.LOBB
 - Today's date uses America/New_York; existing stored times are treated as local business times.
 - Waiting = ARRIVED; Now serving = IN PROGRESS. Unchecked-in, completed and cancelled entries are excluded.
 - Names and scheduled appointment times / walk-in arrival times appear. Missing appointment start times display “Not scheduled”. No contact details, notes or permits are exposed.
-- Refresh every 15 seconds after a request completes. Queue groups rotate every 10 seconds, including overflow customer pages. Previous, Next, Pause and Full screen are available.
+- Refresh every 15 seconds after a request completes. Queue groups rotate every 10 seconds. Waiting has three fixed slots showing the first three entries; unused slots remain blank. Waiting names do not rotate. Previous, Next, Pause and Full screen are available.
 
 ## DEV verification
 

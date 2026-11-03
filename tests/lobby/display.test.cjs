@@ -26,25 +26,35 @@ async function settle(){await new Promise(resolve=>setImmediate(resolve));}
  assert.equal(ids.queues.attributes['aria-busy'],'false');
  assert.match(ids.queues.text,/Arrived/);
  assert.match(ids.queues.text,/<img src=x onerror=alert\(1\)>/); // Rendered as literal text, never HTML.
+ assert.equal(ids.queues.children[0].children[2].children.filter(c=>c.className==='person').length,3);
  assert.match(ids.queues.text,/10:30 AM/); assert.doesNotMatch(ids.queues.text,/Person 6/);
  ids.next.onclick(); assert.match(ids.queues.text,/Queue 3/);
- ids.next.onclick(); assert.match(ids.queues.text,/Person 6/); // Overflow customers eventually appear.
+ ids.next.onclick(); assert.match(ids.queues.text,/Person 2/);
+ ids.next.onclick(); ids.next.onclick(); assert.doesNotMatch(ids.queues.text,/Person [3-6]/); // Waiting slots stay fixed across queue slides.
  ids.pause.onclick(); assert.equal(ids.rotationLabel.textContent,'Rotation paused'); const before=ids.slideLabel.textContent;
  intervals.find(x=>x.delay===10000).fn(); assert.equal(ids.slideLabel.textContent,before);
  ids.pause.onclick(); intervals.find(x=>x.delay===10000).fn(); assert.notEqual(ids.slideLabel.textContent,before);
  window.innerWidth=600;ids.next.onclick();assert.equal(ids.queues.children.length,1);
- // Short kiosk screens reduce visible rows; overflow still rotates.
+ // Short kiosk screens retain the same three fixed waiting slots.
  window.innerWidth=1366;window.innerHeight=768;ids.next.onclick();
- assert.match(ids.queues.text,/Showing/);
+ assert.doesNotMatch(ids.queues.text,/Person [3-6]/);
+ assert.equal(ids.queues.children[0].children[2].children.filter(c=>c.className==='person').length,3);
  const retry=()=>[...timeouts.values()].filter(t=>t.delay===15000).at(-1).fn();
  response={ok:false,status:503};retry();await settle();
  assert.equal(body.dataset.state,'offline');assert.doesNotMatch(ids.queues.text,/Person|img/);
  assert.match(ids.queues.text,/temporarily unavailable/);
  response=goodResponse;retry();await settle();assert.equal(body.dataset.state,'live');
+ response={ok:true,status:200,json:async()=>({queues:[{id:1,name:'Test queue',serving:[],waiting:[{name:'Only person',kind:'Walk-in',time:'10:00 AM'}]}]})};retry();await settle();
+ let waiting=ids.queues.children[0].children[2];
+ assert.equal(waiting.children.filter(c=>c.className==='person').length,1);
+ assert.equal(waiting.children.filter(c=>c.className==='person person-placeholder').length,2);
+ response={ok:true,status:200,json:async()=>({queues:[{id:1,name:'Test queue',serving:[],waiting:[]}]})};retry();await settle();
+ waiting=ids.queues.children[0].children[2];
+ assert.equal(waiting.children.filter(c=>c.className==='person person-placeholder').length,3);
  response={ok:true,status:200,json:async()=>({queues:[]})};retry();await settle();
  assert.equal(body.dataset.state,'live');assert.match(ids.queues.text,/No queues available/);
  response={ok:false,status:403};retry();await settle();
  assert.equal(body.dataset.state,'denied');assert.equal(ids.connectionLabel.textContent,'Access ended');
  assert.doesNotMatch(ids.queues.text,/Person|img/);assert.match(ids.updated.textContent,/Access ended/);
- console.log('PASS: queue rotation, overflow names, pause/resume, responsive count, literal text, connection states, short screens, access revocation');
+ console.log('PASS: queue slides, three fixed waiting slots, empty slots, pause/resume, responsive count, literal text, connection states, short screens, access revocation');
 })().catch(e=>{console.error(e);process.exitCode=1;});

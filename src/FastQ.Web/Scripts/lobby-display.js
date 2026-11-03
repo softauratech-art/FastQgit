@@ -22,7 +22,7 @@
         var count = node('span', String(people.length), 'section-count');
         count.setAttribute('aria-label', people.length + ' ' + title.toLowerCase());
         heading.appendChild(count); el.appendChild(heading);
-        var start = (turn % Math.max(1, Math.ceil(people.length / limit))) * limit;
+        var start = serving ? (turn % Math.max(1, Math.ceil(people.length / limit))) * limit : 0;
         people.slice(start, start + limit).forEach(function (person) {
             var row = node('div', undefined, 'person'), label = node('div', undefined, 'person-name');
             label.appendChild(node('strong', person.name || 'Guest'));
@@ -32,17 +32,18 @@
             time.appendChild(node('time', person.time));
             row.appendChild(label); row.appendChild(time); el.appendChild(row);
         });
-        if (!people.length) el.appendChild(node('p', serving ? 'No one being served' : 'No one waiting', 'empty'));
-        if (people.length > limit) el.appendChild(node('div', 'Showing ' + (start + 1) + '\u2013' + Math.min(start + limit, people.length) + ' of ' + people.length, 'range'));
+        if (!serving) {
+            for (var slot = Math.min(people.length, limit); slot < limit; slot++) {
+                var placeholder = node('div', '\u2014', 'person person-placeholder');
+                placeholder.setAttribute('aria-label', 'Empty waiting slot');
+                el.appendChild(placeholder);
+            }
+        } else if (!people.length) el.appendChild(node('p', 'No one being served', 'empty'));
+        if (serving && people.length > limit) el.appendChild(node('div', 'Showing ' + (start + 1) + '\u2013' + Math.min(start + limit, people.length) + ' of ' + people.length, 'range'));
         return el;
     }
     function rowLimits() {
-        var compact = window.innerHeight <= 850 && window.innerWidth > 700;
-        var top = root.getBoundingClientRect ? root.getBoundingClientRect().top : 180;
-        var serving = window.innerHeight >= 1200 ? 2 : 1;
-        var rowHeight = compact ? 76 : 100;
-        var reserved = (compact ? 160 + 88 + 128 : 170 + 112 + 158) + 60 + (serving - 1) * rowHeight;
-        return { serving: serving, waiting: Math.max(1, Math.min(5, Math.floor((window.innerHeight - top - reserved) / rowHeight))) };
+        return { serving: window.innerHeight >= 1200 ? 2 : 1, waiting: 3 };
     }
     function render() {
         var count = Math.max(1, Math.ceil(queues.length / size())); page = (page + count) % count;
