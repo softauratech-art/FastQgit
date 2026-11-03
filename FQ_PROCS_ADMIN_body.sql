@@ -1,21 +1,22 @@
-create or replace PACKAGE BODY FQ_PROCS_ADMIN AS
+create or replace PACKAGE BODY           "FQ_PROCS_ADMIN" AS
+/**************************************************************************
+Purpose:        PACKAGE FOR FASTQMANAGER > ADMIN components
+Author:         PREDDY
+Created:        28-FEB-26
+Last Updated:   02-JUL-26
+**************************************************************************/
+
 FUNCTION IS_SUPER_ADMIN (p_entityid VALIDQUEUES.ENTITY_ID%type, p_userid varchar2)
 RETURN NUMBER
 AS
 v_result NUMBER(4) := 0;
-BEGIN  
---    SELECT count(*) INTO v_result
---    FROM VALIDQUEUES Q
---        INNER JOIN USER_ENTITIES E
---         ON Q.entity_id = E.entity_id
---    WHERE lower(E.user_id) = lower(p_userid)
---        AND Q.QUEUE_ID = p_entityid
---        AND NVL(E.ADMINFLAG, 'N') = 'Y';
-    SELECT count(*) INTO v_result
+BEGIN
+    SELECT count(1) INTO v_result
         FROM USER_ENTITIES E
-        WHERE lower(E.user_id) = lower(p_userid)
-        AND E.ENTITY_ID = p_entityid
-        AND NVL(E.ADMINFLAG, 'N') = 'Y';
+        WHERE LOWER(E.user_id) = LOWER(p_userid)
+            AND E.ENTITY_ID = p_entityid
+            AND NVL(E.ACTIVEFLAG, 'N') = 'Y'
+            AND NVL(E.ADMINFLAG, 'N') = 'Y';
        
     IF v_result > 0 THEN
         v_result := 1;  -- FALSE:0 | TRUE: 1
@@ -307,11 +308,13 @@ PROCEDURE UPSERT_QUEUE (
 )
 AS
 v_queueid NUMBER;
+v_superadmin NUMBER := IS_SUPER_ADMIN(p_entityid, p_stampuser);
 BEGIN
--- TO DO: How to validate for new_queue
---    IF IS_QUEUE_ADMIN(p_queueid, p_stampuser) = 0 THEN
---        RETURN;
---    END IF;
+    -- 7.2.2026: As per ADuhigg, Only SuperAdmins should create new Queues
+    IF v_superadmin = 0 AND p_queueid = 0 THEN
+        p_outmsg := 'You are not authorized to create new Queues. Only SuperAdmins can add new Queues.';
+        RETURN;
+    END IF;
    
     IF p_queueid = 0 THEN
         v_queueid := QUEUESEQ.NextVal;
@@ -322,14 +325,17 @@ BEGIN
             LEAD_TIME_MIN,LEAD_TIME_MAX,STAMPDATE,STAMPUSER)
         VALUES
            (v_queueid, p_name, p_namees, p_namecp, p_entityid,p_activeflag,
-            p_address, p_phone,
-            p_emponly,p_hideinkiosk, p_hideinmonitor,p_hasguidelines,p_hasuploads,
-            p_leadtimemin,p_leadtimemax,SYSDATE,p_stampuser);
+            p_address, p_phone, p_emponly,
+            p_hideinkiosk, p_hideinmonitor,
+            p_hasguidelines, p_hasuploads, p_leadtimemin,
+            p_leadtimemax, SYSDATE, p_stampuser);
         p_outnewqueueid := v_queueid;
        
-        -- Grant this user QADMIN role implicity: TODO: check if this is necessary
-        INSERT INTO USER_PERMISSIONS (user_id, queue_id, queueadmin_flag, stampuser)
-            VALUES (p_stampuser,v_queueid, 'Y', p_stampuser);
+        -- 7.2.2026: As per ADuhigg, Only SuperAdmins should create new Queues
+        -- So, the below code is not needed.
+        -- Grant this user QADMIN role implicity:
+        -- INSERT INTO USER_PERMISSIONS (user_id, queue_id, queueadmin_flag, stampuser)
+        --  VALUES (LOWER(p_stampuser),v_queueid, 'Y', p_stampuser);
            
     ELSE
         v_queueid := p_queueid; --used later for ContactMethods and RefCriterias
@@ -411,6 +417,7 @@ PROCEDURE UPSERT_USER (
     p_providerqueues IN VARCHAR2,   -- Comma-separated list of queueIds
     p_reporterqueues IN VARCHAR2,   -- Comma-separated list of queueIds
     p_queueadminqueues IN VARCHAR2, -- Comma-separated list of queueIds
+    p_lobbyqueues IN VARCHAR2,      -- Comma-separated list of queueIds
     p_stampuser IN VARCHAR2,
     p_outmsg    OUT VARCHAR2
 )
@@ -425,7 +432,7 @@ BEGIN
     FROM  USER_ENTITIES E            
     WHERE lower(E.user_id) = lower(p_stampuser)            
         AND NVL(E.adminflag, 'N') = 'Y'
-        --TODO: AND NVL(E.activeflag, 'N') = 'Y'
+        AND NVL(E.activeflag, 'N') = 'Y'
         AND entity_id = p_entityid;
 
     IF v_result = 0 THEN
@@ -509,7 +516,8 @@ BEGIN
             -- Deactivate base-record - ONLY when all entities are Inactive
             ACTIVEFLAG = DECODE(v_result, 0, p_activeflag, ACTIVEFLAG),
             TITLE = p_title,
-            STAMPUSER = lower(p_stampuser)
+            STAMPUSER = lower(p_stampuser),
+            STAMPDATE = SYSDATE
         WHERE lower(user_id) = lower(p_userid);
     ELSE
         p_outmsg := 'Invalid action ' || p_action;
@@ -656,6 +664,59 @@ BEGIN
                    connect by level <= regexp_count(v_queueslist, ',')+1
             );
    
+    -- Set LobbyQueues
+    v_queueslist := p_lobbyqueues;
+    IF (length(TRIM(v_queueslist)) > 0) then
+      BEGIN
+        -- b. Enable all current perms
+        FOR i IN
+               (SELECT trim(regexp_substr(v_queueslist, '[^,]+', 1, LEVEL)) item
+                  FROM dual
+                    CONNECT BY LEVEL <= regexp_count(v_queueslist, ',')+1
+                  )
+             LOOP
+               if(length(i.item) > 0) then
+                    SELECT COUNT(*) INTO v_result FROM VALIDQUEUES
+                    WHERE queue_id = TO_NUMBER(i.item) AND entity_id = p_entityid
+                        AND activeflag = 'Y';
+                    IF v_result = 0 THEN
+                        RAISE_APPLICATION_ERROR(-20003, 'Invalid lobby queue');
+                    END IF;
+                    MERGE INTO USER_PERMISSIONS tgt
+                    USING (SELECT lower(p_userid) AS user_id,
+                                  i.item   AS queue_id,
+                                  'Y'      AS flag
+                            FROM dual) src
+                    ON (tgt.user_id = src.user_id and tgt.queue_id = src.queue_id)
+                    WHEN MATCHED THEN
+                        UPDATE SET
+                            tgt.lobby_flag = src.flag,
+                            tgt.stampuser = lower(p_stampuser),
+                            tgt.stampdate = SYSDATE
+                    WHEN NOT MATCHED THEN
+                        INSERT (user_id, queue_id, lobby_flag, stampuser)
+                        VALUES (src.user_id, src.queue_id, src.flag, lower(p_stampuser));
+               end if;
+       END LOOP;
+      END;
+    END IF;
+
+    -- Disable any older LOBBY  perms
+    UPDATE USER_PERMISSIONS SET
+        lobby_flag = 'N',
+        stampuser = p_stampuser,
+        stampdate = SYSDATE
+        WHERE lower(user_id) = lower(p_userid)
+            and lobby_flag = 'Y'
+            and queue_id IN (
+                select queue_id from validqueues
+                  where entity_id = p_entityid
+                minus
+                select to_number(trim(regexp_substr(v_queueslist, '[^,]+', 1, level))) queue_id
+                  from dual
+                   connect by level <= regexp_count(v_queueslist, ',')+1
+            );
+
     -- Set QueueAdminQueues
     v_queueslist := p_queueadminqueues;
     IF (length(TRIM(v_queueslist)) > 0) then
@@ -1127,7 +1188,7 @@ procedure DELETE_HOLIDAY (
 AS
 v_superadmin NUMBER := 0;
 BEGIN    
-    -- TODO: Check if stampuser is SuperAdmin
+    -- Check if stampuser is SuperAdmin
    SELECT count(1) INTO v_superadmin
     FROM USER_ENTITIES u
      WHERE lower(user_id) = lower(p_stampuser)
@@ -1152,3 +1213,5 @@ EXCEPTION
 END;
 
 END FQ_PROCS_ADMIN;
+/
+SHOW ERRORS PACKAGE BODY FQ_PROCS_ADMIN;

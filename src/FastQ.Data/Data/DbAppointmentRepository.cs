@@ -381,6 +381,7 @@ namespace FastQ.Data.Db
                             QueueId = TryGetLong(reader, "QUEUE_ID", out var queueId) ? queueId : 0,
                             ServiceId = TryGetLong(reader, "SERVICE_ID", out var serviceId) ? serviceId : 0,
                             ScheduledFor = scheduled,
+                            ScheduledStartTime = isWalkin || ReadInterval(reader, "START_TIME").HasValue ? scheduled : (DateTime?)null,
                             Status = status,
                             QueueName = ReadField(reader, "NAME"),
                             ServiceName = ReadField(reader, "SERVICE_NAME"),

@@ -1,4 +1,4 @@
-create or replace PACKAGE BODY FQ_PROCS_GET as
+create or replace PACKAGE BODY         FQ_PROCS_GET as
 --******************************************************************************
 -- 2025.12.31   PREDDY      Created package
 -- 2026.07.dd   ASARDAR     Added ServiceTransactions left join to:
@@ -120,6 +120,7 @@ BEGIN
                            DECODE(v_isSuperAdmin, 1, 'Y', HOST_FLAG)  ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', PROVIDER_FLAG) ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', REPORTER_FLAG) = 'Y'
+                        OR NVL(LOBBY_FLAG, 'N') = 'Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', QUEUEADMIN_FLAG) = 'Y'
                     )
     ),
@@ -232,6 +233,7 @@ BEGIN
                            DECODE(v_isSuperAdmin, 1, 'Y', HOST_FLAG)  ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', PROVIDER_FLAG) ='Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', REPORTER_FLAG) = 'Y'
+                        OR NVL(LOBBY_FLAG, 'N') = 'Y'
                         OR DECODE(v_isSuperAdmin, 1, 'Y', QUEUEADMIN_FLAG) = 'Y'
                     )
     ),
@@ -796,3 +798,5 @@ END GET_CUSTOMER_ID_FOR_SOURCE;
 
 
 END FQ_PROCS_GET;
+/
+SHOW ERRORS PACKAGE BODY FQ_PROCS_GET;

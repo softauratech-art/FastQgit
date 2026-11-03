@@ -31,7 +31,7 @@ namespace FastQ.Web.Controllers
                     waiting=g.Where(x=>x.Status=="ARRIVED").Select(x=>new {name=x.Name,time=x.Time,kind=x.SourceType=="W"?"Walk-in":"Appointment"})
                 }) },JsonRequestBehavior.AllowGet);
             }
-            catch (Oracle.ManagedDataAccess.Client.OracleException ex) when (ex.Number == 20002)
+            catch (UnauthorizedAccessException)
             {
                 return new HttpStatusCodeResult(403, "Lobby access required");
             }

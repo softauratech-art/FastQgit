@@ -2,6 +2,10 @@
  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework></PropertyGroup>
  <ItemGroup>
   <Compile Include="../../src/FastQ.Web/Helpers/LobbyRolePolicy.cs" Link="LobbyRolePolicy.cs" />
-  <Compile Include="../../src/FastQ.Data/Entities/User.cs" Link="User.cs" />
+  <Compile Include="../../src/FastQ.Data/Entities/*.cs" Link="Entities/%(Filename)%(Extension)" />
+  <Compile Include="../../src/FastQ.Data/Repositories/IAppointmentRepository.cs" Link="IAppointmentRepository.cs" />
+  <Compile Include="../../src/FastQ.Data/Repositories/IQueueRepository.cs" Link="IQueueRepository.cs" />
+  <Compile Include="../../src/FastQ.Data/Repositories/IUserRepository.cs" Link="IUserRepository.cs" />
+  <Compile Include="../../src/FastQ.Data/Data/DbLobbyRepository.cs" Link="DbLobbyRepository.cs" />
  </ItemGroup>
 </Project>

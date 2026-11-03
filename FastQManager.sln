@@ -1,10 +1,16 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FQ.Manager.Data", "src\FastQ.Data\FQ.Manager.Data.csproj", "{4B7612E8-0294-465B-9B69-073BB967D3F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FQ.Manager.Web", "src\FastQ.Web\FQ.Manager.Web.csproj", "{0AA5C559-494E-41B9-B20E-EE1A4561919A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B1361BD2-3605-4550-B402-1D89B42D9E6B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FastQ.Web", "FastQ.Web", "{95569B5E-1E06-4EE0-8024-D9262ABE1C72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FQ.Manager.Data", "src\FastQ.Web\DependencySourceCode\FQ.Manager.Data.csproj", "{4B7612E8-0294-465B-9B69-073BB967D3F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,5 +32,9 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {01530898-C804-4A80-9F90-A81F99F79AF2}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{95569B5E-1E06-4EE0-8024-D9262ABE1C72} = {B1361BD2-3605-4550-B402-1D89B42D9E6B}
+		{4B7612E8-0294-465B-9B69-073BB967D3F1} = {95569B5E-1E06-4EE0-8024-D9262ABE1C72}
 	EndGlobalSection
 EndGlobal

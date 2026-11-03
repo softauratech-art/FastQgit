@@ -7,6 +7,7 @@ class RoleChecks
  static void Check(bool actual,bool expected,string name) { if(actual!=expected)throw new Exception(name);Console.WriteLine("PASS: "+name); }
  static void Main()
  {
+  LobbyRepositoryChecks.Run();
   var member=new UserEntity { EntityId=1 };
   var queue=new UserQueuePermission { EntityId=1,QueueId=10,QueueActiveFlag=true,LobbyFlag=true };
   var user=new User { BusinessEntities=new List<UserEntity>{member},Queues=new List<UserQueuePermission>{queue} };

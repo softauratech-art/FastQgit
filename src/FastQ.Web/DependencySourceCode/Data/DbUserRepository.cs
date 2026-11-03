@@ -222,21 +222,14 @@ namespace FastQ.Data.Db
                 DataAccess.AddParam(cmd, "p_providerqueues", providerqueues, DbType.String); 
                 DataAccess.AddParam(cmd, "p_reporterqueues", reporterqueues, DbType.String); 
                 DataAccess.AddParam(cmd, "p_queueadminqueues", queueadminqueues, DbType.String);
+                DataAccess.AddParam(cmd, "p_lobbyqueues", string.Join(",", (ouser.Queues ?? new List<UserQueuePermission>())
+                    .Where(q => q.LobbyFlag).Select(q => q.QueueId)), DbType.String);
                 DataAccess.AddParam(cmd, "p_stampuser", stampuser, DbType.String);
                 DataAccess.AddParam(cmd, "p_outmsg", null, DbType.String).Direction = ParameterDirection.Output;
                 cmd.Parameters["p_outmsg"].Size = 4000;
                 cmd.ExecuteNonQuery();
                 string dberr = cmd.Parameters["p_outmsg"].Value as string;
                 if (!string.IsNullOrEmpty(dberr)) throw new InvalidOperationException("DB Error: " + dberr);
-                using (var roleCmd = DataAccess.CreateStoredProc(conn, "FQOWNER.FQ_SAVE_LOBBY_ROLES"))
-                {
-                    roleCmd.Transaction = tx;
-                    DataAccess.AddParam(roleCmd,"p_userid",ouser.UserId,DbType.String);
-                    DataAccess.AddParam(roleCmd,"p_entityid",entityid,DbType.Int64);
-                    DataAccess.AddParam(roleCmd,"p_queueids",string.Join(",", (ouser.Queues ?? new List<UserQueuePermission>()).Where(q => q.LobbyFlag).Select(q => q.QueueId)),DbType.String);
-                    DataAccess.AddParam(roleCmd,"p_stampuser",stampuser,DbType.String);
-                    roleCmd.ExecuteNonQuery();
-                }
                 tx.Commit();
             }
         }
