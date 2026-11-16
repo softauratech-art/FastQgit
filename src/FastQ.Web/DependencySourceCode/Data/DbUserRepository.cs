@@ -141,6 +141,14 @@ namespace FastQ.Data.Db
                         }
                         //return reader.Read() ? MapUserQPermissions(reader) : null;
 
+                        var expectedColumns = new[] { "QUEUE_ID", "HOST_FLAG", "PROVIDER_FLAG", "LOBBY_FLAG", "REPORTER_FLAG", "QUEUEADMIN_FLAG", "ENTITY_ID", "ACTIVEFLAG", "NAME" };
+                        var returnedColumns = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToArray();
+                        var missingColumns = expectedColumns.Except(returnedColumns, StringComparer.OrdinalIgnoreCase).ToArray();
+                        if (missingColumns.Length > 0)
+                            throw new InvalidOperationException(
+                                "FQOWNER.FQ_PROCS_GET.GET_USER_QUEUES_ROLES is missing result columns: " + string.Join(", ", missingColumns)
+                                + ". Deploy the matching database package before using this application version. Returned columns: " + string.Join(", ", returnedColumns));
+
                         var list = new List<Entities.UserQueuePermission>();
                         while (reader.Read())
                         {

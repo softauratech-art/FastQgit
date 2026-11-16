@@ -12,3 +12,12 @@ ORDER BY sequence;
 -- PRINT rows;
 -- EXEC FQOWNER.FQ_PROCS_GET.GET_MYWALKINS(1, 'windows_account', TRUNC(SYSDATE), TRUNC(SYSDATE), :rows);
 -- PRINT rows;
+
+-- Diagnose user-edit result columns (SQL Developer: Run Script/F5).
+-- Replace the two user IDs. PRINT output must include LOBBY_FLAG along with
+-- QUEUE_ID, NAME, ENTITY_ID, ACTIVEFLAG and the existing role flags.
+-- VARIABLE user_roles REFCURSOR;
+-- VARIABLE lookup_message VARCHAR2(2000);
+-- EXEC FQOWNER.FQ_PROCS_GET.GET_USER_QUEUES_ROLES('target_user', 'admin_user', :lookup_message, :user_roles);
+-- PRINT lookup_message;
+-- PRINT user_roles;
