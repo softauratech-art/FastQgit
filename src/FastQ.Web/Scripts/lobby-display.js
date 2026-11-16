@@ -50,7 +50,7 @@
     }
     function render() {
         var count = Math.max(1, Math.ceil(queues.length / size())); page = (page + count) % count;
-        var positions = waitingLists.map(function (list) { return list.scrollTop; });
+        var positions = waitingLists.map(function (list) { return { top: list.scrollTop, bottomTime: list.bottomTime || 0, topTime: list.topTime || 0, reviewed: list.reviewed || false }; });
         waitingLists = [];
         root.replaceChildren();
         if (!queues.length) root.appendChild(node('div', stopped ? 'Display access is unavailable.'
@@ -64,10 +64,16 @@
             card.appendChild(section('Now serving', queue.serving, limits.serving, true));
             card.appendChild(section('Waiting', queue.waiting, null, false)); root.appendChild(card);
         });
-        waitingLists.forEach(function (list, index) { list.scrollTop = positions[index] || 0; });
+        waitingLists.forEach(function (list, index) {
+            var saved = positions[index] || {};
+            list.scrollTop = saved.top || 0;
+            list.bottomTime = saved.bottomTime || 0;
+            list.topTime = saved.topTime || 0;
+            list.reviewed = saved.reviewed || false;
+        });
         document.getElementById('slideLabel').textContent = 'Queues ' + (queues.length ? page * size() + 1 : 0) + '\u2013' + Math.min((page + 1) * size(), queues.length) + ' / ' + queues.length;
     }
-    function move(delta) { page += delta; if (page >= Math.ceil(queues.length / size()) || page < 0) turn++; render(); slideElapsed = 0; bottomElapsed = 0; waitingLists.forEach(function (list) { list.scrollTop = 0; }); }
+    function move(delta) { page += delta; if (page >= Math.ceil(queues.length / size()) || page < 0) turn++; render(); slideElapsed = 0; bottomElapsed = 0; waitingLists.forEach(function (list) { list.scrollTop = 0; list.bottomTime = 0; list.topTime = 0; list.reviewed = false; }); }
     function clock() {
         var now = new Date();
         document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {timeZone:'America/New_York',hour:'numeric',minute:'2-digit'});
@@ -117,10 +123,20 @@
         var allAtBottom = true;
         waitingLists.forEach(function (list) {
             var bottom = Math.max(0, list.scrollHeight - list.clientHeight);
+            list.topTime += 100;
             if (list.scrollTop < bottom - 1) {
-                allAtBottom = false;
-                if (slideElapsed >= 3000) list.scrollTop = Math.min(bottom, list.scrollTop + 3);
+                list.bottomTime = 0;
+                if (list.topTime >= 3000) list.scrollTop = Math.min(bottom, list.scrollTop + 3);
+            } else {
+                list.bottomTime += 100;
+                if (list.bottomTime >= 3000) {
+                    list.reviewed = true;
+                    list.scrollTop = 0;
+                    list.topTime = 0;
+                    list.bottomTime = 0;
+                }
             }
+            if (!list.reviewed) allAtBottom = false;
         });
         if (!allAtBottom) {
             bottomElapsed = 0;

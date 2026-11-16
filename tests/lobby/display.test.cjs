@@ -35,7 +35,12 @@ async function settle(){await new Promise(resolve=>setImmediate(resolve));}
  const tick=intervals.find(x=>x.delay===100).fn;
  for(let i=0;i<400;i++) tick(); assert.equal(ids.slideLabel.textContent,before); assert.equal(window.scrollY,0);
  ids.pause.onclick(); for(let i=0;i<100;i++) tick(); assert.equal(ids.slideLabel.textContent,before); assert.equal(window.scrollY,0); assert.ok(ids.queues.children[0].children[2].children[1].scrollTop>0);
- for(let i=0;i<250;i++) tick(); assert.notEqual(ids.slideLabel.textContent,before);
+ const reviewedList = ids.queues.children[0].children[2].children[1];
+ for(let i=0;i<160;i++) tick();
+ assert.equal(ids.slideLabel.textContent,before);
+ assert.equal(reviewedList.scrollTop,0); // Return to top after the bottom pause.
+ assert.equal(window.scrollY,0);
+ for(let i=0;i<90;i++) tick(); assert.notEqual(ids.slideLabel.textContent,before);
  window.innerWidth=600;ids.next.onclick();assert.equal(ids.queues.children.length,1);
  // Short kiosk screens also render the full waiting list.
  window.innerWidth=1366;window.innerHeight=768;ids.next.onclick();

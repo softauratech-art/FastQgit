@@ -1,0 +1,15 @@
+/Users/sahidulislam/Akib/FastQgit/tests/user/bin/Debug/net10.0/UserServiceChecks
+/Users/sahidulislam/Akib/FastQgit/tests/user/bin/Debug/net10.0/UserServiceChecks.deps.json
+/Users/sahidulislam/Akib/FastQgit/tests/user/bin/Debug/net10.0/UserServiceChecks.runtimeconfig.json
+/Users/sahidulislam/Akib/FastQgit/tests/user/bin/Debug/net10.0/UserServiceChecks.dll
+/Users/sahidulislam/Akib/FastQgit/tests/user/bin/Debug/net10.0/UserServiceChecks.pdb
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.GeneratedMSBuildEditorConfig.editorconfig
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.AssemblyInfoInputs.cache
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.AssemblyInfo.cs
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.csproj.CoreCompileInputs.cache
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.sourcelink.json
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.dll
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/refint/UserServiceChecks.dll
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.pdb
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/UserServiceChecks.genruntimeconfig.cache
+/Users/sahidulislam/Akib/FastQgit/tests/user/obj/Debug/net10.0/ref/UserServiceChecks.dll

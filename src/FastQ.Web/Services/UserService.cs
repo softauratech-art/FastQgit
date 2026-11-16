@@ -29,17 +29,9 @@ namespace FastQ.Web.Services
 
         public UserVM GetUser(string userid)
         {
-            try
-            {
-                var usr = _users.Get(userid, _stampuser);
-                bool configadmin = usr.BusinessEntities.FirstOrDefault(e => e.EntityId == _sessionentity).ConfigAdminFlag;
-
-                return TransformToModel(usr);
-            }
-            catch
-            {
-                return null;
-            }
+            if (string.IsNullOrWhiteSpace(userid)) return null;
+            var usr = _users.Get(userid, _stampuser);
+            return usr == null ? null : TransformToModel(usr);
         }
 
         private UserVM TransformToModel(Data.Entities.User userentity) {

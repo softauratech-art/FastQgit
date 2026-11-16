@@ -2,6 +2,18 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <div class="card">
-    <h2>Error</h2>
-    <div>@ViewBag.ErrorMessage</div>
+    <h2>@(ViewBag.ErrorTitle ?? "Error")</h2>
+    <div role="alert">@ViewBag.ErrorMessage</div>
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorDetail))
+    {
+        <p><strong>Reason:</strong> @ViewBag.ErrorDetail</p>
+    }
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorReference))
+    {
+        <p><strong>Error reference:</strong> @ViewBag.ErrorReference</p>
+    }
+    @if (ViewBag.BackToUsers == true)
+    {
+        <p><a class="btn ghost" href="@Url.Action("Index", "User")">Back to user list</a></p>
+    }
 </div>

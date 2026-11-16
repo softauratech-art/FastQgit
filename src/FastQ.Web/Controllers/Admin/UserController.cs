@@ -13,6 +13,7 @@ namespace FastQ.Web.Controllers.Admin
     public class UserController : Controller
     {
         // GET: User       
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("FastQ.UserManagement");
         private readonly UserService _service;
         public UserController()
         {
@@ -41,13 +42,32 @@ namespace FastQ.Web.Controllers.Admin
             try 
             { 
                 var oUser = _service.GetUser(id);
+                if (oUser == null)
+                {
+                    ViewBag.ErrorReference = LogUserFailure("LoadUserNotFound", id, null);
+                    ViewBag.ErrorTitle = "User not found";
+                    ViewBag.ErrorMessage = "No user was returned for this user ID. Return to the user list and refresh it before trying again.";
+                    ViewBag.BackToUsers = true;
+                    Response.StatusCode = 404;
+                    Response.TrySkipIisCustomErrors = true;
+                    return View("Error");
+                }
                 return View("../Admin/User/ManageUser", oUser);
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = "An error occurred: " + ex.Message;
+                ViewBag.ErrorReference = LogUserFailure("LoadUser", id, ex);
+                var denied = ex is UnauthorizedAccessException;
+                ViewBag.ErrorTitle = denied ? "Permission denied" : "Unable to open user settings";
+                ViewBag.ErrorMessage = denied
+                    ? "Your account could not access this user's details or permissions. Ask your administrator to check your access for the selected entity."
+                    : "The user's details or queue permissions could not be loaded. This does not mean the user is missing. Return to the user list and try again. If the problem continues, ask your administrator to check access and the database lookup.";
+                ViewBag.ErrorDetail = ex.Message;
+                ViewBag.BackToUsers = true;
+                Response.StatusCode = denied ? 403 : 500;
+                Response.TrySkipIisCustomErrors = true;
                 return View("Error");
-            }            
+            }
         }
 
         // GET: User/Create        
@@ -67,9 +87,8 @@ namespace FastQ.Web.Controllers.Admin
 
         // GET: User/Edit/ocuser01        
         public ActionResult Edit(string id)
-        {                       
-            var oUser = _service.GetUser(id);
-            return View("../Admin/User/ManageUser", oUser);
+        {
+            return Details(id);
         }
 
         // POST: User/Edit/ocuser01
@@ -97,10 +116,12 @@ namespace FastQ.Web.Controllers.Admin
                     // Add to database
                     _service.AddOrUpdateUser(action, ovm, hostqueues, providerqueues, reporterqueues, adminqueues);
 
+                    // Keep the submitted model if reloading fails after the save.
+                    var savedUser = _service.GetUser(uid);
+                    if (savedUser == null)
+                        throw new InvalidOperationException("The user was saved, but could not be reloaded. Return to the user list and try again.");
+                    ovm = savedUser;
                     ViewBag.SuccessMessage = "Record updated successfully";
-
-                    // Reload userinfo from database
-                    ovm = _service.GetUser(uid);
                 }
                 else
                 {
@@ -110,9 +131,10 @@ namespace FastQ.Web.Controllers.Admin
             }
             catch (Exception ex)
             {
+                var reference = LogUserFailure("SaveUser:" + action, ovm?.UserId, ex);
                 ovm.Permissions = ReloadPermissions(collection);
                 ovm.OtherLanguage = collection["language"]?.ToString();
-                ViewBag.ErrorMessage = ex.Message;
+                ViewBag.ErrorMessage = ex.Message + " Error reference: " + reference;
             }
 
             return View("../Admin/User/ManageUser", ovm);            
@@ -131,6 +153,25 @@ namespace FastQ.Web.Controllers.Admin
             {
                 return Json(new { response = "error", message = ex.Message });
             }
+        }
+
+        private string LogUserFailure(string operation, string targetUserId, Exception exception)
+        {
+            var reference = Guid.NewGuid().ToString("N");
+            // Encode request values so newlines cannot forge additional log entries.
+            var context = new
+            {
+                ErrorReference = reference,
+                Operation = operation,
+                TargetUserId = targetUserId,
+                Actor = User?.Identity?.Name,
+                EntityId = Session?["fq_current_entity"]?.ToString(),
+                Action = RouteData?.Values["action"]?.ToString()
+            };
+            var message = Newtonsoft.Json.JsonConvert.SerializeObject(context);
+            if (exception == null) Logger.Warn("User management lookup returned no user. Context={0}", message);
+            else Logger.Error(exception, "User management operation failed. Context={0}", message);
+            return reference;
         }
 
         private bool IsValid(string action, FormCollection fc)

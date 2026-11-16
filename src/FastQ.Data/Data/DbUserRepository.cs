@@ -38,9 +38,7 @@ namespace FastQ.Data.Db
                         {
                             if (cmd.Parameters["p_message"]?.Value.ToString() != string.Empty)
                             {
-                                return null;
-                                //throw new Exception(cmd.Parameters["p_message"].Value.ToString(), ex);
-                                //TODO: Log Error
+                                throw new InvalidOperationException(cmd.Parameters["p_message"].Value.ToString());
                             }
                             return reader.Read() ? MapUser(reader, stampuser) : null;
                         }
@@ -49,7 +47,9 @@ namespace FastQ.Data.Db
             }
             catch (Exception ex) 
             {
-                throw new Exception("DB Error: " + ex.Message);
+                if (ex is OracleException oracleError && oracleError.Number == 1031)
+                    throw new UnauthorizedAccessException("The database denied access to the user details or permissions.", ex);
+                throw new InvalidOperationException("Unable to load user details or permissions: " + ex.Message, ex);
             }
         }
 
