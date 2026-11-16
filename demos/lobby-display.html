@@ -10,8 +10,7 @@
 <body data-feed="/demo/queues" data-state="connecting">
     <header class="display-header">
         <div class="identity">
-            <div class="brand">Fast<span>Q</span><span class="brand-label">LOBBY DISPLAY</span></div>
-            <h1>Division of Building Safety</h1>
+            <h1 class="brand">FAST<span>Q</span><span class="brand-label">Lobby</span></h1>
             <p>Preview display &middot; All customer names below are fictional.</p>
         </div>
         <div class="clock" aria-label="Current Eastern time">
@@ -34,7 +33,7 @@
     <footer class="display-footer">
         <div class="time-key"><span><i class="key-mark appointment" aria-hidden="true"></i>Appointment: scheduled time</span><span><i class="key-mark walkin" aria-hidden="true"></i>Walk-in: arrival time</span></div>
         <nav aria-label="Queue slideshow">
-            <span id="rotationLabel" class="rotation-label">Rotates every 10 seconds</span>
+            <span id="rotationLabel" class="rotation-label">Auto-scrolls through all waiting guests</span>
             <div class="page-controls"><button id="previous" class="arrow-button" type="button" aria-label="Previous queues">&larr;</button><span id="slideLabel"></span><button id="next" class="arrow-button" type="button" aria-label="Next queues">&rarr;</button></div>
             <button id="pause" type="button" aria-pressed="false">Pause</button>
             <button id="fullscreen" type="button" class="fullscreen-button">Full screen</button>
@@ -42,7 +41,8 @@
     </footer>
 <script>
 // Local visual preview only. Production uses its authenticated Lobby/Data endpoint.
-window.fetch = async function () { return { ok: true, status: 200, json: async function () { return {"queues": [{"id": 1, "name": "Building Permits", "serving": [{"name": "Casey Morgan", "time": "10:00 AM", "kind": "Appointment"}], "waiting": [{"name": "Jordan Lee", "time": "10:15 AM", "kind": "Appointment"}, {"name": "Alex Taylor", "time": "10:08 AM", "kind": "Walk-in"}, {"name": "Sam Rivera", "time": "10:30 AM", "kind": "Appointment"}, {"name": "Drew Ellis", "time": "10:22 AM", "kind": "Walk-in"}, {"name": "Robin Chen", "time": "10:45 AM", "kind": "Appointment"}]}, {"id": 2, "name": "Planning & Zoning", "serving": [], "waiting": [{"name": "Quinn Davis", "time": "10:15 AM", "kind": "Appointment"}, {"name": "Riley Bennett", "time": "10:30 AM", "kind": "Appointment"}, {"name": "Skyler Reed", "time": "10:18 AM", "kind": "Walk-in"}]}, {"id": 3, "name": "Building - Commercial Plans Coordination", "serving": [{"name": "Jamie Parker", "time": "10:00 AM", "kind": "Walk-in"}], "waiting": [{"name": "Avery Brooks", "time": "10:15 AM", "kind": "Appointment"}, {"name": "Morgan Lane", "time": "10:20 AM", "kind": "Walk-in"}, {"name": "Cameron Wells", "time": "10:30 AM", "kind": "Appointment"}, {"name": "Emery Stone", "time": "10:45 AM", "kind": "Appointment"}]}, {"id": 4, "name": "Electrical Permits", "serving": [], "waiting": []}, {"id": 5, "name": "Environmental Services", "serving": [{"name": "Devon Blake", "time": "10:00 AM", "kind": "Appointment"}], "waiting": [{"name": "Taylor Reed", "time": "10:15 AM", "kind": "Appointment"}]}, {"id": 6, "name": "General Assistance", "serving": [], "waiting": []}]}; } }; };
+var demoWaiting = Array.from({ length: 18 }, function (_, i) { return { name: "Demo Guest " + (i + 1), time: "11:" + String(i * 3 % 60).padStart(2, "0") + " AM", kind: i % 2 ? "Walk-in" : "Appointment" }; });
+window.fetch = async function () { return { ok: true, status: 200, json: async function () { return {"queues": [{"id": 1, "name": "Building Permits", "serving": [{"name": "Casey Morgan", "time": "10:00 AM", "kind": "Appointment"}], "waiting": demoWaiting.concat([{ "name": "Jordan Lee", "time": "10:15 AM", "kind": "Appointment"}, {"name": "Alex Taylor", "time": "10:08 AM", "kind": "Walk-in"}, {"name": "Sam Rivera", "time": "10:30 AM", "kind": "Appointment"}, {"name": "Drew Ellis", "time": "10:22 AM", "kind": "Walk-in"}, {"name": "Robin Chen", "time": "10:45 AM", "kind": "Appointment"}])}, {"id": 2, "name": "Planning & Zoning", "serving": [], "waiting": [{"name": "Quinn Davis", "time": "10:15 AM", "kind": "Appointment"}, {"name": "Riley Bennett", "time": "10:30 AM", "kind": "Appointment"}, {"name": "Skyler Reed", "time": "10:18 AM", "kind": "Walk-in"}]}, {"id": 3, "name": "Building - Commercial Plans Coordination", "serving": [{"name": "Jamie Parker", "time": "10:00 AM", "kind": "Walk-in"}], "waiting": [{"name": "Avery Brooks", "time": "10:15 AM", "kind": "Appointment"}, {"name": "Morgan Lane", "time": "10:20 AM", "kind": "Walk-in"}, {"name": "Cameron Wells", "time": "10:30 AM", "kind": "Appointment"}, {"name": "Emery Stone", "time": "10:45 AM", "kind": "Appointment"}]}, {"id": 4, "name": "Electrical Permits", "serving": [], "waiting": []}, {"id": 5, "name": "Environmental Services", "serving": [{"name": "Devon Blake", "time": "10:00 AM", "kind": "Appointment"}], "waiting": [{"name": "Taylor Reed", "time": "10:15 AM", "kind": "Appointment"}]}, {"id": 6, "name": "General Assistance", "serving": [], "waiting": []}]}; } }; };
 </script>
     <script src="../src/FastQ.Web/Scripts/lobby-display.js"></script>
 </body>

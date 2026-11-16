@@ -1,6 +1,7 @@
 (function () {
     'use strict';
     var queues = [], page = 0, turn = 0, paused = false, stopped = false, state = 'connecting', refreshTimer;
+    var slideElapsed = 0, bottomElapsed = 0, waitingLists = [];
     var root = document.getElementById('queues'), updated = document.getElementById('updated');
     function size() { return window.innerWidth <= 700 ? 1 : window.innerWidth <= 1100 ? 2 : 3; }
     function node(tag, text, cls) {
@@ -22,31 +23,35 @@
         var count = node('span', String(people.length), 'section-count');
         count.setAttribute('aria-label', people.length + ' ' + title.toLowerCase());
         heading.appendChild(count); el.appendChild(heading);
+        var rows = el;
+        if (!serving) {
+            rows = node('div', undefined, 'waiting-list');
+            rows.setAttribute('tabindex', '0');
+            rows.setAttribute('aria-label', 'Waiting guests');
+            el.appendChild(rows);
+            waitingLists.push(rows);
+        }
         var start = serving ? (turn % Math.max(1, Math.ceil(people.length / limit))) * limit : 0;
-        people.slice(start, start + limit).forEach(function (person) {
+        (serving ? people.slice(start, start + limit) : people).forEach(function (person) {
             var row = node('div', undefined, 'person'), label = node('div', undefined, 'person-name');
             label.appendChild(node('strong', person.name || 'Guest'));
             label.appendChild(node('small', person.kind, person.kind === 'Walk-in' ? 'walkin' : 'appointment'));
             var time = node('div', undefined, 'visit-time');
             time.appendChild(node('small', person.kind === 'Walk-in' ? 'Arrived' : 'Scheduled'));
             time.appendChild(node('time', person.time));
-            row.appendChild(label); row.appendChild(time); el.appendChild(row);
+            row.appendChild(label); row.appendChild(time); rows.appendChild(row);
         });
-        if (!serving) {
-            for (var slot = Math.min(people.length, limit); slot < limit; slot++) {
-                var placeholder = node('div', '\u2014', 'person person-placeholder');
-                placeholder.setAttribute('aria-label', 'Empty waiting slot');
-                el.appendChild(placeholder);
-            }
-        } else if (!people.length) el.appendChild(node('p', 'No one being served', 'empty'));
+        if (!people.length) rows.appendChild(node('p', serving ? 'No one being served' : 'No one waiting', 'empty'));
         if (serving && people.length > limit) el.appendChild(node('div', 'Showing ' + (start + 1) + '\u2013' + Math.min(start + limit, people.length) + ' of ' + people.length, 'range'));
         return el;
     }
     function rowLimits() {
-        return { serving: window.innerHeight >= 1200 ? 2 : 1, waiting: 3 };
+        return { serving: window.innerHeight >= 1200 ? 2 : 1 };
     }
     function render() {
         var count = Math.max(1, Math.ceil(queues.length / size())); page = (page + count) % count;
+        var positions = waitingLists.map(function (list) { return list.scrollTop; });
+        waitingLists = [];
         root.replaceChildren();
         if (!queues.length) root.appendChild(node('div', stopped ? 'Display access is unavailable.'
             : state === 'connecting' ? 'Connecting to the queue service...'
@@ -57,11 +62,12 @@
             var card = node('article', undefined, 'queue'), heading = node('div', undefined, 'queue-head');
             heading.appendChild(node('h2', queue.name)); card.appendChild(heading);
             card.appendChild(section('Now serving', queue.serving, limits.serving, true));
-            card.appendChild(section('Waiting', queue.waiting, limits.waiting, false)); root.appendChild(card);
+            card.appendChild(section('Waiting', queue.waiting, null, false)); root.appendChild(card);
         });
+        waitingLists.forEach(function (list, index) { list.scrollTop = positions[index] || 0; });
         document.getElementById('slideLabel').textContent = 'Queues ' + (queues.length ? page * size() + 1 : 0) + '\u2013' + Math.min((page + 1) * size(), queues.length) + ' / ' + queues.length;
     }
-    function move(delta) { page += delta; if (page >= Math.ceil(queues.length / size()) || page < 0) turn++; render(); }
+    function move(delta) { page += delta; if (page >= Math.ceil(queues.length / size()) || page < 0) turn++; render(); slideElapsed = 0; bottomElapsed = 0; waitingLists.forEach(function (list) { list.scrollTop = 0; }); }
     function clock() {
         var now = new Date();
         document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {timeZone:'America/New_York',hour:'numeric',minute:'2-digit'});
@@ -95,7 +101,7 @@
     document.getElementById('pause').onclick = function () {
         paused = !paused; this.textContent = paused ? 'Resume' : 'Pause'; this.setAttribute('aria-pressed', String(paused));
         var label = document.getElementById('rotationLabel');
-        if (label) label.textContent = paused ? 'Rotation paused' : 'Rotates every 10 seconds';
+        if (label) label.textContent = paused ? 'Scrolling and rotation paused' : 'Auto-scrolls through all waiting guests';
     };
     document.getElementById('fullscreen').onclick = function () {
         if (!document.documentElement.requestFullscreen) { updated.textContent = 'Full screen unavailable in this browser.'; return; }
@@ -104,6 +110,24 @@
     };
     window.addEventListener('resize', render);
     window.addEventListener('pagehide', function () { stopped = true; clearTimeout(refreshTimer); });
-    setInterval(function () { if (!paused) move(1); }, 10000);
+    // Keep each slide until its full waiting list has been visible.
+    setInterval(function () {
+        if (paused || stopped) return;
+        slideElapsed += 100;
+        var allAtBottom = true;
+        waitingLists.forEach(function (list) {
+            var bottom = Math.max(0, list.scrollHeight - list.clientHeight);
+            if (list.scrollTop < bottom - 1) {
+                allAtBottom = false;
+                if (slideElapsed >= 3000) list.scrollTop = Math.min(bottom, list.scrollTop + 3);
+            }
+        });
+        if (!allAtBottom) {
+            bottomElapsed = 0;
+        } else {
+            bottomElapsed += 100;
+            if (slideElapsed >= 10000 && bottomElapsed >= 3000) move(1);
+        }
+    }, 100);
     setInterval(clock, 1000); setState('connecting'); render(); clock(); refresh();
 })();

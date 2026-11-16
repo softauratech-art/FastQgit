@@ -14,10 +14,9 @@ button { font: inherit; }
     border-bottom: 4px solid #b9d7ce;
 }
 .identity { min-width: 0; }
-.brand { display: flex; align-items: center; font-size: 27px; font-weight: 750; letter-spacing: -1px; }
+.brand { display: flex; align-items: center; margin: 0 0 12px; font-size: clamp(36px, 3vw, 52px); line-height: 1.2; font-weight: 750; letter-spacing: -1px; }
 .brand > span:first-child { color: #a7dbca; }
-.brand-label { margin-left: 22px; padding-left: 22px; border-left: 1px solid #638581; font-size: 11px; letter-spacing: 2px; font-weight: 600; color: #d5e7e2; }
-h1 { font-size: clamp(23px, 2vw, 34px); line-height: 1.2; margin: 15px 0 8px; font-weight: 650; overflow-wrap: anywhere; }
+.brand-label { margin-left: 22px; padding-left: 22px; border-left: 1px solid #638581; font-size: .65em; letter-spacing: 1px; font-weight: 600; color: #d5e7e2; }
 .identity p { margin: 0; color: #d2e5df; font-size: 17px; }
 .clock { flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .clock strong { display: block; font-size: clamp(34px, 3.4vw, 56px); letter-spacing: -1.5px; line-height: 1.1; font-weight: 650; }
@@ -41,6 +40,9 @@ body[data-state="offline"] .connection-label::before, body[data-state="denied"] 
 .queue-head { padding: 20px 23px; min-height: 116px; border-top: 4px solid #3d7773; display: flex; align-items: center; background: #fff; }
 .queue-head h2 { font-size: clamp(21px, 1.55vw, 28px); line-height: 1.25; font-weight: 650; margin: 0; overflow-wrap: anywhere; letter-spacing: -.3px; }
 .section { padding: 18px 23px 12px; }
+.waiting-list { height: clamp(160px, 30vh, 340px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.waiting-list > .person:first-child { border-top: 0; }
+.waiting-list:focus-visible { outline: 3px solid #238362; outline-offset: -3px; }
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 3px; }
 .section h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1.3px; font-weight: 700; color: #546e72; }
 .section-count { display: inline-flex; align-items: center; justify-content: center; min-width: 27px; height: 27px; padding: 0 8px; border-radius: 7px; background: #edf2f2; color: #47666a; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -89,7 +91,6 @@ button[aria-pressed="true"] { background: #e2ede7; border-color: #7ba491; }
 }
 @media (max-height: 850px) and (min-width: 701px) {
     .display-header { padding-block: 18px; }
-    h1 { margin-top: 10px; font-size: 25px; }
     .clock strong { font-size: 40px; }
     main { padding-top: 18px; }
     .intro { margin-bottom: 16px; }
@@ -104,9 +105,8 @@ button[aria-pressed="true"] { background: #e2ede7; border-color: #7ba491; }
 }
 @media (max-width: 700px) {
     .display-header { padding: 20px; align-items: flex-start; gap: 18px; }
-    .brand { font-size: 22px; }
-    .brand-label { font-size: 9px; margin-left: 12px; padding-left: 12px; letter-spacing: 1px; }
-    h1 { font-size: 21px; margin-top: 15px; }
+    .brand { font-size: 30px; flex-wrap: wrap; }
+    .brand-label { font-size: .65em; margin-left: 12px; padding-left: 12px; letter-spacing: 1px; }
     .identity p { font-size: 14px; }
     .clock strong { font-size: 28px; letter-spacing: -.5px; }
     .clock div { font-size: 11px; max-width: 120px; line-height: 1.5; }

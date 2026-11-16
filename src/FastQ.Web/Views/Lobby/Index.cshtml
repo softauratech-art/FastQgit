@@ -11,8 +11,7 @@
 <body data-feed="@Url.Action("Data", "Lobby")" data-state="connecting">
     <header class="display-header">
         <div class="identity">
-            <div class="brand">Fast<span>Q</span><span class="brand-label">LOBBY DISPLAY</span></div>
-            <h1>@ViewBag.EntityName</h1>
+            <h1 class="brand">FAST<span>Q</span><span class="brand-label">Lobby</span></h1>
             <p>Welcome. We&rsquo;ll be with you soon.</p>
         </div>
         <div class="clock" aria-label="Current Eastern time">
@@ -35,7 +34,7 @@
     <footer class="display-footer">
         <div class="time-key"><span><i class="key-mark appointment" aria-hidden="true"></i>Appointment: scheduled time</span><span><i class="key-mark walkin" aria-hidden="true"></i>Walk-in: arrival time</span></div>
         <nav aria-label="Queue slideshow">
-            <span id="rotationLabel" class="rotation-label">Rotates every 10 seconds</span>
+            <span id="rotationLabel" class="rotation-label">Auto-scrolls through all waiting guests</span>
             <div class="page-controls"><button id="previous" class="arrow-button" type="button" aria-label="Previous queues">&larr;</button><span id="slideLabel"></span><button id="next" class="arrow-button" type="button" aria-label="Next queues">&rarr;</button></div>
             <button id="pause" type="button" aria-pressed="false">Pause</button>
             <button id="fullscreen" type="button" class="fullscreen-button">Full screen</button>
