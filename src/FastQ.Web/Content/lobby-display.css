@@ -35,7 +35,7 @@ body[data-state="offline"] .connection-label, body[data-state="denied"] .connect
 body[data-state="offline"] .connection-label::before, body[data-state="denied"] .connection-label::before { background: #b66346; }
 #updated { font-size: 12px; color: #617a7b; line-height: 1.4; }
 #updated.error { color: #9b442e; }
-.queues { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; align-items: stretch; }
+.queues { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 22px; align-items: stretch; }
 .queue { background: #fff; border: 1px solid #d6e1df; border-radius: 12px; overflow: hidden; box-shadow: 0 3px 10px #173e4205; min-width: 0; }
 .queue-head { padding: 20px 23px; min-height: 116px; border-top: 4px solid #3d7773; display: flex; align-items: center; background: #fff; }
 .queue-head h2 { font-size: clamp(21px, 1.55vw, 28px); line-height: 1.25; font-weight: 650; margin: 0; overflow-wrap: anywhere; letter-spacing: -.3px; }
@@ -130,4 +130,47 @@ button[aria-pressed="true"] { background: #e2ede7; border-color: #7ba491; }
 @media (prefers-reduced-motion: no-preference) {
     .queue { animation: appear .25s ease-out; }
     @keyframes appear { from { opacity: .6; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
+
+/* Six desktop columns keep queues visible while only waiting lists scroll. */
+.queue-head { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
+.queue-category { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #5a7778; font-weight: 700; }
+@media (min-width: 701px) {
+    body { height: 100vh; overflow: hidden; }
+    .display-header { flex-shrink: 0; padding-block: 14px; }
+    .brand { font-size: clamp(30px, 2.5vw, 42px); margin-bottom: 5px; }
+    .clock strong { font-size: 36px; }
+    .clock div { margin-top: 4px; }
+    .timezone { margin-top: 4px; }
+    main { display: flex; flex-direction: column; min-height: 0; padding-top: 14px; }
+    .intro { flex-shrink: 0; margin-bottom: 12px; }
+    .intro h2 { font-size: 22px; }
+    .queues { flex: 1; min-height: 0; gap: 12px; grid-template-rows: minmax(0, 1fr); }
+    .queues[data-rows="2"] { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+    .queue { display: flex; flex-direction: column; min-height: 0; border-radius: 8px; }
+    .queue-head { flex-shrink: 0; min-height: 0; padding: 8px 12px; }
+    .queue-head h2 { font-size: clamp(16px, 1.2vw, 21px); line-height: 1.15; }
+    .section { padding: 6px 12px; min-height: 0; }
+    .section:not(.serving) { flex: 1; display: flex; flex-direction: column; }
+    .section-head { flex-shrink: 0; margin-bottom: 2px; }
+    .section h3 { font-size: 10px; }
+    .section-count { min-width: 20px; height: 20px; font-size: 11px; }
+    .serving { flex-shrink: 0; min-height: 0; }
+    .waiting-list { flex: 1; min-height: 0; height: auto; }
+    .person { padding-block: 6px; min-height: 0; gap: 8px; }
+    .person strong { font-size: clamp(17px, 1.25vw, 23px); }
+    .person small { font-size: 10px; margin-top: 3px; }
+    .person time { font-size: 15px; }
+    .visit-time small { font-size: 9px; margin-top: 0; }
+    .empty { margin: 8px 0; font-size: 14px; }
+    .visitor-note { flex-shrink: 0; margin-top: 10px; padding: 9px 12px; }
+    .visitor-note p { font-size: 13px; }
+    .display-footer { flex-shrink: 0; padding-block: 10px; gap: 10px; }
+    .range { margin: 2px 0; font-size: 10px; }
+}
+
+@media (min-width: 1101px) {
+    .person { flex-direction: column; align-items: stretch; }
+    .visit-time { display: flex; align-items: baseline; gap: 6px; text-align: left; flex-wrap: wrap; }
+    .visit-time small { margin-bottom: 0; }
 }

@@ -3,7 +3,13 @@
     var queues = [], page = 0, turn = 0, paused = false, stopped = false, state = 'connecting', refreshTimer;
     var slideElapsed = 0, bottomElapsed = 0, waitingLists = [];
     var root = document.getElementById('queues'), updated = document.getElementById('updated');
-    function size() { return window.innerWidth <= 700 ? 1 : window.innerWidth <= 1100 ? 2 : 3; }
+    function size() { return window.innerWidth <= 700 ? 1 : window.innerWidth <= 1100 ? 4 : 6; }
+    function category(queue) {
+        if (queue.category) return queue.category;
+        if (/^zoning\b/i.test(queue.name || '')) return 'Zoning';
+        if (/^building\b/i.test(queue.name || '')) return 'Building';
+        return 'Other services';
+    }
     function node(tag, text, cls) {
         var n = document.createElement(tag);
         if (text !== undefined) n.textContent = text;
@@ -46,7 +52,7 @@
         return el;
     }
     function rowLimits() {
-        return { serving: window.innerHeight >= 1200 ? 2 : 1 };
+        return { serving: 1 };
     }
     function render() {
         var count = Math.max(1, Math.ceil(queues.length / size())); page = (page + count) % count;
@@ -58,8 +64,11 @@
             : state === 'offline' ? 'Queue information is temporarily unavailable. Please wait while we reconnect.'
             : 'No queues available for display.', 'notice'));
         var limits = rowLimits();
-        queues.slice(page * size(), (page + 1) * size()).forEach(function (queue) {
+        var visibleQueues = queues.slice(page * size(), (page + 1) * size());
+        root.dataset.rows = window.innerWidth > 700 && window.innerWidth <= 1100 && visibleQueues.length > 2 ? '2' : '1';
+        visibleQueues.forEach(function (queue) {
             var card = node('article', undefined, 'queue'), heading = node('div', undefined, 'queue-head');
+            heading.appendChild(node('span', category(queue), 'queue-category'));
             heading.appendChild(node('h2', queue.name)); card.appendChild(heading);
             card.appendChild(section('Now serving', queue.serving, limits.serving, true));
             card.appendChild(section('Waiting', queue.waiting, null, false)); root.appendChild(card);
@@ -90,7 +99,9 @@
             if (!response.ok) throw new Error('Connection unavailable. Retrying\u2026');
             var data = await response.json();
             if (!Array.isArray(data.queues)) throw new Error('Invalid display response. Retrying\u2026');
-            queues = data.queues; setState('live'); render(); updated.className = '';
+            queues = data.queues.slice().sort(function (a, b) {
+                return category(a).localeCompare(category(b)) || (a.name || '').localeCompare(b.name || '');
+            }); setState('live'); render(); updated.className = '';
             updated.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',second:'2-digit'}) + ' \u00b7 Eastern Time';
         } catch (error) {
             // Remove names on failure instead of presenting old data as current.
